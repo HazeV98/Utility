@@ -130,7 +130,6 @@
             text-align: center;
             text-decoration: none;
             display: block;
-            text-transform: capitalize; 
         }
 
         .file-btn:active {
@@ -198,10 +197,7 @@
 
             try {
                 const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error("Impossibile leggere la repository");
-                
                 const files = await response.json();
-                
                 const cartelleOrari = files.filter(file => file.type === "dir" && (file.name.startsWith("orari_") || file.name.startsWith("orari_varianti_")));
 
                 if (cartelleOrari.length === 0) {
@@ -210,114 +206,100 @@
                 }
 
                 contentArea.innerHTML = '';
-
                 if (cartelleOrari.length > 1) {
                     cartelleOrari.sort((a, b) => b.name.localeCompare(a.name));
-
                     cartelleOrari.forEach(cartella => {
                         const btn = document.createElement('button');
                         btn.className = 'folder-btn';
-
                         if (cartella.name.startsWith("orari_") && !cartella.name.startsWith("orari_varianti_")) {
                             const dataGrezza = cartella.name.replace("orari_", "");
                             const partiData = dataGrezza.split("-");
                             const dataFormattata = partiData.length === 3 ? `${partiData[2]}-${partiData[1]}-${partiData[0]}` : dataGrezza;
                             btn.innerText = `Orari dal ${dataFormattata}`;
-                        } 
-                        else if (cartella.name.startsWith("orari_varianti_")) {
+                        } else if (cartella.name.startsWith("orari_varianti_")) {
                             let nomeSpeciale = cartella.name.replace("orari_varianti_", "").replace(/_/g, " ");
                             btn.innerText = nomeSpeciale.charAt(0).toUpperCase() + nomeSpeciale.slice(1);
                         }
-
                         btn.onclick = () => apriCartellaSelezionata(cartella.name);
                         contentArea.appendChild(btn);
                     });
                 } else {
                     apriCartellaSelezionata(cartelleOrari[0].name);
                 }
-
             } catch (error) {
-                console.error(error);
-                contentArea.innerHTML = `<div class="status-message" style="color: var(--danger);">Errore di connessione a GitHub. Riprova più tardi.</div>`;
+                contentArea.innerHTML = `<div class="status-message">Errore di connessione.</div>`;
             }
         }
 
         async function apriCartellaSelezionata(nomeCartella) {
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = `<div class="status-message">Caricamento file...</div>`;
-            
             const apiUrlCartella = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${nomeCartella}`;
 
             try {
                 const response = await fetch(apiUrlCartella);
-                if (!response.ok) throw new Error("Impossibile leggere il contenuto della cartella");
-                
                 const files = await response.json();
-                
-                let pdfFiles = files.filter(file => file.name.endsWith(".pdf"));
+                let pdfFiles = files.filter(file => file.name.toLowerCase().endsWith(".pdf"));
 
-                // NUOVA LOGICA: Ordinamento: Il file "pdf_orari_completo" va sempre per primo
+                // --- ORDINAMENTO NATURALE (Linea 1, 2, 3... 11) ---
                 pdfFiles.sort((a, b) => {
                     const isCompletoA = a.name.toLowerCase().includes("pdf_orari_completo");
                     const isCompletoB = b.name.toLowerCase().includes("pdf_orari_completo");
                     if (isCompletoA && !isCompletoB) return -1;
                     if (!isCompletoA && isCompletoB) return 1;
-                    return 0; 
+                    return a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'});
                 });
 
-                contentArea.innerHTML = '';
-
+                contentArea.innerHTML = ''; 
                 const backBtn = document.createElement('button');
                 backBtn.className = 'back-folder-btn';
                 backBtn.innerText = "← Torna alle date";
                 backBtn.onclick = cercaCartelleOrari;
                 contentArea.appendChild(backBtn);
 
-                if (pdfFiles.length === 0) {
-                    contentArea.innerHTML += `<div class="status-message">Nessun file PDF trovato in questa cartella.</div>`;
-                    return;
-                }
-
                 pdfFiles.forEach(file => {
-                    let nomePulito = "";
-                    let isCompleto = file.name.toLowerCase().includes("pdf_orari_completo");
+                    let nomePulito = file.name;
+                    let isCompleto = nomePulito.toLowerCase().includes("pdf_orari_completo");
                     
                     if (isCompleto) {
                         nomePulito = "Pdf orari completo";
                     } else {
-                        // Taglio intelligente e conversione "Actv nav" in "Orari" per gli altri file
-                        nomePulito = file.name.replace(".pdf", "").replace(/_/g, " ").split(/ dal /i)[0].replace(/actv nav/i, "Orari");
+                        // 1. Rimuove l'estensione .pdf
+                        nomePulito = nomePulito.replace(/\.pdf$/i, "");
+                        // 2. Sostituisce _ con spazi
+                        nomePulito = nomePulito.replace(/_/g, " ");
+                        // 3. Taglia via la data se presente (es. dal 02-03-2026)
+                        nomePulito = nomePulito.split(/ dal /i)[0];
+                        // 4. Rinoma Actv nav in Orari
+                        nomePulito = nomePulito.replace(/actv nav/i, "Orari");
+                        // 5. REGOLA SPECIALE: linea 2b -> linea 2/
+                        nomePulito = nomePulito.replace(/(\d+)b\b/gi, "$1/");
+                        nomePulito = nomePulito.trim();
                     }
 
                     const link = document.createElement('a');
                     link.className = 'file-btn';
                     link.innerText = nomePulito;
-                    link.href = file.download_url; 
+                    link.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${nomeCartella}/${file.name}`;
                     link.target = "_blank"; 
                     
                     if (isCompleto) {
+                        link.style.marginBottom = "25px";
+                        link.style.fontWeight = "bold";
                         link.style.textTransform = "none";
-                        link.style.marginBottom = "25px"; 
+                    } else {
+                        link.style.textTransform = "capitalize";
                     }
                     
                     contentArea.appendChild(link);
                 });
-
             } catch (error) {
-                console.error(error);
-                contentArea.innerHTML = `<div class="status-message" style="color: var(--danger);">Errore durante l'apertura della cartella.</div>`;
-                
-                const backBtn = document.createElement('button');
-                backBtn.className = 'back-folder-btn';
-                backBtn.innerText = "← Torna alle date";
-                backBtn.onclick = cercaCartelleOrari;
-                contentArea.appendChild(backBtn);
+                contentArea.innerHTML = `<div class="status-message">Errore nel caricamento.</div>`;
             }
         }
 
         window.onload = cercaCartelleOrari;
     </script>
-
 </body>
 </html>
  

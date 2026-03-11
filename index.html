@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hub Aziendale</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--primary);
+        }
+
+        /* Griglia dei bottoni principale */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr; /* Colonna singola per smartphone */
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .menu-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 20px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background-color 0.2s;
+        }
+
+        .menu-btn:active {
+            background-color: #004494;
+            transform: translateY(2px);
+        }
+
+        /* Stile della Finestra Modale (nascosta di default) */
+        .modal-overlay {
+            display: none; /* Cambiato via JS */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 350px;
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .modal-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .modal-item-btn {
+            background-color: #e9ecef;
+            color: #333;
+            border: 1px solid #ccc;
+            padding: 15px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .close-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Menu Principale</h1>
+
+    <div class="menu-grid">
+        <button class="menu-btn" onclick="location.href='calendario.html'">Calendario</button>
+        
+        <button class="menu-btn" onclick="apriModale('Turni')">Turni</button>
+        <button class="menu-btn" onclick="apriModale('Orari')">Orari</button>
+        
+        <button class="menu-btn" onclick="location.href='link.html'">Link</button>
+        <button class="menu-btn" onclick="location.href='numeri.html'">Numeri</button>
+        <button class="menu-btn" onclick="location.href='dati_calendario.html'">Dati Calendario</button>
+        <button class="menu-btn" onclick="location.href='buoni.html'">Buoni Pasto</button>
+    </div>
+
+    <div id="modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">Seleziona</h2>
+            <div id="modal-list" class="modal-list">
+                </div>
+            <button class="close-btn" onclick="chiudiModale()">Chiudi</button>
+        </div>
+    </div>
+
+    <script>
+        // Funzione per aprire la modale
+        function apriModale(tipo) {
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalList = document.getElementById('modal-list');
+
+            // Imposta il titolo (es: "Seleziona Turni" o "Seleziona Orari")
+            modalTitle.innerText = "Seleziona " + tipo;
+
+            // Svuota la lista precedente
+            modalList.innerHTML = '';
+
+            // --- QUI INSERIREMO LA LOGICA GITHUB ---
+            // Per ora mettiamo due pulsanti di esempio per farti vedere come appare
+            const dateDiEsempio = ['02-03-2026', '28-03-2026'];
+            
+            dateDiEsempio.forEach(data => {
+                const btn = document.createElement('button');
+                btn.className = 'modal-item-btn';
+                btn.innerText = tipo + " " + data;
+                btn.onclick = function() {
+                    alert("Apertura cartella: " + tipo.toLowerCase() + " del " + data);
+                    // Qui metteremo il codice per mostrare i PDF
+                };
+                modalList.appendChild(btn);
+            });
+
+            // Mostra la modale
+            modal.style.display = 'flex';
+        }
+
+        // Funzione per chiudere la modale
+        function chiudiModale() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        // Chiudi la modale se si clicca fuori dal riquadro bianco
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target === modal) {
+                chiudiModale();
+            }
+        }
+    </script>
+
+</body>
+</html>

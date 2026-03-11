@@ -1,0 +1,938 @@
+{
+  "1C01": {
+    "inizio": "17:22",
+    "luogoInizio": "P.ROMA",
+    "fine": "0:14",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "1C02": {
+    "inizio": "5:20",
+    "luogoInizio": "DEP. ARSENALE",
+    "fine": "12:15",
+    "luogoFine": "S.ZACCARIA"
+  },
+  "1C03": {
+    "inizio": "12:24",
+    "luogoInizio": "S.ZACCARIA",
+    "fine": "19:20",
+    "luogoFine": "S.TOMA'"
+  },
+  "1C04": {
+    "inizio": "4:18",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "11:22",
+    "luogoFine": "P.ROMA"
+  },
+  "1C05": {
+    "inizio": "15:42",
+    "luogoInizio": "P.ROMA",
+    "fine": "22:06",
+    "luogoFine": "P.ROMA"
+  },
+  "1C06": {
+    "inizio": "4:35",
+    "luogoInizio": "P.ROMA",
+    "fine": "11:30",
+    "luogoFine": "P.ROMA"
+  },
+  "1C07": {
+    "inizio": "6:58",
+    "luogoInizio": "DEP. ARSENALE",
+    "fine": "13:29",
+    "luogoFine": "S.ZACCARIA"
+  },
+  "1C08": {
+    "inizio": "9:45",
+    "luogoInizio": "P.ROMA",
+    "fine": "17:00",
+    "luogoFine": "S.TOMA'"
+  },
+  "1C09": {
+    "inizio": "15:07",
+    "luogoInizio": "S.TOMA'",
+    "fine": "21:57",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "1C10": {
+    "inizio": "13:04",
+    "luogoInizio": "S.ZACCARIA",
+    "fine": "20:09",
+    "luogoFine": "S.ZACCARIA"
+  },
+  "1C11": {
+    "inizio": "16:55",
+    "luogoInizio": "S.TOMA'",
+    "fine": "23:35",
+    "luogoFine": "P.ROMA"
+  },
+  "1C13": {
+    "inizio": "6:00",
+    "luogoInizio": "DEP. ARSENALE",
+    "fine": "15:12",
+    "luogoFine": "S.TOMA'"
+  },
+  "1C14": {
+    "inizio": "9:36",
+    "luogoInizio": "P.ROMA",
+    "fine": "16:00",
+    "luogoFine": "S.TOMA'"
+  },
+  "1C15": {
+    "inizio": "14:44",
+    "luogoInizio": "S.TOMA'",
+    "fine": "21:48",
+    "luogoFine": "DEP. ARSENALE"
+  },
+  "1C16": {
+    "inizio": "5:33",
+    "luogoInizio": "P.ROMA",
+    "fine": "12:42",
+    "luogoFine": "P.ROMA"
+  },
+  "1C17": {
+    "inizio": "12:04",
+    "luogoInizio": "S.ZACCARIA",
+    "fine": "19:09",
+    "luogoFine": "S.ZACCARIA"
+  },
+  "1C20": {
+    "inizio": "9:28",
+    "luogoInizio": "S.ZACCARIA",
+    "fine": "16:33",
+    "luogoFine": "S.ZACCARIA"
+  },
+  "1C21": {
+    "inizio": "4:54",
+    "luogoInizio": "S.TOMA'",
+    "fine": "11:18",
+    "luogoFine": "P.ROMA"
+  },
+  "1C22": {
+    "inizio": "6:03",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "15:00",
+    "luogoFine": "P.ROMA"
+  },
+  "1C23": {
+    "inizio": "15:45",
+    "luogoInizio": "S.TOMA'",
+    "fine": "22:33",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "1C24": {
+    "inizio": "12:07",
+    "luogoInizio": "S.TOMA'",
+    "fine": "18:42",
+    "luogoFine": "P.ROMA"
+  },
+  "1C25": {
+    "inizio": "18:00",
+    "luogoInizio": "S.ZACCARIA",
+    "fine": "0:37",
+    "luogoFine": "DEP. ARSENALE"
+  },
+  "1C26": {
+    "inizio": "15:09",
+    "luogoInizio": "P.ROMA",
+    "fine": "21:33",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "1C27": {
+    "inizio": "10:18",
+    "luogoInizio": "P.ROMA",
+    "fine": "16:42",
+    "luogoFine": "P.ROMA"
+  },
+  "1C28": {
+    "inizio": "4:03",
+    "luogoInizio": "P.ROMA",
+    "fine": "10:30",
+    "luogoFine": "P.ROMA"
+  },
+  "1C30": {
+    "inizio": "5:42",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "12:06",
+    "luogoFine": "P.ROMA"
+  },
+  "1C31": {
+    "inizio": "13:54",
+    "luogoInizio": "P.ROMA",
+    "fine": "20:18",
+    "luogoFine": "P.ROMA"
+  },
+  "1C32": {
+    "inizio": "16:05",
+    "luogoInizio": "P.ROMA",
+    "fine": "22:29",
+    "luogoFine": "P.ROMA"
+  },
+  "1C34": {
+    "inizio": "4:35",
+    "luogoInizio": "DEP. ARSENALE",
+    "fine": "11:05",
+    "luogoFine": "S.ZACCARIA"
+  },
+  "1C35": {
+    "inizio": "10:52",
+    "luogoInizio": "S.ZACCARIA",
+    "fine": "17:57",
+    "luogoFine": "S.ZACCARIA"
+  },
+  "1C36": {
+    "inizio": "11:42",
+    "luogoInizio": "P.ROMA",
+    "fine": "18:06",
+    "luogoFine": "P.ROMA"
+  },
+  "1C37": {
+    "inizio": "16:45",
+    "luogoInizio": "P.ROMA",
+    "fine": "23:09",
+    "luogoFine": "P.ROMA"
+  },
+  "1C39": {
+    "inizio": "17:40",
+    "luogoInizio": "P.ROMA",
+    "fine": "0:04",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "1C40": {
+    "inizio": "5:01",
+    "luogoInizio": "S.TOMA'",
+    "fine": "12:12",
+    "luogoFine": "S.TOMA'"
+  },
+  "1C41": {
+    "inizio": "6:12",
+    "luogoInizio": "DEP. ARSENALE",
+    "fine": "12:41",
+    "luogoFine": "S.ZACCARIA"
+  },
+  "4P01": {
+    "inizio": "4:57",
+    "luogoInizio": "DEP. F.TE NOVE",
+    "fine": "11:59",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P02": {
+    "inizio": "5:48",
+    "luogoInizio": "DEP. F.TE NOVE",
+    "fine": "12:59",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P03": {
+    "inizio": "12:21",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "19:26",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P04": {
+    "inizio": "4:21",
+    "luogoInizio": "DEP. F.TE NOVE",
+    "fine": "11:26",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P05": {
+    "inizio": "5:15",
+    "luogoInizio": "DEP. F.TE NOVE",
+    "fine": "12:08",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P06": {
+    "inizio": "13:14",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "20:39",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P07": {
+    "inizio": "12:30",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "19:19",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P08": {
+    "inizio": "4:07",
+    "luogoInizio": "DEP. F.TE NOVE",
+    "fine": "10:50",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P09": {
+    "inizio": "9:13",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "15:59",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P10": {
+    "inizio": "12:01",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "19:15",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P11": {
+    "inizio": "12:34",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "19:48",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P12": {
+    "inizio": "15:23",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "22:25",
+    "luogoFine": "DEP. F.TE NOVE"
+  },
+  "4P13": {
+    "inizio": "17:14",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "23:54",
+    "luogoFine": "DEP. F.TE NOVE"
+  },
+  "4P14": {
+    "inizio": "6:10",
+    "luogoInizio": "DEP. F.TE NOVE",
+    "fine": "12:39",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P15": {
+    "inizio": "14:41",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "21:46",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P16": {
+    "inizio": "10:34",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "17:08",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P17": {
+    "inizio": "16:01",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "23:05",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P18": {
+    "inizio": "14:03",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "21:05",
+    "luogoFine": "DEP. F.TE NOVE"
+  },
+  "4P19": {
+    "inizio": "6:08",
+    "luogoInizio": "DEP. F.TE NOVE",
+    "fine": "15:27",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P20": {
+    "inizio": "14:27",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "21:51",
+    "luogoFine": "DEP. F.TE NOVE"
+  },
+  "4P21": {
+    "inizio": "4:47",
+    "luogoInizio": "DEP. F.TE NOVE",
+    "fine": "11:46",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P22": {
+    "inizio": "16:03",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "22:27",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P23": {
+    "inizio": "6:41",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "13:19",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P24": {
+    "inizio": "5:22",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "12:42",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P25": {
+    "inizio": "9:15",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "16:19",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P26": {
+    "inizio": "5:14",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "12:25",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P27": {
+    "inizio": "7:14",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "14:08",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P28": {
+    "inizio": "6:10",
+    "luogoInizio": "DEP. F.TE NOVE",
+    "fine": "15:36",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P29": {
+    "inizio": "18:00",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "0:24",
+    "luogoFine": "DEP. F.TE NOVE"
+  },
+  "4P30": {
+    "inizio": "6:02",
+    "luogoInizio": "DEP. F.TE NOVE",
+    "fine": "15:14",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P31": {
+    "inizio": "10:34",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "17:26",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P32": {
+    "inizio": "13:21",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "20:19",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P33": {
+    "inizio": "4:14",
+    "luogoInizio": "DEP. F.TE NOVE",
+    "fine": "11:39",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P34": {
+    "inizio": "14:14",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "21:25",
+    "luogoFine": "DEP. F.TE NOVE"
+  },
+  "4P35": {
+    "inizio": "17:01",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "23:34",
+    "luogoFine": "DEP. F.TE NOVE"
+  },
+  "4P36": {
+    "inizio": "6:41",
+    "luogoInizio": "DEP. F.TE NOVE",
+    "fine": "13:46",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P37": {
+    "inizio": "5:58",
+    "luogoInizio": "DEP. ARSENALE",
+    "fine": "13:22",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P38": {
+    "inizio": "15:00",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "21:24",
+    "luogoFine": "F.TE NOVE"
+  },
+  "4P39": {
+    "inizio": "14:54",
+    "luogoInizio": "F.TE NOVE",
+    "fine": "22:07",
+    "luogoFine": "F.TE NOVE"
+  },
+  "5P01": {
+    "inizio": "4:15",
+    "luogoInizio": "DEP.S.ELENA",
+    "fine": "10:59",
+    "luogoFine": "LIDO"
+  },
+  "5P02": {
+    "inizio": "6:04",
+    "luogoInizio": "S.ZACCARIA",
+    "fine": "15:13",
+    "luogoFine": "LIDO"
+  },
+  "5P03": {
+    "inizio": "9:44",
+    "luogoInizio": "LIDO",
+    "fine": "16:29",
+    "luogoFine": "LIDO"
+  },
+  "5P04": {
+    "inizio": "13:54",
+    "luogoInizio": "LIDO",
+    "fine": "20:49",
+    "luogoFine": "DEP.S.ELENA"
+  },
+  "5P05": {
+    "inizio": "18:38",
+    "luogoInizio": "LIDO",
+    "fine": "1:02",
+    "luogoFine": "DEP.S.ELENA"
+  },
+  "5P06": {
+    "inizio": "5:36",
+    "luogoInizio": "S.ZACCARIA",
+    "fine": "12:20",
+    "luogoFine": "LIDO"
+  },
+  "5P07": {
+    "inizio": "12:30",
+    "luogoInizio": "S.ZACCARIA",
+    "fine": "18:54",
+    "luogoFine": "LIDO"
+  },
+  "5P08": {
+    "inizio": "6:25",
+    "luogoInizio": "DEP.S.ELENA",
+    "fine": "15:54",
+    "luogoFine": "LIDO"
+  },
+  "5P09": {
+    "inizio": "12:24",
+    "luogoInizio": "LIDO",
+    "fine": "18:48",
+    "luogoFine": "LIDO"
+  },
+  "5P10": {
+    "inizio": "13:10",
+    "luogoInizio": "S.ZACCARIA",
+    "fine": "19:35",
+    "luogoFine": "LIDO"
+  },
+  "5P11": {
+    "inizio": "16:34",
+    "luogoInizio": "LIDO",
+    "fine": "23:45",
+    "luogoFine": "LIDO"
+  },
+  "5P12": {
+    "inizio": "7:15",
+    "luogoInizio": "LIDO",
+    "fine": "13:39",
+    "luogoFine": "LIDO"
+  },
+  "5P13": {
+    "inizio": "15:14",
+    "luogoInizio": "LIDO",
+    "fine": "21:38",
+    "luogoFine": "LIDO"
+  },
+  "5P14": {
+    "inizio": "14:31",
+    "luogoInizio": "LIDO",
+    "fine": "20:55",
+    "luogoFine": "LIDO"
+  },
+  "5P15": {
+    "inizio": "14:10",
+    "luogoInizio": "LIDO",
+    "fine": "21:32",
+    "luogoFine": "LIDO"
+  },
+  "5P18": {
+    "inizio": "5:27",
+    "luogoInizio": "DEP.S.ELENA",
+    "fine": "12:40",
+    "luogoFine": "LIDO"
+  },
+  "5P19": {
+    "inizio": "15:38",
+    "luogoInizio": "LIDO",
+    "fine": "22:02",
+    "luogoFine": "DEP.S.ELENA"
+  },
+  "5P20": {
+    "inizio": "17:24",
+    "luogoInizio": "LIDO",
+    "fine": "0:10",
+    "luogoFine": "DEP.S.ELENA"
+  },
+  "5P21": {
+    "inizio": "5:57",
+    "luogoInizio": "DEP.S.ELENA",
+    "fine": "13:09",
+    "luogoFine": "LIDO"
+  },
+  "5P22": {
+    "inizio": "9:14",
+    "luogoInizio": "LIDO",
+    "fine": "16:15",
+    "luogoFine": "S.ZACCARIA"
+  },
+  "5P23": {
+    "inizio": "11:14",
+    "luogoInizio": "LIDO",
+    "fine": "17:49",
+    "luogoFine": "LIDO"
+  },
+  "5P24": {
+    "inizio": "6:17",
+    "luogoInizio": "DEP.S.ELENA",
+    "fine": "15:22",
+    "luogoFine": "LIDO"
+  },
+  "5P26": {
+    "inizio": "7:00",
+    "luogoInizio": "LIDO",
+    "fine": "13:24",
+    "luogoFine": "S.ZACCARIA"
+  },
+  "5P27": {
+    "inizio": "5:15",
+    "luogoInizio": "DEP.S.ELENA",
+    "fine": "12:05",
+    "luogoFine": "LIDO"
+  },
+  "5P28": {
+    "inizio": "6:30",
+    "luogoInizio": "LIDO",
+    "fine": "13:15",
+    "luogoFine": "S.ZACCARIA"
+  },
+  "5P29": {
+    "inizio": "11:24",
+    "luogoInizio": "LIDO",
+    "fine": "18:35",
+    "luogoFine": "S.ZACCARIA"
+  },
+  "6P01": {
+    "inizio": "5:37",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "12:01",
+    "luogoFine": "P.ROMA"
+  },
+  "6P02": {
+    "inizio": "6:40",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "13:41",
+    "luogoFine": "P.ROMA"
+  },
+  "6P03": {
+    "inizio": "6:53",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "15:56",
+    "luogoFine": "P.ROMA"
+  },
+  "6P04": {
+    "inizio": "12:36",
+    "luogoInizio": "P.ROMA",
+    "fine": "19:41",
+    "luogoFine": "P.ROMA"
+  },
+  "6P05": {
+    "inizio": "6:20",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "13:21",
+    "luogoFine": "P.ROMA"
+  },
+  "6P06": {
+    "inizio": "14:16",
+    "luogoInizio": "P.ROMA",
+    "fine": "20:56",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "6P07": {
+    "inizio": "14:36",
+    "luogoInizio": "P.ROMA",
+    "fine": "21:16",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "6P08": {
+    "inizio": "13:56",
+    "luogoInizio": "P.ROMA",
+    "fine": "20:56",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "6P09": {
+    "inizio": "15:05",
+    "luogoInizio": "P.ROMA",
+    "fine": "21:36",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "6P10": {
+    "inizio": "7:36",
+    "luogoInizio": "P.ROMA",
+    "fine": "14:21",
+    "luogoFine": "P.ROMA"
+  },
+  "6P11": {
+    "inizio": "6:33",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "15:36",
+    "luogoFine": "P.ROMA"
+  },
+  "3P01": {
+    "inizio": "5:58",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "12:22",
+    "luogoFine": "P.ROMA"
+  },
+  "3P02": {
+    "inizio": "6:28",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "12:52",
+    "luogoFine": "P.ROMA"
+  },
+  "3P03": {
+    "inizio": "12:47",
+    "luogoInizio": "P.ROMA",
+    "fine": "19:37",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "3P04": {
+    "inizio": "12:17",
+    "luogoInizio": "P.ROMA",
+    "fine": "19:07",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "3P05": {
+    "inizio": "13:50",
+    "luogoInizio": "P.ROMA",
+    "fine": "21:12",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "2C06": {
+    "inizio": "4:40",
+    "luogoInizio": "DEP. ARSENALE",
+    "fine": "11:26",
+    "luogoFine": "M.V.E."
+  },
+  "2C07": {
+    "inizio": "5:27",
+    "luogoInizio": "M.V.E.",
+    "fine": "12:25",
+    "luogoFine": "M.V.E."
+  },
+  "2C08": {
+    "inizio": "5:26",
+    "luogoInizio": "DEP. ARSENALE",
+    "fine": "11:50",
+    "luogoFine": "M.V.E."
+  },
+  "2C09": {
+    "inizio": "11:02",
+    "luogoInizio": "M.V.E.",
+    "fine": "18:26",
+    "luogoFine": "M.V.E."
+  },
+  "2C10": {
+    "inizio": "12:32",
+    "luogoInizio": "M.V.E.",
+    "fine": "19:37",
+    "luogoFine": "M.V.E."
+  },
+  "2C11": {
+    "inizio": "13:20",
+    "luogoInizio": "M.V.E.",
+    "fine": "20:34",
+    "luogoFine": "DEP. ARSENALE"
+  },
+  "2C12": {
+    "inizio": "14:46",
+    "luogoInizio": "M.V.E.",
+    "fine": "21:10",
+    "luogoFine": "DEP. ARSENALE"
+  },
+  "2C13": {
+    "inizio": "17:52",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "0:54",
+    "luogoFine": "P.ROMA"
+  },
+  "2C14": {
+    "inizio": "16:48",
+    "luogoInizio": "P.ROMA",
+    "fine": "23:12",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "2C15": {
+    "inizio": "6:00",
+    "luogoInizio": "M.V.E.",
+    "fine": "15:13",
+    "luogoFine": "M.V.E."
+  },
+  "2C16": {
+    "inizio": "6:01",
+    "luogoInizio": "M.V.E.",
+    "fine": "14:50",
+    "luogoFine": "M.V.E."
+  },
+  "2C17": {
+    "inizio": "6:33",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "15:47",
+    "luogoFine": "P.ROMA"
+  },
+  "2C18": {
+    "inizio": "4:16",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "11:23",
+    "luogoFine": "P.ROMA"
+  },
+  "2C19": {
+    "inizio": "4:42",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "11:48",
+    "luogoFine": "S.TOMA'"
+  },
+  "2C20": {
+    "inizio": "5:14",
+    "luogoInizio": "P.ROMA",
+    "fine": "11:59",
+    "luogoFine": "P.ROMA"
+  },
+  "2C21": {
+    "inizio": "12:35",
+    "luogoInizio": "P.ROMA",
+    "fine": "18:59",
+    "luogoFine": "P.ROMA"
+  },
+  "2C22": {
+    "inizio": "7:59",
+    "luogoInizio": "P.ROMA",
+    "fine": "14:23",
+    "luogoFine": "P.ROMA"
+  },
+  "2C23": {
+    "inizio": "13:06",
+    "luogoInizio": "P.ROMA",
+    "fine": "20:26",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "2C24": {
+    "inizio": "15:24",
+    "luogoInizio": "P.ROMA",
+    "fine": "22:19",
+    "luogoFine": "P.ROMA"
+  },
+  "2C26": {
+    "inizio": "16:18",
+    "luogoInizio": "P.ROMA",
+    "fine": "23:14",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "2C27": {
+    "inizio": "9:13",
+    "luogoInizio": "M.V.E.",
+    "fine": "15:37",
+    "luogoFine": "M.V.E."
+  },
+  "2C28": {
+    "inizio": "6:45",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "13:35",
+    "luogoFine": "P.ROMA"
+  },
+  "2C29": {
+    "inizio": "9:13",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "16:21",
+    "luogoFine": "P.ROMA"
+  },
+  "2C30": {
+    "inizio": "12:13",
+    "luogoInizio": "M.V.E.",
+    "fine": "18:37",
+    "luogoFine": "M.V.E."
+  },
+  "2C31": {
+    "inizio": "13:14",
+    "luogoInizio": "P.ROMA",
+    "fine": "20:21",
+    "luogoFine": "P.ROMA"
+  },
+  "2C32": {
+    "inizio": "15:18",
+    "luogoInizio": "P.ROMA",
+    "fine": "21:48",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "2C33": {
+    "inizio": "6:37",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "15:38",
+    "luogoFine": "P.ROMA"
+  },
+  "2C34": {
+    "inizio": "14:55",
+    "luogoInizio": "P.ROMA",
+    "fine": "21:19",
+    "luogoFine": "P.ROMA"
+  },
+  "2C35": {
+    "inizio": "14:06",
+    "luogoInizio": "P.ROMA",
+    "fine": "20:50",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "2C36": {
+    "inizio": "11:21",
+    "luogoInizio": "P.ROMA",
+    "fine": "17:45",
+    "luogoFine": "P.ROMA"
+  },
+  "2C38": {
+    "inizio": "6:41",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "13:45",
+    "luogoFine": "P.ROMA"
+  },
+  "2C39": {
+    "inizio": "6:13",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "12:59",
+    "luogoFine": "P.ROMA"
+  },
+  "2C40": {
+    "inizio": "6:09",
+    "luogoInizio": "P.ROMA",
+    "fine": "15:35",
+    "luogoFine": "P.ROMA"
+  },
+  "2C41": {
+    "inizio": "6:09",
+    "luogoInizio": "P.ROMA",
+    "fine": "12:33",
+    "luogoFine": "P.ROMA"
+  },
+  "2C42": {
+    "inizio": "5:41",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "12:30",
+    "luogoFine": "P.ROMA"
+  },
+  "2C43": {
+    "inizio": "6:35",
+    "luogoInizio": "DEP. TRONCHETT",
+    "fine": "13:09",
+    "luogoFine": "P.ROMA"
+  },
+  "2C44": {
+    "inizio": "7:47",
+    "luogoInizio": "P.ROMA",
+    "fine": "15:09",
+    "luogoFine": "P.ROMA"
+  },
+  "2C45": {
+    "inizio": "15:30",
+    "luogoInizio": "P.ROMA",
+    "fine": "22:54",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "2C46": {
+    "inizio": "14:14",
+    "luogoInizio": "P.ROMA",
+    "fine": "20:38",
+    "luogoFine": "DEP. TRONCHETT"
+  },
+  "2C47": {
+    "inizio": "14:21",
+    "luogoInizio": "P.ROMA",
+    "fine": "20:45",
+    "luogoFine": "P.ROMA"
+  }
+}

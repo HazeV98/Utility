@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Turni Aziendali</title>
+    <title>Turni</title>
     <style>
         :root {
             --primary: #0056b3;
             --bg-color: #f4f7f6;
             --text-color: #333;
             --danger: #dc3545;
+            --success: #28a745;
         }
 
         body {
@@ -23,7 +24,7 @@
             align-items: center;
         }
 
-        /* --- HEADER --- */
+        /* --- HEADER E MENU LATERALE --- */
         .header {
             width: 100%;
             max-width: 400px;
@@ -58,26 +59,8 @@
         }
 
         .sidebar.open { left: 0; }
-
-        .sidebar-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 20px; background-color: var(--primary); color: white;
-        }
-
-        .sidebar-header h3 { margin: 0; color: white; }
-
-        .close-sidebar {
-            background: none; border: none; font-size: 24px; color: white; cursor: pointer;
-        }
-
-        .sidebar-link {
-            padding: 15px 20px; text-decoration: none; color: var(--text-color);
-            font-size: 18px; border-bottom: 1px solid #eee; display: block;
-        }
-
-        .sidebar-link:active, .sidebar-link:hover {
-            background-color: #f4f7f6; color: var(--primary); font-weight: bold;
-        }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: var(--primary); color: white; }
+        .sidebar-link { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 18px; border-bottom: 1px solid #eee; display: block; }
 
         /* --- CONTENUTI --- */
         .content-area {
@@ -111,24 +94,45 @@
             text-align: center;
         }
 
+        /* --- STRUTTURA RIGA FILE --- */
+        .file-row {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
         .file-btn {
+            flex-grow: 1; /* Prende tutto lo spazio a sinistra */
             background-color: var(--primary);
             color: white;
             border: none;
             padding: 16px;
             font-size: 16px;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             text-align: center;
             text-decoration: none;
             display: block;
-            text-transform: none; /* Impedisce al CSS di alterare i nomi */
         }
 
-        .file-btn:active {
-            background-color: #004494;
+        .download-btn {
+            width: 55px; /* Tasto quadrato a destra */
+            background-color: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-size: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .file-btn:active, .download-btn:active {
             transform: translateY(2px);
+            opacity: 0.9;
         }
 
         .back-folder-btn {
@@ -156,7 +160,7 @@
     <div id="sidebar" class="sidebar">
         <div class="sidebar-header">
             <h3>Menu</h3>
-            <button class="close-sidebar" onclick="chiudiMenuLaterale()">✕</button>
+            <button style="background:none; border:none; color:white; font-size:24px;" onclick="chiudiMenuLaterale()">✕</button>
         </div>
         <a href="index.html" class="sidebar-link">🏠 Home Page</a>
         <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
@@ -257,46 +261,44 @@
                 }
 
                 pdfFiles.forEach(file => {
-                    let nomePulito = file.name;
-                    let isLibroCompleto = nomePulito.toLowerCase().includes("libro_turni_completo");
+                    let nomeOriginale = file.name;
+                    let nomePulito = "";
+                    let isLibroCompleto = nomeOriginale.toLowerCase().includes("libro_turni_completo");
                     
                     if (isLibroCompleto) {
                         nomePulito = "Libro turni completo";
                     } else {
-                        // 1. Rimuoviamo SOLO l'estensione finale .pdf
-                        nomePulito = nomePulito.replace(/\.pdf$/i, "");
-                        
-                        // 2. Sostituiamo gli underscore con gli spazi
-                        nomePulito = nomePulito.replace(/_/g, " ");
-                        
-                        // 3. Tagliamo alla parola " dal " usando una regex che non si fermi ai punti decimale
-                        //    Cerca uno spazio, seguito da 'dal', seguito da uno spazio
-                        let parti = nomePulito.split(/\s+dal\s+/i);
-                        nomePulito = parti[0];
-                        
-                        // 4. Puliamo eventuali residui di ".pdf" o " pdf" rimasti attaccati al nome della linea
-                        nomePulito = nomePulito.replace(/[\.\s]pdf\s*$/i, "");
-                        
-                        // 5. Normalizziamo "linea" in minuscolo e gestiamo la prima lettera maiuscola
-                        nomePulito = nomePulito.trim();
-                        nomePulito = nomePulito.replace(/\blinea\b/gi, "linea");
-                        
-                        // Solo la 'T' iniziale di Turni diventa maiuscola, preservando M1, PO, ecc.
-                        nomePulito = nomePulito.charAt(0).toUpperCase() + nomePulito.slice(1);
+                        let n = nomeOriginale.replace(/\.pdf$/i, "");
+                        n = n.replace(/_/g, " ");
+                        n = n.split(/\s+dal\s+/i)[0];
+                        n = n.replace(/[\.\s]pdf\s*$/i, "").trim();
+                        n = n.replace(/\blinea\b/gi, "linea");
+                        nomePulito = n.charAt(0).toUpperCase() + n.slice(1);
                     }
 
-                    const link = document.createElement('a');
-                    link.className = 'file-btn';
-                    link.innerText = nomePulito;
-                    link.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${nomeCartella}/${file.name}`;
-                    link.target = "_blank"; 
-                    
-                    if (isLibroCompleto) {
-                        link.style.marginBottom = "25px";
-                        link.style.fontWeight = "bold";
-                    }
-                    
-                    contentArea.appendChild(link);
+                    // Creazione contenitore riga
+                    const row = document.createElement('div');
+                    row.className = 'file-row';
+                    if (isLibroCompleto) row.style.marginBottom = "15px";
+
+                    // Tasto APRI (Browser)
+                    const linkOpen = document.createElement('a');
+                    linkOpen.className = 'file-btn';
+                    linkOpen.innerText = nomePulito;
+                    linkOpen.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${nomeCartella}/${file.name}`;
+                    linkOpen.target = "_blank"; 
+                    if (isLibroCompleto) linkOpen.style.fontWeight = "bold";
+
+                    // Tasto DOWNLOAD (Diretto)
+                    const linkDown = document.createElement('a');
+                    linkDown.className = 'download-btn';
+                    linkDown.innerHTML = "⬇️";
+                    linkDown.href = file.download_url; // Usa il link raw di GitHub che forza il download
+                    linkDown.setAttribute('download', file.name);
+
+                    row.appendChild(linkOpen);
+                    row.appendChild(linkDown);
+                    contentArea.appendChild(row);
                 });
             } catch (error) {
                 contentArea.innerHTML = `<div class="status-message">Errore nel caricamento dei file.</div>`;

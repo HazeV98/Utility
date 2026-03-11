@@ -197,8 +197,6 @@
 
             try {
                 const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error("Impossibile leggere la repository");
-                
                 const files = await response.json();
                 const cartelleTurni = files.filter(file => file.type === "dir" && (file.name.startsWith("turni_pdf_") || file.name.startsWith("turni_varianti_")));
 
@@ -229,7 +227,7 @@
                     apriCartellaSelezionata(cartelleTurni[0].name);
                 }
             } catch (error) {
-                contentArea.innerHTML = `<div class="status-message" style="color: var(--danger);">Errore di connessione a GitHub.</div>`;
+                contentArea.innerHTML = `<div class="status-message">Errore di connessione.</div>`;
             }
         }
 
@@ -243,12 +241,17 @@
                 const files = await response.json();
                 let pdfFiles = files.filter(file => file.name.toLowerCase().endsWith(".pdf"));
 
+                // --- ORDINAMENTO NATURALE (Linea 1, Linea 2... Linea 11) ---
                 pdfFiles.sort((a, b) => {
                     const isLibroA = a.name.toLowerCase().includes("libro_turni_completo");
                     const isLibroB = b.name.toLowerCase().includes("libro_turni_completo");
+                    
+                    // Priorità al Libro Completo
                     if (isLibroA && !isLibroB) return -1;
                     if (!isLibroA && isLibroB) return 1;
-                    return 0; 
+
+                    // Ordinamento Naturale per tutto il resto
+                    return a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'});
                 });
 
                 contentArea.innerHTML = ''; 
@@ -259,26 +262,33 @@
                 contentArea.appendChild(backBtn);
 
                 pdfFiles.forEach(file => {
-                    let nomePulito = "";
-                    let isLibroCompleto = file.name.toLowerCase().includes("libro_turni_completo");
+                    let nomePulito = file.name;
+                    let isLibroCompleto = nomePulito.toLowerCase().includes("libro_turni_completo");
                     
                     if (isLibroCompleto) {
                         nomePulito = "Libro turni completo";
                     } else {
-                        // Rimuove .pdf, sostituisce _ con spazio e taglia dal primo " dal " incontrato
-                        nomePulito = file.name.replace(/\.pdf$/i, "").replace(/_/g, " ").split(/ dal /i)[0];
+                        // 1. Rimuove l'estensione .pdf (senza case sensitivity)
+                        nomePulito = nomePulito.replace(/\.pdf$/i, "");
+                        // 2. Sostituisce i trattini bassi con spazi
+                        nomePulito = nomePulito.replace(/_/g, " ");
+                        // 3. Taglia tutto quello che viene dopo " dal " (se presente)
+                        nomePulito = nomePulito.split(/ dal /i)[0];
+                        // 4. Rimuove eventuali spazi bianchi rimasti ai lati
+                        nomePulito = nomePulito.trim();
                     }
 
                     const link = document.createElement('a');
                     link.className = 'file-btn';
                     link.innerText = nomePulito;
-                    // Link per apertura diretta nel browser tramite GitHub Pages
+                    // Link diretto per apertura nel browser
                     link.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${nomeCartella}/${file.name}`;
                     link.target = "_blank"; 
                     
                     if (isLibroCompleto) {
-                        link.style.marginBottom = "25px"; 
+                        link.style.marginBottom = "25px";
                         link.style.fontWeight = "bold";
+                        link.style.textTransform = "none";
                     } else {
                         link.style.textTransform = "capitalize";
                     }
@@ -286,7 +296,7 @@
                     contentArea.appendChild(link);
                 });
             } catch (error) {
-                contentArea.innerHTML = `<div class="status-message" style="color: var(--danger);">Errore nel caricamento dei file.</div>`;
+                contentArea.innerHTML = `<div class="status-message">Errore nel caricamento.</div>`;
             }
         }
 

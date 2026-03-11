@@ -123,7 +123,12 @@
             text-align: center;
             text-decoration: none;
             display: block;
-            text-transform: none; /* Impedisce al browser di forzare maiuscole indesiderate */
+            text-transform: none; /* Impedisce al CSS di alterare i nomi */
+        }
+
+        .file-btn:active {
+            background-color: #004494;
+            transform: translateY(2px);
         }
 
         .back-folder-btn {
@@ -233,7 +238,6 @@
                 const files = await response.json();
                 let pdfFiles = files.filter(file => file.name.toLowerCase().endsWith(".pdf"));
 
-                // Ordinamento naturale (1, 2, 11)
                 pdfFiles.sort((a, b) => {
                     const isLibroA = a.name.toLowerCase().includes("libro_turni_completo");
                     const isLibroB = b.name.toLowerCase().includes("libro_turni_completo");
@@ -253,32 +257,32 @@
                 }
 
                 pdfFiles.forEach(file => {
-                    let nomeOriginale = file.name;
-                    let nomePulito = "";
-                    let isLibroCompleto = nomeOriginale.toLowerCase().includes("libro_turni_completo");
+                    let nomePulito = file.name;
+                    let isLibroCompleto = nomePulito.toLowerCase().includes("libro_turni_completo");
                     
                     if (isLibroCompleto) {
                         nomePulito = "Libro turni completo";
                     } else {
-                        // 1. Rimuove solo l'estensione finale .pdf
-                        let n = nomeOriginale.replace(/\.pdf$/i, "");
+                        // 1. Rimuoviamo SOLO l'estensione finale .pdf
+                        nomePulito = nomePulito.replace(/\.pdf$/i, "");
                         
-                        // 2. Sostituisce i trattini bassi con spazi
-                        n = n.replace(/_/g, " ");
+                        // 2. Sostituiamo gli underscore con gli spazi
+                        nomePulito = nomePulito.replace(/_/g, " ");
                         
-                        // 3. Taglia alla data preservando i numeri decimali (cerca " dal " con spazi intorno)
-                        n = n.split(/\s+dal\s+/i)[0];
+                        // 3. Tagliamo alla parola " dal " usando una regex che non si fermi ai punti decimale
+                        //    Cerca uno spazio, seguito da 'dal', seguito da uno spazio
+                        let parti = nomePulito.split(/\s+dal\s+/i);
+                        nomePulito = parti[0];
                         
-                        // 4. Toglie la parola "pdf" se è rimasta isolata in fondo
-                        n = n.replace(/\s+pdf$/i, "").trim();
+                        // 4. Puliamo eventuali residui di ".pdf" o " pdf" rimasti attaccati al nome della linea
+                        nomePulito = nomePulito.replace(/[\.\s]pdf\s*$/i, "");
                         
-                        // 5. TRATTAMENTO MAIUSCOLE:
-                        // Sostituisce "Linea" o "LINEA" con "linea" (minuscolo)
-                        n = n.replace(/\blinea\b/gi, "linea");
+                        // 5. Normalizziamo "linea" in minuscolo e gestiamo la prima lettera maiuscola
+                        nomePulito = nomePulito.trim();
+                        nomePulito = nomePulito.replace(/\blinea\b/gi, "linea");
                         
-                        // Forza solo la prima lettera del bottone in maiuscolo (La "T" di Turni)
-                        // Senza toccare il resto (M1, PO, ecc. restano come sono nel file)
-                        nomePulito = n.charAt(0).toUpperCase() + n.slice(1);
+                        // Solo la 'T' iniziale di Turni diventa maiuscola, preservando M1, PO, ecc.
+                        nomePulito = nomePulito.charAt(0).toUpperCase() + nomePulito.slice(1);
                     }
 
                     const link = document.createElement('a');
@@ -303,3 +307,4 @@
     </script>
 </body>
 </html>
+ 

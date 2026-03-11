@@ -118,7 +118,6 @@
             transform: translateY(2px);
         }
 
-        /* Bottone per i singoli file PDF */
         .file-btn {
             background-color: var(--primary);
             color: white;
@@ -131,7 +130,6 @@
             text-align: center;
             text-decoration: none;
             display: block;
-            text-transform: capitalize; 
         }
 
         .file-btn:active {
@@ -202,7 +200,6 @@
                 if (!response.ok) throw new Error("Impossibile leggere la repository");
                 
                 const files = await response.json();
-                
                 const cartelleTurni = files.filter(file => file.type === "dir" && (file.name.startsWith("turni_pdf_") || file.name.startsWith("turni_varianti_")));
 
                 if (cartelleTurni.length === 0) {
@@ -211,53 +208,41 @@
                 }
 
                 contentArea.innerHTML = '';
-
                 if (cartelleTurni.length > 1) {
                     cartelleTurni.sort((a, b) => b.name.localeCompare(a.name));
-
                     cartelleTurni.forEach(cartella => {
                         const btn = document.createElement('button');
                         btn.className = 'folder-btn';
-
                         if (cartella.name.startsWith("turni_pdf_")) {
                             const dataGrezza = cartella.name.replace("turni_pdf_", "");
                             const partiData = dataGrezza.split("-");
                             const dataFormattata = partiData.length === 3 ? `${partiData[2]}-${partiData[1]}-${partiData[0]}` : dataGrezza;
                             btn.innerText = `Turni dal ${dataFormattata}`;
-                        } 
-                        else if (cartella.name.startsWith("turni_varianti_")) {
+                        } else if (cartella.name.startsWith("turni_varianti_")) {
                             let nomeSpeciale = cartella.name.replace("turni_varianti_", "").replace(/_/g, " ");
                             btn.innerText = nomeSpeciale.charAt(0).toUpperCase() + nomeSpeciale.slice(1);
                         }
-
                         btn.onclick = () => apriCartellaSelezionata(cartella.name);
                         contentArea.appendChild(btn);
                     });
                 } else {
                     apriCartellaSelezionata(cartelleTurni[0].name);
                 }
-
             } catch (error) {
-                console.error(error);
-                contentArea.innerHTML = `<div class="status-message" style="color: var(--danger);">Errore di connessione a GitHub. Riprova più tardi.</div>`;
+                contentArea.innerHTML = `<div class="status-message" style="color: var(--danger);">Errore di connessione a GitHub.</div>`;
             }
         }
 
         async function apriCartellaSelezionata(nomeCartella) {
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = `<div class="status-message">Caricamento file...</div>`;
-            
             const apiUrlCartella = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${nomeCartella}`;
 
             try {
                 const response = await fetch(apiUrlCartella);
-                if (!response.ok) throw new Error("Impossibile leggere il contenuto della cartella");
-                
                 const files = await response.json();
-                
-                let pdfFiles = files.filter(file => file.name.endsWith(".pdf"));
+                let pdfFiles = files.filter(file => file.name.toLowerCase().endsWith(".pdf"));
 
-                // Ordinamento: Il file "libro_turni_completo" va sempre per primo
                 pdfFiles.sort((a, b) => {
                     const isLibroA = a.name.toLowerCase().includes("libro_turni_completo");
                     const isLibroB = b.name.toLowerCase().includes("libro_turni_completo");
@@ -267,17 +252,11 @@
                 });
 
                 contentArea.innerHTML = ''; 
-
                 const backBtn = document.createElement('button');
                 backBtn.className = 'back-folder-btn';
                 backBtn.innerText = "← Torna alle date";
                 backBtn.onclick = cercaCartelleTurni;
                 contentArea.appendChild(backBtn);
-
-                if (pdfFiles.length === 0) {
-                    contentArea.innerHTML += `<div class="status-message">Nessun file PDF trovato in questa cartella.</div>`;
-                    return;
-                }
 
                 pdfFiles.forEach(file => {
                     let nomePulito = "";
@@ -286,38 +265,33 @@
                     if (isLibroCompleto) {
                         nomePulito = "Libro turni completo";
                     } else {
-                        nomePulito = file.name.replace(".pdf", "").replace(/_/g, " ").split(/ dal /i)[0];
+                        // Rimuove .pdf, sostituisce _ con spazio e taglia dal primo " dal " incontrato
+                        nomePulito = file.name.replace(/\.pdf$/i, "").replace(/_/g, " ").split(/ dal /i)[0];
                     }
 
                     const link = document.createElement('a');
                     link.className = 'file-btn';
                     link.innerText = nomePulito;
-                    link.href = file.download_url; 
+                    // Link per apertura diretta nel browser tramite GitHub Pages
+                    link.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${nomeCartella}/${file.name}`;
                     link.target = "_blank"; 
                     
                     if (isLibroCompleto) {
-                        link.style.textTransform = "none";
                         link.style.marginBottom = "25px"; 
+                        link.style.fontWeight = "bold";
+                    } else {
+                        link.style.textTransform = "capitalize";
                     }
                     
                     contentArea.appendChild(link);
                 });
-
             } catch (error) {
-                console.error(error);
-                contentArea.innerHTML = `<div class="status-message" style="color: var(--danger);">Errore durante l'apertura della cartella.</div>`;
-                
-                const backBtn = document.createElement('button');
-                backBtn.className = 'back-folder-btn';
-                backBtn.innerText = "← Torna alle date";
-                backBtn.onclick = cercaCartelleTurni;
-                contentArea.appendChild(backBtn);
+                contentArea.innerHTML = `<div class="status-message" style="color: var(--danger);">Errore nel caricamento dei file.</div>`;
             }
         }
 
         window.onload = cercaCartelleTurni;
     </script>
-
 </body>
 </html>
  

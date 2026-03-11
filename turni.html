@@ -23,7 +23,7 @@
             align-items: center;
         }
 
-        /* --- HEADER E MENU --- */
+        /* --- HEADER E MENU LATERALE --- */
         .header {
             width: 100%;
             max-width: 400px;
@@ -79,7 +79,7 @@
             background-color: #f4f7f6; color: var(--primary); font-weight: bold;
         }
 
-        /* --- CONTENUTI --- */
+        /* --- STILI PAGINA TURNI --- */
         .content-area {
             width: 100%;
             max-width: 400px;
@@ -178,6 +178,7 @@
 
         const GITHUB_USER = "HazeV98"; 
         const GITHUB_REPO = "Utility";
+        let numCartelleTrovate = 0; // Variabile globale per gestire il tasto "indietro"
 
         async function cercaCartelleTurni() {
             const contentArea = document.getElementById('content-area');
@@ -188,30 +189,37 @@
                 const files = await response.json();
                 const cartelleTurni = files.filter(file => file.type === "dir" && (file.name.startsWith("turni_pdf_") || file.name.startsWith("turni_varianti_")));
 
-                if (cartelleTurni.length === 0) {
+                numCartelleTrovate = cartelleTurni.length;
+
+                if (numCartelleTrovate === 0) {
                     contentArea.innerHTML = `<div class="status-message">Nessuna cartella turni trovata.</div>`;
                     return;
                 }
 
-                contentArea.innerHTML = '';
-                // Ordina le cartelle per data decrescente
-                cartelleTurni.sort((a, b) => b.name.localeCompare(a.name));
+                if (numCartelleTrovate === 1) {
+                    // SE C'È UNA SOLA CARTELLA: entra direttamente senza mostrare nulla
+                    apriCartellaSelezionata(cartelleTurni[0].name);
+                } else {
+                    // SE CI SONO PIÙ CARTELLE: mostra la lista
+                    contentArea.innerHTML = '';
+                    cartelleTurni.sort((a, b) => b.name.localeCompare(a.name));
 
-                cartelleTurni.forEach(cartella => {
-                    const btn = document.createElement('button');
-                    btn.className = 'folder-btn';
-                    if (cartella.name.startsWith("turni_pdf_")) {
-                        const dataGrezza = cartella.name.replace("turni_pdf_", "");
-                        const partiData = dataGrezza.split("-");
-                        const dataFormattata = partiData.length === 3 ? `${partiData[2]}-${partiData[1]}-${partiData[0]}` : dataGrezza;
-                        btn.innerText = `Turni dal ${dataFormattata}`;
-                    } else {
-                        let nomeSpeciale = cartella.name.replace("turni_varianti_", "").replace(/_/g, " ");
-                        btn.innerText = nomeSpeciale.charAt(0).toUpperCase() + nomeSpeciale.slice(1);
-                    }
-                    btn.onclick = () => apriCartellaSelezionata(cartella.name);
-                    contentArea.appendChild(btn);
-                });
+                    cartelleTurni.forEach(cartella => {
+                        const btn = document.createElement('button');
+                        btn.className = 'folder-btn';
+                        if (cartella.name.startsWith("turni_pdf_")) {
+                            const dataGrezza = cartella.name.replace("turni_pdf_", "");
+                            const partiData = dataGrezza.split("-");
+                            const dataFormattata = partiData.length === 3 ? `${partiData[2]}-${partiData[1]}-${partiData[0]}` : dataGrezza;
+                            btn.innerText = `Turni dal ${dataFormattata}`;
+                        } else {
+                            let nomeSpeciale = cartella.name.replace("turni_varianti_", "").replace(/_/g, " ");
+                            btn.innerText = nomeSpeciale.charAt(0).toUpperCase() + nomeSpeciale.slice(1);
+                        }
+                        btn.onclick = () => apriCartellaSelezionata(cartella.name);
+                        contentArea.appendChild(btn);
+                    });
+                }
             } catch (error) {
                 contentArea.innerHTML = `<div class="status-message">Errore di connessione.</div>`;
             }
@@ -227,7 +235,7 @@
                 const files = await response.json();
                 let pdfFiles = files.filter(file => file.name.toLowerCase().endsWith(".pdf"));
 
-                // --- ORDINAMENTO NATURALE (1, 2, 3... 11) ---
+                // Ordinamento naturale (1, 2, 3... 11)
                 pdfFiles.sort((a, b) => {
                     const isLibroA = a.name.toLowerCase().includes("libro_turni_completo");
                     const isLibroB = b.name.toLowerCase().includes("libro_turni_completo");
@@ -237,11 +245,15 @@
                 });
 
                 contentArea.innerHTML = ''; 
-                const backBtn = document.createElement('button');
-                backBtn.className = 'back-folder-btn';
-                backBtn.innerText = "← Torna alle date";
-                backBtn.onclick = cercaCartelleTurni;
-                contentArea.appendChild(backBtn);
+
+                // MOSTRA IL TASTO INDIETRO SOLO SE CI SONO PIÙ CARTELLE
+                if (numCartelleTrovate > 1) {
+                    const backBtn = document.createElement('button');
+                    backBtn.className = 'back-folder-btn';
+                    backBtn.innerText = "← Torna alle date";
+                    backBtn.onclick = cercaCartelleTurni;
+                    contentArea.appendChild(backBtn);
+                }
 
                 pdfFiles.forEach(file => {
                     let nomePulito = file.name;
@@ -250,13 +262,14 @@
                     if (isLibroCompleto) {
                         nomePulito = "Libro turni completo";
                     } else {
-                        // 1. Rimuove estensione .pdf o .PDF
+                        // PULIZIA AGGRESSIVA:
+                        // 1. Toglie .pdf
                         nomePulito = nomePulito.replace(/\.pdf$/i, "");
-                        // 2. Sostituisce trattini bassi con spazi
+                        // 2. Toglie i trattini bassi
                         nomePulito = nomePulito.replace(/_/g, " ");
-                        // 3. Taglia via tutto dal primo " dal " incontrato
+                        // 3. Taglia sulla parola " dal "
                         nomePulito = nomePulito.split(/ dal /i)[0];
-                        // 4. Rimuove la parola "pdf" se è rimasta isolata alla fine del nome
+                        // 4. Toglie la parola "pdf" se rimasta isolata alla fine
                         nomePulito = nomePulito.replace(/\s+pdf$/i, "");
                         nomePulito = nomePulito.trim();
                     }

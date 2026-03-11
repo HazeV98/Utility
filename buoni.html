@@ -23,7 +23,6 @@
             align-items: center;
         }
 
-        /* Barra superiore con il tasto Indietro */
         .header {
             width: 100%;
             max-width: 400px;
@@ -50,7 +49,6 @@
             color: var(--primary);
         }
 
-        /* Riquadro centrale del contatore */
         .counter-container {
             background: white;
             padding: 40px 20px;
@@ -76,7 +74,6 @@
             line-height: 1;
         }
 
-        /* Pulsanti Più e Meno */
         .btn-group {
             display: flex;
             justify-content: space-around;
@@ -110,6 +107,95 @@
         .calc-btn.plus {
             background-color: var(--primary);
         }
+
+        /* --- NUOVI STILI PER IL CALCOLATORE AVANZATO --- */
+        .avanzato-btn {
+            background-color: #e9ecef;
+            color: var(--text-color);
+            border: 1px solid #ccc;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 30px;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 350px;
+            text-align: center;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .esegui-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .risultato-box {
+            margin-top: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary);
+            min-height: 24px;
+        }
+
+        .close-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -117,7 +203,8 @@
     <div class="header">
         <a href="index.html" class="back-btn">← Home</a>
         <h2>Buoni Pasto</h2>
-        <div style="width: 70px;"></div> </div>
+        <div style="width: 70px;"></div>
+    </div>
 
     <div class="counter-container">
         <div class="counter-label">Buoni Disponibili</div>
@@ -127,29 +214,80 @@
             <button class="calc-btn minus" onclick="modificaBuoni(-1)">-</button>
             <button class="calc-btn plus" onclick="modificaBuoni(1)">+</button>
         </div>
+
+        <button class="avanzato-btn" onclick="apriCalcolatore()">Calcolatore Avanzato</button>
+    </div>
+
+    <div id="modal-calcolatore" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; color: var(--primary);">Calcolo Previsione</h2>
+            
+            <div class="input-group">
+                <label>Presenze mese corrente</label>
+                <input type="number" id="pres-corrente" value="0">
+            </div>
+            
+            <div class="input-group">
+                <label>Presenze mese passato</label>
+                <input type="number" id="pres-passato" value="0">
+            </div>
+            
+            <div class="input-group">
+                <label>Buoni in tessera</label>
+                <input type="number" id="buoni-tessera" value="0">
+            </div>
+
+            <button class="esegui-btn" onclick="eseguiCalcolo()">Calcola</button>
+            
+            <div id="risultato-calcolo" class="risultato-box"></div>
+            
+            <button class="close-btn" onclick="chiudiCalcolatore()">Chiudi</button>
+        </div>
     </div>
 
     <script>
-        // 1. Lettura del salvataggio: all'apertura, controlla se c'è un valore salvato. Se non c'è, parte da 0.
+        // --- LOGICA CONTATORE BASE (Invariata) ---
         let buoniAttuali = localStorage.getItem('buoni_salvati') ? parseInt(localStorage.getItem('buoni_salvati')) : 0;
-        
-        // Aggiorna subito il numero a schermo
         document.getElementById('buoni-count').innerText = buoniAttuali;
 
-        // 2. Funzione per modificare il conteggio
         function modificaBuoni(valore) {
             buoniAttuali += valore;
-            
-            // Evitiamo che il contatore vada sotto zero
             if (buoniAttuali < 0) {
                 buoniAttuali = 0;
             }
-            
-            // Aggiorna il numero a schermo
             document.getElementById('buoni-count').innerText = buoniAttuali;
-            
-            // 3. Salvataggio: memorizza il nuovo numero nel telefono
             localStorage.setItem('buoni_salvati', buoniAttuali);
+        }
+
+        // --- NUOVA LOGICA CALCOLATORE AVANZATO ---
+        function apriCalcolatore() {
+            document.getElementById('modal-calcolatore').style.display = 'flex';
+            document.getElementById('risultato-calcolo').innerText = ''; // Pulisce risultati precedenti
+        }
+
+        function chiudiCalcolatore() {
+            document.getElementById('modal-calcolatore').style.display = 'none';
+        }
+
+        function eseguiCalcolo() {
+            // Recupera i valori inseriti, se un campo è vuoto usa 0
+            const presCorrente = parseInt(document.getElementById('pres-corrente').value) || 0;
+            const presPassato = parseInt(document.getElementById('pres-passato').value) || 0;
+            const buoniTessera = parseInt(document.getElementById('buoni-tessera').value) || 0;
+            
+            // Applica la formula: Corrente + Passato + Tessera - 62
+            const risultato = presCorrente + presPassato + buoniTessera - 62;
+            
+            // Mostra il risultato
+            document.getElementById('risultato-calcolo').innerText = "Risultato: " + risultato;
+        }
+
+        // Chiude la modale cliccando fuori
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal-calcolatore');
+            if (event.target === modal) {
+                chiudiCalcolatore();
+            }
         }
     </script>
 

@@ -9,6 +9,7 @@
             --primary: #0056b3;
             --bg-color: #f4f7f6;
             --text-color: #333;
+            --danger: #dc3545;
         }
 
         body {
@@ -22,7 +23,7 @@
             align-items: center;
         }
 
-        /* --- STILI HEADER E MENU (Identici alle altre pagine) --- */
+        /* --- STILI HEADER E MENU LATERALE --- */
         .header {
             width: 100%;
             max-width: 400px;
@@ -78,7 +79,7 @@
             background-color: #f4f7f6; color: var(--primary); font-weight: bold;
         }
 
-        /* --- STILI SPECIFICI PER LA PAGINA TURNI --- */
+        /* --- STILI PAGINA TURNI --- */
         .content-area {
             width: 100%;
             max-width: 400px;
@@ -116,6 +117,39 @@
             color: white;
             transform: translateY(2px);
         }
+
+        /* Bottone per i singoli file PDF */
+        .file-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            text-transform: capitalize; /* Mette le iniziali maiuscole in automatico */
+        }
+
+        .file-btn:active {
+            background-color: #004494;
+            transform: translateY(2px);
+        }
+
+        .back-folder-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -147,7 +181,6 @@
     </div>
 
     <script>
-        // --- GESTIONE MENU LATERALE ---
         function apriMenuLaterale() {
             document.getElementById('sidebar').classList.add('open');
             document.getElementById('sidebar-overlay').style.display = 'block';
@@ -157,60 +190,46 @@
             document.getElementById('sidebar-overlay').style.display = 'none';
         }
 
-        // --- CONFIGURAZIONE GITHUB ---
-        // INSERISCI QUI I TUOI DATI REALI
+        // --- CREDENZIALI GITHUB REALI ---
         const GITHUB_USER = "HazeV98"; 
         const GITHUB_REPO = "Utility";
 
-        // --- LOGICA RICERCA CARTELLE ---
         async function cercaCartelleTurni() {
             const contentArea = document.getElementById('content-area');
             const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`;
 
             try {
-                // Se non hai ancora inserito i dati, mostriamo un avviso amichevole per i test
-                if(GITHUB_USER === "TuoNomeUtente") {
-                    contentArea.innerHTML = `<div class="status-message">Devi inserire il tuo Nome Utente e Repository nel codice per collegarti a GitHub.</div>`;
-                    return;
-                }
-
                 const response = await fetch(apiUrl);
                 if (!response.ok) throw new Error("Impossibile leggere la repository");
                 
                 const files = await response.json();
-                
-                // Filtra solo le cartelle che iniziano con "turni_pdf_"
                 const cartelleTurni = files.filter(file => file.type === "dir" && file.name.startsWith("turni_pdf_"));
 
-                // Se non ci sono cartelle
                 if (cartelleTurni.length === 0) {
-                    contentArea.innerHTML = `<div class="status-message">Nessuna cartella turni trovata al momento.</div>`;
+                    contentArea.innerHTML = `<div class="status-message">Nessuna cartella turni trovata.</div>`;
                     return;
                 }
 
-                // Svuota l'area di caricamento
                 contentArea.innerHTML = '';
 
-                // Se c'è PIÙ DI UNA cartella, mostra le opzioni
                 if (cartelleTurni.length > 1) {
+                    // Ordiniamo le cartelle per nome decrescente (la più recente in alto)
+                    cartelleTurni.sort((a, b) => b.name.localeCompare(a.name));
+
                     cartelleTurni.forEach(cartella => {
-                        // Estrae la data (es: da "turni_pdf_2026-03-02" a "2026-03-02")
                         const dataGrezza = cartella.name.replace("turni_pdf_", "");
-                        
-                        // Converte YYYY-MM-DD in DD-MM-YYYY per una lettura migliore
                         const partiData = dataGrezza.split("-");
                         const dataFormattata = partiData.length === 3 ? `${partiData[2]}-${partiData[1]}-${partiData[0]}` : dataGrezza;
 
                         const btn = document.createElement('button');
                         btn.className = 'folder-btn';
+                        // Modifica applicata: "Turni dal"
                         btn.innerText = `Turni dal ${dataFormattata}`;
                         btn.onclick = () => apriCartellaSelezionata(cartella.name);
                         
                         contentArea.appendChild(btn);
                     });
-                } 
-                // Se c'è SOLO UNA cartella, salta le opzioni e aprila direttamente
-                else {
+                } else {
                     apriCartellaSelezionata(cartelleTurni[0].name);
                 }
 
@@ -220,18 +239,66 @@
             }
         }
 
-        // Funzione preparatoria per aprire i file dentro la cartella
-        function apriCartellaSelezionata(nomeCartella) {
+        // --- LA NUOVA FUNZIONE PER I PDF ---
+        async function apriCartellaSelezionata(nomeCartella) {
             const contentArea = document.getElementById('content-area');
-            contentArea.innerHTML = `<div class="status-message">Apertura di <b>${nomeCartella}</b> in corso... <br><br><i>(Qui appariranno i file PDF formattati)</i></div>`;
+            contentArea.innerHTML = `<div class="status-message">Caricamento file...</div>`;
             
-            // Nel prossimo step inseriremo qui la logica che legge i file PDF!
+            const apiUrlCartella = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${nomeCartella}`;
+
+            try {
+                const response = await fetch(apiUrlCartella);
+                if (!response.ok) throw new Error("Impossibile leggere il contenuto della cartella");
+                
+                const files = await response.json();
+                
+                // Filtriamo solo i file PDF
+                const pdfFiles = files.filter(file => file.name.endsWith(".pdf"));
+
+                contentArea.innerHTML = ''; // Pulisce il messaggio di caricamento
+
+                // Tasto per tornare all'elenco delle cartelle (se ne avevamo più di una)
+                const backBtn = document.createElement('button');
+                backBtn.className = 'back-folder-btn';
+                backBtn.innerText = "← Torna alle date";
+                backBtn.onclick = cercaCartelleTurni;
+                contentArea.appendChild(backBtn);
+
+                if (pdfFiles.length === 0) {
+                    contentArea.innerHTML += `<div class="status-message">Nessun file PDF trovato in questa cartella.</div>`;
+                    return;
+                }
+
+                // Creazione dei bottoni per ogni PDF
+                pdfFiles.forEach(file => {
+                    // Pulizia del nome: toglie .pdf e sostituisce _ con spazio
+                    let nomePulito = file.name.replace(".pdf", "").replace(/_/g, " ");
+
+                    const link = document.createElement('a');
+                    link.className = 'file-btn';
+                    link.innerText = nomePulito;
+                    // download_url è fornito da GitHub per accedere direttamente al file grezzo
+                    link.href = file.download_url; 
+                    link.target = "_blank"; // Apre in una nuova scheda o nel lettore del telefono
+                    
+                    contentArea.appendChild(link);
+                });
+
+            } catch (error) {
+                console.error(error);
+                contentArea.innerHTML = `<div class="status-message" style="color: var(--danger);">Errore durante l'apertura della cartella.</div>`;
+                
+                const backBtn = document.createElement('button');
+                backBtn.className = 'back-folder-btn';
+                backBtn.innerText = "← Torna alle date";
+                backBtn.onclick = cercaCartelleTurni;
+                contentArea.appendChild(backBtn);
+            }
         }
 
-        // Avvia la ricerca appena la pagina si carica
         window.onload = cercaCartelleTurni;
     </script>
 
 </body>
 </html>
-
+ 

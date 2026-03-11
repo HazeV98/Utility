@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contatore Buoni Pasto</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --danger: #dc3545;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Barra superiore con il tasto Indietro */
+        .header {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .back-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            margin: 0;
+            color: var(--primary);
+        }
+
+        /* Riquadro centrale del contatore */
+        .counter-container {
+            background: white;
+            padding: 40px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 320px;
+        }
+
+        .counter-label {
+            font-size: 18px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .counter-value {
+            font-size: 100px;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 20px 0;
+            line-height: 1;
+        }
+
+        /* Pulsanti Più e Meno */
+        .btn-group {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .calc-btn {
+            color: white;
+            border: none;
+            width: 70px;
+            height: 70px;
+            font-size: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .calc-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+        }
+
+        .calc-btn.minus {
+            background-color: var(--danger);
+        }
+
+        .calc-btn.plus {
+            background-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="index.html" class="back-btn">← Home</a>
+        <h2>Buoni Pasto</h2>
+        <div style="width: 70px;"></div> </div>
+
+    <div class="counter-container">
+        <div class="counter-label">Buoni Disponibili</div>
+        <div id="buoni-count" class="counter-value">0</div>
+        
+        <div class="btn-group">
+            <button class="calc-btn minus" onclick="modificaBuoni(-1)">-</button>
+            <button class="calc-btn plus" onclick="modificaBuoni(1)">+</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. Lettura del salvataggio: all'apertura, controlla se c'è un valore salvato. Se non c'è, parte da 0.
+        let buoniAttuali = localStorage.getItem('buoni_salvati') ? parseInt(localStorage.getItem('buoni_salvati')) : 0;
+        
+        // Aggiorna subito il numero a schermo
+        document.getElementById('buoni-count').innerText = buoniAttuali;
+
+        // 2. Funzione per modificare il conteggio
+        function modificaBuoni(valore) {
+            buoniAttuali += valore;
+            
+            // Evitiamo che il contatore vada sotto zero
+            if (buoniAttuali < 0) {
+                buoniAttuali = 0;
+            }
+            
+            // Aggiorna il numero a schermo
+            document.getElementById('buoni-count').innerText = buoniAttuali;
+            
+            // 3. Salvataggio: memorizza il nuovo numero nel telefono
+            localStorage.setItem('buoni_salvati', buoniAttuali);
+        }
+    </script>
+
+</body>
+</html>
+ 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Turni Aziendali</title>
+    <title>Turni</title>
     <style>
         :root {
             --primary: #0056b3;
@@ -123,6 +123,12 @@
             text-align: center;
             text-decoration: none;
             display: block;
+            text-transform: none; /* Disabilitiamo il capitalize CSS per gestire tutto via JS */
+        }
+
+        .file-btn:active {
+            background-color: #004494;
+            transform: translateY(2px);
         }
 
         .back-folder-btn {
@@ -178,7 +184,7 @@
 
         const GITHUB_USER = "HazeV98"; 
         const GITHUB_REPO = "Utility";
-        let numCartelleTrovate = 0; // Variabile globale per gestire il tasto "indietro"
+        let numCartelleTrovate = 0;
 
         async function cercaCartelleTurni() {
             const contentArea = document.getElementById('content-area');
@@ -197,10 +203,8 @@
                 }
 
                 if (numCartelleTrovate === 1) {
-                    // SE C'È UNA SOLA CARTELLA: entra direttamente senza mostrare nulla
                     apriCartellaSelezionata(cartelleTurni[0].name);
                 } else {
-                    // SE CI SONO PIÙ CARTELLE: mostra la lista
                     contentArea.innerHTML = '';
                     cartelleTurni.sort((a, b) => b.name.localeCompare(a.name));
 
@@ -246,7 +250,6 @@
 
                 contentArea.innerHTML = ''; 
 
-                // MOSTRA IL TASTO INDIETRO SOLO SE CI SONO PIÙ CARTELLE
                 if (numCartelleTrovate > 1) {
                     const backBtn = document.createElement('button');
                     backBtn.className = 'back-folder-btn';
@@ -262,16 +265,15 @@
                     if (isLibroCompleto) {
                         nomePulito = "Libro turni completo";
                     } else {
-                        // PULIZIA AGGRESSIVA:
-                        // 1. Toglie .pdf
-                        nomePulito = nomePulito.replace(/\.pdf$/i, "");
-                        // 2. Toglie i trattini bassi
-                        nomePulito = nomePulito.replace(/_/g, " ");
-                        // 3. Taglia sulla parola " dal "
-                        nomePulito = nomePulito.split(/ dal /i)[0];
-                        // 4. Toglie la parola "pdf" se rimasta isolata alla fine
-                        nomePulito = nomePulito.replace(/\s+pdf$/i, "");
-                        nomePulito = nomePulito.trim();
+                        // PULIZIA E FORMATTAZIONE:
+                        nomePulito = nomePulito.replace(/\.pdf$/i, ""); // Toglie .pdf
+                        nomePulito = nomePulito.replace(/_/g, " ");     // Toglie trattini
+                        nomePulito = nomePulito.split(/ dal /i)[0];     // Taglia sulla data
+                        nomePulito = nomePulito.replace(/\s+pdf$/i, ""); // Toglie "pdf" finale se rimasto
+                        nomePulito = nomePulito.trim().toLowerCase();    // Tutto minuscolo
+                        
+                        // Solo la prima lettera della frase diventa maiuscola (Turni linea...)
+                        nomePulito = nomePulito.charAt(0).toUpperCase() + nomePulito.slice(1);
                     }
 
                     const link = document.createElement('a');
@@ -283,9 +285,6 @@
                     if (isLibroCompleto) {
                         link.style.marginBottom = "25px";
                         link.style.fontWeight = "bold";
-                        link.style.textTransform = "none";
-                    } else {
-                        link.style.textTransform = "capitalize";
                     }
                     
                     contentArea.appendChild(link);

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Turni</title>
+    <title>Turni Aziendali</title>
     <style>
         :root {
             --primary: #0056b3;
@@ -123,6 +123,12 @@
             text-align: center;
             text-decoration: none;
             display: block;
+            text-transform: none; /* Cruciale: lasciamo il controllo totale allo script JS */
+        }
+
+        .file-btn:active {
+            background-color: #004494;
+            transform: translateY(2px);
         }
 
         .back-folder-btn {
@@ -176,7 +182,7 @@
             document.getElementById('sidebar-overlay').style.display = 'none';
         }
 
-        // DATI REINTEGRATI:
+        // --- CONFIGURAZIONE GITHUB ---
         const GITHUB_USER = "HazeV98"; 
         const GITHUB_REPO = "Utility";
         let numCartelleTrovate = 0;
@@ -198,12 +204,12 @@
                     return;
                 }
 
+                // Salto automatico se c'è solo una cartella
                 if (numCartelleTrovate === 1) {
                     apriCartellaSelezionata(cartelleTurni[0].name);
                 } else {
                     contentArea.innerHTML = '';
                     cartelleTurni.sort((a, b) => b.name.localeCompare(a.name));
-
                     cartelleTurni.forEach(cartella => {
                         const btn = document.createElement('button');
                         btn.className = 'folder-btn';
@@ -221,7 +227,7 @@
                     });
                 }
             } catch (error) {
-                contentArea.innerHTML = `<div class="status-message" style="color: var(--danger);">Errore di connessione a GitHub. Verifica che i file siano caricati.</div>`;
+                contentArea.innerHTML = `<div class="status-message">Errore di connessione a GitHub.</div>`;
             }
         }
 
@@ -235,7 +241,7 @@
                 const files = await response.json();
                 let pdfFiles = files.filter(file => file.name.toLowerCase().endsWith(".pdf"));
 
-                // Ordinamento naturale (1, 2, 3... 11)
+                // Ordinamento naturale (1, 2, 11)
                 pdfFiles.sort((a, b) => {
                     const isLibroA = a.name.toLowerCase().includes("libro_turni_completo");
                     const isLibroB = b.name.toLowerCase().includes("libro_turni_completo");
@@ -246,7 +252,7 @@
 
                 contentArea.innerHTML = ''; 
 
-                // Tasto torna indietro solo se serve
+                // Mostra indietro solo se necessario
                 if (numCartelleTrovate > 1) {
                     const backBtn = document.createElement('button');
                     backBtn.className = 'back-folder-btn';
@@ -262,14 +268,18 @@
                     if (isLibroCompleto) {
                         nomePulito = "Libro turni completo";
                     } else {
-                        // Pulizia finale senza troncamenti sui decimali:
-                        nomePulito = nomePulito.replace(/\.pdf$/i, ""); // Toglie .pdf
-                        nomePulito = nomePulito.replace(/_/g, " ");     // Toglie underscore
-                        nomePulito = nomePulito.split(/ dal /i)[0];     // Taglia alla data ma tiene i decimali prima
-                        nomePulito = nomePulito.replace(/\s+pdf$/i, ""); // Toglie "pdf" finale vagante
-                        nomePulito = nomePulito.trim().toLowerCase();
+                        // PULIZIA FILTRATA:
+                        nomePulito = nomePulito.replace(/\.pdf$/i, ""); // Toglie l'estensione
+                        nomePulito = nomePulito.replace(/_/g, " ");     // Trasforma underscore in spazi
+                        nomePulito = nomePulito.split(/ dal /i)[0];     // Taglia alla parola " dal "
+                        nomePulito = nomePulito.replace(/\s+pdf$/i, ""); // Toglie eventuali "pdf" rimasti
+                        nomePulito = nomePulito.trim();
                         
-                        // "Turni linea 4.1-4.2"
+                        // REGOLA MAIUSCOLE/MINUSCOLE:
+                        // Sostituisce "Linea" con "linea" (senza toccare acronimi come M1 o PO)
+                        nomePulito = nomePulito.replace(/\bLinea\b/gi, "linea");
+                        
+                        // Forza solo la prima lettera del pulsante maiuscola (La "T" di Turni)
                         nomePulito = nomePulito.charAt(0).toUpperCase() + nomePulito.slice(1);
                     }
 
@@ -287,7 +297,7 @@
                     contentArea.appendChild(link);
                 });
             } catch (error) {
-                contentArea.innerHTML = `<div class="status-message" style="color: var(--danger);">Errore nel caricamento dei file.</div>`;
+                contentArea.innerHTML = `<div class="status-message">Errore nel caricamento dei file.</div>`;
             }
         }
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Turni Aziendali</title>
+    <title>Turni</title>
     <style>
         :root {
             --primary: #0056b3;
@@ -23,6 +23,7 @@
             align-items: center;
         }
 
+        /* --- HEADER E MENU LATERALE --- */
         .header {
             width: 100%;
             max-width: 400px;
@@ -78,6 +79,7 @@
             background-color: #f4f7f6; color: var(--primary); font-weight: bold;
         }
 
+        /* --- STILI PAGINA TURNI --- */
         .content-area {
             width: 100%;
             max-width: 400px;
@@ -121,11 +123,6 @@
             text-align: center;
             text-decoration: none;
             display: block;
-        }
-
-        .file-btn:active {
-            background-color: #004494;
-            transform: translateY(2px);
         }
 
         .back-folder-btn {
@@ -179,9 +176,9 @@
             document.getElementById('sidebar-overlay').style.display = 'none';
         }
 
-        // Inserisci i tuoi dati GitHub reali qui sotto
-        const GITHUB_USER = "IL_TUO_UTENTE"; 
-        const GITHUB_REPO = "IL_TUO_REPO";
+        // DATI REINTEGRATI:
+        const GITHUB_USER = "HazeV98"; 
+        const GITHUB_REPO = "Utility";
         let numCartelleTrovate = 0;
 
         async function cercaCartelleTurni() {
@@ -190,6 +187,7 @@
 
             try {
                 const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error("Errore API");
                 const files = await response.json();
                 const cartelleTurni = files.filter(file => file.type === "dir" && (file.name.startsWith("turni_pdf_") || file.name.startsWith("turni_varianti_")));
 
@@ -201,7 +199,6 @@
                 }
 
                 if (numCartelleTrovate === 1) {
-                    // Entra direttamente senza mostrare la scelta
                     apriCartellaSelezionata(cartelleTurni[0].name);
                 } else {
                     contentArea.innerHTML = '';
@@ -224,7 +221,7 @@
                     });
                 }
             } catch (error) {
-                contentArea.innerHTML = `<div class="status-message">Errore di connessione.</div>`;
+                contentArea.innerHTML = `<div class="status-message" style="color: var(--danger);">Errore di connessione a GitHub. Verifica che i file siano caricati.</div>`;
             }
         }
 
@@ -238,7 +235,7 @@
                 const files = await response.json();
                 let pdfFiles = files.filter(file => file.name.toLowerCase().endsWith(".pdf"));
 
-                // Ordinamento numerico naturale (1, 2, 11)
+                // Ordinamento naturale (1, 2, 3... 11)
                 pdfFiles.sort((a, b) => {
                     const isLibroA = a.name.toLowerCase().includes("libro_turni_completo");
                     const isLibroB = b.name.toLowerCase().includes("libro_turni_completo");
@@ -249,6 +246,7 @@
 
                 contentArea.innerHTML = ''; 
 
+                // Tasto torna indietro solo se serve
                 if (numCartelleTrovate > 1) {
                     const backBtn = document.createElement('button');
                     backBtn.className = 'back-folder-btn';
@@ -258,22 +256,21 @@
                 }
 
                 pdfFiles.forEach(file => {
-                    let nomeOriginale = file.name;
-                    let nomePulito = "";
-                    let isLibroCompleto = nomeOriginale.toLowerCase().includes("libro_turni_completo");
+                    let nomePulito = file.name;
+                    let isLibroCompleto = nomePulito.toLowerCase().includes("libro_turni_completo");
                     
                     if (isLibroCompleto) {
                         nomePulito = "Libro turni completo";
                     } else {
-                        // Logica di pulizia migliorata per nomi complessi (es. 4.1-4.2)
-                        let n = nomeOriginale.replace(/\.pdf$/i, ""); // Rimuove .pdf finale
-                        n = n.replace(/_/g, " ");                     // Sostituisce underscore
-                        n = n.split(/ dal /i)[0];                     // Taglia alla data
-                        n = n.replace(/\s+pdf$/i, "");                // Rimuove "pdf" residui
-                        n = n.trim().toLowerCase();                   // Normalizza
+                        // Pulizia finale senza troncamenti sui decimali:
+                        nomePulito = nomePulito.replace(/\.pdf$/i, ""); // Toglie .pdf
+                        nomePulito = nomePulito.replace(/_/g, " ");     // Toglie underscore
+                        nomePulito = nomePulito.split(/ dal /i)[0];     // Taglia alla data ma tiene i decimali prima
+                        nomePulito = nomePulito.replace(/\s+pdf$/i, ""); // Toglie "pdf" finale vagante
+                        nomePulito = nomePulito.trim().toLowerCase();
                         
-                        // Capitalizza solo la prima lettera
-                        nomePulito = n.charAt(0).toUpperCase() + n.slice(1);
+                        // "Turni linea 4.1-4.2"
+                        nomePulito = nomePulito.charAt(0).toUpperCase() + nomePulito.slice(1);
                     }
 
                     const link = document.createElement('a');
@@ -290,7 +287,7 @@
                     contentArea.appendChild(link);
                 });
             } catch (error) {
-                contentArea.innerHTML = `<div class="status-message">Errore nel caricamento.</div>`;
+                contentArea.innerHTML = `<div class="status-message" style="color: var(--danger);">Errore nel caricamento dei file.</div>`;
             }
         }
 
@@ -298,3 +295,4 @@
     </script>
 </body>
 </html>
+ 

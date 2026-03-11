@@ -159,8 +159,8 @@
 
         // --- CONFIGURAZIONE GITHUB ---
         // INSERISCI QUI I TUOI DATI REALI
-        const GITHUB_USER = "TuoNomeUtente"; 
-        const GITHUB_REPO = "NomeTuaRepository";
+        const GITHUB_USER = "HazeV98"; 
+        const GITHUB_REPO = "Utility";
 
         // --- LOGICA RICERCA CARTELLE ---
         async function cercaCartelleTurni() {
@@ -203,7 +203,7 @@
 
                         const btn = document.createElement('button');
                         btn.className = 'folder-btn';
-                        btn.innerText = `Turni del ${dataFormattata}`;
+                        btn.innerText = `Turni dal ${dataFormattata}`;
                         btn.onclick = () => apriCartellaSelezionata(cartella.name);
                         
                         contentArea.appendChild(btn);

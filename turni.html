@@ -131,7 +131,7 @@
             text-align: center;
             text-decoration: none;
             display: block;
-            text-transform: capitalize; /* Mette le iniziali maiuscole in automatico */
+            text-transform: capitalize; 
         }
 
         .file-btn:active {
@@ -203,7 +203,9 @@
                 if (!response.ok) throw new Error("Impossibile leggere la repository");
                 
                 const files = await response.json();
-                const cartelleTurni = files.filter(file => file.type === "dir" && file.name.startsWith("turni_pdf_"));
+                
+                // Cerca sia le cartelle standard che quelle delle varianti/eventi speciali
+                const cartelleTurni = files.filter(file => file.type === "dir" && (file.name.startsWith("turni_pdf_") || file.name.startsWith("turni_varianti_")));
 
                 if (cartelleTurni.length === 0) {
                     contentArea.innerHTML = `<div class="status-message">Nessuna cartella turni trovata.</div>`;
@@ -213,20 +215,28 @@
                 contentArea.innerHTML = '';
 
                 if (cartelleTurni.length > 1) {
-                    // Ordiniamo le cartelle per nome decrescente (la più recente in alto)
+                    // Ordiniamo le cartelle (le più recenti in alto)
                     cartelleTurni.sort((a, b) => b.name.localeCompare(a.name));
 
                     cartelleTurni.forEach(cartella => {
-                        const dataGrezza = cartella.name.replace("turni_pdf_", "");
-                        const partiData = dataGrezza.split("-");
-                        const dataFormattata = partiData.length === 3 ? `${partiData[2]}-${partiData[1]}-${partiData[0]}` : dataGrezza;
-
                         const btn = document.createElement('button');
                         btn.className = 'folder-btn';
-                        // Modifica applicata: "Turni dal"
-                        btn.innerText = `Turni dal ${dataFormattata}`;
+
+                        // Se è una cartella standard con la data
+                        if (cartella.name.startsWith("turni_pdf_")) {
+                            const dataGrezza = cartella.name.replace("turni_pdf_", "");
+                            const partiData = dataGrezza.split("-");
+                            const dataFormattata = partiData.length === 3 ? `${partiData[2]}-${partiData[1]}-${partiData[0]}` : dataGrezza;
+                            btn.innerText = `Turni dal ${dataFormattata}`;
+                        } 
+                        // Se è una cartella evento speciale (es. turni_varianti_...)
+                        else if (cartella.name.startsWith("turni_varianti_")) {
+                            let nomeSpeciale = cartella.name.replace("turni_varianti_", "").replace(/_/g, " ");
+                            // Rende la prima lettera maiuscola
+                            btn.innerText = nomeSpeciale.charAt(0).toUpperCase() + nomeSpeciale.slice(1);
+                        }
+
                         btn.onclick = () => apriCartellaSelezionata(cartella.name);
-                        
                         contentArea.appendChild(btn);
                     });
                 } else {
@@ -239,7 +249,7 @@
             }
         }
 
-        // --- LA NUOVA FUNZIONE PER I PDF ---
+        // --- FUNZIONE PER I PDF CON TAGLIO INTELLIGENTE DEL NOME ---
         async function apriCartellaSelezionata(nomeCartella) {
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = `<div class="status-message">Caricamento file...</div>`;
@@ -257,7 +267,7 @@
 
                 contentArea.innerHTML = ''; // Pulisce il messaggio di caricamento
 
-                // Tasto per tornare all'elenco delle cartelle (se ne avevamo più di una)
+                // Tasto per tornare all'elenco delle cartelle
                 const backBtn = document.createElement('button');
                 backBtn.className = 'back-folder-btn';
                 backBtn.innerText = "← Torna alle date";
@@ -271,15 +281,14 @@
 
                 // Creazione dei bottoni per ogni PDF
                 pdfFiles.forEach(file => {
-                    // Pulizia del nome: toglie .pdf e sostituisce _ con spazio
-                    let nomePulito = file.name.replace(".pdf", "").replace(/_/g, " ");
+                    // Pulizia del nome: toglie .pdf, sostituisce _ con spazio, e taglia via tutto da " dal " in poi
+                    let nomePulito = file.name.replace(".pdf", "").replace(/_/g, " ").split(/ dal /i)[0];
 
                     const link = document.createElement('a');
                     link.className = 'file-btn';
                     link.innerText = nomePulito;
-                    // download_url è fornito da GitHub per accedere direttamente al file grezzo
                     link.href = file.download_url; 
-                    link.target = "_blank"; // Apre in una nuova scheda o nel lettore del telefono
+                    link.target = "_blank"; 
                     
                     contentArea.appendChild(link);
                 });
@@ -301,4 +310,3 @@
 
 </body>
 </html>
- 

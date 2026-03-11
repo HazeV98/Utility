@@ -32,16 +32,17 @@
             margin-bottom: 40px;
         }
 
-        .back-btn {
-            background-color: #6c757d;
-            color: white;
+        /* Il vecchio stile back-btn lo lasciamo intatto nel caso servisse altrove, 
+           ma aggiungiamo lo stile per il nuovo tasto hamburger */
+        .hamburger-btn {
+            background: none;
             border: none;
-            padding: 10px 15px;
-            font-size: 16px;
-            border-radius: 8px;
+            font-size: 30px;
+            color: var(--primary);
             cursor: pointer;
-            text-decoration: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 0;
+            width: 50px;
+            text-align: left;
         }
 
         h2 {
@@ -108,7 +109,6 @@
             background-color: var(--primary);
         }
 
-        /* --- NUOVI STILI PER IL CALCOLATORE AVANZATO --- */
         .avanzato-btn {
             background-color: #e9ecef;
             color: var(--text-color);
@@ -196,14 +196,92 @@
             width: 100%;
             margin-top: 15px;
         }
+
+        /* --- NUOVI STILI ESCLUSIVI PER IL MENU LATERALE --- */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 2000;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0; left: -280px; /* Nascosto fuori dallo schermo */
+            width: 250px; height: 100%;
+            background-color: white;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+            z-index: 2001;
+            transition: left 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.open {
+            left: 0; /* Scivola dentro lo schermo */
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .sidebar-header h3 {
+            margin: 0;
+            color: white;
+        }
+
+        .close-sidebar {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .sidebar-link {
+            padding: 15px 20px;
+            text-decoration: none;
+            color: var(--text-color);
+            font-size: 18px;
+            border-bottom: 1px solid #eee;
+            display: block;
+        }
+
+        .sidebar-link:active, .sidebar-link:hover {
+            background-color: #f4f7f6;
+            color: var(--primary);
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <a href="index.html" class="back-btn">← Home</a>
+        <button class="hamburger-btn" onclick="apriMenuLaterale()">☰</button>
         <h2>Buoni Pasto</h2>
-        <div style="width: 70px;"></div>
+        <div style="width: 50px;"></div>
+    </div>
+
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="chiudiMenuLaterale()"></div>
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3>Menu</h3>
+            <button class="close-sidebar" onclick="chiudiMenuLaterale()">✕</button>
+        </div>
+        <a href="index.html" class="sidebar-link">🏠 Home Page</a>
+        <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
+        <a href="index.html" class="sidebar-link">🔄 Turni (via Home)</a>
+        <a href="index.html" class="sidebar-link">🕒 Orari (via Home)</a>
+        <a href="link.html" class="sidebar-link">🔗 Link</a>
+        <a href="numeri.html" class="sidebar-link">📞 Numeri</a>
+        <a href="dati_calendario.html" class="sidebar-link">📊 Dati Calendario</a>
+        <a href="buoni.html" class="sidebar-link">🍔 Buoni Pasto</a>
     </div>
 
     <div class="counter-container">
@@ -215,12 +293,12 @@
             <button class="calc-btn plus" onclick="modificaBuoni(1)">+</button>
         </div>
 
-        <button class="avanzato-btn" onclick="apriCalcolatore()">Calcola saldo buoni</button>
+        <button class="avanzato-btn" onclick="apriCalcolatore()">Calcolatore buoni</button>
     </div>
 
     <div id="modal-calcolatore" class="modal-overlay">
         <div class="modal-content">
-            <h2 style="margin-top: 0; color: var(--primary);">Calcola saldo buoni</h2>
+            <h2 style="margin-top: 0; color: var(--primary);">Calcolo buoni</h2>
             
             <div class="input-group">
                 <label>Presenze mese corrente</label>
@@ -246,7 +324,18 @@
     </div>
 
     <script>
-        // --- LOGICA CONTATORE BASE (Invariata) ---
+        // --- LOGICA MENU LATERALE ---
+        function apriMenuLaterale() {
+            document.getElementById('sidebar').classList.add('open');
+            document.getElementById('sidebar-overlay').style.display = 'block';
+        }
+
+        function chiudiMenuLaterale() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebar-overlay').style.display = 'none';
+        }
+
+        // --- LOGICA CONTATORE BASE E CALCOLATORE (Invariata) ---
         let buoniAttuali = localStorage.getItem('buoni_salvati') ? parseInt(localStorage.getItem('buoni_salvati')) : 0;
         document.getElementById('buoni-count').innerText = buoniAttuali;
 
@@ -259,10 +348,9 @@
             localStorage.setItem('buoni_salvati', buoniAttuali);
         }
 
-        // --- NUOVA LOGICA CALCOLATORE AVANZATO ---
         function apriCalcolatore() {
             document.getElementById('modal-calcolatore').style.display = 'flex';
-            document.getElementById('risultato-calcolo').innerText = ''; // Pulisce risultati precedenti
+            document.getElementById('risultato-calcolo').innerText = ''; 
         }
 
         function chiudiCalcolatore() {
@@ -270,22 +358,18 @@
         }
 
         function eseguiCalcolo() {
-            // Recupera i valori inseriti, se un campo è vuoto usa 0
             const presCorrente = parseInt(document.getElementById('pres-corrente').value) || 0;
             const presPassato = parseInt(document.getElementById('pres-passato').value) || 0;
             const buoniTessera = parseInt(document.getElementById('buoni-tessera').value) || 0;
             
-            // Applica la formula: Corrente + Passato + Tessera - 62
             const risultato = presCorrente + presPassato + buoniTessera - 62;
-            
-            // Mostra il risultato
             document.getElementById('risultato-calcolo').innerText = "Risultato: " + risultato;
         }
 
-        // Chiude la modale cliccando fuori
         window.onclick = function(event) {
-            const modal = document.getElementById('modal-calcolatore');
-            if (event.target === modal) {
+            const modalCalcolatore = document.getElementById('modal-calcolatore');
+            // Gestisce la chiusura cliccando fuori (mantiene invariata la logica per la modale)
+            if (event.target === modalCalcolatore) {
                 chiudiCalcolatore();
             }
         }

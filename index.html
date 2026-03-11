@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hub Aziendale</title>
+    <title>Utility</title>
     <style>
         :root {
             --primary: #0056b3;
@@ -34,7 +34,8 @@
         h2 { 
             margin: 0; 
             color: var(--primary); 
-            font-size: 28px;
+            font-size: 32px;
+            font-weight: bold;
         }
 
         /* --- STILI GRIGLIA PULSANTI HOME --- */
@@ -52,18 +53,25 @@
             border: none;
             padding: 20px;
             font-size: 18px;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background-color 0.2s;
+            transition: all 0.2s ease;
             text-align: center;
             text-decoration: none;
             display: block;
+            font-weight: 500;
         }
 
         .menu-btn:active {
             background-color: #004494;
             transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Stile differente per il nuovo tasto Documenti o pulsanti speciali se vuoi evidenziarli */
+        .menu-btn-alt {
+            background-color: #6c757d;
         }
     </style>
 </head>
@@ -75,11 +83,14 @@
 
     <div class="menu-grid">
         <a href="calendario.html" class="menu-btn">Calendario</a>
+        <a href="dati_calendario.html" class="menu-btn">Dati Calendario</a>
+        
         <a href="turni.html" class="menu-btn">Turni</a>
         <a href="orari.html" class="menu-btn">Orari</a>
+        <a href="documenti.html" class="menu-btn">Documenti</a>
+        
         <a href="link.html" class="menu-btn">Link</a>
         <a href="numeri.html" class="menu-btn">Numeri</a>
-        <a href="dati_calendario.html" class="menu-btn">Dati Calendario</a>
         <a href="buoni.html" class="menu-btn">Buoni Pasto</a>
     </div>
 

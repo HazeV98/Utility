@@ -9,6 +9,7 @@
             --primary: #0056b3;
             --bg-color: #f4f7f6;
             --text-color: #333;
+            --success: #28a745;
         }
 
         body {
@@ -22,7 +23,6 @@
             align-items: center;
         }
 
-        /* --- STILI HEADER --- */
         .header {
             width: 100%;
             max-width: 400px;
@@ -38,7 +38,6 @@
             font-weight: bold;
         }
 
-        /* --- STILI GRIGLIA PULSANTI HOME --- */
         .menu-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -64,14 +63,15 @@
         }
 
         .menu-btn:active {
-            background-color: #004494;
             transform: translateY(2px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            opacity: 0.9;
         }
 
-        /* Stile differente per il nuovo tasto Documenti o pulsanti speciali se vuoi evidenziarli */
-        .menu-btn-alt {
-            background-color: #6c757d;
+        /* Tasto Installa: inizialmente nascosto */
+        #install-btn {
+            display: none;
+            background-color: var(--success);
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -92,8 +92,46 @@
         <a href="link.html" class="menu-btn">Link</a>
         <a href="numeri.html" class="menu-btn">Numeri</a>
         <a href="buoni.html" class="menu-btn">Buoni Pasto</a>
+
+        <button id="install-btn" class="menu-btn">✨ Installa Utility</button>
     </div>
 
+    <script>
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-btn');
+
+        // Intercetta l'evento di installazione del browser
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Impedisce a Chrome di mostrare il mini-infobar automaticamente
+            e.preventDefault();
+            // Salva l'evento per usarlo dopo
+            deferredPrompt = e;
+            // Mostra il tasto nella home
+            installBtn.style.display = 'block';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            
+            // Mostra il prompt di installazione
+            deferredPrompt.prompt();
+            
+            // Attendi la risposta dell'utente
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`Risposta utente: ${outcome}`);
+            
+            // Reset dell'evento
+            deferredPrompt = null;
+            // Nascondi il tasto dopo la scelta
+            installBtn.style.display = 'none';
+        });
+
+        // Nascondi se l'app viene installata con successo
+        window.addEventListener('appinstalled', () => {
+            console.log('Utility installata correttamente!');
+            installBtn.style.display = 'none';
+        });
+    </script>
 </body>
 </html>
  

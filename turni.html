@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turni Aziendali</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- STILI HEADER E MENU (Identici alle altre pagine) --- */
+        .header {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .hamburger-btn {
+            background: none;
+            border: none;
+            font-size: 30px;
+            color: var(--primary);
+            cursor: pointer;
+            padding: 0;
+            width: 50px;
+            text-align: left;
+        }
+
+        h2 { margin: 0; color: var(--primary); }
+
+        .sidebar-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); z-index: 2000;
+        }
+
+        .sidebar {
+            position: fixed; top: 0; left: -280px; width: 250px; height: 100%;
+            background-color: white; box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+            z-index: 2001; transition: left 0.3s ease; display: flex; flex-direction: column;
+        }
+
+        .sidebar.open { left: 0; }
+
+        .sidebar-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px; background-color: var(--primary); color: white;
+        }
+
+        .sidebar-header h3 { margin: 0; color: white; }
+
+        .close-sidebar {
+            background: none; border: none; font-size: 24px; color: white; cursor: pointer;
+        }
+
+        .sidebar-link {
+            padding: 15px 20px; text-decoration: none; color: var(--text-color);
+            font-size: 18px; border-bottom: 1px solid #eee; display: block;
+        }
+
+        .sidebar-link:active, .sidebar-link:hover {
+            background-color: #f4f7f6; color: var(--primary); font-weight: bold;
+        }
+
+        /* --- STILI SPECIFICI PER LA PAGINA TURNI --- */
+        .content-area {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .status-message {
+            text-align: center;
+            color: #666;
+            font-size: 16px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .folder-btn {
+            background-color: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            padding: 18px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .folder-btn:active {
+            background-color: var(--primary);
+            color: white;
+            transform: translateY(2px);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <button class="hamburger-btn" onclick="apriMenuLaterale()">☰</button>
+        <h2>Turni</h2>
+        <div style="width: 50px;"></div>
+    </div>
+
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="chiudiMenuLaterale()"></div>
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3>Menu</h3>
+            <button class="close-sidebar" onclick="chiudiMenuLaterale()">✕</button>
+        </div>
+        <a href="index.html" class="sidebar-link">🏠 Home Page</a>
+        <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
+        <a href="turni.html" class="sidebar-link">🔄 Turni</a>
+        <a href="orari.html" class="sidebar-link">🕒 Orari</a>
+        <a href="link.html" class="sidebar-link">🔗 Link</a>
+        <a href="numeri.html" class="sidebar-link">📞 Numeri</a>
+        <a href="dati_calendario.html" class="sidebar-link">📊 Dati Calendario</a>
+        <a href="buoni.html" class="sidebar-link">🍔 Buoni Pasto</a>
+    </div>
+
+    <div id="content-area" class="content-area">
+        <div class="status-message">Ricerca cartelle in corso...</div>
+    </div>
+
+    <script>
+        // --- GESTIONE MENU LATERALE ---
+        function apriMenuLaterale() {
+            document.getElementById('sidebar').classList.add('open');
+            document.getElementById('sidebar-overlay').style.display = 'block';
+        }
+        function chiudiMenuLaterale() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebar-overlay').style.display = 'none';
+        }
+
+        // --- CONFIGURAZIONE GITHUB ---
+        // INSERISCI QUI I TUOI DATI REALI
+        const GITHUB_USER = "TuoNomeUtente"; 
+        const GITHUB_REPO = "NomeTuaRepository";
+
+        // --- LOGICA RICERCA CARTELLE ---
+        async function cercaCartelleTurni() {
+            const contentArea = document.getElementById('content-area');
+            const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`;
+
+            try {
+                // Se non hai ancora inserito i dati, mostriamo un avviso amichevole per i test
+                if(GITHUB_USER === "TuoNomeUtente") {
+                    contentArea.innerHTML = `<div class="status-message">Devi inserire il tuo Nome Utente e Repository nel codice per collegarti a GitHub.</div>`;
+                    return;
+                }
+
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error("Impossibile leggere la repository");
+                
+                const files = await response.json();
+                
+                // Filtra solo le cartelle che iniziano con "turni_pdf_"
+                const cartelleTurni = files.filter(file => file.type === "dir" && file.name.startsWith("turni_pdf_"));
+
+                // Se non ci sono cartelle
+                if (cartelleTurni.length === 0) {
+                    contentArea.innerHTML = `<div class="status-message">Nessuna cartella turni trovata al momento.</div>`;
+                    return;
+                }
+
+                // Svuota l'area di caricamento
+                contentArea.innerHTML = '';
+
+                // Se c'è PIÙ DI UNA cartella, mostra le opzioni
+                if (cartelleTurni.length > 1) {
+                    cartelleTurni.forEach(cartella => {
+                        // Estrae la data (es: da "turni_pdf_2026-03-02" a "2026-03-02")
+                        const dataGrezza = cartella.name.replace("turni_pdf_", "");
+                        
+                        // Converte YYYY-MM-DD in DD-MM-YYYY per una lettura migliore
+                        const partiData = dataGrezza.split("-");
+                        const dataFormattata = partiData.length === 3 ? `${partiData[2]}-${partiData[1]}-${partiData[0]}` : dataGrezza;
+
+                        const btn = document.createElement('button');
+                        btn.className = 'folder-btn';
+                        btn.innerText = `Turni del ${dataFormattata}`;
+                        btn.onclick = () => apriCartellaSelezionata(cartella.name);
+                        
+                        contentArea.appendChild(btn);
+                    });
+                } 
+                // Se c'è SOLO UNA cartella, salta le opzioni e aprila direttamente
+                else {
+                    apriCartellaSelezionata(cartelleTurni[0].name);
+                }
+
+            } catch (error) {
+                console.error(error);
+                contentArea.innerHTML = `<div class="status-message" style="color: var(--danger);">Errore di connessione a GitHub. Riprova più tardi.</div>`;
+            }
+        }
+
+        // Funzione preparatoria per aprire i file dentro la cartella
+        function apriCartellaSelezionata(nomeCartella) {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `<div class="status-message">Apertura di <b>${nomeCartella}</b> in corso... <br><br><i>(Qui appariranno i file PDF formattati)</i></div>`;
+            
+            // Nel prossimo step inseriremo qui la logica che legge i file PDF!
+        }
+
+        // Avvia la ricerca appena la pagina si carica
+        window.onload = cercaCartelleTurni;
+    </script>
+
+</body>
+</html>
+

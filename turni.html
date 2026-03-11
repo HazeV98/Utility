@@ -123,7 +123,7 @@
             text-align: center;
             text-decoration: none;
             display: block;
-            text-transform: none; /* Impedisce al browser di forzare maiuscole indesiderate */
+            text-transform: none; /* Lasciamo il controllo delle maiuscole al JavaScript */
         }
 
         .back-folder-btn {
@@ -197,6 +197,7 @@
                     return;
                 }
 
+                // SALTO AUTOMATICO: Se c'è una sola cartella, entra subito
                 if (numCartelleTrovate === 1) {
                     apriCartellaSelezionata(cartelleTurni[0].name);
                 } else {
@@ -233,7 +234,7 @@
                 const files = await response.json();
                 let pdfFiles = files.filter(file => file.name.toLowerCase().endsWith(".pdf"));
 
-                // Ordinamento naturale (1, 2, 11)
+                // Ordinamento naturale
                 pdfFiles.sort((a, b) => {
                     const isLibroA = a.name.toLowerCase().includes("libro_turni_completo");
                     const isLibroB = b.name.toLowerCase().includes("libro_turni_completo");
@@ -244,6 +245,7 @@
 
                 contentArea.innerHTML = ''; 
 
+                // Tasto INDIETRO: Compare solo se c'erano più date tra cui scegliere
                 if (numCartelleTrovate > 1) {
                     const backBtn = document.createElement('button');
                     backBtn.className = 'back-folder-btn';
@@ -260,24 +262,24 @@
                     if (isLibroCompleto) {
                         nomePulito = "Libro turni completo";
                     } else {
-                        // 1. Rimuove solo l'estensione finale .pdf
+                        // 1. Rimuove solo l'estensione finale .pdf senza toccare altri punti
                         let n = nomeOriginale.replace(/\.pdf$/i, "");
                         
-                        // 2. Sostituisce i trattini bassi con spazi
+                        // 2. Sostituisce gli underscore con spazi
                         n = n.replace(/_/g, " ");
                         
-                        // 3. Taglia alla data preservando i numeri decimali (cerca " dal " con spazi intorno)
+                        // 3. Taglia alla parola " dal " proteggendo i decimali (4.1, 5.1)
+                        // Cerchiamo la parola " dal " circondata da spazi
                         n = n.split(/\s+dal\s+/i)[0];
                         
-                        // 4. Toglie la parola "pdf" se è rimasta isolata in fondo
-                        n = n.replace(/\s+pdf$/i, "").trim();
+                        // 4. Pulizia residua spazi
+                        n = n.trim();
                         
-                        // 5. TRATTAMENTO MAIUSCOLE:
-                        // Sostituisce "Linea" o "LINEA" con "linea" (minuscolo)
+                        // 5. GESTIONE MAIUSCOLE/MINUSCOLE
+                        // Sostituiamo "Linea" con "linea" ma lasciamo stare tutto il resto (M1, PO, ecc.)
                         n = n.replace(/\blinea\b/gi, "linea");
                         
-                        // Forza solo la prima lettera del bottone in maiuscolo (La "T" di Turni)
-                        // Senza toccare il resto (M1, PO, ecc. restano come sono nel file)
+                        // Forza solo la primissima lettera del pulsante in maiuscola
                         nomePulito = n.charAt(0).toUpperCase() + n.slice(1);
                     }
 

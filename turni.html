@@ -23,7 +23,7 @@
             align-items: center;
         }
 
-        /* --- HEADER E MENU LATERALE --- */
+        /* --- HEADER --- */
         .header {
             width: 100%;
             max-width: 400px;
@@ -79,7 +79,7 @@
             background-color: #f4f7f6; color: var(--primary); font-weight: bold;
         }
 
-        /* --- STILI PAGINA TURNI --- */
+        /* --- CONTENUTI --- */
         .content-area {
             width: 100%;
             max-width: 400px;
@@ -123,12 +123,7 @@
             text-align: center;
             text-decoration: none;
             display: block;
-            text-transform: none; /* Cruciale: lasciamo il controllo totale allo script JS */
-        }
-
-        .file-btn:active {
-            background-color: #004494;
-            transform: translateY(2px);
+            text-transform: none; /* Impedisce al browser di forzare maiuscole indesiderate */
         }
 
         .back-folder-btn {
@@ -182,7 +177,6 @@
             document.getElementById('sidebar-overlay').style.display = 'none';
         }
 
-        // --- CONFIGURAZIONE GITHUB ---
         const GITHUB_USER = "HazeV98"; 
         const GITHUB_REPO = "Utility";
         let numCartelleTrovate = 0;
@@ -193,7 +187,6 @@
 
             try {
                 const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error("Errore API");
                 const files = await response.json();
                 const cartelleTurni = files.filter(file => file.type === "dir" && (file.name.startsWith("turni_pdf_") || file.name.startsWith("turni_varianti_")));
 
@@ -204,7 +197,6 @@
                     return;
                 }
 
-                // Salto automatico se c'è solo una cartella
                 if (numCartelleTrovate === 1) {
                     apriCartellaSelezionata(cartelleTurni[0].name);
                 } else {
@@ -252,7 +244,6 @@
 
                 contentArea.innerHTML = ''; 
 
-                // Mostra indietro solo se necessario
                 if (numCartelleTrovate > 1) {
                     const backBtn = document.createElement('button');
                     backBtn.className = 'back-folder-btn';
@@ -262,25 +253,32 @@
                 }
 
                 pdfFiles.forEach(file => {
-                    let nomePulito = file.name;
-                    let isLibroCompleto = nomePulito.toLowerCase().includes("libro_turni_completo");
+                    let nomeOriginale = file.name;
+                    let nomePulito = "";
+                    let isLibroCompleto = nomeOriginale.toLowerCase().includes("libro_turni_completo");
                     
                     if (isLibroCompleto) {
                         nomePulito = "Libro turni completo";
                     } else {
-                        // PULIZIA FILTRATA:
-                        nomePulito = nomePulito.replace(/\.pdf$/i, ""); // Toglie l'estensione
-                        nomePulito = nomePulito.replace(/_/g, " ");     // Trasforma underscore in spazi
-                        nomePulito = nomePulito.split(/ dal /i)[0];     // Taglia alla parola " dal "
-                        nomePulito = nomePulito.replace(/\s+pdf$/i, ""); // Toglie eventuali "pdf" rimasti
-                        nomePulito = nomePulito.trim();
+                        // 1. Rimuove solo l'estensione finale .pdf
+                        let n = nomeOriginale.replace(/\.pdf$/i, "");
                         
-                        // REGOLA MAIUSCOLE/MINUSCOLE:
-                        // Sostituisce "Linea" con "linea" (senza toccare acronimi come M1 o PO)
-                        nomePulito = nomePulito.replace(/\bLinea\b/gi, "linea");
+                        // 2. Sostituisce i trattini bassi con spazi
+                        n = n.replace(/_/g, " ");
                         
-                        // Forza solo la prima lettera del pulsante maiuscola (La "T" di Turni)
-                        nomePulito = nomePulito.charAt(0).toUpperCase() + nomePulito.slice(1);
+                        // 3. Taglia alla data preservando i numeri decimali (cerca " dal " con spazi intorno)
+                        n = n.split(/\s+dal\s+/i)[0];
+                        
+                        // 4. Toglie la parola "pdf" se è rimasta isolata in fondo
+                        n = n.replace(/\s+pdf$/i, "").trim();
+                        
+                        // 5. TRATTAMENTO MAIUSCOLE:
+                        // Sostituisce "Linea" o "LINEA" con "linea" (minuscolo)
+                        n = n.replace(/\blinea\b/gi, "linea");
+                        
+                        // Forza solo la prima lettera del bottone in maiuscolo (La "T" di Turni)
+                        // Senza toccare il resto (M1, PO, ecc. restano come sono nel file)
+                        nomePulito = n.charAt(0).toUpperCase() + n.slice(1);
                     }
 
                     const link = document.createElement('a');

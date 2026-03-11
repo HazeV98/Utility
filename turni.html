@@ -23,7 +23,7 @@
             align-items: center;
         }
 
-        /* --- STILI HEADER E MENU LATERALE --- */
+        /* --- HEADER E MENU --- */
         .header {
             width: 100%;
             max-width: 400px;
@@ -79,7 +79,7 @@
             background-color: #f4f7f6; color: var(--primary); font-weight: bold;
         }
 
-        /* --- STILI PAGINA TURNI --- */
+        /* --- CONTENUTI --- */
         .content-area {
             width: 100%;
             max-width: 400px;
@@ -108,14 +108,7 @@
             border-radius: 10px;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: all 0.2s;
             text-align: center;
-        }
-
-        .folder-btn:active {
-            background-color: var(--primary);
-            color: white;
-            transform: translateY(2px);
         }
 
         .file-btn {
@@ -130,11 +123,6 @@
             text-align: center;
             text-decoration: none;
             display: block;
-        }
-
-        .file-btn:active {
-            background-color: #004494;
-            transform: translateY(2px);
         }
 
         .back-folder-btn {
@@ -206,26 +194,24 @@
                 }
 
                 contentArea.innerHTML = '';
-                if (cartelleTurni.length > 1) {
-                    cartelleTurni.sort((a, b) => b.name.localeCompare(a.name));
-                    cartelleTurni.forEach(cartella => {
-                        const btn = document.createElement('button');
-                        btn.className = 'folder-btn';
-                        if (cartella.name.startsWith("turni_pdf_")) {
-                            const dataGrezza = cartella.name.replace("turni_pdf_", "");
-                            const partiData = dataGrezza.split("-");
-                            const dataFormattata = partiData.length === 3 ? `${partiData[2]}-${partiData[1]}-${partiData[0]}` : dataGrezza;
-                            btn.innerText = `Turni dal ${dataFormattata}`;
-                        } else if (cartella.name.startsWith("turni_varianti_")) {
-                            let nomeSpeciale = cartella.name.replace("turni_varianti_", "").replace(/_/g, " ");
-                            btn.innerText = nomeSpeciale.charAt(0).toUpperCase() + nomeSpeciale.slice(1);
-                        }
-                        btn.onclick = () => apriCartellaSelezionata(cartella.name);
-                        contentArea.appendChild(btn);
-                    });
-                } else {
-                    apriCartellaSelezionata(cartelleTurni[0].name);
-                }
+                // Ordina le cartelle per data decrescente
+                cartelleTurni.sort((a, b) => b.name.localeCompare(a.name));
+
+                cartelleTurni.forEach(cartella => {
+                    const btn = document.createElement('button');
+                    btn.className = 'folder-btn';
+                    if (cartella.name.startsWith("turni_pdf_")) {
+                        const dataGrezza = cartella.name.replace("turni_pdf_", "");
+                        const partiData = dataGrezza.split("-");
+                        const dataFormattata = partiData.length === 3 ? `${partiData[2]}-${partiData[1]}-${partiData[0]}` : dataGrezza;
+                        btn.innerText = `Turni dal ${dataFormattata}`;
+                    } else {
+                        let nomeSpeciale = cartella.name.replace("turni_varianti_", "").replace(/_/g, " ");
+                        btn.innerText = nomeSpeciale.charAt(0).toUpperCase() + nomeSpeciale.slice(1);
+                    }
+                    btn.onclick = () => apriCartellaSelezionata(cartella.name);
+                    contentArea.appendChild(btn);
+                });
             } catch (error) {
                 contentArea.innerHTML = `<div class="status-message">Errore di connessione.</div>`;
             }
@@ -241,16 +227,12 @@
                 const files = await response.json();
                 let pdfFiles = files.filter(file => file.name.toLowerCase().endsWith(".pdf"));
 
-                // --- ORDINAMENTO NATURALE (Linea 1, Linea 2... Linea 11) ---
+                // --- ORDINAMENTO NATURALE (1, 2, 3... 11) ---
                 pdfFiles.sort((a, b) => {
                     const isLibroA = a.name.toLowerCase().includes("libro_turni_completo");
                     const isLibroB = b.name.toLowerCase().includes("libro_turni_completo");
-                    
-                    // Priorità al Libro Completo
                     if (isLibroA && !isLibroB) return -1;
                     if (!isLibroA && isLibroB) return 1;
-
-                    // Ordinamento Naturale per tutto il resto
                     return a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'});
                 });
 
@@ -268,20 +250,20 @@
                     if (isLibroCompleto) {
                         nomePulito = "Libro turni completo";
                     } else {
-                        // 1. Rimuove l'estensione .pdf (senza case sensitivity)
+                        // 1. Rimuove estensione .pdf o .PDF
                         nomePulito = nomePulito.replace(/\.pdf$/i, "");
-                        // 2. Sostituisce i trattini bassi con spazi
+                        // 2. Sostituisce trattini bassi con spazi
                         nomePulito = nomePulito.replace(/_/g, " ");
-                        // 3. Taglia tutto quello che viene dopo " dal " (se presente)
+                        // 3. Taglia via tutto dal primo " dal " incontrato
                         nomePulito = nomePulito.split(/ dal /i)[0];
-                        // 4. Rimuove eventuali spazi bianchi rimasti ai lati
+                        // 4. Rimuove la parola "pdf" se è rimasta isolata alla fine del nome
+                        nomePulito = nomePulito.replace(/\s+pdf$/i, "");
                         nomePulito = nomePulito.trim();
                     }
 
                     const link = document.createElement('a');
                     link.className = 'file-btn';
                     link.innerText = nomePulito;
-                    // Link diretto per apertura nel browser
                     link.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${nomeCartella}/${file.name}`;
                     link.target = "_blank"; 
                     

@@ -30,16 +30,60 @@
             align-items: center;
         }
 
+        /* Nuovo Header bilanciato a 3 colonne */
         .header {
             width: 100%;
             max-width: 400px;
-            text-align: center;
-            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-top: 10px;
+            margin-bottom: 30px;
         }
 
-        h2 { margin: 0; color: var(--primary); font-size: 32px; font-weight: bold; }
+        .header-side {
+            width: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
+        .icon-btn {
+            background: none;
+            border: none;
+            font-size: 26px;
+            cursor: pointer;
+            padding: 10px;
+            color: var(--primary);
+            transition: transform 0.2s ease;
+        }
+
+        .icon-btn:active {
+            transform: scale(0.9);
+        }
+
+        /* Tasto Installa personalizzato per l'header */
+        #install-btn {
+            display: none; /* Appare solo se l'app è installabile */
+            color: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        h2 { 
+            margin: 0; 
+            color: var(--primary); 
+            font-size: 32px; 
+            font-weight: bold; 
+            text-align: center;
+        }
+
+        /* Griglia Bottoni Principali */
         .menu-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -64,65 +108,83 @@
             font-weight: 500;
         }
 
-        .menu-btn:active { transform: translateY(2px); opacity: 0.9; }
-
-        #install-btn {
-            display: none; /* Appare solo se installabile */
-            background-color: var(--success);
-            margin-top: 10px;
+        .menu-btn:active { 
+            transform: translateY(2px); 
+            opacity: 0.9; 
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
         }
     </style>
 </head>
 <body>
 
     <div class="header">
+        <div class="header-side">
+            <button class="icon-btn" onclick="apriGuida()" title="Guida all'uso">📖</button>
+        </div>
+        
         <h2>Utility</h2>
+        
+        <div class="header-side">
+            <button id="install-btn" class="icon-btn" title="Installa App">⬇️</button>
+        </div>
     </div>
 
     <div class="menu-grid">
         <a href="calendario.html" class="menu-btn">📅 Calendario</a>
-        <a href="dati_calendario.html" class="menu-btn">📊 Dati Calendario</a>
+        <a href="dati_calendario.html" class="menu-btn">📊 Statistiche Calendario</a>
         
         <a href="turni.html" class="menu-btn">🔄 Turni</a>
         <a href="orari.html" class="menu-btn">🕒 Orari</a>
         <a href="documenti.html" class="menu-btn">📄 Documenti</a>
         
         <a href="link.html" class="menu-btn">🔗 Link</a>
-        <a href="numeri.html" class="menu-btn">📞 Numeri</a>
+        <a href="contatti.html" class="menu-btn">📞 Contatti</a>
         <a href="buoni.html" class="menu-btn">🍔 Buoni Pasto</a>
-
-        <button id="install-btn" class="menu-btn">✨ Installa Utility</button>
     </div>
 
     <script>
+        // --- FUNZIONE GUIDA ---
+        function apriGuida() {
+            // Per ora mostra un avviso, in futuro lo collegheremo a guida.html
+            alert("La pagina della Guida è in fase di sviluppo!");
+            // window.location.href = "guida.html";
+        }
+
         // --- REGISTRAZIONE SERVICE WORKER ---
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
                 .then(() => console.log("SW Registrato"));
         }
 
-        // --- LOGICA INSTALLAZIONE ---
+        // --- LOGICA INSTALLAZIONE PWA ---
         let deferredPrompt;
         const installBtn = document.getElementById('install-btn');
 
         window.addEventListener('beforeinstallprompt', (e) => {
+            // Previene la barra di installazione nativa
             e.preventDefault();
+            // Salva l'evento
             deferredPrompt = e;
+            // Mostra il nostro tastino nell'header
             installBtn.style.display = 'block';
         });
 
         installBtn.addEventListener('click', async () => {
             if (!deferredPrompt) return;
+            // Mostra il prompt del telefono
             deferredPrompt.prompt();
+            // Aspetta la scelta dell'utente
             const { outcome } = await deferredPrompt.userChoice;
+            // Pulisce l'evento
             deferredPrompt = null;
+            // Nasconde il tasto dopo aver fatto
             installBtn.style.display = 'none';
         });
 
+        // Nasconde il tasto se l'app è già stata installata
         window.addEventListener('appinstalled', () => {
             installBtn.style.display = 'none';
         });
     </script>
 </body>
 </html>
- 

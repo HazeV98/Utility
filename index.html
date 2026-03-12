@@ -30,7 +30,7 @@
             align-items: center;
         }
 
-        /* Nuovo Header bilanciato a 3 colonne */
+        /* Header bilanciato a 3 colonne (spazio vuoto a sx, titolo al centro, installa a dx) */
         .header {
             width: 100%;
             max-width: 400px;
@@ -58,13 +58,8 @@
             transition: transform 0.2s ease;
         }
 
-        .icon-btn:active {
-            transform: scale(0.9);
-        }
-
-        /* Tasto Installa personalizzato per l'header */
         #install-btn {
-            display: none; /* Appare solo se l'app è installabile */
+            display: none; 
             color: var(--success);
             animation: pulse 2s infinite;
         }
@@ -113,14 +108,37 @@
             opacity: 0.9; 
             box-shadow: 0 2px 3px rgba(0,0,0,0.1);
         }
+
+        /* Sezione Contatto / Feedback in fondo */
+        .feedback-section {
+            margin-top: 40px;
+            margin-bottom: 20px;
+            text-align: center;
+            max-width: 350px;
+        }
+
+        .feedback-section p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .telegram-icon {
+            display: inline-block;
+            transition: transform 0.2s ease;
+            cursor: pointer;
+        }
+
+        .telegram-icon:active {
+            transform: scale(0.9);
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="header-side">
-            <button class="icon-btn" onclick="apriGuida()" title="Guida all'uso">📖</button>
-        </div>
+        <div class="header-side"></div>
         
         <h2>Utility</h2>
         
@@ -140,16 +158,20 @@
         <a href="link.html" class="menu-btn">🔗 Link</a>
         <a href="contatti.html" class="menu-btn">📞 Contatti</a>
         <a href="buoni.html" class="menu-btn">🍔 Buoni Pasto</a>
+        
+        <a href="guida.html" class="menu-btn" style="background-color: #6c757d;">📖 Guida</a>
+    </div>
+
+    <div class="feedback-section">
+        <p>Se vuoi contattarmi per feedback o altro clicca l'icona qui sotto</p>
+        <a href="http://t.me/MattiaB1058" target="_blank" class="telegram-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="#0088cc">
+                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.45c.538-.196 1.006.128.832.941z"/>
+            </svg>
+        </a>
     </div>
 
     <script>
-        // --- FUNZIONE GUIDA ---
-        function apriGuida() {
-            // Per ora mostra un avviso, in futuro lo collegheremo a guida.html
-            alert("La pagina della Guida è in fase di sviluppo!");
-            // window.location.href = "guida.html";
-        }
-
         // --- REGISTRAZIONE SERVICE WORKER ---
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
@@ -161,30 +183,23 @@
         const installBtn = document.getElementById('install-btn');
 
         window.addEventListener('beforeinstallprompt', (e) => {
-            // Previene la barra di installazione nativa
             e.preventDefault();
-            // Salva l'evento
             deferredPrompt = e;
-            // Mostra il nostro tastino nell'header
             installBtn.style.display = 'block';
         });
 
         installBtn.addEventListener('click', async () => {
             if (!deferredPrompt) return;
-            // Mostra il prompt del telefono
             deferredPrompt.prompt();
-            // Aspetta la scelta dell'utente
             const { outcome } = await deferredPrompt.userChoice;
-            // Pulisce l'evento
             deferredPrompt = null;
-            // Nasconde il tasto dopo aver fatto
             installBtn.style.display = 'none';
         });
 
-        // Nasconde il tasto se l'app è già stata installata
         window.addEventListener('appinstalled', () => {
             installBtn.style.display = 'none';
         });
     </script>
 </body>
 </html>
+ 

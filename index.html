@@ -30,7 +30,7 @@
             align-items: center;
         }
 
-        /* Header bilanciato a 3 colonne (spazio vuoto a sx, titolo al centro, installa a dx) */
+        /* Header bilanciato */
         .header {
             width: 100%;
             max-width: 400px;
@@ -42,43 +42,46 @@
         }
 
         .header-side {
-            width: 50px;
+            flex: 1;
             display: flex;
-            justify-content: center;
-            align-items: center;
         }
 
-        .icon-btn {
-            background: none;
-            border: none;
-            font-size: 26px;
-            cursor: pointer;
-            padding: 10px;
-            color: var(--primary);
-            transition: transform 0.2s ease;
-        }
-
-        #install-btn {
-            display: none; 
-            color: var(--success);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.15); }
-            100% { transform: scale(1); }
+        .header-side.right {
+            justify-content: flex-end;
         }
 
         h2 { 
             margin: 0; 
             color: var(--primary); 
-            font-size: 32px; 
+            font-size: 30px; 
             font-weight: bold; 
             text-align: center;
+            flex: 2;
         }
 
-        /* Griglia Bottoni Principali */
+        /* NUOVO TASTO INSTALLA VERDE */
+        #install-btn {
+            display: none; /* Appare solo se installabile */
+            background-color: var(--success);
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            white-space: nowrap;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+            50% { transform: scale(1.05); box-shadow: 0 4px 10px rgba(40, 167, 69, 0.4); }
+            100% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        }
+
+        /* Griglia Bottoni */
         .menu-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -91,7 +94,7 @@
             background-color: var(--primary);
             color: white;
             border: none;
-            padding: 20px;
+            padding: 18px;
             font-size: 18px;
             border-radius: 12px;
             cursor: pointer;
@@ -106,10 +109,9 @@
         .menu-btn:active { 
             transform: translateY(2px); 
             opacity: 0.9; 
-            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
         }
 
-        /* Sezione Contatto / Feedback in fondo */
+        /* Feedback e Telegram */
         .feedback-section {
             margin-top: 40px;
             margin-bottom: 20px;
@@ -120,19 +122,15 @@
         .feedback-section p {
             color: #666;
             font-size: 14px;
-            line-height: 1.5;
             margin-bottom: 15px;
         }
 
         .telegram-icon {
             display: inline-block;
             transition: transform 0.2s ease;
-            cursor: pointer;
         }
 
-        .telegram-icon:active {
-            transform: scale(0.9);
-        }
+        .telegram-icon:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
@@ -142,8 +140,8 @@
         
         <h2>Utility</h2>
         
-        <div class="header-side">
-            <button id="install-btn" class="icon-btn" title="Installa App">⬇️</button>
+        <div class="header-side right">
+            <button id="install-btn">Installa</button>
         </div>
     </div>
 
@@ -172,13 +170,10 @@
     </div>
 
     <script>
-        // --- REGISTRAZIONE SERVICE WORKER ---
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(() => console.log("SW Registrato"));
+            navigator.serviceWorker.register('sw.js').then(() => console.log("SW OK"));
         }
 
-        // --- LOGICA INSTALLAZIONE PWA ---
         let deferredPrompt;
         const installBtn = document.getElementById('install-btn');
 

@@ -3,297 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orari Aziendali</title>
+    <title>Utility - Orari</title>
     <style>
-        :root {
-            --primary: #0056b3;
-            --bg-color: #f4f7f6;
-            --text-color: #333;
-            --danger: #dc3545;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        /* --- HEADER E MENU LATERALE --- */
-        .header {
-            width: 100%;
-            max-width: 400px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .hamburger-btn {
-            background: none;
-            border: none;
-            font-size: 30px;
-            color: var(--primary);
-            cursor: pointer;
-            padding: 0;
-            width: 50px;
-            text-align: left;
-        }
-
+        /* Stessi stili del file turni */
+        :root { --primary: #0056b3; --bg-color: #f4f7f6; --text-color: #333; }
+        body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .hamburger-btn { background: none; border: none; font-size: 30px; color: var(--primary); cursor: pointer; padding: 0; width: 50px; text-align: left; }
         h2 { margin: 0; color: var(--primary); }
-
-        .sidebar-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5); z-index: 2000;
-        }
-
-        .sidebar {
-            position: fixed; top: 0; left: -280px; width: 250px; height: 100%;
-            background-color: white; box-shadow: 2px 0 5px rgba(0,0,0,0.2);
-            z-index: 2001; transition: left 0.3s ease; display: flex; flex-direction: column;
-        }
-
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 2000; }
+        .sidebar { position: fixed; top: 0; left: -280px; width: 250px; height: 100%; background-color: white; box-shadow: 2px 0 5px rgba(0,0,0,0.2); z-index: 2001; transition: left 0.3s ease; display: flex; flex-direction: column; }
         .sidebar.open { left: 0; }
-
-        .sidebar-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 20px; background-color: var(--primary); color: white;
-        }
-
-        .sidebar-header h3 { margin: 0; color: white; }
-
-        .close-sidebar {
-            background: none; border: none; font-size: 24px; color: white; cursor: pointer;
-        }
-
-        .sidebar-link {
-            padding: 15px 20px; text-decoration: none; color: var(--text-color);
-            font-size: 18px; border-bottom: 1px solid #eee; display: block;
-        }
-
-        .sidebar-link:active, .sidebar-link:hover {
-            background-color: #f4f7f6; color: var(--primary); font-weight: bold;
-        }
-
-        /* --- STILI PAGINA ORARI --- */
-        .content-area {
-            width: 100%;
-            max-width: 400px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .status-message {
-            text-align: center;
-            color: #666;
-            font-size: 16px;
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        .folder-btn {
-            background-color: white;
-            color: var(--primary);
-            border: 2px solid var(--primary);
-            padding: 18px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 10px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            text-align: center;
-        }
-
-        .file-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 16px;
-            font-size: 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            text-align: center;
-            text-decoration: none;
-            display: block;
-        }
-
-        .back-folder-btn {
-            background-color: #6c757d;
-            color: white;
-            border: none;
-            padding: 12px;
-            font-size: 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-bottom: 15px;
-            text-align: center;
-        }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: var(--primary); color: white; }
+        .sidebar-link { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 18px; border-bottom: 1px solid #eee; display: block; }
+        .content-area { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
+        .status-message { text-align: center; color: #666; font-size: 16px; padding: 20px; background: white; border-radius: 10px; }
+        .folder-btn { background-color: white; color: var(--primary); border: 2px solid var(--primary); padding: 18px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; text-align: center; }
+        .file-row { display: flex; gap: 8px; width: 100%; }
+        .file-btn { flex-grow: 1; background-color: var(--primary); color: white; border: none; padding: 16px; font-size: 16px; border-radius: 10px; cursor: pointer; text-decoration: none; display: block; text-align: center; }
+        .download-btn { width: 55px; background-color: white; color: var(--primary); border: 2px solid var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; }
+        .file-btn:active, .download-btn:active { transform: translateY(2px); }
+        .back-btn { background-color: #6c757d; color: white; border: none; padding: 12px; border-radius: 8px; margin-bottom: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
-
     <div class="header">
-        <button class="hamburger-btn" onclick="apriMenuLaterale()">☰</button>
+        <button class="hamburger-btn" onclick="apriMenu()">☰</button>
         <h2>Orari</h2>
         <div style="width: 50px;"></div>
     </div>
 
-    <div id="sidebar-overlay" class="sidebar-overlay" onclick="chiudiMenuLaterale()"></div>
+    <div id="overlay" class="sidebar-overlay" onclick="chiudiMenu()"></div>
     <div id="sidebar" class="sidebar">
-        <div class="sidebar-header">
-            <h3>Menu</h3>
-            <button class="close-sidebar" onclick="chiudiMenuLaterale()">✕</button>
-        </div>
+        <div class="sidebar-header"><h3>Menu</h3><button style="background:none; border:none; color:white; font-size:24px;" onclick="chiudiMenu()">✕</button></div>
         <a href="index.html" class="sidebar-link">🏠 Home Page</a>
         <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
         <a href="turni.html" class="sidebar-link">🔄 Turni</a>
         <a href="orari.html" class="sidebar-link">🕒 Orari</a>
+        <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
         <a href="link.html" class="sidebar-link">🔗 Link</a>
         <a href="numeri.html" class="sidebar-link">📞 Numeri</a>
-        <a href="dati_calendario.html" class="sidebar-link">📊 Dati Calendario</a>
         <a href="buoni.html" class="sidebar-link">🍔 Buoni Pasto</a>
     </div>
 
-    <div id="content-area" class="content-area">
-        <div class="status-message">Ricerca cartelle in corso...</div>
-    </div>
+    <div id="content-area" class="content-area"><div class="status-message">Caricamento...</div></div>
 
     <script>
-        function apriMenuLaterale() {
-            document.getElementById('sidebar').classList.add('open');
-            document.getElementById('sidebar-overlay').style.display = 'block';
-        }
-        function chiudiMenuLaterale() {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('sidebar-overlay').style.display = 'none';
-        }
+        const GITHUB_USER = "HazeV98"; const GITHUB_REPO = "Utility"; let numCartelle = 0;
+        function apriMenu() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').style.display = 'block'; }
+        function chiudiMenu() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').style.display = 'none'; }
 
-        const GITHUB_USER = "HazeV98"; 
-        const GITHUB_REPO = "Utility";
-        let numCartelleOrari = 0;
-
-        async function cercaCartelleOrari() {
-            const contentArea = document.getElementById('content-area');
-            const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`;
-
+        async function downloadForzato(url, filename) {
             try {
-                const response = await fetch(apiUrl);
-                const files = await response.json();
-                const cartelleOrari = files.filter(file => file.type === "dir" && (file.name.startsWith("orari_") || file.name.startsWith("orari_varianti_")));
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl; a.download = filename;
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a); URL.revokeObjectURL(blobUrl);
+            } catch (e) { window.open(url, '_blank'); }
+        }
 
-                numCartelleOrari = cartelleOrari.length;
-
-                if (numCartelleOrari === 0) {
-                    contentArea.innerHTML = `<div class="status-message">Nessuna cartella orari trovata.</div>`;
-                    return;
-                }
-
-                if (numCartelleOrari === 1) {
-                    // Entra direttamente se ce n'è solo una
-                    apriCartellaSelezionata(cartelleOrari[0].name);
-                } else {
-                    contentArea.innerHTML = '';
-                    cartelleOrari.sort((a, b) => b.name.localeCompare(a.name));
-
-                    cartelleOrari.forEach(cartella => {
-                        const btn = document.createElement('button');
-                        btn.className = 'folder-btn';
-                        if (cartella.name.startsWith("orari_") && !cartella.name.startsWith("orari_varianti_")) {
-                            const dataGrezza = cartella.name.replace("orari_", "");
-                            const partiData = dataGrezza.split("-");
-                            const dataFormattata = partiData.length === 3 ? `${partiData[2]}-${partiData[1]}-${partiData[0]}` : dataGrezza;
-                            btn.innerText = `Orari dal ${dataFormattata}`;
-                        } else {
-                            let nomeSpeciale = cartella.name.replace("orari_varianti_", "").replace(/_/g, " ");
-                            btn.innerText = nomeSpeciale.charAt(0).toUpperCase() + nomeSpeciale.slice(1);
-                        }
-                        btn.onclick = () => apriCartellaSelezionata(cartella.name);
-                        contentArea.appendChild(btn);
+        async function init() {
+            const area = document.getElementById('content-area');
+            try {
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`);
+                const files = await res.json();
+                const dirs = files.filter(f => f.type === "dir" && (f.name.startsWith("orari_") || f.name.startsWith("orari_varianti_")));
+                numCartelle = dirs.length;
+                if (numCartelle === 1) { caricaFiles(dirs[0].name); } else {
+                    area.innerHTML = ""; dirs.sort((a,b) => b.name.localeCompare(a.name));
+                    dirs.forEach(d => {
+                        const btn = document.createElement('button'); btn.className = "folder-btn";
+                        let label = d.name.replace("orari_", "").split("-").reverse().join("-");
+                        btn.innerText = d.name.includes("varianti") ? d.name.replace("orari_varianti_", "").replace(/_/g, " ") : "Orari dal " + label;
+                        btn.onclick = () => caricaFiles(d.name); area.appendChild(btn);
                     });
                 }
-            } catch (error) {
-                contentArea.innerHTML = `<div class="status-message">Errore di connessione.</div>`;
-            }
+            } catch (e) { area.innerHTML = "Errore."; }
         }
 
-        async function apriCartellaSelezionata(nomeCartella) {
-            const contentArea = document.getElementById('content-area');
-            contentArea.innerHTML = `<div class="status-message">Caricamento file...</div>`;
-            const apiUrlCartella = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${nomeCartella}`;
-
+        async function caricaFiles(dir) {
+            const area = document.getElementById('content-area'); area.innerHTML = "Caricamento...";
             try {
-                const response = await fetch(apiUrlCartella);
-                const files = await response.json();
-                let pdfFiles = files.filter(file => file.name.toLowerCase().endsWith(".pdf"));
-
-                // Ordinamento naturale
-                pdfFiles.sort((a, b) => {
-                    const isCompletoA = a.name.toLowerCase().includes("pdf_orari_completo");
-                    const isCompletoB = b.name.toLowerCase().includes("pdf_orari_completo");
-                    if (isCompletoA && !isCompletoB) return -1;
-                    if (!isCompletoA && isCompletoB) return 1;
-                    return a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'});
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${dir}`);
+                const files = await res.json();
+                let pdfs = files.filter(f => f.name.toLowerCase().endsWith(".pdf"));
+                pdfs.sort((a, b) => {
+                    if (a.name.includes("pdf_orari_completo")) return -1;
+                    if (b.name.includes("pdf_orari_completo")) return 1;
+                    return a.name.localeCompare(b.name, undefined, {numeric: true});
                 });
-
-                contentArea.innerHTML = ''; 
-
-                // Mostra "indietro" solo se c'erano più cartelle da cui scegliere
-                if (numCartelleOrari > 1) {
-                    const backBtn = document.createElement('button');
-                    backBtn.className = 'back-folder-btn';
-                    backBtn.innerText = "← Torna alle date";
-                    backBtn.onclick = cercaCartelleOrari;
-                    contentArea.appendChild(backBtn);
-                }
-
-                pdfFiles.forEach(file => {
-                    let nomePulito = file.name;
-                    let isCompleto = nomePulito.toLowerCase().includes("pdf_orari_completo");
-                    
-                    if (isCompleto) {
-                        nomePulito = "Pdf orari completo";
-                    } else {
-                        // Pulizia aggressiva
-                        nomePulito = nomePulito.replace(/\.pdf$/i, "");
-                        nomePulito = nomePulito.replace(/_/g, " ");
-                        nomePulito = nomePulito.split(/ dal /i)[0];
-                        nomePulito = nomePulito.replace(/actv nav/i, "Orari");
-                        // Regola speciale per le linee "b" (es 2b -> 2/)
-                        nomePulito = nomePulito.replace(/(\d+)b\b/gi, "$1/");
-                        nomePulito = nomePulito.replace(/\s+pdf$/i, "");
-                        nomePulito = nomePulito.trim();
+                area.innerHTML = "";
+                if (numCartelle > 1) { const b = document.createElement('button'); b.className = "back-btn"; b.innerText = "← Indietro"; b.onclick = init; area.appendChild(b); }
+                pdfs.forEach(f => {
+                    let nomeOrig = f.name;
+                    let nomeVis = "";
+                    if (nomeOrig.includes("pdf_orari_completo")) { nomeVis = "Pdf orari completo"; } else {
+                        let n = nomeOrig.replace(/\.pdf$/i, "").replace(/_/g, " ");
+                        n = n.split(/\s+dal\s+/i)[0];
+                        n = n.replace(/actv nav/i, "Orari").replace(/(\d+)b\b/gi, "$1/").replace(/\s+pdf$/i, "").trim();
+                        nomeVis = n.charAt(0).toUpperCase() + n.slice(1);
                     }
-
-                    const link = document.createElement('a');
-                    link.className = 'file-btn';
-                    link.innerText = nomePulito;
-                    link.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${nomeCartella}/${file.name}`;
-                    link.target = "_blank"; 
-                    
-                    if (isCompleto) {
-                        link.style.marginBottom = "25px";
-                        link.style.fontWeight = "bold";
-                        link.style.textTransform = "none";
-                    } else {
-                        link.style.textTransform = "capitalize";
-                    }
-                    
-                    contentArea.appendChild(link);
+                    const row = document.createElement('div'); row.className = "file-row";
+                    if (nomeOrig.includes("completo")) row.style.marginBottom = "15px";
+                    const aOpen = document.createElement('a'); aOpen.className = "file-btn"; aOpen.innerText = nomeVis; aOpen.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${dir}/${nomeOrig}`; aOpen.target = "_blank";
+                    const aDown = document.createElement('div'); aDown.className = "download-btn"; aDown.innerHTML = "⬇️"; aDown.onclick = () => downloadForzato(f.download_url, nomeOrig);
+                    row.appendChild(aOpen); row.appendChild(aDown); area.appendChild(row);
                 });
-            } catch (error) {
-                contentArea.innerHTML = `<div class="status-message">Errore nel caricamento.</div>`;
-            }
+            } catch (e) { area.innerHTML = "Errore."; }
         }
-
-        window.onload = cercaCartelleOrari;
+        window.onload = init;
     </script>
 </body>
 </html>

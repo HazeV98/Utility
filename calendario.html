@@ -62,8 +62,8 @@
             font-size: 13px; text-align: center; line-height: 1.4;
         }
 
-        #welcomeModal, #stepModal, #editModal, #resetModal, #backupModal, #colorModal, #imageModal, #jumpModal, #icsModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
-        .modal-content { background: white; margin: 15% auto; padding: 25px; width: 85%; max-width: 400px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
+        #welcomeModal, #stepModal, #editModal, #altroModal, #resetModal, #backupModal, #imageModal, #jumpModal, #icsModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
+        .modal-content { background: white; margin: 15% auto; padding: 25px; width: 85%; max-width: 400px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; max-height: 80vh; overflow-y: auto; }
 
         select, input[type="text"], input[type="date"] { width: 100%; box-sizing: border-box; margin: 15px 0; padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 16px; background: white; -webkit-appearance: none; }
         .btn { padding: 16px; border: none; border-radius: 14px; color: white; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; font-size: 15px; }
@@ -71,7 +71,8 @@
         .instruction-text { font-size: 15px; line-height: 1.6; color: #525f7f; margin-bottom: 10px; }
         .deposito-tag { font-size: 10px; background: #eef2ff; color: var(--turno); padding: 4px 8px; border-radius: 5px; font-weight: bold; }
 
-        .color-circle { width: 45px; height: 45px; border-radius: 50%; display: inline-block; margin: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .color-circle { width: 40px; height: 40px; border-radius: 50%; display: inline-block; margin: 6px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s, border 0.2s; }
+        .color-circle.selected { border: 3px solid #32325d; transform: scale(1.15); box-shadow: 0 6px 12px rgba(0,0,0,0.2); }
         .color-yellow { background: #f1c40f; }
         .color-orange { background: #fd7e14; }
         .color-red { background: #f5365c; }
@@ -83,6 +84,7 @@
 
         @media (max-width: 400px) {
             .fc-event { font-size: 0.75em !important; padding: 4px 2px !important; }
+            .modal-content { padding: 20px; }
         }
     </style>
 </head>
@@ -212,56 +214,64 @@
         
         <button id="btnVisualizzaTurno" class="btn" style="background: #2dce89; margin-bottom: 15px; display: none;" onclick="apriImmagineTurno()">Mostra Immagine Turno</button>
         
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: left; border: 2px solid #e9ecef;">
-            <label style="display: flex; align-items: center; font-size: 15px; color: #525f7f; margin-bottom: 10px; font-weight: bold; cursor: pointer;">
-                <input type="checkbox" id="checkNebbia" style="width: 22px; height: 22px; margin-right: 10px; accent-color: #5e72e4;" onchange="abilitaSalvataggio()">
-                🌫️ Indennità Nebbia
-            </label>
-            
-            <label style="display: flex; align-items: center; font-size: 15px; color: #525f7f; font-weight: bold; cursor: pointer;">
-                <input type="checkbox" id="checkStraordinario" style="width: 22px; height: 22px; margin-right: 10px; accent-color: #5e72e4;" onchange="toggleStraordinarioInputs(); abilitaSalvataggio()">
-                ⏱️ Straordinario
-            </label>
-            
-            <div id="straordinarioInputs" style="display: none; margin-top: 10px; flex-direction: row; gap: 10px;">
-                <input type="number" id="oreStraordinario" placeholder="Ore" min="0" style="flex: 1; padding: 12px; margin: 0; border: 2px solid #e9ecef; border-radius: 10px; font-size: 15px;" oninput="abilitaSalvataggio()">
-                <input type="number" id="minutiStraordinario" placeholder="Minuti" min="0" max="59" style="flex: 1; padding: 12px; margin: 0; border: 2px solid #e9ecef; border-radius: 10px; font-size: 15px;" oninput="abilitaSalvataggio()">
-            </div>
-        </div>
-        
         <input type="text" id="singleTurnoSelect" placeholder="Inserisci il turno" oninput="this.value = this.value.toUpperCase(); abilitaSalvataggio();">
         
         <button id="btnSalvaCambio" class="btn" style="background: #32325d" onclick="salvaCambioSingolo()" disabled>Salva Cambio</button>
-        <button class="btn" style="background: #11cdef;" onclick="apriColorModal()">Colore Sfondo</button>
         <button class="btn" style="background: #adb5bd;" onclick="resetGiornoSingolo()">Ripristina Originale</button>
+        <button class="btn" style="background: #11cdef;" onclick="apriAltroModal()">Altro (Nebbia, Straord, Sospesi, Colore)</button>
         <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiEdit()">Chiudi</button>
     </div>
 </div>
 
-<div id="colorModal">
+<div id="altroModal" onclick="chiudiAltroSeSfondo(event)">
     <div class="modal-content">
-        <h3 style="margin-top:0; color: var(--text);">Scegli Colore</h3>
-        <div style="display: flex; justify-content: center; flex-wrap: wrap; margin-top: 15px;">
-            <div class="color-circle color-yellow" onclick="salvaColore('#f1c40f')"></div>
-            <div class="color-circle color-orange" onclick="salvaColore('#fd7e14')"></div>
-            <div class="color-circle color-red" onclick="salvaColore('#f5365c')"></div>
-            <div class="color-circle color-pink" onclick="salvaColore('#e83e8c')"></div>
-            <div class="color-circle color-purple" onclick="salvaColore('#8965e0')"></div>
-            <div class="color-circle color-blue" onclick="salvaColore('#5e72e4')"></div>
-            <div class="color-circle color-teal" onclick="salvaColore('#11cdef')"></div>
-            <div class="color-circle color-green" onclick="salvaColore('#2dce89')"></div>
+        <h3 style="margin-top:0; color: var(--text);">Altre Opzioni</h3>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: left; border: 2px solid #e9ecef;">
+            
+            <label style="display: flex; align-items: center; font-size: 15px; color: #525f7f; margin-bottom: 10px; font-weight: bold; cursor: pointer;">
+                <input type="checkbox" id="checkSospesoRiposoAltro" style="width: 22px; height: 22px; margin-right: 10px; accent-color: #f5365c;">
+                Sospeso Riposo
+            </label>
+
+            <label style="display: flex; align-items: center; font-size: 15px; color: #525f7f; margin-bottom: 10px; font-weight: bold; cursor: pointer;">
+                <input type="checkbox" id="checkNebbiaAltro" style="width: 22px; height: 22px; margin-right: 10px; accent-color: #5e72e4;">
+                🌫️ Indennità Nebbia
+            </label>
+            
+            <label style="display: flex; align-items: center; font-size: 15px; color: #525f7f; font-weight: bold; cursor: pointer;">
+                <input type="checkbox" id="checkStraordinarioAltro" style="width: 22px; height: 22px; margin-right: 10px; accent-color: #5e72e4;" onchange="toggleStraordinarioAltro()">
+                ⏱️ Straordinario
+            </label>
+            
+            <div id="straordinarioInputsAltro" style="display: none; margin-top: 10px; flex-direction: row; gap: 10px;">
+                <input type="number" id="oreStraordAltro" placeholder="Ore" min="0" style="flex: 1; padding: 12px; margin: 0; border: 2px solid #e9ecef; border-radius: 10px; font-size: 15px;">
+                <input type="number" id="minutiStraordAltro" placeholder="Minuti" min="0" max="59" style="flex: 1; padding: 12px; margin: 0; border: 2px solid #e9ecef; border-radius: 10px; font-size: 15px;">
+            </div>
         </div>
-        <button class="btn" style="background: #adb5bd; margin-top: 20px;" onclick="salvaColore('')">Rimuovi Colore</button>
-        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 10px;" onclick="chiudiColorModal()">Annulla</button>
+
+        <div style="text-align: left; margin-bottom: 10px; color: #525f7f; font-weight: bold; font-size: 15px;">Colore Sfondo:</div>
+        <div style="display: flex; justify-content: center; flex-wrap: wrap; margin-bottom: 15px;">
+            <div class="color-circle color-yellow" data-color="#f1c40f" onclick="selezionaColoreAltro('#f1c40f', this)"></div>
+            <div class="color-circle color-orange" data-color="#fd7e14" onclick="selezionaColoreAltro('#fd7e14', this)"></div>
+            <div class="color-circle color-red" data-color="#f5365c" onclick="selezionaColoreAltro('#f5365c', this)"></div>
+            <div class="color-circle color-pink" data-color="#e83e8c" onclick="selezionaColoreAltro('#e83e8c', this)"></div>
+            <div class="color-circle color-purple" data-color="#8965e0" onclick="selezionaColoreAltro('#8965e0', this)"></div>
+            <div class="color-circle color-blue" data-color="#5e72e4" onclick="selezionaColoreAltro('#5e72e4', this)"></div>
+            <div class="color-circle color-teal" data-color="#11cdef" onclick="selezionaColoreAltro('#11cdef', this)"></div>
+            <div class="color-circle color-green" data-color="#2dce89" onclick="selezionaColoreAltro('#2dce89', this)"></div>
+        </div>
+        <button class="btn" style="background: #e9ecef; color: #32325d; margin-top: 0; padding: 10px; font-size: 14px;" onclick="selezionaColoreAltro('', null)">Rimuovi Colore</button>
+
+        <button class="btn" style="background: #32325d; margin-top: 20px;" onclick="salvaAltro()">Salva Altre Opzioni</button>
+        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 10px;" onclick="chiudiAltroModal()">Annulla</button>
     </div>
 </div>
 
 <div id="imageModal" style="z-index: 10000; overflow: hidden;" onclick="chiudiSeSfondo(event)">
     <div style="position: absolute; top: calc(20px + env(safe-area-inset-top)); right: 20px; font-size: 35px; color: white; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 10001;" onclick="chiudiImageModal()">&times;</div>
     <div id="imageFlexContainer" style="display:flex; flex-direction: column; justify-content:center; align-items:center; height:100%; padding:20px; padding-bottom: 80px; position: relative;">
-        
         <img id="turnoImage" src="" style="max-width: 100%; max-height: 70vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
-        
         <div id="imageBanner" style="position: relative; z-index: 10001; margin-top: 15px; background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px; border-radius: 12px; font-size: 13px; text-align: center; max-width: 90%; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
             ⚠️ Controllare sempre i turni ufficiali e la presenza di eventuali varianti ai turni.
         </div>
@@ -295,14 +305,16 @@
         rot_linea14: true, rot_17sn: true, rot_17tr: true, rot_linea12: true
     };
 
-    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, nebbia: {}, straordinario: {}, setupStep: 0, dbCache: {}, rotCache: {} };
+    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, nebbia: {}, straordinario: {}, sospesoRiposo: {}, setupStep: 0, dbCache: {}, rotCache: {} };
     if (!state.colori) state.colori = {}; 
     if (!state.nebbia) state.nebbia = {};
     if (!state.straordinario) state.straordinario = {};
+    if (!state.sospesoRiposo) state.sospesoRiposo = {};
 
     let selectedDate, tempRotDate, calendar;
     let currentImagePath = "";
     let pzInstance = null; 
+    let tempColoreAltro = "";
 
     function stringToNum(s) { if(!s) return 0; let p = s.split('-'); return Math.floor(new Date(p[0], p[1]-1, p[2], 12, 0, 0).getTime() / 86400000); }
     function formattaData(d) { let dataObj = new Date(d); let mese = dataObj.toLocaleDateString('it-IT', { month: 'long' }); return dataObj.getDate() + ' ' + mese.charAt(0).toUpperCase() + mese.slice(1); }
@@ -475,11 +487,6 @@
         }
     }
 
-    function toggleStraordinarioInputs() {
-        const isChecked = document.getElementById('checkStraordinario').checked;
-        document.getElementById('straordinarioInputs').style.display = isChecked ? 'flex' : 'none';
-    }
-
     function abilitaSalvataggio() {
         document.getElementById('btnSalvaCambio').disabled = false;
     }
@@ -501,7 +508,10 @@
             let turnoCorrenteObj = turniCalc.find(e => e.start === date);
             
             let nomeTurnoCompleto = turnoCorrenteObj ? turnoCorrenteObj.title : "Nessun turno";
-            let nomeTurnoPulito = nomeTurnoCompleto.replace(/ 🌫️| ⏱️/g, '').trim();
+            let nomeTurnoPulito = nomeTurnoCompleto.replace(/ 🌫️| ⏱️|\(Sospeso\)/g, '').trim();
+            let codiceBase = nomeTurnoPulito.toUpperCase();
+            
+            document.getElementById('singleTurnoSelect').style.display = 'block';
             
             let htmlInfo = `<strong>Turno attuale:</strong> ${nomeTurnoPulito} ${state.variazioni[date] ? '(Modificato)' : ''}`;
             
@@ -521,7 +531,6 @@
             let giornoIdx = new Date(date).getDay();
             let suffissoGiorno = giorniSuffix[giornoIdx];
             
-            let codiceBase = nomeTurnoPulito.toUpperCase();
             let dettagli = dbCorrente[codiceBase + suffissoGiorno] || dbCorrente[codiceBase];
 
             if (dettagli) {
@@ -529,8 +538,9 @@
                 htmlInfo += `<b>Inizio:</b> ${dettagli.inizio} (${dettagli.luogoInizio})<br><b>Fine:</b> ${dettagli.fine} (${dettagli.luogoFine})`;
             }
 
-            if (state.nebbia[date] || state.straordinario[date]) {
+            if (state.nebbia[date] || state.straordinario[date] || state.sospesoRiposo[date]) {
                 htmlInfo += `<hr style="margin:10px 0; border:0; border-top:1px solid #eee;">`;
+                if (state.sospesoRiposo[date]) htmlInfo += `<div style="margin-bottom: 5px;"><b>Riposo:</b> Sospeso</div>`;
                 if (state.nebbia[date]) htmlInfo += `<div style="margin-bottom: 5px;">🌫️ <b>Indennità Nebbia:</b> Presente</div>`;
                 if (state.straordinario[date]) htmlInfo += `<div>⏱️ <b>Straordinario:</b> ${state.straordinario[date].ore}h ${state.straordinario[date].minuti}m</div>`;
             }
@@ -538,21 +548,10 @@
             infoArea.innerHTML = htmlInfo; infoArea.style.display = "block"; 
             popolaCambio();
 
-            document.getElementById('checkNebbia').checked = !!state.nebbia[date];
-            const hasStraord = !!state.straordinario[date];
-            document.getElementById('checkStraordinario').checked = hasStraord;
-            if (hasStraord) {
-                document.getElementById('oreStraordinario').value = state.straordinario[date].ore || '';
-                document.getElementById('minutiStraordinario').value = state.straordinario[date].minuti || '';
-                document.getElementById('straordinarioInputs').style.display = 'flex';
-            } else {
-                document.getElementById('oreStraordinario').value = '';
-                document.getElementById('minutiStraordinario').value = '';
-                document.getElementById('straordinarioInputs').style.display = 'none';
-            }
-
             const btnImmagine = document.getElementById('btnVisualizzaTurno');
-            if (codiceBase !== 'RI' && codiceBase !== 'RIPOSO' && codiceBase !== 'DISP' && codiceBase !== 'AL' && codiceBase !== 'NESSUN TURNO') {
+            let isRiposo = (codiceBase === 'RI' || codiceBase === 'RIPOSO' || codiceBase === 'AL');
+
+            if (!isRiposo && codiceBase !== 'DISP' && codiceBase !== 'NESSUN TURNO') {
                 currentImagePath = `turni_${dataAttiva}/${codiceBase}.jpg`;
                 btnImmagine.style.display = 'block';
             } else {
@@ -562,6 +561,84 @@
 
             document.getElementById('editModal').style.display = 'block';
         }
+    }
+
+    function apriAltroModal() {
+        document.getElementById('editModal').style.display = 'none';
+        
+        document.getElementById('checkSospesoRiposoAltro').checked = !!state.sospesoRiposo[selectedDate];
+        document.getElementById('checkNebbiaAltro').checked = !!state.nebbia[selectedDate];
+        
+        let hasStraord = !!state.straordinario[selectedDate];
+        document.getElementById('checkStraordinarioAltro').checked = hasStraord;
+        document.getElementById('straordinarioInputsAltro').style.display = hasStraord ? 'flex' : 'none';
+        document.getElementById('oreStraordAltro').value = hasStraord ? state.straordinario[selectedDate].ore : '';
+        document.getElementById('minutiStraordAltro').value = hasStraord ? state.straordinario[selectedDate].minuti : '';
+        
+        tempColoreAltro = state.colori[selectedDate] || "";
+        aggiornaSelezioneColoreUI();
+        
+        document.getElementById('altroModal').style.display = 'block';
+    }
+
+    function chiudiAltroModal() {
+        document.getElementById('altroModal').style.display = 'none';
+        document.getElementById('editModal').style.display = 'block';
+    }
+
+    function chiudiAltroSeSfondo(event) {
+        if (event.target.id === 'altroModal') chiudiAltroModal();
+    }
+
+    function toggleStraordinarioAltro() {
+        const isChecked = document.getElementById('checkStraordinarioAltro').checked;
+        document.getElementById('straordinarioInputsAltro').style.display = isChecked ? 'flex' : 'none';
+    }
+
+    function selezionaColoreAltro(hex, el) {
+        tempColoreAltro = hex;
+        aggiornaSelezioneColoreUI();
+    }
+
+    function aggiornaSelezioneColoreUI() {
+        document.querySelectorAll('.color-circle').forEach(c => {
+            c.classList.remove('selected');
+            if (tempColoreAltro && c.getAttribute('data-color') === tempColoreAltro) {
+                c.classList.add('selected');
+            }
+        });
+    }
+
+    function salvaAltro() {
+        if (document.getElementById('checkSospesoRiposoAltro').checked) {
+            state.sospesoRiposo[selectedDate] = true;
+        } else {
+            delete state.sospesoRiposo[selectedDate];
+        }
+
+        if (document.getElementById('checkNebbiaAltro').checked) {
+            state.nebbia[selectedDate] = true;
+        } else {
+            delete state.nebbia[selectedDate];
+        }
+
+        if (document.getElementById('checkStraordinarioAltro').checked) {
+            state.straordinario[selectedDate] = {
+                ore: document.getElementById('oreStraordAltro').value || "0",
+                minuti: document.getElementById('minutiStraordAltro').value || "0"
+            };
+        } else {
+            delete state.straordinario[selectedDate];
+        }
+
+        if (tempColoreAltro) {
+            state.colori[selectedDate] = tempColoreAltro;
+        } else {
+            delete state.colori[selectedDate];
+        }
+
+        salvaLocal();
+        location.reload();
     }
 
     function apriImmagineTurno() {
@@ -724,6 +801,7 @@
             let titleAddon = "";
             if (state.nebbia[dStr]) titleAddon += " 🌫️";
             if (state.straordinario[dStr]) titleAddon += " ⏱️";
+            if (state.sospesoRiposo[dStr]) titleAddon += " (Sospeso)";
 
             if (state.variazioni[dStr]) {
                 let ev = { title: state.variazioni[dStr] + titleAddon, start: dStr, allDay: true };
@@ -797,29 +875,10 @@
         return htmlDisp + htmlTurni;
     }
 
-    function apriColorModal() { document.getElementById('editModal').style.display = 'none'; document.getElementById('colorModal').style.display = 'block'; }
-    function chiudiColorModal() { document.getElementById('colorModal').style.display = 'none'; document.getElementById('editModal').style.display = 'block'; }
-    function salvaColore(hexColor) { if (!hexColor) { delete state.colori[selectedDate]; } else { state.colori[selectedDate] = hexColor; } salvaLocal(); location.reload(); }
-
     function salvaCambioSingolo() { 
         const val = document.getElementById('singleTurnoSelect').value.trim().toUpperCase();
         if(val) {
             state.variazioni[selectedDate] = val; 
-        }
-
-        if (document.getElementById('checkNebbia').checked) {
-            state.nebbia[selectedDate] = true;
-        } else {
-            delete state.nebbia[selectedDate];
-        }
-
-        if (document.getElementById('checkStraordinario').checked) {
-            state.straordinario[selectedDate] = {
-                ore: document.getElementById('oreStraordinario').value || "0",
-                minuti: document.getElementById('minutiStraordinario').value || "0"
-            };
-        } else {
-            delete state.straordinario[selectedDate];
         }
 
         salvaLocal(); 
@@ -831,6 +890,7 @@
         delete state.colori[selectedDate]; 
         delete state.nebbia[selectedDate];
         delete state.straordinario[selectedDate];
+        delete state.sospesoRiposo[selectedDate];
         salvaLocal(); 
         location.reload(); 
     }
@@ -891,7 +951,7 @@
             const nextParts = nextDateStr.split('-');
             const icsNextDate = nextParts[0] + nextParts[1] + nextParts[2];
             
-            let pulitoTitle = t.title.replace(/ 🌫️| ⏱️/g, '').trim();
+            let pulitoTitle = t.title.replace(/ 🌫️| ⏱️|\(Sospeso\)/g, '').trim();
             const uid = t.start + "-" + pulitoTitle.replace(/\s+/g, '') + "@myturniapp";
             const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + "Z";
             

@@ -22,15 +22,19 @@
         .sidebar-link { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 18px; border-bottom: 1px solid #eee; display: block; }
         .sidebar-link:active, .sidebar-link:hover { background-color: #f4f7f6; color: var(--primary); font-weight: bold; }
 
-        /* AREA CONTENUTI SPECIFICA PER I LINK */
-        .content-area { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px; }
+        /* AREA CONTENUTI */
+        .content-area { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
         .status-message { text-align: center; color: #666; font-size: 16px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         
-        .category-block { display: flex; flex-direction: column; gap: 10px; }
-        .category-title { font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; margin-top: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-        
-        .link-btn { background-color: white; color: var(--primary); border: 2px solid var(--primary); padding: 16px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: space-between; transition: background-color 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        /* RIGA LINK CON COPIA */
+        .link-row { display: flex; gap: 8px; width: 100%; align-items: stretch; }
+
+        .link-btn { flex-grow: 1; background-color: white; color: var(--primary); border: 2px solid var(--primary); padding: 16px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: space-between; transition: background-color 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .link-btn:active { transform: translateY(2px); background-color: #f8f9fa; }
+        
+        .copy-btn { width: 55px; background-color: white; color: var(--primary); border: 2px solid var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .copy-btn:active { transform: translateY(2px); background-color: #e9ecef; }
+        
         .link-icon { font-size: 20px; }
     </style>
 </head>
@@ -64,26 +68,39 @@
     </div>
 
     <script>
-        // --- FUNZIONI MENU LATERALE ---
         function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
         function chiudiMenuLaterale() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; }
 
-        // --- LOGICA CARICAMENTO DATI ---
+        // --- FUNZIONE COPIA URL ---
+        function copiaLink(url, btn) {
+            navigator.clipboard.writeText(url).then(() => {
+                const iconaOriginale = btn.innerHTML;
+                btn.innerHTML = "✅"; 
+                btn.style.borderColor = "#28a745";
+                btn.style.color = "#28a745";
+                
+                setTimeout(() => {
+                    btn.innerHTML = iconaOriginale;
+                    btn.style.borderColor = "";
+                    btn.style.color = "";
+                }, 1500);
+            }).catch(err => {
+                console.error('Errore nella copia: ', err);
+            });
+        }
+
         async function caricaLink() {
             const area = document.getElementById('content-area');
             try {
-                // Aggiungiamo un timestamp per evitare che il telefono usi vecchi file in cache
                 const noCache = new Date().getTime();
                 const response = await fetch(`link.json?v=${noCache}`);
                 
                 if (!response.ok) {
-                    area.innerHTML = `<div class="status-message">File dati.json non trovato.</div>`;
+                    area.innerHTML = `<div class="status-message">File link.json non trovato.</div>`;
                     return;
                 }
 
                 const dati = await response.json();
-                
-                // Pulisce l'area
                 area.innerHTML = "";
 
                 if (!dati.link || dati.link.length === 0) {
@@ -91,29 +108,28 @@
                     return;
                 }
 
-                // Genera i pulsanti per ogni categoria e link
-                dati.link.forEach(categoriaObj => {
-                    const block = document.createElement('div');
-                    block.className = "category-block";
+                dati.link.forEach(linkObj => {
+                    const row = document.createElement('div');
+                    row.className = "link-row";
 
-                    const titolo = document.createElement('div');
-                    titolo.className = "category-title";
-                    titolo.innerText = categoriaObj.categoria;
-                    block.appendChild(titolo);
+                    const btn = document.createElement('a');
+                    btn.className = "link-btn";
+                    btn.href = linkObj.url;
+                    btn.target = "_blank";
+                    btn.innerHTML = `<span>${linkObj.nome}</span> <span class="link-icon">🔗</span>`;
+                    
+                    const copyBtn = document.createElement('div');
+                    copyBtn.className = "copy-btn";
+                    copyBtn.innerHTML = "📋";
+                    copyBtn.title = "Copia URL";
+                    copyBtn.onclick = (e) => {
+                        e.preventDefault();
+                        copiaLink(linkObj.url, copyBtn);
+                    };
 
-                    categoriaObj.elementi.forEach(linkObj => {
-                        const btn = document.createElement('a');
-                        btn.className = "link-btn";
-                        btn.href = linkObj.url;
-                        btn.target = "_blank"; // Apre in una nuova scheda
-                        
-                        // Inserisce il nome e un'icona freccia a destra
-                        btn.innerHTML = `<span>${linkObj.nome}</span> <span class="link-icon">🔗</span>`;
-                        
-                        block.appendChild(btn);
-                    });
-
-                    area.appendChild(block);
+                    row.appendChild(btn);
+                    row.appendChild(copyBtn);
+                    area.appendChild(row);
                 });
 
             } catch (error) {
@@ -125,3 +141,4 @@
     </script>
 </body>
 </html>
+ 

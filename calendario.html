@@ -86,14 +86,44 @@
             .fc-event { font-size: 0.75em !important; padding: 4px 2px !important; }
             .modal-content { padding: 20px; }
         }
+
+        /* --- STILI MENU LATERALE --- */
+        .hamburger-btn { background: none; border: none; font-size: 28px; color: var(--text); cursor: pointer; padding: 0; margin-right: 15px; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 2000; }
+        .sidebar { position: fixed; top: 0; left: -280px; width: 250px; height: 100%; background-color: white; box-shadow: 2px 0 5px rgba(0,0,0,0.2); z-index: 2001; transition: left 0.3s ease; display: flex; flex-direction: column; }
+        .sidebar.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: var(--turno); color: white; }
+        .sidebar-link { padding: 15px 20px; text-decoration: none; color: #333; font-size: 18px; border-bottom: 1px solid #eee; display: block; }
+        .sidebar-link:active, .sidebar-link:hover { background-color: #f4f7f6; color: var(--turno); font-weight: bold; }
     </style>
 </head>
 <body>
 
+<div id="sidebar-overlay" class="sidebar-overlay" onclick="chiudiMenuLaterale()"></div>
+
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+        <h3 style="margin:0; color:white;">Menu</h3>
+        <button style="background:none; border:none; color:white; font-size:24px; cursor:pointer;" onclick="chiudiMenuLaterale()">✕</button>
+    </div>
+    <a href="index.html" class="sidebar-link">🏠 Home Page</a>
+    <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
+    <a href="dati_calendario.html" class="sidebar-link">📊 Dati Calendario</a>
+    <a href="turni.html" class="sidebar-link">🔄 Turni</a>
+    <a href="orari.html" class="sidebar-link">🕒 Orari</a>
+    <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
+    <a href="link.html" class="sidebar-link">🔗 Link</a>
+    <a href="numeri.html" class="sidebar-link">📞 Numeri</a>
+    <a href="buoni.html" class="sidebar-link">🍔 Buoni Pasto</a>
+</div>
+
 <div id="topBar">
-    <div>
-        <h2 style="margin:0; font-size: 18px;">Gestione Turni</h2>
-        <span id="activeDepotLabel" class="deposito-tag">In attesa...</span>
+    <div style="display: flex; align-items: center;">
+        <button class="hamburger-btn" onclick="apriMenuLaterale()">☰</button>
+        <div>
+            <h2 style="margin:0; font-size: 18px;">Gestione Turni</h2>
+            <span id="activeDepotLabel" class="deposito-tag">In attesa...</span>
+        </div>
     </div>
     <div style="display: flex; flex-direction: column; align-items: flex-end;">
         <div style="display: flex;">
@@ -286,6 +316,18 @@
 </div>
 
 <script>
+    // --- FUNZIONI MENU LATERALE ---
+    function apriMenuLaterale() { 
+        document.getElementById('sidebar').classList.add('open'); 
+        document.getElementById('sidebar-overlay').style.display = 'block'; 
+    }
+
+    function chiudiMenuLaterale() { 
+        document.getElementById('sidebar').classList.remove('open'); 
+        document.getElementById('sidebar-overlay').style.display = 'none'; 
+    }
+
+    // --- CORE INVARIATO ---
     const VERSIONE_TURNI = "1.0"; 
     const DATA_INIZIO_NUOVI_TURNI = "2026-03-02"; 
     const ECCEZIONE_DOMENICA_6P = true; 
@@ -1018,3 +1060,4 @@
 </script>
 </body>
 </html>
+ 

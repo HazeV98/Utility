@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="theme-color" content="#f7f9fe">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Turni">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    
+    <title>Calendario Turni</title>
+
+    <script data-goatcounter="https://hazev.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.0/dist/panzoom.min.js"></script>
+    
+    <style>
+        :root { 
+            --riposo: #1e8449; --disp: #feb236; --turno: #5e72e4; 
+            --bg: #f7f9fe; --text: #32325d;
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; background: var(--bg); color: var(--text);
+            padding-bottom: env(safe-area-inset-bottom); overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #topBar { 
+            padding: calc(20px + env(safe-area-inset-top)) 20px 15px 20px; 
+            display: flex; justify-content: space-between; 
+            align-items: center; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky; top: 0; z-index: 100;
+        }
+
+        #calendar { background: white; padding: 2px; border-radius: 15px; margin: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+
+        .fc .fc-toolbar-title { font-size: 1.2em !important; text-transform: capitalize; }
+        .fc .fc-button { padding: 5px 10px !important; font-size: 0.9em !important; }
+        .fc .fc-btnSalto-button { background-color: white !important; border-color: #e9ecef !important; color: #32325d !important; box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important; }
+        .fc .fc-daygrid-day-frame { min-height: 80px !important; cursor: pointer; }
+        
+        .fc-event { 
+            border: none !important; padding: 6px 4px !important; 
+            margin: 2px 0 !important; border-radius: 6px !important; 
+            font-weight: 700 !important; font-size: 0.85em !important; 
+            text-align: center; cursor: pointer !important;
+        }
+
+        .bg-riposo { background-color: var(--riposo) !important; }
+        .bg-disp { background-color: var(--disp) !important; }
+        .bg-turno { background-color: var(--turno) !important; }
+        .bg-modificato { background-color: #f5365c !important; }
+
+        .disclaimer-banner {
+            margin: 15px 10px; padding: 15px; background-color: #fff3cd;
+            border: 1px solid #ffeeba; border-radius: 12px; color: #856404;
+            font-size: 13px; text-align: center; line-height: 1.4;
+        }
+
+        #welcomeModal, #stepModal, #editModal, #resetModal, #backupModal, #colorModal, #imageModal, #jumpModal, #icsModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
+        .modal-content { background: white; margin: 15% auto; padding: 25px; width: 85%; max-width: 400px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
+
+        select, input[type="text"], input[type="date"] { width: 100%; box-sizing: border-box; margin: 15px 0; padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 16px; background: white; -webkit-appearance: none; }
+        .btn { padding: 16px; border: none; border-radius: 14px; color: white; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; font-size: 15px; }
+        .btn-reset { background: #f5365c; padding: 8px 15px; width: auto; font-size: 12px; }
+        .instruction-text { font-size: 15px; line-height: 1.6; color: #525f7f; margin-bottom: 10px; }
+        .deposito-tag { font-size: 10px; background: #eef2ff; color: var(--turno); padding: 4px 8px; border-radius: 5px; font-weight: bold; }
+
+        .color-circle { width: 45px; height: 45px; border-radius: 50%; display: inline-block; margin: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .color-yellow { background: #f1c40f; }
+        .color-orange { background: #fd7e14; }
+        .color-red { background: #f5365c; }
+        .color-pink { background: #e83e8c; }
+        .color-purple { background: #8965e0; }
+        .color-blue { background: #5e72e4; }
+        .color-teal { background: #11cdef; }
+        .color-green { background: #2dce89; }
+
+        @media (max-width: 400px) {
+            .fc-event { font-size: 0.75em !important; padding: 4px 2px !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="topBar">
+    <div>
+        <h2 style="margin:0; font-size: 18px;">Gestione Turni</h2>
+        <span id="activeDepotLabel" class="deposito-tag">In attesa...</span>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: flex-end;">
+        <div style="display: flex;">
+            <button id="btnInstall" class="btn btn-reset" style="background: #2dce89; margin-right: 5px; display: none;" onclick="installaApp()">INSTALLA</button>
+            <button class="btn btn-reset" style="background: #5e72e4; margin-right: 5px;" onclick="scaricaPDF()">PDF</button>
+            <button class="btn btn-reset" style="background: #adb5bd; margin-right: 5px;" onclick="apriBackup()">BACKUP</button>
+            <button class="btn btn-reset" onclick="apriReset()">RESET</button>
+        </div>
+        <button class="btn btn-reset" style="background: #5e72e4; margin-top: 8px; width: 100%; box-sizing: border-box;" onclick="apriIcsModal()">ESPORTA CALENDARIO ICS</button>
+    </div>
+</div>
+
+<div id="resetModal">
+    <div class="modal-content">
+        <h3 style="color: #f5365c; margin-top: 0;">Attenzione!</h3>
+        <p class="instruction-text">Vuoi cancellare DEFINITIVAMENTE tutti i dati e i turni salvati?</p>
+        <button class="btn" style="background: #f5365c;" onclick="confermaReset()">Sì, cancella tutto</button>
+        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiReset()">Annulla</button>
+    </div>
+</div>
+
+<div id="backupModal">
+    <div class="modal-content">
+        <h3 style="color: var(--turno); margin-top: 0;">Backup Dati</h3>
+        <p class="instruction-text" style="font-size: 14px;">Gestisci i tuoi dati tramite file per non perdere i tuoi turni.</p>
+        <input type="file" id="fileInput" style="display:none" accept=".json" onchange="importaDatiDaFile(event)">
+        <button class="btn" style="background: var(--turno);" onclick="esportaDatiSuFile()">Scarica Backup (Esporta)</button>
+        <button class="btn" style="background: var(--riposo);" onclick="document.getElementById('fileInput').click()">Carica Backup (Importa)</button>
+        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiBackup()">Chiudi</button>
+    </div>
+</div>
+
+<div id="icsModal">
+    <div class="modal-content">
+        <h3 style="color: #5e72e4; margin-top: 0;">Esporta in ICS</h3>
+        <p class="instruction-text" style="font-size: 14px;">Seleziona il periodo da esportare.</p>
+        <label style="font-size: 14px; color: #525f7f; text-align: left; display: block; margin-top: 10px;">Da:</label>
+        <input type="date" id="icsStartDate">
+        <label style="font-size: 14px; color: #525f7f; text-align: left; display: block; margin-top: 10px;">A:</label>
+        <input type="date" id="icsEndDate">
+        <button class="btn" style="background: #5e72e4;" onclick="esportaICS()">Scarica .ics</button>
+        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiIcsModal()">Chiudi</button>
+    </div>
+</div>
+
+<div id="jumpModal">
+    <div class="modal-content">
+        <h3 style="color: var(--turno); margin-top: 0;">Vai alla data</h3>
+        <div style="display: flex; gap: 10px;">
+            <select id="jumpMonth" style="flex: 1;">
+                <option value="01">Gennaio</option>
+                <option value="02">Febbraio</option>
+                <option value="03">Marzo</option>
+                <option value="04">Aprile</option>
+                <option value="05">Maggio</option>
+                <option value="06">Giugno</option>
+                <option value="07">Luglio</option>
+                <option value="08">Agosto</option>
+                <option value="09">Settembre</option>
+                <option value="10">Ottobre</option>
+                <option value="11">Novembre</option>
+                <option value="12">Dicembre</option>
+            </select>
+            <select id="jumpYear" style="flex: 1;"></select>
+        </div>
+        <button class="btn" style="background: var(--turno);" onclick="eseguiSalto()">Vai</button>
+        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiJumpModal()">Annulla</button>
+    </div>
+</div>
+
+<div id="welcomeModal">
+    <div class="modal-content">
+        <h3 id="welcomeTitle" style="color: var(--turno); margin-top: 0;">Benvenuto</h3>
+        <p id="welcomeDesc" class="instruction-text">Scegli la tua rotazione:</p>
+        <select id="depotSelectMain">
+            <option value="" disabled selected>Scegli...</option>
+            <optgroup label="Disponibili">
+                <option value="disp_indet">Disponibile 6-2-6-1</option>
+                <option value="disp_det">Disponibile 5-1</option>
+            </optgroup>
+            <optgroup label="Rotazioni">
+                <option value="rot_fnove">Rotazione F.Nove</option>
+                <option value="spez_fnove">Spezzati F.Nove</option>
+                <option value="rot_proma">Rotazione P.Roma</option>
+                <option value="spez_proma">Spezzati P.Roma</option>
+                <option value="rot_szaccaria">Rotazione S.Zaccaria</option>
+                <option value="spez_szaccaria">Spezzati S.Zaccaria</option>
+                <option value="rot_lido">Rotazione Lido</option>
+                <option value="spez_lido">Spezzati Lido</option>
+                <option value="rot_linea14">Rotazione Linea 14</option>
+                <option value="rot_17sn">Rotazione Linea 17 S. Nicolò</option>
+                <option value="rot_17tr">Rotazione Linea 17 Tronchetto</option>
+                <option value="rot_linea12">Rotazione Linea 12</option>
+            </optgroup>
+        </select>
+        <button id="btnConfRot" class="btn" style="background: #adb5bd" onclick="confermaRotazione()" disabled>Prosegui</button>
+    </div>
+</div>
+
+<div id="stepModal">
+    <div class="modal-content">
+        <h3 id="stepTitle" style="color: var(--turno); margin-top: 0;">Configurazione</h3>
+        <span id="stepDateDisplay" style="font-weight:bold; color:var(--turno); display:block; margin-bottom:10px;"></span>
+        <p id="stepDesc" class="instruction-text"></p>
+        <div id="stepActionArea"></div>
+        <div id="stepButtons">
+            <button id="btnConfirmDate" class="btn" style="background: var(--riposo); display:none;" onclick="procediConfigurazione()">Sì, conferma data</button>
+            <button id="btnConfirmFinal" class="btn" style="background: var(--riposo); display:none;" onclick="attivaRotazioneFinale()">Conferma e Attiva</button>
+            <button id="btnBackStep" class="btn" style="background: #adb5bd; display:none;" onclick="tornaAllaRotazione()">Indietro (Cambia Rotazione)</button>
+            <button id="btnCloseStep" class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiStep()">Chiudi</button>
+        </div>
+    </div>
+</div>
+
+<div id="editModal" onclick="chiudiEditSeSfondo(event)">
+    <div class="modal-content">
+        <h3 id="modalDate" style="margin-top:0;">Data</h3>
+        <div id="infoTurniArea" style="font-size:0.9em; margin-bottom:15px; padding:10px; background:#f8f9fa; border-radius:10px; text-align:left; color:#525f7f; display:none;"></div>
+        
+        <button id="btnVisualizzaTurno" class="btn" style="background: #2dce89; margin-bottom: 15px; display: none;" onclick="apriImmagineTurno()">Mostra Immagine Turno</button>
+        
+        <input type="text" id="singleTurnoSelect" placeholder="Inserisci il turno" oninput="this.value = this.value.toUpperCase(); document.getElementById('btnSalvaCambio').disabled = this.value.trim() === '';">
+        
+        <button id="btnSalvaCambio" class="btn" style="background: #32325d" onclick="salvaCambioSingolo()" disabled>Salva Cambio</button>
+        <button class="btn" style="background: #11cdef;" onclick="apriColorModal()">Colore Sfondo</button>
+        <button class="btn" style="background: #adb5bd;" onclick="resetGiornoSingolo()">Ripristina Originale</button>
+        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiEdit()">Chiudi</button>
+    </div>
+</div>
+
+<div id="colorModal">
+    <div class="modal-content">
+        <h3 style="margin-top:0; color: var(--text);">Scegli Colore</h3>
+        <div style="display: flex; justify-content: center; flex-wrap: wrap; margin-top: 15px;">
+            <div class="color-circle color-yellow" onclick="salvaColore('#f1c40f')"></div>
+            <div class="color-circle color-orange" onclick="salvaColore('#fd7e14')"></div>
+            <div class="color-circle color-red" onclick="salvaColore('#f5365c')"></div>
+            <div class="color-circle color-pink" onclick="salvaColore('#e83e8c')"></div>
+            <div class="color-circle color-purple" onclick="salvaColore('#8965e0')"></div>
+            <div class="color-circle color-blue" onclick="salvaColore('#5e72e4')"></div>
+            <div class="color-circle color-teal" onclick="salvaColore('#11cdef')"></div>
+            <div class="color-circle color-green" onclick="salvaColore('#2dce89')"></div>
+        </div>
+        <button class="btn" style="background: #adb5bd; margin-top: 20px;" onclick="salvaColore('')">Rimuovi Colore</button>
+        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 10px;" onclick="chiudiColorModal()">Annulla</button>
+    </div>
+</div>
+
+<div id="imageModal" style="z-index: 10000; overflow: hidden;" onclick="chiudiSeSfondo(event)">
+    <div style="position: absolute; top: calc(20px + env(safe-area-inset-top)); right: 20px; font-size: 35px; color: white; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 10001;" onclick="chiudiImageModal()">&times;</div>
+    <div id="imageFlexContainer" style="display:flex; flex-direction: column; justify-content:center; align-items:center; height:100%; padding:20px; padding-bottom: 80px; position: relative;">
+        
+        <img id="turnoImage" src="" style="max-width: 100%; max-height: 70vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
+        
+        <div id="imageBanner" style="position: relative; z-index: 10001; margin-top: 15px; background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px; border-radius: 12px; font-size: 13px; text-align: center; max-width: 90%; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+            ⚠️ Controllare sempre i turni ufficiali e la presenza di eventuali varianti ai turni.
+        </div>
+    </div>
+    <button onclick="scaricaImmagineTurno()" style="position: absolute; bottom: calc(30px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: #11cdef; color: white; border: none; padding: 12px 24px; border-radius: 20px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 10001;">📥 Scarica</button>
+</div>
+
+<div id="calendar"></div>
+
+<div class="disclaimer-banner">
+    ⚠️ Questo è uno strumento non ufficiale che può presentare errori. L'ordine dei turni cambia periodicamente, I turni a lungo termine vanno quindi considerati indicativi.
+</div>
+
+<script>
+    const VERSIONE_TURNI = "1.0"; 
+    const DATA_INIZIO_NUOVI_TURNI = "2026-03-02"; 
+    const ECCEZIONE_DOMENICA_6P = true; 
+
+    const LISTA_FILE_INFO = ["info_turni_2026-03-02.json", "info_turni_2026-02-06.json"];
+    
+    const LISTA_CARTELLE_IMMAGINI = ["turni_2026-03-02", "turni_2026-02-06"];
+
+    const LISTA_FILE_ROTAZIONI = [
+        { inizio: "2025-01-01", fine: "2026-03-01", file: "rotazioni_2026-02-06.json" },
+        { inizio: "2026-03-02", fine: "2099-12-31", file: "rotazioni_2026-03-02.json" }
+    ];
+    
+    const RESET_DOPO_AGGIORNAMENTO = {
+        rot_fnove: true, spez_fnove: true, rot_proma: true, spez_proma: true,
+        rot_szaccaria: true, spez_szaccaria: true, rot_lido: true, spez_lido: true,
+        rot_linea14: true, rot_17sn: true, rot_17tr: true, rot_linea12: true
+    };
+
+    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, setupStep: 0, dbCache: {}, rotCache: {} };
+    if (!state.colori) state.colori = {}; 
+
+    let selectedDate, tempRotDate, calendar;
+    let deferredPrompt; 
+    let currentImagePath = "";
+    let pzInstance = null; // Variabile per la gestione dello zoom
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        document.getElementById('btnInstall').style.display = 'inline-block';
+    });
+
+    window.addEventListener('appinstalled', () => {
+        document.getElementById('btnInstall').style.display = 'none';
+        deferredPrompt = null;
+    });
+
+    async function installaApp() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                document.getElementById('btnInstall').style.display = 'none';
+            }
+            deferredPrompt = null;
+        }
+    }
+
+    function stringToNum(s) { if(!s) return 0; let p = s.split('-'); return Math.floor(new Date(p[0], p[1]-1, p[2], 12, 0, 0).getTime() / 86400000); }
+    function formattaData(d) { let dataObj = new Date(d); let mese = dataObj.toLocaleDateString('it-IT', { month: 'long' }); return dataObj.getDate() + ' ' + mese.charAt(0).toUpperCase() + mese.slice(1); }
+    function salvaLocal() { localStorage.setItem('myTurniApp', JSON.stringify(state)); }
+    function estraiDataDaNome(nome) { const match = nome.match(/\d{4}-\d{2}-\d{2}/); return match ? match[0] : null; }
+
+    function getRotazionePerData(dateStr) {
+        const d = stringToNum(dateStr);
+        const config = LISTA_FILE_ROTAZIONI.find(c => d >= stringToNum(c.inizio) && d <= stringToNum(c.fine));
+        return (config && state.rotCache && state.rotCache[config.file]) ? state.rotCache[config.file] : null;
+    }
+
+    function trovaDataCambioProssimo(dataRifStr) {
+        const rif = stringToNum(dataRifStr);
+        const futura = LISTA_FILE_ROTAZIONI.find(c => stringToNum(c.inizio) > rif);
+        return futura ? futura.inizio : null;
+    }
+
+    function scaricaPDF() {
+        const element = document.getElementById('calendar');
+        let titleEl = document.querySelector('.fc-toolbar-title');
+        let meseTesto = titleEl ? titleEl.innerText.replace(/ /g, "_") : "Calendario";
+
+        const originalWidth = element.style.width;
+        
+        element.style.width = '700px';
+        calendar.setOption('height', 960);
+        calendar.updateSize();
+
+        const opt = {
+            margin:       [10, 5, 10, 5],
+            filename:     `Turni_${meseTesto}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, windowWidth: 800 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        const buttons = document.querySelectorAll('.fc-button');
+        buttons.forEach(b => b.style.display = 'none');
+
+        setTimeout(() => {
+            html2pdf().set(opt).from(element).save().then(() => {
+                buttons.forEach(b => b.style.display = '');
+                element.style.width = originalWidth;
+                calendar.setOption('height', 'auto');
+                calendar.updateSize();
+            });
+        }, 300);
+    }
+
+    async function caricaDatiEsterni() {
+        try {
+            const nocache = "?v=" + new Date().getTime();
+            
+            if (!state.rotCache) state.rotCache = {};
+            for (let c of LISTA_FILE_ROTAZIONI) {
+                try {
+                    const res = await fetch(c.file + nocache);
+                    if (res.ok) state.rotCache[c.file] = await res.json();
+                } catch(e) {}
+            }
+
+            if (!state.dbCache) state.dbCache = {};
+            for (let file of LISTA_FILE_INFO) {
+                const dataInizio = estraiDataDaNome(file);
+                if (dataInizio) {
+                    try {
+                        const res = await fetch(file + nocache);
+                        if (res.ok) state.dbCache[dataInizio] = await res.json();
+                    } catch(e) {}
+                }
+            }
+            salvaLocal();
+        } catch (e) { console.error("Errore caricamento JSON", e); }
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        await caricaDatiEsterni();
+        
+        // Inizializzazione della libreria Zoom se presente
+        const imgElem = document.getElementById('turnoImage');
+        if (typeof Panzoom !== 'undefined') {
+            pzInstance = Panzoom(imgElem, {
+                maxScale: 5,
+                minScale: 1
+            });
+            // Supporto zoom rotellina del mouse (per i pc)
+            document.getElementById('imageFlexContainer').addEventListener('wheel', pzInstance.zoomWithWheel);
+            
+            // Funzione per gestire il toggle dello zoom
+            function eseguiZoomToggle(e) {
+                if (!pzInstance) return;
+                let currentScale = pzInstance.getScale();
+                if (currentScale < 1.1) {
+                    pzInstance.zoom(1.75, { animate: true });
+                } else {
+                    pzInstance.reset({ animate: true });
+                }
+            }
+
+            // Gestione Doppio Tap (Mobile) e Doppio Clic (PC) migliorata per non interferire con il pinch
+            let lastTap = 0;
+            let isPinching = false;
+
+            imgElem.addEventListener('touchstart', function(e) {
+                if (e.touches.length > 1) {
+                    isPinching = true;
+                }
+            });
+
+            imgElem.addEventListener('touchend', function(e) {
+                if (isPinching) {
+                    if (e.touches.length === 0) {
+                        setTimeout(() => isPinching = false, 300);
+                    }
+                    return;
+                }
+
+                let currentTime = new Date().getTime();
+                let tapLength = currentTime - lastTap;
+                if (tapLength < 300 && tapLength > 0) {
+                    eseguiZoomToggle(e);
+                    if (e.cancelable) e.preventDefault();
+                }
+                lastTap = currentTime;
+            });
+
+            imgElem.addEventListener('dblclick', function(e) {
+                eseguiZoomToggle(e);
+            });
+        }
+
+        if (!state.depositoAttivo) {
+            document.getElementById('welcomeModal').style.display = 'block';
+        } else if (state.version !== VERSIONE_TURNI) {
+            const deveResettare = RESET_DOPO_AGGIORNAMENTO[state.depositoAttivo] !== false;
+            if (state.depositoAttivo.startsWith('disp_') || !deveResettare) {
+                state.version = VERSIONE_TURNI; salvaLocal();
+                aggiornaUI(); inizializzaCalendario();
+            } else {
+                const dataLimiteObj = new Date(DATA_INIZIO_NUOVI_TURNI);
+                const dataMenoUnoObj = new Date(dataLimiteObj);
+                dataMenoUnoObj.setDate(dataMenoUnoObj.getDate() - 1);
+                document.getElementById('welcomeTitle').innerText = "Aggiornamento Turni";
+                document.getElementById('welcomeDesc').innerText = `Il calendario rimarrà invariato fino al ${formattaData(dataMenoUnoObj.toISOString().split('T')[0])}. Dal ${formattaData(DATA_INIZIO_NUOVI_TURNI)} inizierà la nuova rotazione.`;
+                document.getElementById('depotSelectMain').style.display = 'none';
+                document.getElementById('btnConfRot').disabled = false;
+                document.getElementById('btnConfRot').style.background = 'var(--turno)';
+                document.getElementById('btnConfRot').innerText = "Avvia Aggiornamento";
+                document.getElementById('welcomeModal').style.display = 'block';
+            }
+        } else {
+            aggiornaUI(); inizializzaCalendario(); checkGuida();
+        }
+        document.getElementById('depotSelectMain').addEventListener('change', () => {
+            document.getElementById('btnConfRot').disabled = false;
+            document.getElementById('btnConfRot').style.background = 'var(--turno)';
+        });
+    });
+
+    function confermaRotazione() {
+        if (!state.depositoAttivo) {
+            state.depositoAttivo = document.getElementById('depotSelectMain').value;
+            state.setupStep = 1;
+        } else if (state.version !== VERSIONE_TURNI) {
+            state.history = { riposoStart: state.riposoStart, rotazioneStart: state.rotazioneStart, turnoIndex: state.turnoIndex, depositoAttivo: state.depositoAttivo };
+        }
+        state.version = VERSIONE_TURNI;
+        document.getElementById('welcomeModal').style.display = 'none';
+        if (!state.riposoStart || state.setupStep < 3) {
+            aggiornaUI(); inizializzaCalendario(); checkGuida(); salvaLocal();
+        } else { avviaRiconfigurazioneAggiornamento(); }
+    }
+
+    function tornaAllaRotazione() { state.setupStep = 0; state.depositoAttivo = null; salvaLocal(); location.reload(); }
+
+    function checkGuida() {
+        if (state.setupStep === 1) {
+            document.getElementById('stepTitle').innerText = "Passo 2";
+            document.getElementById('stepDesc').innerText = "Seleziona nel calendario uno dei tuoi riposi singoli";
+            document.getElementById('btnConfirmDate').style.display = "none";
+            document.getElementById('btnBackStep').style.display = "block"; 
+            document.getElementById('btnCloseStep').style.display = "block";
+            document.getElementById('btnCloseStep').innerText = "Seleziona";
+            document.getElementById('stepModal').style.display = 'block';
+        }
+    }
+
+    function gestisciInterazione(date) {
+        selectedDate = date;
+        if (state.setupStep === 1) {
+            document.getElementById('stepDateDisplay').innerText = formattaData(date);
+            document.getElementById('stepDesc').innerText = "È un tuo giorno di riposo?";
+            document.getElementById('btnConfirmDate').style.display = "block";
+            document.getElementById('btnBackStep').style.display = "none"; 
+            document.getElementById('btnCloseStep').style.display = "block";
+            document.getElementById('btnCloseStep').innerText = "Chiudi";
+            document.getElementById('stepModal').style.display = 'block';
+        } else {
+            document.getElementById('modalDate').innerText = formattaData(date);
+            let infoArea = document.getElementById('infoTurniArea');
+            let turniCalc = calcolaTurni();
+            let turnoCorrenteObj = turniCalc.find(e => e.start === date);
+            let nomeTurno = turnoCorrenteObj ? turnoCorrenteObj.title : "Nessun turno";
+            let htmlInfo = `<strong>Turno attuale:</strong> ${nomeTurno} ${state.variazioni[date] ? '(Modificato)' : ''}`;
+            
+            const dateChiavi = Object.keys(state.dbCache || {}).sort();
+            let dbCorrente = {};
+            let dataAttiva = dateChiavi[0] || "2026-03-02";
+            const dSelezionata = stringToNum(date);
+            for (let i = dateChiavi.length - 1; i >= 0; i--) { 
+                if (dSelezionata >= stringToNum(dateChiavi[i])) { 
+                    dbCorrente = state.dbCache[dateChiavi[i]]; 
+                    dataAttiva = dateChiavi[i];
+                    break; 
+                } 
+            }
+            
+            const giorniSuffix = ["_DOM", "_LUN", "_MAR", "_MER", "_GIO", "_VEN", "_SAB"];
+            let giornoIdx = new Date(date).getDay();
+            let suffissoGiorno = giorniSuffix[giornoIdx];
+            
+            let codiceBase = nomeTurno.toUpperCase();
+            let dettagli = dbCorrente[codiceBase + suffissoGiorno] || dbCorrente[codiceBase];
+
+            if (dettagli) {
+                htmlInfo += `<hr style="margin:10px 0; border:0; border-top:1px solid #eee;">`;
+                htmlInfo += `<b>Inizio:</b> ${dettagli.inizio} (${dettagli.luogoInizio})<br><b>Fine:</b> ${dettagli.fine} (${dettagli.luogoFine})`;
+            }
+            infoArea.innerHTML = htmlInfo; infoArea.style.display = "block"; popolaCambio();
+
+            const btnImmagine = document.getElementById('btnVisualizzaTurno');
+            if (codiceBase !== 'RI' && codiceBase !== 'RIPOSO' && codiceBase !== 'DISP' && codiceBase !== 'AL' && codiceBase !== 'NESSUN TURNO') {
+                currentImagePath = `turni_${dataAttiva}/${codiceBase}.jpg`;
+                btnImmagine.style.display = 'block';
+            } else {
+                currentImagePath = "";
+                btnImmagine.style.display = 'none';
+            }
+
+            document.getElementById('editModal').style.display = 'block';
+        }
+    }
+
+    function apriImmagineTurno() {
+        if (!currentImagePath) return;
+        
+        let imgElement = document.getElementById('turnoImage');
+        imgElement.onerror = erroreImmagine; 
+        imgElement.src = currentImagePath;
+        
+        if (pzInstance) { pzInstance.reset(); }
+        
+        document.getElementById('imageModal').style.display = 'block';
+    }
+
+    function chiudiImageModal() {
+        document.getElementById('imageModal').style.display = 'none';
+        document.getElementById('turnoImage').removeAttribute('src');
+        if (pzInstance) { pzInstance.reset(); }
+    }
+
+    function chiudiSeSfondo(event) {
+        if (event.target.id === 'imageModal' || event.target.id === 'imageFlexContainer') {
+            chiudiImageModal();
+        }
+    }
+
+    function chiudiEditSeSfondo(event) {
+        if (event.target.id === 'editModal') {
+            chiudiEdit();
+        }
+    }
+
+    function erroreImmagine() {
+        document.getElementById('turnoImage').onerror = null; 
+        alert("L'immagine del turno non è stata trovata nel database.");
+        chiudiImageModal();
+    }
+
+    function scaricaImmagineTurno() {
+        if (!currentImagePath) return;
+        const a = document.createElement('a');
+        a.href = currentImagePath;
+        a.download = currentImagePath.split('/').pop();
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+    
+    function apriJumpModal() {
+        const yearSelect = document.getElementById('jumpYear');
+        if(yearSelect.options.length === 0) {
+            let currYear = new Date().getFullYear();
+            for(let i = currYear - 2; i <= currYear + 5; i++) {
+                let opt = document.createElement('option');
+                opt.value = i;
+                opt.text = i;
+                if(i === currYear) opt.selected = true;
+                yearSelect.appendChild(opt);
+            }
+        }
+        let currMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
+        document.getElementById('jumpMonth').value = currMonth;
+        
+        document.getElementById('jumpModal').style.display = 'block';
+    }
+
+    function chiudiJumpModal() {
+        document.getElementById('jumpModal').style.display = 'none';
+    }
+
+    function eseguiSalto() {
+        let m = document.getElementById('jumpMonth').value;
+        let y = document.getElementById('jumpYear').value;
+        calendar.gotoDate(y + '-' + m + '-01');
+        chiudiJumpModal();
+    }
+
+    function procediConfigurazione() {
+        state.riposoStart = selectedDate;
+        document.getElementById('btnBackStep').style.display = "none";
+        if (state.depositoAttivo.startsWith('disp_')) { state.setupStep = 3; salvaLocal(); location.reload(); }
+        else {
+            state.setupStep = 2;
+            let d = new Date(selectedDate); d.setDate(d.getDate() + 1);
+            tempRotDate = d.toISOString().split('T')[0];
+            document.getElementById('btnConfirmDate').style.display = "none";
+            document.getElementById('btnCloseStep').style.display = "none"; 
+            document.getElementById('stepTitle').innerText = "Passo 3";
+            document.getElementById('stepDateDisplay').innerText = formattaData(tempRotDate);
+            document.getElementById('stepDesc').innerText = "Che turno hai in questo giorno?";
+            document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
+            document.getElementById('btnConfirmFinal').style.display = "block";
+            document.getElementById('stepModal').style.display = 'block';
+        }
+    }
+
+    function avviaRiconfigurazioneAggiornamento() {
+        let d = new Date(DATA_INIZIO_NUOVI_TURNI);
+        let dStr = d.toISOString().split('T')[0];
+        while(isGiornoRiposo(dStr)) { d.setDate(d.getDate() + 1); dStr = d.toISOString().split('T')[0]; }
+        tempRotDate = dStr;
+        document.getElementById('stepTitle').innerText = "Nuova Rotazione";
+        document.getElementById('stepDateDisplay').innerText = formattaData(tempRotDate);
+        document.getElementById('stepDesc').innerText = "Indica il turno per l'inizio della nuova rotazione:";
+        document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
+        document.getElementById('btnCloseStep').style.display = "none"; 
+        document.getElementById('btnConfirmFinal').style.display = "block";
+        document.getElementById('stepModal').style.display = 'block';
+    }
+
+    function isGiornoRiposoBase(curr, cfg) {
+        if (!cfg.riposoStart) return false;
+        let ref = stringToNum(cfg.riposoStart);
+        if (cfg.depositoAttivo === 'disp_det') return (((curr - ref) % 6 + 6) % 6 === 0);
+        let pos = ((curr - ref + 6) % 15 + 15) % 15;
+        return (pos === 6 || pos === 13 || pos === 14);
+    }
+
+    function isGiornoRiposo(dStr) {
+        if (state.variazioni[dStr] === "RI" || state.variazioni[dStr] === "RIPOSO" || state.variazioni[dStr] === "AL") return true;
+        let cfg = (state.history && stringToNum(dStr) < stringToNum(DATA_INIZIO_NUOVI_TURNI)) ? state.history : state;
+        return isGiornoRiposoBase(stringToNum(dStr), cfg);
+    }
+
+    function attivaRotazioneFinale() {
+        const val = parseInt(document.getElementById('tSel').value);
+        if(isNaN(val)) return;
+
+        const currentRotRules = getRotazionePerData(tempRotDate);
+        if (currentRotRules && currentRotRules[state.depositoAttivo]) {
+            if (currentRotRules[state.depositoAttivo][val].toUpperCase() === "DISP") {
+                let d = new Date(tempRotDate); d.setDate(d.getDate() + 1);
+                let dStr = d.toISOString().split('T')[0];
+                while(isGiornoRiposo(dStr)) { d.setDate(d.getDate() + 1); dStr = d.toISOString().split('T')[0]; }
+                tempRotDate = dStr;
+                document.getElementById('stepDateDisplay').innerText = formattaData(tempRotDate);
+                document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
+                return; 
+            }
+        }
+
+        if (state.setupStep === 2) {
+            state.turnoIndex = val; state.rotazioneStart = tempRotDate;
+            let dataFutura = trovaDataCambioProssimo(tempRotDate);
+            if (dataFutura) {
+                state.setupStep = 4; tempRotDate = dataFutura;
+                document.getElementById('stepTitle').innerText = "Passo 4 (Cambio Turni)";
+                document.getElementById('stepDateDisplay').innerText = formattaData(tempRotDate);
+                document.getElementById('stepDesc').innerText = `Dal ${formattaData(tempRotDate)} entra in vigore una nuova rotazione. Che turno avrai quel giorno?`;
+                document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
+                return;
+            }
+        } else if (state.setupStep === 4) {
+            state.futureConfig = { dataInizio: tempRotDate, turnoIndex: val };
+        } else if (state.setupStep === 3) {
+            state.turnoIndex = val;
+            state.rotazioneStart = tempRotDate;
+        }
+
+        state.setupStep = 3; salvaLocal(); location.reload();
+    }
+
+    function calcolaTurni() {
+        if (!state.riposoStart) return [];
+        let evs = []; let today = new Date();
+        
+        let limitTurni = 365;
+        let limitRiposi = 1825;
+        let todayNum = stringToNum(today.toISOString().split('T')[0]);
+        if (state.rotazioneStart) {
+            let distDaOggi = Math.abs(todayNum - stringToNum(state.rotazioneStart));
+            limitTurni = distDaOggi + 365; 
+            limitRiposi = distDaOggi + 1825; 
+        }
+        if (state.futureConfig && state.futureConfig.dataInizio) {
+            let distFutura = Math.abs(todayNum - stringToNum(state.futureConfig.dataInizio));
+            if (distFutura + 365 > limitTurni) limitTurni = distFutura + 365;
+            if (distFutura + 1825 > limitRiposi) limitRiposi = distFutura + 1825;
+        }
+
+        for (let i = -31; i < limitRiposi; i++) {
+            let dObj = new Date(today); dObj.setDate(today.getDate() + i);
+            let dStr = dObj.toISOString().split('T')[0];
+            let curr = stringToNum(dStr);
+            
+            let customColor = (state.colori && state.colori[dStr]) ? state.colori[dStr] : null;
+            let tColor = (customColor === '#f1c40f') ? '#32325d' : '#ffffff';
+
+            if (state.variazioni[dStr]) {
+                let ev = { title: state.variazioni[dStr], start: dStr, allDay: true };
+                if (customColor) { ev.backgroundColor = customColor; ev.textColor = tColor; }
+                else { ev.className = (state.variazioni[dStr]==='RI' || state.variazioni[dStr]==='RIPOSO' || state.variazioni[dStr]==='AL') ? 'bg-riposo' : 'bg-modificato'; }
+                evs.push(ev);
+                continue;
+            }
+            if (isGiornoRiposo(dStr)) { 
+                let titoloRiposo = 'RI';
+                let cfgBase = (state.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI)) ? state.history : state;
+                if (cfgBase.riposoStart && cfgBase.depositoAttivo !== 'disp_det') {
+                    let ref = stringToNum(cfgBase.riposoStart);
+                    let pos = ((curr - ref + 6) % 15 + 15) % 15;
+                    if (pos === 13) titoloRiposo = 'AL';
+                }
+
+                let ev = { title: titoloRiposo, start: dStr, allDay: true };
+                if (customColor) { ev.backgroundColor = customColor; ev.textColor = tColor; }
+                else { ev.className = 'bg-riposo'; }
+                evs.push(ev);
+            }
+            else if (i < limitTurni) {
+                let isPastUpdate = (state.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI));
+                let cfgBase = isPastUpdate ? state.history : state;
+                const currentRotRules = getRotazionePerData(dStr);
+                let t = "";
+                if (cfgBase.depositoAttivo.startsWith('disp_')) { t = "DISP"; } 
+                else if (cfgBase.rotazioneStart) {
+                    let activeCfg = (state.futureConfig && curr >= stringToNum(state.futureConfig.dataInizio)) 
+                        ? { start: state.futureConfig.dataInizio, idx: state.futureConfig.turnoIndex }
+                        : { start: cfgBase.rotazioneStart, idx: cfgBase.turnoIndex };
+                    
+                    let refRot = stringToNum(activeCfg.start), w = 0;
+                    
+                    if (curr >= refRot) { 
+                        for (let j = refRot; j < curr; j++) { if (!isGiornoRiposoBase(j, cfgBase)) w++; } 
+                    } else { 
+                        for (let j = refRot; j > curr; j--) { if (!isGiornoRiposoBase(j, cfgBase)) w--; } 
+                    }
+                    
+                    let refRip = stringToNum(cfgBase.riposoStart);
+                    let startPos = ((refRot - refRip + 6) % 15 + 15) % 15;
+                    let offset = [1, 3, 5, 8, 10, 12].includes(startPos) ? 1 : 0;
+                    const rotList = (currentRotRules && currentRotRules[cfgBase.depositoAttivo]) ? currentRotRules[cfgBase.depositoAttivo] : [];
+                    if (rotList.length > 0) {
+                        let idx = (activeCfg.idx + Math.floor((w + offset)/2)) % rotList.length;
+                        if (idx < 0) idx += rotList.length;
+                        t = rotList[idx].toUpperCase();
+                        if (ECCEZIONE_DOMENICA_6P && dObj.getDay() === 0 && t.startsWith("6P")) t = "DISP";
+                    }
+                }
+                if (t !== "") {
+                    let ev = { title: t, start: dStr, allDay: true };
+                    if (customColor) { ev.backgroundColor = customColor; ev.textColor = tColor; }
+                    else { ev.className = (t==='DISP' ? 'bg-disp' : 'bg-turno'); }
+                    evs.push(ev);
+                }
+            }
+        }
+        return evs;
+    }
+
+    function getOptionsTurni() {
+        const rot = getRotazionePerData(tempRotDate || new Date().toISOString().split('T')[0]);
+        if (!rot || !rot[state.depositoAttivo]) return ""; 
+        let htmlDisp = "", htmlTurni = "", dispAggiunto = false;
+        rot[state.depositoAttivo].map((n, i) => ({ n: n.toUpperCase(), i: i }))
+            .sort((a, b) => a.n.localeCompare(b.n, undefined, {numeric: true}))
+            .forEach(item => {
+                if (item.n === "DISP") { if (!dispAggiunto) { htmlDisp = `<option value="${item.i}">DISP</option>`; dispAggiunto = true; } }
+                else { htmlTurni += `<option value="${item.i}">${item.n}</option>`; }
+            });
+        return htmlDisp + htmlTurni;
+    }
+
+    function apriColorModal() {
+        document.getElementById('editModal').style.display = 'none';
+        document.getElementById('colorModal').style.display = 'block';
+    }
+
+    function chiudiColorModal() {
+        document.getElementById('colorModal').style.display = 'none';
+        document.getElementById('editModal').style.display = 'block';
+    }
+
+    function salvaColore(hexColor) {
+        if (!hexColor) {
+            delete state.colori[selectedDate];
+        } else {
+            state.colori[selectedDate] = hexColor;
+        }
+        salvaLocal();
+        location.reload();
+    }
+
+    function salvaCambioSingolo() { 
+        const val = document.getElementById('singleTurnoSelect').value.trim().toUpperCase();
+        if(val) {
+            state.variazioni[selectedDate] = val; 
+            salvaLocal(); 
+            location.reload(); 
+        }
+    }
+    
+    function resetGiornoSingolo() { delete state.variazioni[selectedDate]; delete state.colori[selectedDate]; salvaLocal(); location.reload(); }
+    function aggiornaUI() { document.getElementById('activeDepotLabel').innerText = state.depositoAttivo || "Configurazione"; }
+    function apriReset() { document.getElementById('resetModal').style.display = 'block'; }
+    function chiudiReset() { document.getElementById('resetModal').style.display = 'none'; }
+    function confermaReset() { localStorage.removeItem('myTurniApp'); location.reload(); }
+    function apriBackup() { document.getElementById('backupModal').style.display = 'block'; }
+    function chiudiBackup() { document.getElementById('backupModal').style.display = 'none'; }
+    function chiudiStep() { document.getElementById('stepModal').style.display = 'none'; }
+    function chiudiEdit() { document.getElementById('editModal').style.display = 'none'; }
+    
+    function esportaDatiSuFile() {
+        const data = localStorage.getItem('myTurniApp'); if(!data) return;
+        const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `backup_turni_${new Date().toISOString().split('T')[0]}.json`;
+        a.click(); URL.revokeObjectURL(url);
+    }
+    
+    function importaDatiDaFile(event) {
+        const file = event.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) { try { localStorage.setItem('myTurniApp', e.target.result); alert("Backup ripristinato!"); location.reload(); } catch (err) { alert("Errore file non valido."); } };
+        reader.readAsText(file);
+    }
+    
+    function popolaCambio() {
+        const input = document.getElementById('singleTurnoSelect');
+        input.value = '';
+        document.getElementById('btnSalvaCambio').disabled = true;
+    }
+
+    function apriIcsModal() { document.getElementById('icsModal').style.display = 'block'; }
+    function chiudiIcsModal() { document.getElementById('icsModal').style.display = 'none'; }
+    
+    function esportaICS() {
+        const startDate = document.getElementById('icsStartDate').value;
+        const endDate = document.getElementById('icsEndDate').value;
+        if (!startDate || !endDate) { alert("Seleziona entrambe le date."); return; }
+        if (startDate > endDate) { alert("La data di inizio deve essere precedente alla data di fine."); return; }
+        
+        const turni = calcolaTurni();
+        const turniFiltrati = turni.filter(t => t.start >= startDate && t.start <= endDate);
+        
+        if (turniFiltrati.length === 0) { alert("Nessun turno nel periodo selezionato."); return; }
+        
+        let ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//MyTurniApp//IT\r\nCALSCALE:GREGORIAN\r\n";
+        const dateChiavi = Object.keys(state.dbCache || {}).sort();
+        
+        turniFiltrati.forEach(t => {
+            const dateParts = t.start.split('-');
+            const icsDate = dateParts[0] + dateParts[1] + dateParts[2];
+            
+            let d = new Date(t.start);
+            d.setDate(d.getDate() + 1);
+            const nextDateStr = d.toISOString().split('T')[0];
+            const nextParts = nextDateStr.split('-');
+            const icsNextDate = nextParts[0] + nextParts[1] + nextParts[2];
+            
+            const uid = t.start + "-" + t.title.replace(/\s+/g, '') + "@myturniapp";
+            const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + "Z";
+            
+            // --- INIZIO RECUPERO DETTAGLI ---
+            let dbCorrente = {};
+            const dSelezionata = stringToNum(t.start);
+            for (let i = dateChiavi.length - 1; i >= 0; i--) { 
+                if (dSelezionata >= stringToNum(dateChiavi[i])) { 
+                    dbCorrente = state.dbCache[dateChiavi[i]]; 
+                    break; 
+                } 
+            }
+            const giorniSuffix = ["_DOM", "_LUN", "_MAR", "_MER", "_GIO", "_VEN", "_SAB"];
+            let giornoIdx = new Date(t.start).getDay();
+            let suffissoGiorno = giorniSuffix[giornoIdx];
+            
+            let codiceBase = t.title.toUpperCase();
+            let dettagli = dbCorrente[codiceBase + suffissoGiorno] || dbCorrente[codiceBase];
+
+            let orariTitolo = "";
+            let descrizione = "";
+            let location = "";
+
+            if (dettagli && dettagli.inizio && dettagli.fine) {
+                orariTitolo = ` (${dettagli.inizio} - ${dettagli.fine})`;
+                descrizione = `Inizio: ${dettagli.inizio} (${dettagli.luogoInizio})\\nFine: ${dettagli.fine} (${dettagli.luogoFine})`;
+                location = dettagli.luogoInizio;
+            }
+            // --- FINE RECUPERO DETTAGLI ---
+
+            ics += "BEGIN:VEVENT\r\n";
+            ics += "UID:" + uid + "\r\n";
+            ics += "DTSTAMP:" + now + "\r\n";
+            ics += "DTSTART;VALUE=DATE:" + icsDate + "\r\n";
+            ics += "DTEND;VALUE=DATE:" + icsNextDate + "\r\n";
+            ics += "SUMMARY:" + t.title + orariTitolo + "\r\n";
+            if (descrizione) ics += "DESCRIPTION:" + descrizione + "\r\n";
+            if (location) ics += "LOCATION:" + location + "\r\n";
+            ics += "END:VEVENT\r\n";
+        });
+        
+        ics += "END:VCALENDAR";
+        
+        const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `turni_${startDate}_al_${endDate}.ics`;
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        chiudiIcsModal();
+    }
+
+    function inizializzaCalendario() {
+        calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+            initialView: 'dayGridMonth', locale: 'it', firstDay: 1, height: 'auto',
+            buttonText: { today: 'Oggi' },
+            customButtons: {
+                btnSalto: {
+                    text: '🔍',
+                    click: apriJumpModal
+                }
+            },
+            headerToolbar: { left: 'prev,next', center: 'title', right: 'btnSalto today' },
+            dateClick: (i) => gestisciInterazione(i.dateStr),
+            eventClick: (info) => gestisciInterazione(info.event.startStr),
+            events: (i, success) => success(calcolaTurni())
+        });
+        calendar.render();
+    }
+</script>
+</body>
+</html>

@@ -29,8 +29,16 @@
         .category-block { display: flex; flex-direction: column; gap: 10px; }
         .category-title { font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; margin-top: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
         
-        .link-btn { background-color: white; color: var(--primary); border: 2px solid var(--primary); padding: 16px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: space-between; transition: background-color 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        /* NUOVA RIGA CONTATTO */
+        .contact-row { display: flex; gap: 8px; width: 100%; align-items: stretch; }
+
+        .link-btn { flex-grow: 1; background-color: white; color: var(--primary); border: 2px solid var(--primary); padding: 16px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: space-between; transition: background-color 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .link-btn:active { transform: translateY(2px); background-color: #f8f9fa; }
+        
+        /* TASTO COPIA */
+        .copy-btn { width: 55px; background-color: white; color: var(--primary); border: 2px solid var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .copy-btn:active { transform: translateY(2px); background-color: #e9ecef; }
+        
         .link-icon { font-size: 20px; }
     </style>
 </head>
@@ -68,11 +76,28 @@
         function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
         function chiudiMenuLaterale() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; }
 
+        // --- FUNZIONE COPIA TESTO ---
+        function copiaTesto(testo, btn) {
+            navigator.clipboard.writeText(testo).then(() => {
+                const iconaOriginale = btn.innerHTML;
+                btn.innerHTML = "✅"; // Feedback visivo
+                btn.style.borderColor = "#28a745";
+                btn.style.color = "#28a745";
+                
+                setTimeout(() => {
+                    btn.innerHTML = iconaOriginale;
+                    btn.style.borderColor = "";
+                    btn.style.color = "";
+                }, 1500);
+            }).catch(err => {
+                console.error('Errore nella copia: ', err);
+            });
+        }
+
         // --- LOGICA CARICAMENTO DATI ---
         async function caricaContatti() {
             const area = document.getElementById('content-area');
             try {
-                // Aggiungiamo un timestamp per evitare cache
                 const noCache = new Date().getTime();
                 const response = await fetch(`contatti.json?v=${noCache}`);
                 
@@ -89,7 +114,6 @@
                     return;
                 }
 
-                // Genera i pulsanti
                 dati.contatti.forEach(categoriaObj => {
                     const block = document.createElement('div');
                     block.className = "category-block";
@@ -100,21 +124,34 @@
                     block.appendChild(titolo);
 
                     categoriaObj.elementi.forEach(contatto => {
+                        const row = document.createElement('div');
+                        row.className = "contact-row";
+
                         const btn = document.createElement('a');
                         btn.className = "link-btn";
                         
-                        // Smista in base al tipo (telefono o email)
                         if (contatto.tipo === "email") {
                             btn.href = `mailto:${contatto.valore}`;
                             btn.innerHTML = `<span>${contatto.nome}</span> <span class="link-icon">✉️</span>`;
                         } else {
-                            // Default: telefono
                             const numeroPulito = contatto.valore.replace(/\s+/g, '');
                             btn.href = `tel:${numeroPulito}`;
                             btn.innerHTML = `<span>${contatto.nome}</span> <span class="link-icon">📞</span>`;
                         }
                         
-                        block.appendChild(btn);
+                        // Tasto Copia
+                        const copyBtn = document.createElement('div');
+                        copyBtn.className = "copy-btn";
+                        copyBtn.innerHTML = "📋";
+                        copyBtn.title = "Copia";
+                        copyBtn.onclick = (e) => {
+                            e.preventDefault(); // Evita che il click attivi il link se annidato male
+                            copiaTesto(contatto.valore, copyBtn);
+                        };
+
+                        row.appendChild(btn);
+                        row.appendChild(copyBtn);
+                        block.appendChild(row);
                     });
 
                     area.appendChild(block);

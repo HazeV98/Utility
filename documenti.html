@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utility - Documenti</title>
+    <style>
+        /* --- STILI GLOBALI UNIFICATI --- */
+        :root { --primary: #0056b3; --bg-color: #f4f7f6; --text-color: #333; }
+        body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        /* HEADER */
+        .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .hamburger-btn { background: none; border: none; font-size: 30px; color: var(--primary); cursor: pointer; padding: 0; width: 50px; text-align: left; }
+        h2 { margin: 0; color: var(--primary); font-size: 24px; }
+        
+        /* MENU LATERALE */
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 2000; }
+        .sidebar { position: fixed; top: 0; left: -280px; width: 250px; height: 100%; background-color: white; box-shadow: 2px 0 5px rgba(0,0,0,0.2); z-index: 2001; transition: left 0.3s ease; display: flex; flex-direction: column; }
+        .sidebar.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: var(--primary); color: white; }
+        .sidebar-link { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 18px; border-bottom: 1px solid #eee; display: block; }
+        .sidebar-link:active, .sidebar-link:hover { background-color: #f4f7f6; color: var(--primary); font-weight: bold; }
+
+        /* CONTENUTI SPECIFICI */
+        .content-area { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
+        .status-message { text-align: center; color: #666; font-size: 16px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .file-row { display: flex; gap: 8px; width: 100%; }
+        .file-btn { flex-grow: 1; background-color: var(--primary); color: white; border: none; padding: 16px; font-size: 16px; border-radius: 10px; cursor: pointer; text-decoration: none; display: block; text-align: center; }
+        .download-btn { width: 55px; background-color: white; color: var(--primary); border: 2px solid var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; }
+        .file-btn:active, .download-btn:active { transform: translateY(2px); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <button class="hamburger-btn" onclick="apriMenuLaterale()">☰</button>
+        <h2>Documenti</h2>
+        <div style="width: 50px;"></div>
+    </div>
+
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="chiudiMenuLaterale()"></div>
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3 style="margin:0; color:white;">Menu</h3>
+            <button style="background:none; border:none; color:white; font-size:24px; cursor:pointer;" onclick="chiudiMenuLaterale()">✕</button>
+        </div>
+        <a href="index.html" class="sidebar-link">🏠 Home Page</a>
+        <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
+        <a href="dati_calendario.html" class="sidebar-link">📊 Statistiche Calendario</a>
+        <a href="turni.html" class="sidebar-link">🔄 Turni</a>
+        <a href="orari.html" class="sidebar-link">🕒 Orari</a>
+        <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
+        <a href="link.html" class="sidebar-link">🔗 Link</a>
+        <a href="numeri.html" class="sidebar-link">📞 Numeri</a>
+        <a href="buoni.html" class="sidebar-link">🍔 Buoni Pasto</a>
+    </div>
+
+    <div id="content-area" class="content-area">
+        <div class="status-message">Caricamento documenti...</div>
+    </div>
+
+    <script>
+        // --- FUNZIONI MENU LATERALE ---
+        function apriMenuLaterale() { 
+            document.getElementById('sidebar').classList.add('open'); 
+            document.getElementById('sidebar-overlay').style.display = 'block'; 
+        }
+        function chiudiMenuLaterale() { 
+            document.getElementById('sidebar').classList.remove('open'); 
+            document.getElementById('sidebar-overlay').style.display = 'none'; 
+        }
+
+        // --- LOGICA GESTIONE DOCUMENTI GITHUB ---
+        const GITHUB_USER = "HazeV98"; 
+        const GITHUB_REPO = "Utility";
+        const CARTELLA_DOCS = "documenti";
+
+        // Funzione per forzare il download diretto
+        async function downloadForzato(url, filename) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(blobUrl);
+            } catch (e) {
+                window.open(url, '_blank');
+            }
+        }
+
+        async function init() {
+            const area = document.getElementById('content-area');
+            try {
+                // Interroga la cartella "documenti"
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${CARTELLA_DOCS}`);
+                
+                if (!res.ok) {
+                    area.innerHTML = `<div class="status-message">La cartella "documenti" non è stata ancora creata su GitHub o è vuota.</div>`;
+                    return;
+                }
+
+                const files = await res.json();
+                
+                // Filtra solo i file (ignorando eventuali sottocartelle)
+                const documentiFiles = files.filter(f => f.type === "file");
+
+                if (documentiFiles.length === 0) {
+                    area.innerHTML = `<div class="status-message">Nessun documento presente nella cartella.</div>`;
+                    return;
+                }
+
+                area.innerHTML = ""; // Pulisce il messaggio di caricamento
+
+                documentiFiles.forEach(f => {
+                    let nomeOriginale = f.name;
+                    
+                    // Pulizia nome per il tasto: toglie estensione (.pdf, .doc) e rimpiazza gli underscore con spazi
+                    let nomeVis = nomeOriginale.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+                    nomeVis = nomeVis.charAt(0).toUpperCase() + nomeVis.slice(1); // Prima lettera maiuscola
+
+                    const row = document.createElement('div');
+                    row.className = "file-row";
+
+                    // Tasto APRI (apre tramite GitHub Pages)
+                    const aOpen = document.createElement('a');
+                    aOpen.className = "file-btn";
+                    aOpen.innerText = nomeVis;
+                    aOpen.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_DOCS}/${nomeOriginale}`;
+                    aOpen.target = "_blank";
+
+                    // Tasto DOWNLOAD
+                    const aDown = document.createElement('div');
+                    aDown.className = "download-btn";
+                    aDown.innerHTML = "⬇️";
+                    aDown.onclick = () => downloadForzato(f.download_url, nomeOriginale);
+
+                    row.appendChild(aOpen);
+                    row.appendChild(aDown);
+                    area.appendChild(row);
+                });
+            } catch (e) { 
+                area.innerHTML = `<div class="status-message">Errore di connessione a GitHub.</div>`; 
+            }
+        }
+        
+        window.onload = init;
+    </script>
+</body>
+</html>
+ 

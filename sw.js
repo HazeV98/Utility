@@ -1,8 +1,17 @@
+const CACHE_NAME = 'utility-app-v1';
+
 self.addEventListener('install', (event) => {
-  console.log('Service Worker installato');
+    console.log('[Service Worker] Installato');
+    // Forza l'attivazione immediata del service worker
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+    console.log('[Service Worker] Attivato');
+    return self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-  // Lasciamo passare le richieste normalmente
-  event.respondWith(fetch(event.request));
+    // Lascia passare tutte le richieste normalmente alla rete
+    event.respondWith(fetch(event.request));
 });

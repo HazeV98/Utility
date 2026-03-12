@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utility - Dati Calendario</title>
+    <style>
+        /* --- STILI GLOBALI UNIFICATI --- */
+        :root { --primary: #0056b3; --bg-color: #f4f7f6; --text-color: #333; --riposo: #1e8449; --danger: #f5365c; --disp: #feb236; }
+        body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        /* HEADER */
+        .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .hamburger-btn { background: none; border: none; font-size: 30px; color: var(--primary); cursor: pointer; padding: 0; width: 50px; text-align: left; }
+        h2 { margin: 0; color: var(--primary); font-size: 24px; }
+        
+        /* MENU LATERALE */
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 2000; }
+        .sidebar { position: fixed; top: 0; left: -280px; width: 250px; height: 100%; background-color: white; box-shadow: 2px 0 5px rgba(0,0,0,0.2); z-index: 2001; transition: left 0.3s ease; display: flex; flex-direction: column; }
+        .sidebar.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: var(--primary); color: white; }
+        .sidebar-link { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 18px; border-bottom: 1px solid #eee; display: block; }
+        .sidebar-link:active, .sidebar-link:hover { background-color: #f4f7f6; color: var(--primary); font-weight: bold; }
+
+        /* AREA CONTENUTI SPECIFICA */
+        .content-area { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px; }
+        
+        .form-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 14px; color: #666; margin-bottom: 5px; font-weight: bold; }
+        .form-group input[type="date"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        
+        .btn-calc { background-color: var(--primary); color: white; border: none; padding: 16px; font-size: 16px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-calc:active { transform: translateY(2px); }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stat-box { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; display: flex; flex-direction: column; justify-content: center; }
+        .stat-title { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .stat-value { font-size: 24px; font-weight: bold; color: var(--primary); }
+        
+        /* Colori specifici per i riquadri */
+        .val-riposi { color: var(--riposo); }
+        .val-sospeso { color: #8965e0; }
+        .val-ferie { color: #fd7e14; }
+        .val-malattia { color: var(--danger); }
+        .val-nebbia { color: #11cdef; }
+        .val-straord { color: #32325d; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <button class="hamburger-btn" onclick="apriMenuLaterale()">☰</button>
+        <h2>Statistiche</h2>
+        <div style="width: 50px;"></div>
+    </div>
+
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="chiudiMenuLaterale()"></div>
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3 style="margin:0; color:white;">Menu</h3>
+            <button style="background:none; border:none; color:white; font-size:24px; cursor:pointer;" onclick="chiudiMenuLaterale()">✕</button>
+        </div>
+        <a href="index.html" class="sidebar-link">🏠 Home Page</a>
+        <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
+        <a href="dati_calendario.html" class="sidebar-link">📊 Dati Calendario</a>
+        <a href="turni.html" class="sidebar-link">🔄 Turni</a>
+        <a href="orari.html" class="sidebar-link">🕒 Orari</a>
+        <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
+        <a href="link.html" class="sidebar-link">🔗 Link</a>
+        <a href="numeri.html" class="sidebar-link">📞 Numeri</a>
+        <a href="buoni.html" class="sidebar-link">🍔 Buoni Pasto</a>
+    </div>
+
+    <div class="content-area">
+        
+        <div class="form-card">
+            <div class="form-group">
+                <label>Data di Inizio (Da):</label>
+                <input type="date" id="dateStart">
+            </div>
+            <div class="form-group">
+                <label>Data di Fine (A):</label>
+                <input type="date" id="dateEnd">
+            </div>
+            <button class="btn-calc" onclick="calcolaStatistiche()">Calcola Statistiche</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-title">Riposi Totali</div>
+                <div class="stat-value val-riposi" id="res-riposi">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-title">Sospesi Riposo</div>
+                <div class="stat-value val-sospeso" id="res-sospeso">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-title">Ferie</div>
+                <div class="stat-value val-ferie" id="res-ferie">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-title">Malattia</div>
+                <div class="stat-value val-malattia" id="res-malattia">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-title">Giorni Nebbia</div>
+                <div class="stat-value val-nebbia" id="res-nebbia">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-title">Straordinari</div>
+                <div class="stat-value val-straord" id="res-straord">0h 0m</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- FUNZIONI MENU LATERALE ---
+        function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
+        function chiudiMenuLaterale() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; }
+
+        // Imposta le date di default (inizio e fine del mese corrente)
+        window.onload = function() {
+            let today = new Date();
+            let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            let lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            
+            document.getElementById('dateStart').value = firstDay.toISOString().split('T')[0];
+            document.getElementById('dateEnd').value = lastDay.toISOString().split('T')[0];
+        };
+
+        // --- LOGICA DI CALCOLO ---
+        const DATA_INIZIO_NUOVI_TURNI = "2026-03-02"; 
+        
+        function stringToNum(s) { if(!s) return 0; let p = s.split('-'); return Math.floor(new Date(p[0], p[1]-1, p[2], 12, 0, 0).getTime() / 86400000); }
+
+        function isGiornoRiposoBase(curr, cfg) {
+            if (!cfg.riposoStart) return false;
+            let ref = stringToNum(cfg.riposoStart);
+            if (cfg.depositoAttivo === 'disp_det') return (((curr - ref) % 6 + 6) % 6 === 0);
+            let pos = ((curr - ref + 6) % 15 + 15) % 15;
+            return (pos === 6 || pos === 13 || pos === 14);
+        }
+
+        function calcolaStatistiche() {
+            const startDateStr = document.getElementById('dateStart').value;
+            const endDateStr = document.getElementById('dateEnd').value;
+            
+            if (!startDateStr || !endDateStr) {
+                alert("Seleziona entrambe le date."); return;
+            }
+            if (startDateStr > endDateStr) {
+                alert("La data di inizio deve essere precedente a quella di fine."); return;
+            }
+
+            // Recupero il database del calendario, includendo sospesoRiposo
+            let state = JSON.parse(localStorage.getItem('myTurniApp')) || { 
+                variazioni: {}, nebbia: {}, straordinario: {}, sospesoRiposo: {}, history: null 
+            };
+
+            // Contatori
+            let countRiposi = 0;
+            let countSospesi = 0;
+            let countFerie = 0;
+            let countMalattia = 0;
+            let countNebbia = 0;
+            let minutiStraordinarioTotali = 0;
+
+            let currentDate = new Date(startDateStr);
+            let endDate = new Date(endDateStr);
+
+            // Ciclo giorno per giorno
+            while (currentDate <= endDate) {
+                // Formatta la data YYYY-MM-DD
+                let dStr = currentDate.getFullYear() + "-" + 
+                           String(currentDate.getMonth() + 1).padStart(2, '0') + "-" + 
+                           String(currentDate.getDate()).padStart(2, '0');
+                
+                let turnoGiorno = "";
+
+                // 1. Controllo Variazioni Manuali (hanno la priorità)
+                if (state.variazioni && state.variazioni[dStr]) {
+                    turnoGiorno = state.variazioni[dStr].toUpperCase();
+                } 
+                // 2. Se non c'è variazione manuale, controllo se è un riposo di base
+                else {
+                    let currNum = stringToNum(dStr);
+                    let cfgBase = (state.history && currNum < stringToNum(DATA_INIZIO_NUOVI_TURNI)) ? state.history : state;
+                    
+                    if (isGiornoRiposoBase(currNum, cfgBase)) {
+                        turnoGiorno = "RI";
+                        if (cfgBase.riposoStart && cfgBase.depositoAttivo !== 'disp_det') {
+                            let ref = stringToNum(cfgBase.riposoStart);
+                            let pos = ((currNum - ref + 6) % 15 + 15) % 15;
+                            if (pos === 13) turnoGiorno = "AL";
+                        }
+                    } else {
+                        turnoGiorno = "TURNO_LAVORATIVO"; 
+                    }
+                }
+
+                // --- AGGIORNAMENTO CONTATORI ---
+                
+                if (turnoGiorno === "RI" || turnoGiorno === "AL" || turnoGiorno === "RIPOSO") {
+                    countRiposi++;
+                }
+                else if (turnoGiorno === "FER" || turnoGiorno === "FEP" || turnoGiorno === "FERIE") {
+                    countFerie++;
+                }
+                else if (turnoGiorno === "KMAL" || turnoGiorno === "MALATTIA") {
+                    countMalattia++;
+                }
+
+                // Sospesi Riposo
+                if (state.sospesoRiposo && state.sospesoRiposo[dStr]) {
+                    countSospesi++;
+                }
+
+                // Nebbia
+                if (state.nebbia && state.nebbia[dStr]) {
+                    countNebbia++;
+                }
+
+                // Straordinari
+                if (state.straordinario && state.straordinario[dStr]) {
+                    let oreStr = parseInt(state.straordinario[dStr].ore) || 0;
+                    let minStr = parseInt(state.straordinario[dStr].minuti) || 0;
+                    minutiStraordinarioTotali += (oreStr * 60) + minStr;
+                }
+
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            // Formattazione output Straordinario
+            let oreTotali = Math.floor(minutiStraordinarioTotali / 60);
+            let minutiRimasti = minutiStraordinarioTotali % 60;
+            let stringaStraord = `${oreTotali}h ${minutiRimasti}m`;
+            if (minutiStraordinarioTotali === 0) stringaStraord = "0h 0m";
+
+            // Aggiorna Interfaccia
+            document.getElementById('res-riposi').innerText = countRiposi;
+            document.getElementById('res-sospeso').innerText = countSospesi;
+            document.getElementById('res-ferie').innerText = countFerie;
+            document.getElementById('res-malattia').innerText = countMalattia;
+            document.getElementById('res-nebbia').innerText = countNebbia;
+            document.getElementById('res-straord').innerText = stringaStraord;
+        }
+    </script>
+</body>
+</html>
+

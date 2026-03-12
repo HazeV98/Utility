@@ -6,7 +6,7 @@
     <title>Utility - Dati Calendario</title>
     <style>
         /* --- STILI GLOBALI UNIFICATI --- */
-        :root { --primary: #0056b3; --bg-color: #f4f7f6; --text-color: #333; --riposo: #1e8449; --danger: #f5365c; --disp: #feb236; }
+        :root { --primary: #0056b3; --bg-color: #f4f7f6; --text-color: #333; }
         body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         
         /* HEADER */
@@ -36,15 +36,9 @@
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .stat-box { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; display: flex; flex-direction: column; justify-content: center; }
         .stat-title { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .stat-value { font-size: 24px; font-weight: bold; color: var(--primary); }
         
-        /* Colori specifici per i riquadri */
-        .val-riposi { color: var(--riposo); }
-        .val-sospeso { color: #8965e0; }
-        .val-ferie { color: #fd7e14; }
-        .val-malattia { color: var(--danger); }
-        .val-nebbia { color: #11cdef; }
-        .val-straord { color: #32325d; }
+        /* Modifica qui: colore fisso scuro/nero per i valori */
+        .stat-value { font-size: 24px; font-weight: bold; color: var(--text-color); }
     </style>
 </head>
 <body>
@@ -89,27 +83,27 @@
         <div class="stats-grid">
             <div class="stat-box">
                 <div class="stat-title">Riposi Totali</div>
-                <div class="stat-value val-riposi" id="res-riposi">0</div>
+                <div class="stat-value" id="res-riposi">0</div>
             </div>
             <div class="stat-box">
                 <div class="stat-title">Sospesi Riposo</div>
-                <div class="stat-value val-sospeso" id="res-sospeso">0</div>
+                <div class="stat-value" id="res-sospeso">0</div>
             </div>
             <div class="stat-box">
                 <div class="stat-title">Ferie</div>
-                <div class="stat-value val-ferie" id="res-ferie">0</div>
+                <div class="stat-value" id="res-ferie">0</div>
             </div>
             <div class="stat-box">
                 <div class="stat-title">Malattia</div>
-                <div class="stat-value val-malattia" id="res-malattia">0</div>
+                <div class="stat-value" id="res-malattia">0</div>
             </div>
             <div class="stat-box">
                 <div class="stat-title">Giorni Nebbia</div>
-                <div class="stat-value val-nebbia" id="res-nebbia">0</div>
+                <div class="stat-value" id="res-nebbia">0</div>
             </div>
             <div class="stat-box">
                 <div class="stat-title">Straordinari</div>
-                <div class="stat-value val-straord" id="res-straord">0h 0m</div>
+                <div class="stat-value" id="res-straord">0h 0m</div>
             </div>
         </div>
 
@@ -249,4 +243,4 @@
     </script>
 </body>
 </html>
-
+ 

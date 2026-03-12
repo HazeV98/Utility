@@ -1,6 +1,6 @@
 {
   "short_name": "Utility",
-  "name": "Utility Aziendale",
+  "name": "Utility",
   "icons": [
     {
       "src": "icon-192.png",
@@ -19,3 +19,4 @@
   "scope": "./",
   "theme_color": "#0056b3"
 }
+ 

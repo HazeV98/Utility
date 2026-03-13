@@ -44,7 +44,7 @@
         { "nome": "Ufficio personale", "valore": "041 272 2117", "tipo": "telefono" },
         { "nome": "Ufficio presenze", "valore": "041 272 2451", "tipo": "telefono" },
         { "nome": "Ufficio buoni e visite mediche", "valore": "041 272 2161", "tipo": "telefono" },
-        { "nome": "Vendita Marinai", "valore": "vendita.marinai@actv.it", "tipo": "email" },
+        { "nome": "Vendite Marinai", "valore": "vendita.marinai@actv.it", "tipo": "email" },
         { "nome": "Ufficio protocollo", "valore": "protocollo@pec.actv.it", "tipo": "email" },
         { "nome": "Ufficio vestiario", "valore": "vestiario@avmspa.it", "tipo": "email" }
       ]

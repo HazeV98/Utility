@@ -61,15 +61,9 @@
     <div id="content-area" class="content-area"><div class="status-message">Caricamento...</div></div>
 
     <script>
-        // --- FUNZIONI MENU LATERALE UNIFICATE ---
-        function apriMenuLaterale() { 
-            document.getElementById('sidebar').classList.add('open'); 
-            document.getElementById('sidebar-overlay').style.display = 'block'; 
-        }
-        function chiudiMenuLaterale() { 
-            document.getElementById('sidebar').classList.remove('open'); 
-            document.getElementById('sidebar-overlay').style.display = 'none'; 
-        }
+        // --- FUNZIONI MENU LATERALE ---
+        function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
+        function chiudiMenuLaterale() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; }
 
         // --- LOGICA SPECIFICA ORARI ---
         const GITHUB_USER = "HazeV98"; 
@@ -95,47 +89,92 @@
                 const files = await res.json();
                 const dirs = files.filter(f => f.type === "dir" && (f.name.startsWith("orari_") || f.name.startsWith("orari_varianti_")));
                 numCartelle = dirs.length;
-                if (numCartelle === 1) { caricaFiles(dirs[0].name); } else {
-                    area.innerHTML = ""; dirs.sort((a,b) => b.name.localeCompare(a.name));
+                
+                if (numCartelle === 1) { 
+                    caricaFiles(dirs[0].name); 
+                } else {
+                    area.innerHTML = ""; 
+                    dirs.sort((a,b) => b.name.localeCompare(a.name));
+                    
                     dirs.forEach(d => {
-                        const btn = document.createElement('button'); btn.className = "folder-btn";
-                        let label = d.name.replace("orari_", "").split("-").reverse().join("-");
-                        btn.innerText = d.name.includes("varianti") ? d.name.replace("orari_varianti_", "").replace(/_/g, " ") : "Orari dal " + label;
-                        btn.onclick = () => caricaFiles(d.name); area.appendChild(btn);
+                        const btn = document.createElement('button'); 
+                        btn.className = "folder-btn";
+                        btn.onclick = () => caricaFiles(d.name); 
+                        area.appendChild(btn);
+                        
+                        // Se è una variante, prova a leggere nome.txt
+                        if (d.name.includes("varianti")) {
+                            btn.innerText = "Caricamento..."; // Testo temporaneo
+                            
+                            // Fetch del file nome.txt
+                            fetch(`https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${d.name}/nome.txt?v=${new Date().getTime()}`)
+                                .then(response => {
+                                    if (response.ok) return response.text();
+                                    throw new Error("File txt assente");
+                                })
+                                .then(testo => {
+                                    // Usa il testo del file, se vuoto usa il fallback
+                                    btn.innerText = testo.trim() || d.name.replace("orari_varianti_", "").replace(/_/g, " ");
+                                })
+                                .catch(() => {
+                                    // Fallback
+                                    btn.innerText = d.name.replace("orari_varianti_", "").replace(/_/g, " ");
+                                });
+                        } else {
+                            // Regola per le cartelle standard (orari_)
+                            let label = d.name.replace("orari_", "").split("-").reverse().join("-");
+                            btn.innerText = "Orari dal " + label;
+                        }
                     });
                 }
-            } catch (e) { area.innerHTML = "Errore di connessione."; }
+            } catch (e) { area.innerHTML = "<div class='status-message'>Errore di connessione.</div>"; }
         }
 
         async function caricaFiles(dir) {
-            const area = document.getElementById('content-area'); area.innerHTML = "Caricamento...";
+            const area = document.getElementById('content-area'); area.innerHTML = "<div class='status-message'>Caricamento...</div>";
             try {
                 const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${dir}`);
                 const files = await res.json();
+                
+                // Mostra SOLO i file PDF (ignorando il txt del nome)
                 let pdfs = files.filter(f => f.name.toLowerCase().endsWith(".pdf"));
+                
                 pdfs.sort((a, b) => {
                     if (a.name.includes("pdf_orari_completo")) return -1;
                     if (b.name.includes("pdf_orari_completo")) return 1;
                     return a.name.localeCompare(b.name, undefined, {numeric: true});
                 });
+                
                 area.innerHTML = "";
                 if (numCartelle > 1) { const b = document.createElement('button'); b.className = "back-btn"; b.innerText = "← Indietro"; b.onclick = init; area.appendChild(b); }
+                
                 pdfs.forEach(f => {
                     let nomeOrig = f.name;
                     let nomeVis = "";
-                    if (nomeOrig.includes("pdf_orari_completo")) { nomeVis = "Pdf orari completo"; } else {
+                    if (nomeOrig.includes("pdf_orari_completo")) { 
+                        nomeVis = "Pdf orari completo"; 
+                    } else {
                         let n = nomeOrig.replace(/\.pdf$/i, "").replace(/_/g, " ");
                         n = n.split(/\s+dal\s+/i)[0];
                         n = n.replace(/actv nav/i, "Orari").replace(/(\d+)b\b/gi, "$1/").replace(/\s+pdf$/i, "").trim();
                         nomeVis = n.charAt(0).toUpperCase() + n.slice(1);
                     }
+                    
                     const row = document.createElement('div'); row.className = "file-row";
                     if (nomeOrig.includes("completo")) row.style.marginBottom = "15px";
-                    const aOpen = document.createElement('a'); aOpen.className = "file-btn"; aOpen.innerText = nomeVis; aOpen.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${dir}/${nomeOrig}`; aOpen.target = "_blank";
-                    const aDown = document.createElement('div'); aDown.className = "download-btn"; aDown.innerHTML = "⬇️"; aDown.onclick = () => downloadForzato(f.download_url, nomeOrig);
+                    
+                    const aOpen = document.createElement('a'); 
+                    aOpen.className = "file-btn"; aOpen.innerText = nomeVis; 
+                    aOpen.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${dir}/${nomeOrig}`; 
+                    aOpen.target = "_blank";
+                    
+                    const aDown = document.createElement('div'); 
+                    aDown.className = "download-btn"; aDown.innerHTML = "⬇️"; 
+                    aDown.onclick = () => downloadForzato(f.download_url, nomeOrig);
+                    
                     row.appendChild(aOpen); row.appendChild(aDown); area.appendChild(row);
                 });
-            } catch (e) { area.innerHTML = "Errore caricamento."; }
+            } catch (e) { area.innerHTML = "<div class='status-message'>Errore caricamento.</div>"; }
         }
         window.onload = init;
     </script>

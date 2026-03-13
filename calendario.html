@@ -62,12 +62,12 @@
             font-size: 13px; text-align: center; line-height: 1.4;
         }
 
-        #welcomeModal, #stepModal, #editModal, #altroModal, #resetModal, #backupModal, #imageModal, #jumpModal, #icsModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
+        #welcomeModal, #stepModal, #editModal, #altroModal, #resetModal, #backupModal, #imageModal, #jumpModal, #icsModal, #multiEditModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
         .modal-content { background: white; margin: 15% auto; padding: 25px; width: 85%; max-width: 400px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; max-height: 80vh; overflow-y: auto; }
 
         select, input[type="text"], input[type="date"] { width: 100%; box-sizing: border-box; margin: 15px 0; padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 16px; background: white; -webkit-appearance: none; }
         .btn { padding: 16px; border: none; border-radius: 14px; color: white; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; font-size: 15px; }
-        .btn-reset { background: #f5365c; padding: 8px 15px; width: auto; font-size: 12px; }
+        .btn-reset { padding: 12px 15px; width: auto; font-size: 14px; }
         .instruction-text { font-size: 15px; line-height: 1.6; color: #525f7f; margin-bottom: 10px; }
         .deposito-tag { font-size: 10px; background: #eef2ff; color: var(--turno); padding: 4px 8px; border-radius: 5px; font-weight: bold; }
 
@@ -87,7 +87,7 @@
             .modal-content { padding: 20px; }
         }
 
-        /* --- STILI MENU LATERALE --- */
+        /* --- STILI MENU LATERALE SINISTRO --- */
         .hamburger-btn { background: none; border: none; font-size: 28px; color: var(--text); cursor: pointer; padding: 0; margin-right: 15px; }
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 2000; }
         .sidebar { position: fixed; top: 0; left: -280px; width: 250px; height: 100%; background-color: white; box-shadow: 2px 0 5px rgba(0,0,0,0.2); z-index: 2001; transition: left 0.3s ease; display: flex; flex-direction: column; }
@@ -95,26 +95,46 @@
         .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: var(--turno); color: white; }
         .sidebar-link { padding: 15px 20px; text-decoration: none; color: #333; font-size: 18px; border-bottom: 1px solid #eee; display: block; }
         .sidebar-link:active, .sidebar-link:hover { background-color: #f4f7f6; color: var(--turno); font-weight: bold; }
+
+        /* --- STILI MENU LATERALE DESTRO (AZIONI) --- */
+        .right-sidebar { position: fixed; top: 0; right: -280px; width: 250px; height: 100%; background-color: white; box-shadow: -2px 0 5px rgba(0,0,0,0.2); z-index: 2001; transition: right 0.3s ease; display: flex; flex-direction: column; }
+        .right-sidebar.open { right: 0; }
     </style>
 </head>
 <body>
 
-<div id="sidebar-overlay" class="sidebar-overlay" onclick="chiudiMenuLaterale()"></div>
+<div id="sidebar-overlay" class="sidebar-overlay" onclick="chiudiMenuLaterale(); chiudiMenuDestro();"></div>
 
 <div id="sidebar" class="sidebar">
     <div class="sidebar-header">
         <h3 style="margin:0; color:white;">Menu</h3>
         <button style="background:none; border:none; color:white; font-size:24px; cursor:pointer;" onclick="chiudiMenuLaterale()">✕</button>
     </div>
-        <a href="index.html" class="sidebar-link">🏠 Home Page</a>
-        <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
-        <a href="dati_calendario.html" class="sidebar-link">📊 Statistiche Calendario</a>
-        <a href="turni.html" class="sidebar-link">🔄 Turni</a>
-        <a href="orari.html" class="sidebar-link">🕒 Orari</a>
-        <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
-        <a href="link.html" class="sidebar-link">🔗 Link</a>
-        <a href="contatti.html" class="sidebar-link">📞 Contatti</a>
-        <a href="buoni.html" class="sidebar-link">🍔 Buoni Pasto</a>
+    <a href="index.html" class="sidebar-link">🏠 Home Page</a>
+    <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
+    <a href="dati_calendario.html" class="sidebar-link">📊 Statistiche Calendario</a>
+    <a href="turni.html" class="sidebar-link">🔄 Turni</a>
+    <a href="orari.html" class="sidebar-link">🕒 Orari</a>
+    <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
+    <a href="link.html" class="sidebar-link">🔗 Link</a>
+    <a href="contatti.html" class="sidebar-link">📞 Contatti</a>
+    <a href="buoni.html" class="sidebar-link">🍔 Buoni Pasto</a>
+</div>
+
+<div id="right-sidebar" class="right-sidebar">
+    <div class="sidebar-header" style="background-color: #32325d;">
+        <h3 style="margin:0; color:white;">Azioni</h3>
+        <button style="background:none; border:none; color:white; font-size:24px; cursor:pointer;" onclick="chiudiMenuDestro()">✕</button>
+    </div>
+    <div style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+        <button class="btn btn-reset" style="background: #2dce89; margin:0; width:100%;" onclick="apriMultiEdit()">✏️ Modifica Multipla</button>
+        <hr style="width: 100%; border: 0; border-top: 1px solid #eee;">
+        <button class="btn btn-reset" style="background: #5e72e4; margin:0; width:100%;" onclick="scaricaPDF()">📄 Esporta PDF</button>
+        <button class="btn btn-reset" style="background: #5e72e4; margin:0; width:100%;" onclick="apriIcsModal()">📅 Esporta ICS</button>
+        <hr style="width: 100%; border: 0; border-top: 1px solid #eee;">
+        <button class="btn btn-reset" style="background: #adb5bd; margin:0; width:100%;" onclick="apriBackup()">💾 Backup Dati</button>
+        <button class="btn btn-reset" style="background: #f5365c; margin:0; width:100%;" onclick="apriReset()">🗑️ Reset Totale</button>
+    </div>
 </div>
 
 <div id="topBar">
@@ -125,13 +145,25 @@
             <span id="activeDepotLabel" class="deposito-tag">In attesa...</span>
         </div>
     </div>
-    <div style="display: flex; flex-direction: column; align-items: flex-end;">
-        <div style="display: flex;">
-            <button class="btn btn-reset" style="background: #5e72e4; margin-right: 5px;" onclick="scaricaPDF()">PDF</button>
-            <button class="btn btn-reset" style="background: #adb5bd; margin-right: 5px;" onclick="apriBackup()">BACKUP</button>
-            <button class="btn btn-reset" onclick="apriReset()">RESET</button>
-        </div>
-        <button class="btn btn-reset" style="background: #5e72e4; margin-top: 8px; width: 100%; box-sizing: border-box;" onclick="apriIcsModal()">ESPORTA CALENDARIO ICS</button>
+    <button class="hamburger-btn" style="margin-right: 0;" onclick="apriMenuDestro()">⋮</button>
+</div>
+
+<div id="multiEditModal">
+    <div class="modal-content">
+        <h3 style="color: #2dce89; margin-top: 0;">Modifica Multipla</h3>
+        <p class="instruction-text" style="font-size: 14px;">Applica lo stesso turno a più giorni consecutivi (es. FERIE).</p>
+        
+        <label style="font-size: 14px; color: #525f7f; text-align: left; display: block; margin-top: 10px; font-weight:bold;">Da (Inizio):</label>
+        <input type="date" id="multiStart">
+        
+        <label style="font-size: 14px; color: #525f7f; text-align: left; display: block; margin-top: 10px; font-weight:bold;">A (Fine):</label>
+        <input type="date" id="multiEnd">
+        
+        <label style="font-size: 14px; color: #525f7f; text-align: left; display: block; margin-top: 10px; font-weight:bold;">Turno da inserire:</label>
+        <input type="text" id="multiTurno" placeholder="Es. FER, MALATTIA..." oninput="this.value = this.value.toUpperCase();">
+        
+        <button class="btn" style="background: #2dce89;" onclick="salvaModificaMultipla()">Salva Modifiche</button>
+        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiMultiEdit()">Annulla</button>
     </div>
 </div>
 
@@ -293,7 +325,7 @@
         </div>
         <button class="btn" style="background: #e9ecef; color: #32325d; margin-top: 0; padding: 10px; font-size: 14px;" onclick="selezionaColoreAltro('', null)">Rimuovi Colore</button>
 
-        <button class="btn" style="background: #32325d; margin-top: 20px;" onclick="salvaAltro()">Salva</button>
+        <button class="btn" style="background: #32325d; margin-top: 20px;" onclick="salvaAltro()">Salva Altre Opzioni</button>
         <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 10px;" onclick="chiudiAltroModal()">Annulla</button>
     </div>
 </div>
@@ -321,10 +353,53 @@
         document.getElementById('sidebar').classList.add('open'); 
         document.getElementById('sidebar-overlay').style.display = 'block'; 
     }
-
     function chiudiMenuLaterale() { 
         document.getElementById('sidebar').classList.remove('open'); 
         document.getElementById('sidebar-overlay').style.display = 'none'; 
+    }
+    
+    // --- FUNZIONI MENU DESTRO E MODIFICA MULTIPLA ---
+    function apriMenuDestro() {
+        document.getElementById('right-sidebar').classList.add('open');
+        document.getElementById('sidebar-overlay').style.display = 'block';
+    }
+    function chiudiMenuDestro() {
+        document.getElementById('right-sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').style.display = 'none';
+    }
+    
+    function apriMultiEdit() {
+        chiudiMenuDestro();
+        document.getElementById('multiEditModal').style.display = 'block';
+    }
+    function chiudiMultiEdit() {
+        document.getElementById('multiEditModal').style.display = 'none';
+    }
+    
+    function salvaModificaMultipla() {
+        const startDateStr = document.getElementById('multiStart').value;
+        const endDateStr = document.getElementById('multiEnd').value;
+        const turnoVal = document.getElementById('multiTurno').value.trim().toUpperCase();
+
+        if (!startDateStr || !endDateStr) { alert("Seleziona entrambe le date."); return; }
+        if (startDateStr > endDateStr) { alert("La data di inizio deve essere precedente o uguale a quella di fine."); return; }
+        if (!turnoVal) { alert("Inserisci il turno."); return; }
+
+        let currentDate = new Date(startDateStr);
+        let endDate = new Date(endDateStr);
+
+        // Cicla attraverso tutti i giorni nel range selezionato
+        while (currentDate <= endDate) {
+            let dStr = currentDate.getFullYear() + "-" + 
+                       String(currentDate.getMonth() + 1).padStart(2, '0') + "-" + 
+                       String(currentDate.getDate()).padStart(2, '0');
+            
+            state.variazioni[dStr] = turnoVal;
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        salvaLocal();
+        location.reload();
     }
 
     // --- CORE INVARIATO ---
@@ -376,6 +451,7 @@
     }
 
     function scaricaPDF() {
+        chiudiMenuDestro();
         const element = document.getElementById('calendar');
         let titleEl = document.querySelector('.fc-toolbar-title');
         let meseTesto = titleEl ? titleEl.innerText.replace(/ /g, "_") : "Calendario";
@@ -938,10 +1014,10 @@
     }
 
     function aggiornaUI() { document.getElementById('activeDepotLabel').innerText = state.depositoAttivo || "Configurazione"; }
-    function apriReset() { document.getElementById('resetModal').style.display = 'block'; }
+    function apriReset() { chiudiMenuDestro(); document.getElementById('resetModal').style.display = 'block'; }
     function chiudiReset() { document.getElementById('resetModal').style.display = 'none'; }
     function confermaReset() { localStorage.removeItem('myTurniApp'); location.reload(); }
-    function apriBackup() { document.getElementById('backupModal').style.display = 'block'; }
+    function apriBackup() { chiudiMenuDestro(); document.getElementById('backupModal').style.display = 'block'; }
     function chiudiBackup() { document.getElementById('backupModal').style.display = 'none'; }
     function chiudiStep() { document.getElementById('stepModal').style.display = 'none'; }
     function chiudiEdit() { document.getElementById('editModal').style.display = 'none'; }
@@ -966,7 +1042,7 @@
         document.getElementById('btnSalvaCambio').disabled = true;
     }
 
-    function apriIcsModal() { document.getElementById('icsModal').style.display = 'block'; }
+    function apriIcsModal() { chiudiMenuDestro(); document.getElementById('icsModal').style.display = 'block'; }
     function chiudiIcsModal() { document.getElementById('icsModal').style.display = 'none'; }
     
     function esportaICS() {
@@ -1061,4 +1137,3 @@
 </body>
 </html>
  
-

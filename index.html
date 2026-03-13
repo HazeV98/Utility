@@ -5,13 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Utility</title>
 
-    <script>
-        window.goatcounter = {
-            path: 'Home Page (index.html)',
-            title: 'Utility - Home'
-        };
-    </script>
-    <script data-goatcounter="https://hazev.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+    <script data-goatcounter="https://hazev.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
     
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-512.png">
@@ -69,7 +63,7 @@
 
         /* TASTO INSTALLA VERDE */
         #install-btn {
-            display: none; /* Appare solo se installabile */
+            display: none;
             background-color: var(--success);
             color: white;
             border: none;
@@ -178,9 +172,9 @@
     </div>
 
     <script>
-        // Aggiungiamo un parametro per far capire al browser di non pescare sempre dalla cache
+        // Registrazione base del service worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js?v=2').then(() => console.log("SW OK"));
+            navigator.serviceWorker.register('sw.js').then(() => console.log("SW OK"));
         }
 
         let deferredPrompt;
@@ -206,3 +200,4 @@
     </script>
 </body>
 </html>
+ 

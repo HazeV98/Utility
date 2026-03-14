@@ -837,7 +837,7 @@
         tempRotDate = dStr;
         document.getElementById('stepTitle').innerText = "Nuova Rotazione";
         document.getElementById('stepDateDisplay').innerText = ""; 
-        document.getElementById('stepDesc').innerHTML = `Indica il turno per l'inizio della nuova rotazione, il giorno <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong>:`;
+        document.getElementById('stepDesc').innerHTML = `Dal <strong>${formattaData(DATA_INIZIO_NUOVI_TURNI)}</strong> entra in vigore una nuova rotazione. Che turno avrai il <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong>?`;
         document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
         document.getElementById('btnCloseStep').style.display = "none"; 
         document.getElementById('btnConfirmFinal').style.display = "block";
@@ -872,15 +872,8 @@
                 
                 document.getElementById('stepDateDisplay').innerText = ""; 
                 
-                // --- RISOLTO IL PROBLEMA DEL DISP QUI ---
-                let currentTitle = document.getElementById('stepTitle').innerText;
-                if (currentTitle.includes("Passo 4")) {
-                    document.getElementById('stepDesc').innerHTML = `Dal <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong> entra in vigore una nuova rotazione. Che turno avrai quel giorno?`;
-                } else if (currentTitle.includes("Nuova Rotazione")) {
-                    document.getElementById('stepDesc').innerHTML = `Indica il turno per l'inizio della nuova rotazione, il giorno <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong>:`;
-                } else {
-                    document.getElementById('stepDesc').innerHTML = `Che turno hai il giorno <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong>?`;
-                }
+                // MODIFICA: Ora, qualunque volta si prema DISP, chiede in modo semplice e diretto il giorno dopo
+                document.getElementById('stepDesc').innerHTML = `Che turno avrai il <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong>?`;
                 
                 document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
                 return; 
@@ -891,10 +884,12 @@
             state.turnoIndex = val; state.rotazioneStart = tempRotDate;
             let dataFutura = trovaDataCambioProssimo(tempRotDate);
             if (dataFutura) {
-                state.setupStep = 4; tempRotDate = dataFutura;
+                state.setupStep = 4; 
+                state.baseDataFutura = dataFutura;
+                tempRotDate = dataFutura;
                 document.getElementById('stepTitle').innerText = "Passo 4 (Cambio Turni)";
                 document.getElementById('stepDateDisplay').innerText = ""; 
-                document.getElementById('stepDesc').innerHTML = `Dal <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong> entra in vigore una nuova rotazione. Che turno avrai quel giorno?`;
+                document.getElementById('stepDesc').innerHTML = `Dal <strong>${formattaData(state.baseDataFutura)}</strong> entra in vigore una nuova rotazione. Che turno avrai il <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong>?`;
                 document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
                 return;
             }

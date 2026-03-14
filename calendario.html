@@ -822,8 +822,8 @@
             document.getElementById('btnConfirmDate').style.display = "none";
             document.getElementById('btnCloseStep').style.display = "none"; 
             document.getElementById('stepTitle').innerText = "Passo 3";
-            document.getElementById('stepDateDisplay').innerText = formattaData(tempRotDate);
-            document.getElementById('stepDesc').innerText = "Che turno hai in questo giorno?";
+            document.getElementById('stepDateDisplay').innerText = ""; 
+            document.getElementById('stepDesc').innerHTML = `Che turno hai il giorno <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong>?`;
             document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
             document.getElementById('btnConfirmFinal').style.display = "block";
             document.getElementById('stepModal').style.display = 'block';
@@ -881,8 +881,8 @@
             if (dataFutura) {
                 state.setupStep = 4; tempRotDate = dataFutura;
                 document.getElementById('stepTitle').innerText = "Passo 4 (Cambio Turni)";
-                document.getElementById('stepDateDisplay').innerText = formattaData(tempRotDate);
-                document.getElementById('stepDesc').innerText = `Dal ${formattaData(tempRotDate)} entra in vigore una nuova rotazione. Che turno avrai quel giorno?`;
+                document.getElementById('stepDateDisplay').innerText = ""; 
+                document.getElementById('stepDesc').innerHTML = `Dal <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong> entra in vigore una nuova rotazione. Che turno avrai quel giorno?`;
                 document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
                 return;
             }
@@ -908,9 +908,8 @@
             if (distFutura + 1825 > limitRiposi) limitRiposi = distFutura + 1825;
         }
 
-        let processati = new Set(); // Tiene traccia dei giorni già disegnati
+        let processati = new Set(); 
 
-        // 1. CICLO NORMALE: Mostra tutto (calcolato e manuale) da -60 giorni a limitRiposi
         for (let i = -60; i < limitRiposi; i++) {
             let dObj = new Date(today); dObj.setDate(today.getDate() + i);
             let dStr = dObj.toISOString().split('T')[0];
@@ -982,8 +981,6 @@
             }
         }
 
-        // 2. RECUPERO STORICO MANUALE (Più vecchie di 60 giorni)
-        // Raccogliamo tutte le date che hanno subìto una qualsiasi modifica manuale
         let chiaviModificate = new Set([
             ...Object.keys(state.variazioni || {}),
             ...Object.keys(state.nebbia || {}),
@@ -993,7 +990,6 @@
         ]);
 
         chiaviModificate.forEach(dStr => {
-            // Se la data NON è già stata disegnata nel ciclo dei 60 giorni, la aggiungiamo ora
             if (!processati.has(dStr)) {
                 let customColor = (state.colori && state.colori[dStr]) ? state.colori[dStr] : null;
                 let tColor = (customColor === '#f1c40f') ? '#32325d' : '#ffffff';
@@ -1003,7 +999,6 @@
                 if (state.straordinario[dStr]) titleAddon += " ⏱️";
                 if (state.sospesoRiposo[dStr]) titleAddon += " (Sospeso)";
 
-                // Se l'utente ha scritto una Variazione usa quella, altrimenti usa la scritta "NOTA"
                 let titleTxt = state.variazioni[dStr] ? state.variazioni[dStr] : "NOTA";
                 
                 let ev = { title: titleTxt + titleAddon, start: dStr, allDay: true };
@@ -1012,7 +1007,6 @@
                     ev.backgroundColor = customColor; 
                     ev.textColor = tColor; 
                 } else { 
-                    // Colore base rosso per le modifiche storiche, a meno che non sia un Riposo
                     ev.className = (titleTxt==='RI' || titleTxt==='RIPOSO' || titleTxt==='AL') ? 'bg-riposo' : 'bg-modificato'; 
                 }
                 

@@ -22,9 +22,12 @@
         .sidebar-link { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 18px; border-bottom: 1px solid #eee; display: block; }
         .sidebar-link:active, .sidebar-link:hover { background-color: #f4f7f6; color: var(--primary); font-weight: bold; }
 
-        /* AREA CONTENUTI */
+        /* AREA CONTENUTI E CATEGORIE */
         .content-area { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
         .status-message { text-align: center; color: #666; font-size: 16px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        .category-block { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+        .category-title { font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; margin-top: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
         
         /* RIGA LINK CON COPIA */
         .link-row { display: flex; gap: 8px; width: 100%; align-items: stretch; }
@@ -108,28 +111,42 @@
                     return;
                 }
 
-                dati.link.forEach(linkObj => {
-                    const row = document.createElement('div');
-                    row.className = "link-row";
+                // Genera i blocchi per le Categorie
+                dati.link.forEach(categoriaObj => {
+                    const block = document.createElement('div');
+                    block.className = "category-block";
 
-                    const btn = document.createElement('a');
-                    btn.className = "link-btn";
-                    btn.href = linkObj.url;
-                    btn.target = "_blank";
-                    btn.innerHTML = `<span>${linkObj.nome}</span> <span class="link-icon">🔗</span>`;
-                    
-                    const copyBtn = document.createElement('div');
-                    copyBtn.className = "copy-btn";
-                    copyBtn.innerHTML = "📋";
-                    copyBtn.title = "Copia URL";
-                    copyBtn.onclick = (e) => {
-                        e.preventDefault();
-                        copiaLink(linkObj.url, copyBtn);
-                    };
+                    const titolo = document.createElement('div');
+                    titolo.className = "category-title";
+                    titolo.innerText = categoriaObj.categoria;
+                    block.appendChild(titolo);
 
-                    row.appendChild(btn);
-                    row.appendChild(copyBtn);
-                    area.appendChild(row);
+                    // Genera i singoli link dentro la categoria
+                    categoriaObj.elementi.forEach(linkObj => {
+                        const row = document.createElement('div');
+                        row.className = "link-row";
+
+                        const btn = document.createElement('a');
+                        btn.className = "link-btn";
+                        btn.href = linkObj.url;
+                        btn.target = "_blank";
+                        btn.innerHTML = `<span>${linkObj.nome}</span> <span class="link-icon">🔗</span>`;
+                        
+                        const copyBtn = document.createElement('div');
+                        copyBtn.className = "copy-btn";
+                        copyBtn.innerHTML = "📋";
+                        copyBtn.title = "Copia URL";
+                        copyBtn.onclick = (e) => {
+                            e.preventDefault();
+                            copiaLink(linkObj.url, copyBtn);
+                        };
+
+                        row.appendChild(btn);
+                        row.appendChild(copyBtn);
+                        block.appendChild(row);
+                    });
+
+                    area.appendChild(block);
                 });
 
             } catch (error) {
@@ -141,4 +158,3 @@
     </script>
 </body>
 </html>
- 

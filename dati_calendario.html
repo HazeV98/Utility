@@ -102,11 +102,11 @@
                 <div class="stat-value highlight" id="resSospesi">0</div>
             </div>
             <div class="stat-row">
-                <div class="stat-label">⚕️ Malattia (MAL)</div>
+                <div class="stat-label">⚕️ Malattia (KMAL)</div>
                 <div class="stat-value" id="resMalattia">0</div>
             </div>
             <div class="stat-row">
-                <div class="stat-label">🩸 Donazione Sangue</div>
+                <div class="stat-label">🩸 Donazione Sangue (AVIS)</div>
                 <div class="stat-value" id="resSangue">0</div>
             </div>
             <div class="stat-row">
@@ -194,7 +194,7 @@
                 // CALCOLA ALTRE CAUSALI
                 if (varTurno === "KNOP" || varTurno.includes("KNOP")) stats.parentali++;
                 if (varTurno.includes("FER") || varTurno === "FERIE") stats.ferie++;
-                if (varTurno.includes("MAL") || varTurno === "MALATTIA") stats.malattia++;
+                if (varTurno.includes("KMAL") || varTurno === "MALATTIA") stats.malattia++;
                 if (varTurno.includes("AVIS") || varTurno === "AVIS") stats.sangue++;
 
                 // CALCOLA STRAORDINARI

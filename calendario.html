@@ -290,7 +290,7 @@
         
         <button id="btnSalvaCambio" class="btn" style="background: #32325d" onclick="salvaCambioSingolo()" disabled>Salva Cambio</button>
         <button class="btn" style="background: #adb5bd;" onclick="resetGiornoSingolo()">Ripristina Originale</button>
-        <button class="btn" style="background: #11cdef;" onclick="apriAltroModal()">Altro (Nebbia, Straord, Sospesi, Colore)</button>
+        <button class="btn" style="background: #11cdef;" onclick="apriAltroModal()">Altro (Note, Nebbia, Straord, Sospesi, Colore)</button>
         <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiEdit()">Chiudi</button>
     </div>
 </div>
@@ -320,6 +320,11 @@
                 <input type="number" id="oreStraordAltro" placeholder="Ore" min="0" style="flex: 1; padding: 12px; margin: 0; border: 2px solid #e9ecef; border-radius: 10px; font-size: 15px;">
                 <input type="number" id="minutiStraordAltro" placeholder="Minuti" min="0" max="59" style="flex: 1; padding: 12px; margin: 0; border: 2px solid #e9ecef; border-radius: 10px; font-size: 15px;">
             </div>
+
+            <hr style="border: 0; border-top: 1px solid #e9ecef; margin: 15px 0;">
+            
+            <label style="display: block; font-size: 15px; color: #525f7f; margin-bottom: 8px; font-weight: bold;">📝 Note:</label>
+            <textarea id="notaAltro" placeholder="Scrivi una nota per questo giorno..." style="width: 100%; box-sizing: border-box; padding: 10px; border: 2px solid #e9ecef; border-radius: 10px; font-size: 14px; font-family: inherit; resize: vertical; min-height: 70px;"></textarea>
         </div>
 
         <div style="text-align: left; margin-bottom: 10px; color: #525f7f; font-weight: bold; font-size: 15px;">Colore Sfondo:</div>
@@ -455,11 +460,12 @@
         rot_linea14: true, rot_17sn: true, rot_17tr: true, rot_linea12: true
     };
 
-    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, nebbia: {}, straordinario: {}, sospesoRiposo: {}, setupStep: 0, dbCache: {}, rotCache: {} };
+    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, nebbia: {}, straordinario: {}, sospesoRiposo: {}, note: {}, setupStep: 0, dbCache: {}, rotCache: {} };
     if (!state.colori) state.colori = {}; 
     if (!state.nebbia) state.nebbia = {};
     if (!state.straordinario) state.straordinario = {};
     if (!state.sospesoRiposo) state.sospesoRiposo = {};
+    if (!state.note) state.note = {};
 
     let selectedDate, tempRotDate, calendar;
     let currentImagePath = "";
@@ -607,7 +613,6 @@
             inizializzaCalendario(); 
             checkGuida();
             
-            // --- NUOVA FUNZIONE: AUTO-APERTURA OGGI ---
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('oggi') === 'true') {
                 let dObj = new Date();
@@ -615,7 +620,6 @@
                                String(dObj.getMonth() + 1).padStart(2, '0') + "-" + 
                                String(dObj.getDate()).padStart(2, '0');
                 
-                // Un leggero ritardo per permettere al calendario di disegnarsi sotto
                 setTimeout(() => gestisciInterazione(todayStr), 300);
             }
         }
@@ -674,7 +678,7 @@
             let turnoCorrenteObj = turniCalc.find(e => e.start === date);
             
             let nomeTurnoCompleto = turnoCorrenteObj ? turnoCorrenteObj.title : "Nessun turno";
-            let nomeTurnoPulito = nomeTurnoCompleto.replace(/ 🌫️| ⏱️|\(Sospeso\)/g, '').trim();
+            let nomeTurnoPulito = nomeTurnoCompleto.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim();
             let codiceBase = nomeTurnoPulito.toUpperCase();
             
             document.getElementById('singleTurnoSelect').style.display = 'block';
@@ -704,11 +708,12 @@
                 htmlInfo += `<b>Inizio:</b> ${dettagli.inizio} (${dettagli.luogoInizio})<br><b>Fine:</b> ${dettagli.fine} (${dettagli.luogoFine})`;
             }
 
-            if (state.nebbia[date] || state.straordinario[date] || state.sospesoRiposo[date]) {
+            if (state.nebbia[date] || state.straordinario[date] || state.sospesoRiposo[date] || state.note[date]) {
                 htmlInfo += `<hr style="margin:10px 0; border:0; border-top:1px solid #eee;">`;
                 if (state.sospesoRiposo[date]) htmlInfo += `<div style="margin-bottom: 5px;"><b>Riposo:</b> Sospeso</div>`;
                 if (state.nebbia[date]) htmlInfo += `<div style="margin-bottom: 5px;">🌫️ <b>Indennità Nebbia:</b> Presente</div>`;
-                if (state.straordinario[date]) htmlInfo += `<div>⏱️ <b>Straordinario:</b> ${state.straordinario[date].ore}h ${state.straordinario[date].minuti}m</div>`;
+                if (state.straordinario[date]) htmlInfo += `<div style="margin-bottom: 5px;">⏱️ <b>Straordinario:</b> ${state.straordinario[date].ore}h ${state.straordinario[date].minuti}m</div>`;
+                if (state.note[date]) htmlInfo += `<div style="margin-top: 5px; white-space: pre-wrap;">📝 <b>Note:</b><br>${state.note[date]}</div>`;
             }
 
             infoArea.innerHTML = htmlInfo; infoArea.style.display = "block"; 
@@ -740,6 +745,8 @@
         document.getElementById('straordinarioInputsAltro').style.display = hasStraord ? 'flex' : 'none';
         document.getElementById('oreStraordAltro').value = hasStraord ? state.straordinario[selectedDate].ore : '';
         document.getElementById('minutiStraordAltro').value = hasStraord ? state.straordinario[selectedDate].minuti : '';
+        
+        document.getElementById('notaAltro').value = state.note[selectedDate] || "";
         
         tempColoreAltro = state.colori[selectedDate] || "";
         aggiornaSelezioneColoreUI();
@@ -795,6 +802,13 @@
             };
         } else {
             delete state.straordinario[selectedDate];
+        }
+
+        const notaVal = document.getElementById('notaAltro').value.trim();
+        if (notaVal) {
+            state.note[selectedDate] = notaVal;
+        } else {
+            delete state.note[selectedDate];
         }
 
         if (tempColoreAltro) {
@@ -976,6 +990,7 @@
             if (state.nebbia[dStr]) titleAddon += " 🌫️";
             if (state.straordinario[dStr]) titleAddon += " ⏱️";
             if (state.sospesoRiposo[dStr]) titleAddon += " (Sospeso)";
+            if (state.note[dStr]) titleAddon += " 📝";
 
             if (state.variazioni[dStr]) {
                 let ev = { title: state.variazioni[dStr] + titleAddon, start: dStr, allDay: true };
@@ -1039,7 +1054,8 @@
             ...Object.keys(state.nebbia || {}),
             ...Object.keys(state.straordinario || {}),
             ...Object.keys(state.sospesoRiposo || {}),
-            ...Object.keys(state.colori || {})
+            ...Object.keys(state.colori || {}),
+            ...Object.keys(state.note || {})
         ]);
 
         chiaviModificate.forEach(dStr => {
@@ -1051,6 +1067,7 @@
                 if (state.nebbia[dStr]) titleAddon += " 🌫️";
                 if (state.straordinario[dStr]) titleAddon += " ⏱️";
                 if (state.sospesoRiposo[dStr]) titleAddon += " (Sospeso)";
+                if (state.note[dStr]) titleAddon += " 📝";
 
                 let titleTxt = state.variazioni[dStr] ? state.variazioni[dStr] : "NOTA";
                 
@@ -1099,6 +1116,7 @@
         delete state.nebbia[selectedDate];
         delete state.straordinario[selectedDate];
         delete state.sospesoRiposo[selectedDate];
+        delete state.note[selectedDate];
         salvaLocal(); 
         location.reload(); 
     }
@@ -1162,7 +1180,7 @@
             const nextParts = nextDateStr.split('-');
             const icsNextDate = nextParts[0] + nextParts[1] + nextParts[2];
             
-            let pulitoTitle = t.title.replace(/ 🌫️| ⏱️|\(Sospeso\)/g, '').trim();
+            let pulitoTitle = t.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim();
             const uid = t.start + "-" + pulitoTitle.replace(/\s+/g, '') + "@myturniapp";
             const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + "Z";
             

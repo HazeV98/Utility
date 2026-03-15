@@ -113,6 +113,13 @@
             opacity: 0.9; 
         }
 
+        /* Tasto Speciale Oggi */
+        .btn-oggi {
+            background-color: var(--success);
+            font-size: 20px;
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+        }
+
         /* Feedback e Telegram */
         .feedback-section {
             margin-top: 40px;
@@ -148,7 +155,9 @@
     </div>
 
     <div class="menu-grid">
-        <a href="calendario.html" class="menu-btn">📅 Calendario</a>
+        <a href="calendario.html?oggi=true" class="menu-btn btn-oggi">🌟 Turno di Oggi</a>
+        
+        <a href="calendario.html" class="menu-btn">📅 Calendario Completo</a>
         <a href="dati_calendario.html" class="menu-btn">📊 Statistiche Calendario</a>
         
         <a href="turni.html" class="menu-btn">🔄 Turni</a>
@@ -172,7 +181,6 @@
     </div>
 
     <script>
-        // Registrazione base del service worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').then(() => console.log("SW OK"));
         }
@@ -200,4 +208,3 @@
     </script>
 </body>
 </html>
- 

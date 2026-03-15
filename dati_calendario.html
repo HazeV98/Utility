@@ -31,6 +31,7 @@
         .input-group { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; }
         .input-group label { font-size: 14px; font-weight: bold; color: #555; }
         .input-group input[type="date"] { padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 16px; font-family: inherit; }
+        .input-help { font-size: 12px; color: #888; margin-top: -5px; }
         
         .btn-calc { background-color: var(--primary); color: white; border: none; padding: 16px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s; }
         .btn-calc:active { transform: translateY(2px); }
@@ -44,6 +45,7 @@
         .stat-label { font-size: 16px; color: #555; display: flex; align-items: center; gap: 8px; }
         .stat-value { font-size: 18px; font-weight: bold; color: var(--primary); }
         .stat-value.highlight { color: #f5365c; }
+        .stat-value.parental { color: #8965e0; }
     </style>
 </head>
 <body>
@@ -78,20 +80,22 @@
             
             <label>A (Fine):</label>
             <input type="date" id="dateEnd">
+            
+            <div class="input-help">Lascia vuoti i campi per calcolare i dati totali registrati.</div>
         </div>
 
         <button class="btn-calc" onclick="calcolaStatistiche()">Calcola Statistiche</button>
 
         <div id="results" class="results-container">
-            <h3 class="results-title">Risultati del periodo</h3>
+            <h3 class="results-title" id="titoloRisultati">Risultati del periodo</h3>
             
             <div class="stat-row">
                 <div class="stat-label">🏖️ Ferie (FER)</div>
                 <div class="stat-value" id="resFerie">0</div>
             </div>
             <div class="stat-row">
-                <div class="stat-label">🟢 Riposi Normali</div>
-                <div class="stat-value" id="resRiposi">0</div>
+                <div class="stat-label">🍼 Congedi Parentali (KNOP)</div>
+                <div class="stat-value parental" id="resParentali">0</div>
             </div>
             <div class="stat-row">
                 <div class="stat-label">🔴 Sospesi Riposo</div>
@@ -121,30 +125,26 @@
         function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
         function chiudiMenuLaterale() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; }
 
-        // --- FUNZIONI SUPPORTO CALENDARIO ---
-        const DATA_INIZIO_NUOVI_TURNI = "2026-03-02";
-        function stringToNum(s) { if(!s) return 0; let p = s.split('-'); return Math.floor(new Date(p[0], p[1]-1, p[2], 12, 0, 0).getTime() / 86400000); }
-
-        function isGiornoRiposoBase(curr, cfg) {
-            if (!cfg.riposoStart) return false;
-            let ref = stringToNum(cfg.riposoStart);
-            if (cfg.depositoAttivo === 'disp_det') return (((curr - ref) % 6 + 6) % 6 === 0);
-            let pos = ((curr - ref + 6) % 15 + 15) % 15;
-            return (pos === 6 || pos === 13 || pos === 14);
-        }
-
         function calcolaStatistiche() {
             const startStr = document.getElementById('dateStart').value;
             const endStr = document.getElementById('dateEnd').value;
 
-            if (!startStr || !endStr) { alert("Seleziona entrambe le date!"); return; }
-            if (startStr > endStr) { alert("La data d'inizio deve essere precedente alla fine!"); return; }
+            // Avviso se si compila solo un campo
+            if ((startStr && !endStr) || (!startStr && endStr)) {
+                alert("Seleziona entrambe le date, oppure lasciale entrambe vuote per i dati totali.");
+                return;
+            }
+
+            if (startStr && endStr && startStr > endStr) {
+                alert("La data d'inizio deve essere precedente alla fine!");
+                return;
+            }
 
             let state = JSON.parse(localStorage.getItem('myTurniApp')) || { variazioni: {}, straordinario: {}, sospesoRiposo: {} };
             
             let stats = {
                 ferie: 0,
-                riposi: 0,
+                parentali: 0,
                 sospesi: 0,
                 malattia: 0,
                 sangue: 0,
@@ -152,68 +152,72 @@
                 straordMinutiTotali: 0
             };
 
-            let currentDate = new Date(startStr);
-            let endDate = new Date(endStr);
+            let dateArray = [];
 
-            while (currentDate <= endDate) {
-                let dStr = currentDate.getFullYear() + "-" + 
-                           String(currentDate.getMonth() + 1).padStart(2, '0') + "-" + 
-                           String(currentDate.getDate()).padStart(2, '0');
+            // Se non ci sono date, calcola tutti i giorni che hanno variazioni o dati aggiuntivi
+            if (!startStr && !endStr) {
+                let allDates = new Set([
+                    ...Object.keys(state.variazioni || {}),
+                    ...Object.keys(state.sospesoRiposo || {}),
+                    ...Object.keys(state.straordinario || {})
+                ]);
+                dateArray = Array.from(allDates);
                 
-                let currNum = stringToNum(dStr);
+                if (dateArray.length === 0) {
+                    alert("Nessun dato registrato nel calendario.");
+                    return;
+                }
                 
-                // Legge la variazione manuale (se esiste)
-                let varTurno = state.variazioni[dStr] ? state.variazioni[dStr].toUpperCase() : "";
+                document.getElementById('titoloRisultati').innerText = "Risultati Totali Registrati";
+            } else {
+                // Altrimenti, calcola le statistiche giorno per giorno nel periodo selezionato
+                let currentDate = new Date(startStr);
+                let endDate = new Date(endStr);
 
-                // 1. CALCOLA SOSPESO RIPOSO
-                // È Sospeso Riposo se ha la spunta, OPPURE se il testo è "SOSPESO" o "SOR"
+                while (currentDate <= endDate) {
+                    let dStr = currentDate.getFullYear() + "-" + 
+                               String(currentDate.getMonth() + 1).padStart(2, '0') + "-" + 
+                               String(currentDate.getDate()).padStart(2, '0');
+                    dateArray.push(dStr);
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                
+                document.getElementById('titoloRisultati').innerText = "Risultati del periodo";
+            }
+
+            // Calcolo effettivo sulle date selezionate o totali
+            dateArray.forEach(dStr => {
+                let varTurno = state.variazioni && state.variazioni[dStr] ? state.variazioni[dStr].toUpperCase() : "";
+
+                // CALCOLA SOSPESO RIPOSO
                 let isSospesoSpuntato = state.sospesoRiposo && state.sospesoRiposo[dStr];
                 let isSospesoTesto = (varTurno === "SOSPESO" || varTurno === "SOR");
                 let isSospesoRiposo = isSospesoSpuntato || isSospesoTesto;
 
-                // 2. CALCOLA RIPOSO NORMALE
-                let isRiposo = false;
-                if (varTurno === "RI" || varTurno === "RIPOSO" || varTurno === "AL") {
-                    isRiposo = true;
-                } else if (!varTurno) {
-                    // Se non ci sono variazioni, calcola se di base è un riposo
-                    let isPastUpdate = (state.history && currNum < stringToNum(DATA_INIZIO_NUOVI_TURNI));
-                    let cfgBase = isPastUpdate ? state.history : state;
-                    if (cfgBase.depositoAttivo) {
-                        isRiposo = isGiornoRiposoBase(currNum, cfgBase);
-                    }
-                }
+                if (isSospesoRiposo) stats.sospesi++;
 
-                // --- AGGIORNAMENTO LOGICA CONTEGGIO ---
-                if (isSospesoRiposo) {
-                    stats.sospesi++;
-                    // Se è sospeso riposo, NON può essere contato come riposo normale
-                    isRiposo = false; 
-                } 
-                
-                if (isRiposo) {
-                    stats.riposi++;
-                }
-
-                // 3. CALCOLA ALTRE CAUSALI
+                // CALCOLA ALTRE CAUSALI
+                if (varTurno === "KNOP" || varTurno.includes("KNOP")) stats.parentali++;
                 if (varTurno.includes("FER") || varTurno === "FERIE") stats.ferie++;
                 if (varTurno.includes("MAL") || varTurno === "MALATTIA") stats.malattia++;
                 if (varTurno.includes("SANGUE") || varTurno === "AVIS") stats.sangue++;
-                if (varTurno.includes("CONG") || varTurno.includes("PERM") || varTurno === "104") stats.permessi++;
+                
+                // Esclude i KNOP (parentali) dal conteggio dei congedi normali per non contarli due volte
+                if ((varTurno.includes("CONG") || varTurno.includes("PERM") || varTurno === "104") && !varTurno.includes("KNOP")) {
+                    stats.permessi++;
+                }
 
-                // 4. CALCOLA STRAORDINARI
+                // CALCOLA STRAORDINARI
                 if (state.straordinario && state.straordinario[dStr]) {
                     let h = parseInt(state.straordinario[dStr].ore) || 0;
                     let m = parseInt(state.straordinario[dStr].minuti) || 0;
                     stats.straordMinutiTotali += (h * 60) + m;
                 }
-
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
+            });
 
             // Stampa a schermo
             document.getElementById('resFerie').innerText = stats.ferie;
-            document.getElementById('resRiposi').innerText = stats.riposi;
+            document.getElementById('resParentali').innerText = stats.parentali;
             document.getElementById('resSospesi').innerText = stats.sospesi;
             document.getElementById('resMalattia').innerText = stats.malattia;
             document.getElementById('resSangue').innerText = stats.sangue;

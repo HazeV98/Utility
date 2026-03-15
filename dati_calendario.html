@@ -110,10 +110,6 @@
                 <div class="stat-value" id="resSangue">0</div>
             </div>
             <div class="stat-row">
-                <div class="stat-label">👨‍👩‍👦 Congedo/Permessi</div>
-                <div class="stat-value" id="resPermessi">0</div>
-            </div>
-            <div class="stat-row">
                 <div class="stat-label">⏱️ Ore Straordinario</div>
                 <div class="stat-value" id="resStraord">0h 0m</div>
             </div>
@@ -148,7 +144,6 @@
                 sospesi: 0,
                 malattia: 0,
                 sangue: 0,
-                permessi: 0,
                 straordMinutiTotali: 0
             };
 
@@ -200,12 +195,7 @@
                 if (varTurno === "KNOP" || varTurno.includes("KNOP")) stats.parentali++;
                 if (varTurno.includes("FER") || varTurno === "FERIE") stats.ferie++;
                 if (varTurno.includes("MAL") || varTurno === "MALATTIA") stats.malattia++;
-                if (varTurno.includes("SANGUE") || varTurno === "AVIS") stats.sangue++;
-                
-                // Esclude i KNOP (parentali) dal conteggio dei congedi normali per non contarli due volte
-                if ((varTurno.includes("CONG") || varTurno.includes("PERM") || varTurno === "104") && !varTurno.includes("KNOP")) {
-                    stats.permessi++;
-                }
+                if (varTurno.includes("AVIS") || varTurno === "AVIS") stats.sangue++;
 
                 // CALCOLA STRAORDINARI
                 if (state.straordinario && state.straordinario[dStr]) {
@@ -221,7 +211,6 @@
             document.getElementById('resSospesi').innerText = stats.sospesi;
             document.getElementById('resMalattia').innerText = stats.malattia;
             document.getElementById('resSangue').innerText = stats.sangue;
-            document.getElementById('resPermessi').innerText = stats.permessi;
 
             let finalHours = Math.floor(stats.straordMinutiTotali / 60);
             let finalMins = stats.straordMinutiTotali % 60;

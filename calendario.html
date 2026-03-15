@@ -621,6 +621,10 @@
                                String(dObj.getDate()).padStart(2, '0');
                 
                 setTimeout(() => gestisciInterazione(todayStr), 300);
+
+                // Rimuove il parametro dall'URL in modo che aggiornando la pagina non si riapra
+                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({path: newUrl}, '', newUrl);
             }
         }
         document.getElementById('depotSelectMain').addEventListener('change', () => {

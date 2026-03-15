@@ -469,6 +469,7 @@
 
     let selectedDate, tempRotDate, calendar;
     let currentImagePath = "";
+    let imgBaseFallback = ""; // Variabile globale per fallback immagine base
     let pzInstance = null; 
     let tempColoreAltro = "";
 
@@ -622,7 +623,6 @@
                 
                 setTimeout(() => gestisciInterazione(todayStr), 300);
 
-                // Rimuove il parametro dall'URL in modo che aggiornando la pagina non si riapra
                 const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
                 window.history.replaceState({path: newUrl}, '', newUrl);
             }
@@ -727,10 +727,17 @@
             let isRiposo = (codiceBase === 'RI' || codiceBase === 'RIPOSO' || codiceBase === 'AL');
 
             if (!isRiposo && codiceBase !== 'DISP' && codiceBase !== 'NESSUN TURNO') {
-                currentImagePath = `turni_${dataAttiva}/${codiceBase}.jpg`;
+                if (dbCorrente[codiceBase + suffissoGiorno]) {
+                    currentImagePath = `turni_${dataAttiva}/${codiceBase}${suffissoGiorno}.jpg`;
+                    imgBaseFallback = `turni_${dataAttiva}/${codiceBase}.jpg`;
+                } else {
+                    currentImagePath = `turni_${dataAttiva}/${codiceBase}.jpg`;
+                    imgBaseFallback = "";
+                }
                 btnImmagine.style.display = 'block';
             } else {
                 currentImagePath = "";
+                imgBaseFallback = "";
                 btnImmagine.style.display = 'none';
             }
 
@@ -844,9 +851,16 @@
     function chiudiEditSeSfondo(event) { if (event.target.id === 'editModal') chiudiEdit(); }
 
     function erroreImmagine() {
-        document.getElementById('turnoImage').onerror = null; 
-        alert("L'immagine del turno non è stata trovata nel database.");
-        chiudiImageModal();
+        let imgElement = document.getElementById('turnoImage');
+        if (imgBaseFallback) {
+            currentImagePath = imgBaseFallback;
+            imgElement.src = imgBaseFallback;
+            imgBaseFallback = ""; 
+        } else {
+            imgElement.onerror = null; 
+            alert("L'immagine del turno non è stata trovata nel database.");
+            chiudiImageModal();
+        }
     }
 
     function scaricaImmagineTurno() {

@@ -286,7 +286,7 @@
         
         <button id="btnVisualizzaTurno" class="btn" style="background: #2dce89; margin-bottom: 15px; display: none;" onclick="apriImmagineTurno()">Mostra Immagine Turno</button>
         
-        <input type="text" id="singleTurnoSelect" placeholder="Inserisci il turno" oninput="this.value = this.value.toUpperCase(); abilitaSalvataggio();">
+        <input type="text" id="singleTurnoSelect" placeholder="Inserisci il turno" oninput="this.value = this.value.toUpperCase(); abilitaSalvataggio();" onkeydown="if(event.key === 'Enter') salvaCambioSingolo();">
         
         <button id="btnSalvaCambio" class="btn" style="background: #32325d" onclick="salvaCambioSingolo()" disabled>Salva Cambio</button>
         <button class="btn" style="background: #adb5bd;" onclick="resetGiornoSingolo()">Ripristina Originale</button>

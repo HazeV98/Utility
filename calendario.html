@@ -588,7 +588,8 @@
             const deveResettare = RESET_DOPO_AGGIORNAMENTO[state.depositoAttivo] !== false;
             if (state.depositoAttivo.startsWith('disp_') || !deveResettare) {
                 state.version = VERSIONE_TURNI; salvaLocal();
-                aggiornaUI(); inizializzaCalendario();
+                aggiornaUI(); 
+                inizializzaCalendario();
             } else {
                 const dataLimiteObj = new Date(DATA_INIZIO_NUOVI_TURNI);
                 const dataMenoUnoObj = new Date(dataLimiteObj);
@@ -602,7 +603,21 @@
                 document.getElementById('welcomeModal').style.display = 'block';
             }
         } else {
-            aggiornaUI(); inizializzaCalendario(); checkGuida();
+            aggiornaUI(); 
+            inizializzaCalendario(); 
+            checkGuida();
+            
+            // --- NUOVA FUNZIONE: AUTO-APERTURA OGGI ---
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('oggi') === 'true') {
+                let dObj = new Date();
+                let todayStr = dObj.getFullYear() + "-" + 
+                               String(dObj.getMonth() + 1).padStart(2, '0') + "-" + 
+                               String(dObj.getDate()).padStart(2, '0');
+                
+                // Un leggero ritardo per permettere al calendario di disegnarsi sotto
+                setTimeout(() => gestisciInterazione(todayStr), 300);
+            }
         }
         document.getElementById('depotSelectMain').addEventListener('change', () => {
             document.getElementById('btnConfRot').disabled = false;
@@ -1214,3 +1229,4 @@
 </script>
 </body>
 </html>
+ 

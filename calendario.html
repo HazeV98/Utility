@@ -260,16 +260,18 @@
                 <option value="rot_lido">Rotazione Lido</option>
                 <option value="spez_lido">Spezzati Lido</option>
                 <option value="tc_spez_lido">T.C. Spezzati Lido</option>
+                <option value="rot_linea12">Rotazione Linea 12</option>
+                <option value="rot_linea13">Rotazione Linea 13</option> 
 
-                <option value="rot_linea14">Rotazione Linea 14</option>
+                <option value="rot_linea14">Rotazione Linea 14 M/N</option>
+                <option value="rot_linea14_mb">Rotazione Linea 14 M/B</option>
 
                 <option value="rot_17sn">Rotazione Linea 17 S. Nicolò</option>
                 <option value="tc_rot_17sn">T.C. Rotazione 17 S. Nicolò</option>
 
-                <option value="rot_17tr">Rotazione Linea 17 Tronchetto</option>
-                <option value="tc_rot_17tr">T.C. Rotazione 17 Tronchetto</option>
+                <option value="rot_17tr">Rotazione Linea 17 Tron.</option>
+                <option value="tc_rot_17tr">T.C. Rotazione Linea 17 Tronc.</option>
 
-                <option value="rot_linea12">Rotazione Linea 12</option>
             </optgroup>
         </select>
         <button id="btnConfRot" class="btn" style="background: #adb5bd" onclick="confermaRotazione()" disabled>Prosegui</button>
@@ -474,6 +476,8 @@
         rot_lido: true, 
         spez_lido: true,
         rot_linea14: true, 
+        rot_linea14_mb: true, 
+        rot_linea13: true, 
         rot_17sn: true, 
         rot_17tr: true, 
         rot_linea12: true,
@@ -968,7 +972,6 @@
     }
 
     function avviaRiconfigurazioneAggiornamento() {
-        // PER I T.C. L'AGGIORNAMENTO ORA È 100% AUTOMATICO IN BACKGROUND
         if (state.depositoAttivo.startsWith('tc_')) {
             state.futureConfig = { 
                 dataInizio: DATA_INIZIO_NUOVI_TURNI, 
@@ -1129,11 +1132,10 @@
                     
                     if (rotList.length > 0) {
                         
-                        // NUOVA LOGICA T.C.: INDICE MATEMATICO FISSO
                         if (cfgBase.depositoAttivo.startsWith('tc_')) {
                             let currPos = ((curr - refRip + 6) % 15 + 15) % 15;
                             let isBlock2 = (currPos >= 7 && currPos <= 12);
-                            let k = isBlock2 ? (currPos - 7) : currPos; // Giorno da 0 a 5 nel blocco lavorativo
+                            let k = isBlock2 ? (currPos - 7) : currPos; 
                             
                             let patternDopoSingolo = activeCfg.tcPattern || cfgBase.tcPattern || 'doppio';
                             let isAlternato = (patternDopoSingolo === 'disp') ? isBlock2 : !isBlock2;
@@ -1148,10 +1150,34 @@
                                 if (!dispOnEven && k % 2 !== 0) t = "DISP";
                             }
                         } else {
-                            // VECCHIA LOGICA PER LE ROTAZIONI NORMALI
-                            let idx = (activeCfg.idx + Math.floor((w + offset)/2)) % rotList.length;
-                            if (idx < 0) idx += rotList.length;
-                            t = rotList[idx].toUpperCase();
+                            // NUOVA LOGICA ESPANSIONE: Supporto per i turni accoppiati esplicitamente con il "+"
+                            let expandedRotList = [];
+                            let originalToExpanded = [];
+                            
+                            for (let j = 0; j < rotList.length; j++) {
+                                originalToExpanded[j] = expandedRotList.length;
+                                let currentTurn = rotList[j].toUpperCase();
+
+                                if (currentTurn.includes('+')) {
+                                    let parts = currentTurn.split('+');
+                                    expandedRotList.push(parts[0].trim());
+                                    if (parts.length > 1) {
+                                        expandedRotList.push(parts[1].trim());
+                                    }
+                                } else {
+                                    expandedRotList.push(currentTurn);
+                                    expandedRotList.push(currentTurn);
+                                }
+                            }
+                            
+                            let L_exp = expandedRotList.length;
+                            let baseExpIdx = originalToExpanded[activeCfg.idx];
+                            let blockStartIdx = baseExpIdx - (baseExpIdx % 2); 
+                            
+                            let idxExp = (blockStartIdx + w + offset) % L_exp;
+                            if (idxExp < 0) idxExp += L_exp;
+                            
+                            t = expandedRotList[idxExp];
                         }
 
                         if (ECCEZIONE_DOMENICA_6P && dObj.getDay() === 0 && t.startsWith("6P")) t = "DISP";

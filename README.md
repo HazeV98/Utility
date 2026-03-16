@@ -1,20 +1,22 @@
 # ⛴️ Utility App - Gestione Turni e Risorse
 
-Una Progressive Web App (PWA) non ufficiale sviluppata per semplificare la vita lavorativa: gestione dei turni, calcolo delle statistiche mensili, consultazione rapida di orari, documenti aziendali, rubrica e link utili. 
+Una Progressive Web App (PWA) non ufficiale sviluppata per semplificare la vita lavorativa: gestione dei turni, calcolo delle statistiche mensili o totali, consultazione rapida di orari, documenti aziendali, rubrica e link utili. 
 
 L'app è progettata per essere leggera, veloce e installabile direttamente sulla schermata home degli smartphone (iOS e Android), funzionando anche offline grazie alla cache locale.
 
 ## ✨ Funzionalità Principali
 
 * **📅 Calendario Turni Intelligente:** * Calcolo automatico delle rotazioni (es. Disponibili, F.Nove, Lido, Linea 12, ecc.).
-    * Modifica manuale dei singoli giorni o modifiche multiple (es. periodi lunghi di ferie o malattia).
-    * Tracciamento di Indennità Nebbia, Straordinari (ore/minuti) e Sospesi Riposo.
+    * **Turno di Oggi:** Scorciatoia dalla Home per aprire direttamente la giornata odierna.
+    * **Cambio Bibbia:** Permette di riconfigurare la rotazione automatica (es. per cambio turno o deposito) mantenendo intatte tutte le modifiche manuali, le note e gli straordinari passati.
+    * **Modifica Multipla:** Applica la stessa variazione (es. "FERIE") a più giorni consecutivi in un colpo solo.
+    * Tracciamento di Indennità Nebbia, Straordinari (ore/minuti), Sospesi Riposo e personalizzazione tramite colori.
     * Esportazione del calendario in PDF o in formato `.ics` (per Google Calendar/Apple Calendar).
     * Sistema di Backup e Ripristino dei dati personali.
-* **📊 Statistiche:** Calcolo automatico di giorni di ferie, malattia, riposi, permessi e ore totali di straordinario in un periodo selezionato.
-* **📁 Gestione Documenti (API GitHub):** Lettura dinamica di PDF organizzati in cartelle per Turni, Orari e Documenti aziendali.
-* **🔗 Link e Contatti:** Rubrica dinamica e lista di link utili (siti web, gruppi Facebook/Telegram) aggiornabili tramite file JSON, con tasto copia rapido.
-* **🍔 Calcolatore Buoni Pasto:** Contatore manuale e calcolatore automatico basato sui giorni lavorati e la decurtazione fissa.
+* **📊 Statistiche:** Calcolo automatico in un periodo (o sul totale registrato) di: Ferie, Congedi Parentali (KNOP), Sospesi Riposo, Malattia, Donazioni Sangue (AVIS) e ore totali di Straordinario.
+* **📁 Gestione Documenti (API GitHub):** Lettura dinamica di PDF organizzati in cartelle per Turni, Orari e Documenti aziendali, con download diretto o apertura in-app.
+* **🔗 Link e Contatti:** Rubrica dinamica divisa per categorie (Aziendali, Utili, Orari, Telegram, Facebook) aggiornabile tramite file JSON, con tasto copia rapido.
+* **🍔 Calcolatore Buoni Pasto:** Contatore manuale per tenere traccia dei buoni pasto.
 
 ## 📱 Installazione (PWA)
 
@@ -36,7 +38,7 @@ L'app legge automaticamente le cartelle presenti nella root del repository in ba
 
 ### Gestione Dati JSON (Link e Contatti)
 Per aggiornare la rubrica e i collegamenti senza toccare il codice HTML, basta modificare i rispettivi file JSON nella root:
-* `link.json`: Struttura a lista piatta contenente `nome` e `url`.
+* `link.json`: Struttura a categorie contenente liste di `nome` e `url`.
 * `contatti.json`: Struttura a categorie. Ogni elemento richiede `nome`, `valore` (il numero o l'indirizzo) e `tipo` (`"telefono"` o `"email"`).
 
 ### Gestione Turni Base
@@ -56,4 +58,3 @@ Il core del calendario si appoggia a due file principali generati a ogni cambio 
 
 ## ⚠️ Disclaimer
 *Questo strumento non è un'applicazione ufficiale dell'azienda. L'ordine dei turni e gli orari possono subire variazioni. Consultare sempre le disposizioni ufficiali aziendali in bacheca o sui portali dedicati. Lo sviluppatore non si assume responsabilità per eventuali discordanze o errori di calcolo.*
-

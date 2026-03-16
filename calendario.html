@@ -248,15 +248,27 @@
             <optgroup label="Rotazioni">
                 <option value="rot_fnove">Rotazione F.Nove</option>
                 <option value="spez_fnove">Spezzati F.Nove</option>
+                <option value="tc_spez_fnove">T.C. Spezzati F.Nove</option>
+
                 <option value="rot_proma">Rotazione P.Roma</option>
                 <option value="spez_proma">Spezzati P.Roma</option>
+
                 <option value="rot_szaccaria">Rotazione S.Zaccaria</option>
                 <option value="spez_szaccaria">Spezzati S.Zaccaria</option>
+                <option value="tc_spez_szaccaria">T.C. Spezzati S.Zaccaria</option>
+
                 <option value="rot_lido">Rotazione Lido</option>
                 <option value="spez_lido">Spezzati Lido</option>
+                <option value="tc_spez_lido">T.C. Spezzati Lido</option>
+
                 <option value="rot_linea14">Rotazione Linea 14</option>
+
                 <option value="rot_17sn">Rotazione Linea 17 S. Nicolò</option>
+                <option value="tc_rot_17sn">T.C. Rotazione 17 S. Nicolò</option>
+
                 <option value="rot_17tr">Rotazione Linea 17 Tronchetto</option>
+                <option value="tc_rot_17tr">T.C. Rotazione 17 Tronchetto</option>
+
                 <option value="rot_linea12">Rotazione Linea 12</option>
             </optgroup>
         </select>
@@ -272,6 +284,7 @@
         <div id="stepActionArea"></div>
         <div id="stepButtons">
             <button id="btnConfirmDate" class="btn" style="background: var(--riposo); display:none;" onclick="procediConfigurazione()">Sì, conferma data</button>
+            <button id="btnProseguiTC" class="btn" style="background: var(--turno); display:none;" onclick="proseguiTC()">Prosegui</button>
             <button id="btnConfirmFinal" class="btn" style="background: var(--riposo); display:none;" onclick="attivaRotazioneFinale()">Conferma e Attiva</button>
             <button id="btnBackStep" class="btn" style="background: #adb5bd; display:none;" onclick="tornaAllaRotazione()">Indietro (Cambia Rotazione)</button>
             <button id="btnCloseStep" class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiStep()">Chiudi</button>
@@ -416,7 +429,7 @@
         location.reload();
     }
 
-    // --- NUOVA LOGICA: CAMBIO BIBBIA ---
+    // --- LOGICA CAMBIO BIBBIA ---
     function apriCambioBibbia() {
         chiudiMenuDestro();
         document.getElementById('cambioBibbiaModal').style.display = 'block';
@@ -434,21 +447,19 @@
         delete state.history;
         delete state.futureConfig;
         delete state.baseDataFutura;
+        delete state.tcPattern;
         state.setupStep = 0;
         
         salvaLocal();
         location.reload();
     }
 
-    // --- CORE INVARIATO ---
+    // --- CORE ---
     const VERSIONE_TURNI = "1.0"; 
     const DATA_INIZIO_NUOVI_TURNI = "2026-03-02"; 
     const ECCEZIONE_DOMENICA_6P = true; 
 
     const LISTA_FILE_INFO = ["info_turni_2026-03-02.json", "info_turni_2026-02-06.json"];
-    
-    const LISTA_CARTELLE_IMMAGINI = ["turni_2026-03-02", "turni_2026-02-06"];
-
     const LISTA_FILE_ROTAZIONI = [
         { inizio: "2025-01-01", fine: "2026-03-01", file: "rotazioni_2026-02-06.json" },
         { inizio: "2026-03-02", fine: "2099-12-31", file: "rotazioni_2026-03-02.json" }
@@ -457,7 +468,8 @@
     const RESET_DOPO_AGGIORNAMENTO = {
         rot_fnove: true, spez_fnove: true, rot_proma: true, spez_proma: true,
         rot_szaccaria: true, spez_szaccaria: true, rot_lido: true, spez_lido: true,
-        rot_linea14: true, rot_17sn: true, rot_17tr: true, rot_linea12: true
+        rot_linea14: true, rot_17sn: true, rot_17tr: true, rot_linea12: true,
+        tc_spez_fnove: true, tc_spez_szaccaria: true, tc_spez_lido: true, tc_rot_17sn: true, tc_rot_17tr: true
     };
 
     let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, nebbia: {}, straordinario: {}, sospesoRiposo: {}, note: {}, setupStep: 0, dbCache: {}, rotCache: {} };
@@ -469,7 +481,7 @@
 
     let selectedDate, tempRotDate, calendar;
     let currentImagePath = "";
-    let imgBaseFallback = ""; // Variabile globale per fallback immagine base
+    let imgBaseFallback = ""; 
     let pzInstance = null; 
     let tempColoreAltro = "";
 
@@ -638,7 +650,7 @@
             state.depositoAttivo = document.getElementById('depotSelectMain').value;
             state.setupStep = 1;
         } else if (state.version !== VERSIONE_TURNI) {
-            state.history = { riposoStart: state.riposoStart, rotazioneStart: state.rotazioneStart, turnoIndex: state.turnoIndex, depositoAttivo: state.depositoAttivo };
+            state.history = { riposoStart: state.riposoStart, rotazioneStart: state.rotazioneStart, turnoIndex: state.turnoIndex, depositoAttivo: state.depositoAttivo, tcPattern: state.tcPattern };
         }
         state.version = VERSIONE_TURNI;
         document.getElementById('welcomeModal').style.display = 'none';
@@ -894,20 +906,43 @@
     function procediConfigurazione() {
         state.riposoStart = selectedDate;
         document.getElementById('btnBackStep').style.display = "none";
-        if (state.depositoAttivo.startsWith('disp_')) { state.setupStep = 3; salvaLocal(); location.reload(); }
-        else {
-            state.setupStep = 2;
-            let d = new Date(selectedDate); d.setDate(d.getDate() + 1);
-            tempRotDate = d.toISOString().split('T')[0];
-            document.getElementById('btnConfirmDate').style.display = "none";
-            document.getElementById('btnCloseStep').style.display = "none"; 
-            document.getElementById('stepTitle').innerText = "Passo 3";
+        
+        if (state.depositoAttivo.startsWith('disp_')) { 
+            state.setupStep = 3; salvaLocal(); location.reload(); 
+        } else if (state.depositoAttivo.startsWith('tc_')) {
+            let altText = state.depositoAttivo === 'tc_spez_lido' ? 'Alternati (es. DISP, Turno)' : 'Alternati (es. Turno, DISP)';
+            document.getElementById('stepTitle').innerText = "Settimana Successiva";
             document.getElementById('stepDateDisplay').innerText = ""; 
-            document.getElementById('stepDesc').innerHTML = `Che turno hai il giorno <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong>?`;
-            document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
-            document.getElementById('btnConfirmFinal').style.display = "block";
-            document.getElementById('stepModal').style.display = 'block';
+            document.getElementById('stepDesc').innerHTML = `Nei 6 giorni successivi a questo riposo singolo, fai i turni doppi o quelli alternati con i DISP?`;
+            
+            document.getElementById('stepActionArea').innerHTML = `
+                <button class="btn" style="background: var(--turno);" onclick="impostaTcPattern('doppio')">Turni Doppi (es. Turno, Turno)</button>
+                <button class="btn" style="background: var(--disp); color: #32325d; margin-top: 10px;" onclick="impostaTcPattern('disp')">${altText}</button>
+            `;
+            document.getElementById('btnConfirmDate').style.display = "none";
+            document.getElementById('btnCloseStep').style.display = "block";
+        } else {
+            avviaSelezioneTurnoIniziale();
         }
+    }
+
+    function impostaTcPattern(pattern) {
+        state.tcPattern = pattern;
+        avviaSelezioneTurnoIniziale();
+    }
+
+    function avviaSelezioneTurnoIniziale() {
+        state.setupStep = 2;
+        let d = new Date(selectedDate); d.setDate(d.getDate() + 1);
+        tempRotDate = d.toISOString().split('T')[0];
+        document.getElementById('btnConfirmDate').style.display = "none";
+        document.getElementById('btnCloseStep').style.display = "none"; 
+        document.getElementById('stepTitle').innerText = "Passo 3";
+        document.getElementById('stepDateDisplay').innerText = ""; 
+        document.getElementById('stepDesc').innerHTML = `Che turno hai il giorno <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong>?`;
+        document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
+        document.getElementById('btnConfirmFinal').style.display = "block";
+        document.getElementById('stepModal').style.display = 'block';
     }
 
     function avviaRiconfigurazioneAggiornamento() {
@@ -915,13 +950,49 @@
         let dStr = d.toISOString().split('T')[0];
         while(isGiornoRiposo(dStr)) { d.setDate(d.getDate() + 1); dStr = d.toISOString().split('T')[0]; }
         tempRotDate = dStr;
+        
         document.getElementById('stepTitle').innerText = "Nuova Rotazione";
         document.getElementById('stepDateDisplay').innerText = ""; 
-        document.getElementById('stepDesc').innerHTML = `Dal <strong>${formattaData(DATA_INIZIO_NUOVI_TURNI)}</strong> entra in vigore una nuova rotazione. Che turno avrai il <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong>?`;
-        document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
         document.getElementById('btnCloseStep').style.display = "none"; 
-        document.getElementById('btnConfirmFinal').style.display = "block";
+        
+        if (state.depositoAttivo.startsWith('tc_')) {
+            state.tcUpdateData1 = tempRotDate;
+            state.setupStep = 5;
+            document.getElementById('stepTitle').innerText = "Nuova Rotazione (1/2)";
+            document.getElementById('stepDesc').innerHTML = `Dal <strong>${formattaData(DATA_INIZIO_NUOVI_TURNI)}</strong> entra in vigore una nuova rotazione.<br>Che turno avrai il <strong style="color: var(--turno);">${formattaData(state.tcUpdateData1)}</strong>?`;
+            document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni(true)}</select>`;
+            
+            document.getElementById('btnConfirmFinal').style.display = "none";
+            document.getElementById('btnProseguiTC').style.display = "block";
+        } else {
+            document.getElementById('stepDesc').innerHTML = `Dal <strong>${formattaData(DATA_INIZIO_NUOVI_TURNI)}</strong> entra in vigore una nuova rotazione.<br>Che turno avrai il <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong>?`;
+            document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
+            document.getElementById('btnProseguiTC').style.display = "none";
+            document.getElementById('btnConfirmFinal').style.display = "block";
+        }
+        
         document.getElementById('stepModal').style.display = 'block';
+    }
+    
+    function proseguiTC() {
+        let val1 = document.getElementById('tSel').value;
+        if (!val1) return;
+        state.tcUpdateVal1 = val1;
+        
+        let d2 = new Date(state.tcUpdateData1);
+        d2.setDate(d2.getDate() + 1);
+        let dStr2 = d2.toISOString().split('T')[0];
+        while(isGiornoRiposo(dStr2)) { d2.setDate(d2.getDate() + 1); dStr2 = d2.toISOString().split('T')[0]; }
+        state.tcUpdateData2 = dStr2;
+        
+        state.setupStep = 6;
+        document.getElementById('stepTitle').innerText = "Nuova Rotazione (2/2)";
+        document.getElementById('stepDesc').innerHTML = `E il giorno lavorativo successivo, <strong style="color: var(--turno);">${formattaData(state.tcUpdateData2)}</strong>, che turno avrai?`;
+        
+        document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni(true)}</select>`;
+        
+        document.getElementById('btnProseguiTC').style.display = "none";
+        document.getElementById('btnConfirmFinal').style.display = "block";
     }
 
     function isGiornoRiposoBase(curr, cfg) {
@@ -939,12 +1010,53 @@
     }
 
     function attivaRotazioneFinale() {
-        const val = parseInt(document.getElementById('tSel').value);
+        const valStr = document.getElementById('tSel').value;
+        if (!valStr) return;
+        
+        if (state.setupStep === 6) {
+            let val2 = valStr;
+            let val1 = state.tcUpdateVal1;
+            
+            if (val1 === "DISP" && val2 === "DISP") {
+                alert("Non è possibile avere due DISP consecutivi. Controlla i turni inseriti.");
+                return;
+            }
+            
+            let refRot = stringToNum(state.tcUpdateData1);
+            let refRip = stringToNum(state.history.riposoStart);
+            let startPos = ((refRot - refRip + 6) % 15 + 15) % 15;
+            let offset = [1, 3, 5, 8, 10, 12].includes(startPos) ? 1 : 0;
+            
+            let isBlock2 = (startPos >= 7 && startPos <= 12);
+            let isAlternato = (val1 === "DISP" || val2 === "DISP");
+            
+            let newTcPattern = isBlock2 ? (isAlternato ? 'disp' : 'doppio') : (isAlternato ? 'doppio' : 'disp');
+            
+            let actualTurnIndex = (val1 !== "DISP") ? parseInt(val1) : parseInt(val2);
+            let rotLength = getRotazionePerData(state.tcUpdateData1)[state.depositoAttivo].length;
+            
+            // CORREZIONE: calcoliamo l'indice base corretto considerando se abbiamo saltato il primo giorno
+            let w_actual = (val1 === "DISP") ? 1 : 0;
+            let baseIdx = (actualTurnIndex - Math.floor((w_actual + offset) / 2)) % rotLength;
+            if (baseIdx < 0) baseIdx += rotLength;
+            
+            state.futureConfig = { 
+                dataInizio: state.tcUpdateData1, 
+                turnoIndex: baseIdx,
+                tcPattern: newTcPattern
+            };
+            
+            state.setupStep = 4; 
+            salvaLocal(); location.reload();
+            return;
+        }
+
+        const val = parseInt(valStr);
         if(isNaN(val)) return;
 
         const currentRotRules = getRotazionePerData(tempRotDate);
         if (currentRotRules && currentRotRules[state.depositoAttivo]) {
-            if (currentRotRules[state.depositoAttivo][val].toUpperCase() === "DISP") {
+            if (currentRotRules[state.depositoAttivo][val] && currentRotRules[state.depositoAttivo][val].toUpperCase() === "DISP") {
                 let d = new Date(tempRotDate); d.setDate(d.getDate() + 1);
                 let dStr = d.toISOString().split('T')[0];
                 while(isGiornoRiposo(dStr)) { d.setDate(d.getDate() + 1); dStr = d.toISOString().split('T')[0]; }
@@ -1039,8 +1151,8 @@
                 if (cfgBase.depositoAttivo.startsWith('disp_')) { t = "DISP"; } 
                 else if (cfgBase.rotazioneStart) {
                     let activeCfg = (state.futureConfig && curr >= stringToNum(state.futureConfig.dataInizio)) 
-                        ? { start: state.futureConfig.dataInizio, idx: state.futureConfig.turnoIndex }
-                        : { start: cfgBase.rotazioneStart, idx: cfgBase.turnoIndex };
+                        ? { start: state.futureConfig.dataInizio, idx: state.futureConfig.turnoIndex, tcPattern: state.futureConfig.tcPattern }
+                        : { start: cfgBase.rotazioneStart, idx: cfgBase.turnoIndex, tcPattern: cfgBase.tcPattern };
                     
                     let refRot = stringToNum(activeCfg.start), w = 0;
                     
@@ -1051,10 +1163,28 @@
                     let startPos = ((refRot - refRip + 6) % 15 + 15) % 15;
                     let offset = [1, 3, 5, 8, 10, 12].includes(startPos) ? 1 : 0;
                     const rotList = (currentRotRules && currentRotRules[cfgBase.depositoAttivo]) ? currentRotRules[cfgBase.depositoAttivo] : [];
+                    
                     if (rotList.length > 0) {
                         let idx = (activeCfg.idx + Math.floor((w + offset)/2)) % rotList.length;
                         if (idx < 0) idx += rotList.length;
                         t = rotList[idx].toUpperCase();
+                        
+                        if (cfgBase.depositoAttivo.startsWith('tc_')) {
+                            let currPos = ((curr - refRip + 6) % 15 + 15) % 15;
+                            let isBlock2 = (currPos >= 7 && currPos <= 12);
+                            let k = isBlock2 ? (currPos - 7) : currPos;
+                            
+                            let patternDopoSingolo = activeCfg.tcPattern || cfgBase.tcPattern || 'doppio';
+                            
+                            let isAlternato = (patternDopoSingolo === 'disp') ? isBlock2 : !isBlock2;
+                            
+                            if (isAlternato) {
+                                let dispOnEven = (cfgBase.depositoAttivo === 'tc_spez_lido');
+                                if (dispOnEven && k % 2 === 0) t = "DISP";
+                                if (!dispOnEven && k % 2 !== 0) t = "DISP";
+                            }
+                        }
+
                         if (ECCEZIONE_DOMENICA_6P && dObj.getDay() === 0 && t.startsWith("6P")) t = "DISP";
                     }
                 }
@@ -1105,16 +1235,23 @@
         return evs;
     }
 
-    function getOptionsTurni() {
-        const rot = getRotazionePerData(tempRotDate || new Date().toISOString().split('T')[0]);
+    function getOptionsTurni(includeDisp = false) {
+        let referenceDate = tempRotDate || state.tcUpdateData1 || new Date().toISOString().split('T')[0];
+        const rot = getRotazionePerData(referenceDate);
         if (!rot || !rot[state.depositoAttivo]) return ""; 
         let htmlDisp = "", htmlTurni = "", dispAggiunto = false;
+        
         rot[state.depositoAttivo].map((n, i) => ({ n: n.toUpperCase(), i: i }))
             .sort((a, b) => a.n.localeCompare(b.n, undefined, {numeric: true}))
             .forEach(item => {
                 if (item.n === "DISP") { if (!dispAggiunto) { htmlDisp = `<option value="${item.i}">DISP</option>`; dispAggiunto = true; } }
                 else { htmlTurni += `<option value="${item.i}">${item.n}</option>`; }
             });
+            
+        if (includeDisp && state.depositoAttivo.startsWith('tc_') && !dispAggiunto) {
+            htmlDisp = `<option value="DISP">DISP</option>`;
+        }
+        
         return htmlDisp + htmlTurni;
     }
 
@@ -1265,4 +1402,4 @@
 </script>
 </body>
 </html>
- 
+

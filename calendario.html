@@ -249,26 +249,20 @@
                 <option value="rot_fnove">Rotazione F.Nove</option>
                 <option value="spez_fnove">Spezzati F.Nove</option>
                 <option value="tc_spez_fnove">T.C. Spezzati F.Nove</option>
-
                 <option value="rot_proma">Rotazione P.Roma</option>
                 <option value="spez_proma">Spezzati P.Roma</option>
-
                 <option value="rot_szaccaria">Rotazione S.Zaccaria</option>
                 <option value="spez_szaccaria">Spezzati S.Zaccaria</option>
                 <option value="tc_spez_szaccaria">T.C. Spezzati S.Zaccaria</option>
-
                 <option value="rot_lido">Rotazione Lido</option>
                 <option value="spez_lido">Spezzati Lido</option>
                 <option value="tc_spez_lido">T.C. Spezzati Lido</option>
                 <option value="rot_linea12">Rotazione Linea 12</option>
                 <option value="rot_linea13">Rotazione Linea 13</option> 
-
                 <option value="rot_linea14">Rotazione Linea 14 M/N</option>
                 <option value="rot_linea14_mb">Rotazione Linea 14 M/B</option>
-
                 <option value="rot_17sn">Rotazione Linea 17 S. Nicolò</option>
                 <option value="tc_rot_17sn">T.C. Rotazione 17 S. Nicolò</option>
-
                 <option value="rot_17tr">Rotazione Linea 17 Tron.</option>
                 <option value="tc_rot_17tr">T.C. Rotazione Linea 17 Tronc.</option>
 
@@ -717,6 +711,16 @@
             
             let htmlInfo = `<strong>Turno attuale:</strong> ${nomeTurnoPulito} ${state.variazioni[date] ? '(Modificato)' : ''}`;
             
+            if (state.variazioni[date]) {
+                let tempVar = state.variazioni[date];
+                delete state.variazioni[date];
+                let turniSenzaVariazioni = calcolaTurni();
+                let turnoOrigObj = turniSenzaVariazioni.find(e => e.start === date);
+                let origPulito = turnoOrigObj ? turnoOrigObj.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim() : "Nessun turno";
+                htmlInfo += `<br><span style="font-size: 0.9em; color: #8898aa;"><b>Turno originale:</b> ${origPulito}</span>`;
+                state.variazioni[date] = tempVar;
+            }
+            
             const dateChiavi = Object.keys(state.dbCache || {}).sort();
             let dbCorrente = {};
             let dataAttiva = dateChiavi[0] || "2026-03-02";
@@ -1150,7 +1154,6 @@
                                 if (!dispOnEven && k % 2 !== 0) t = "DISP";
                             }
                         } else {
-                            // NUOVA LOGICA ESPANSIONE: Supporto per i turni accoppiati esplicitamente con il "+"
                             let expandedRotList = [];
                             let originalToExpanded = [];
                             

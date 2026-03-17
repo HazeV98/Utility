@@ -452,10 +452,10 @@
     // --- CORE ---
     const VERSIONE_TURNI = "1.0"; 
     const DATA_INIZIO_NUOVI_TURNI = "2026-03-02"; 
-    const ECCEZIONE_DOMENICA_6P = true; 
 
     const LISTA_FILE_INFO = ["info_turni_2026-03-02.json", "info_turni_2026-02-06.json"];
     const LISTA_FILE_ROTAZIONI = ["rotazioni_2026-03-02.json", "rotazioni_2026-02-06.json"];
+    const LISTA_FILE_DISP = ["turni_disp_2026-03-02.json"];
     
     const RESET_DOPO_AGGIORNAMENTO = {
         rot_fnove: true, 
@@ -479,12 +479,13 @@
         tc_rot_17tr: true
     };
 
-    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, nebbia: {}, straordinario: {}, sospesoRiposo: {}, note: {}, setupStep: 0, dbCache: {}, rotCache: {} };
+    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, nebbia: {}, straordinario: {}, sospesoRiposo: {}, note: {}, setupStep: 0, dbCache: {}, rotCache: {}, dispCache: {} };
     if (!state.colori) state.colori = {}; 
     if (!state.nebbia) state.nebbia = {};
     if (!state.straordinario) state.straordinario = {};
     if (!state.sospesoRiposo) state.sospesoRiposo = {};
     if (!state.note) state.note = {};
+    if (!state.dispCache) state.dispCache = {};
 
     let selectedDate, tempRotDate, calendar;
     let currentImagePath = "";
@@ -510,6 +511,21 @@
             } 
         }
         return rotCorrente;
+    }
+
+    function getDispPerData(dateStr) {
+        const dSelezionata = stringToNum(dateStr);
+        const dateChiavi = Object.keys(state.dispCache || {}).sort();
+        if (dateChiavi.length === 0) return null;
+
+        let dispCorrente = state.dispCache[dateChiavi[0]]; 
+        for (let i = dateChiavi.length - 1; i >= 0; i--) { 
+            if (dSelezionata >= stringToNum(dateChiavi[i])) { 
+                dispCorrente = state.dispCache[dateChiavi[i]]; 
+                break; 
+            } 
+        }
+        return dispCorrente;
     }
 
     function trovaDataCambioProssimo(dataRifStr) {
@@ -556,6 +572,18 @@
         try {
             const nocache = "?v=" + new Date().getTime();
             
+            // Carica regole DISP
+            state.dispCache = {};
+            for (let file of LISTA_FILE_DISP) {
+                const dataInizio = estraiDataDaNome(file);
+                if (dataInizio) {
+                    try {
+                        const resDisp = await fetch(file + nocache);
+                        if (resDisp.ok) state.dispCache[dataInizio] = await resDisp.json();
+                    } catch(e) {}
+                }
+            }
+
             state.rotCache = {};
             for (let file of LISTA_FILE_ROTAZIONI) {
                 const dataInizio = estraiDataDaNome(file);
@@ -1193,7 +1221,21 @@
                             t = expandedRotList[idxExp];
                         }
 
-                        if (ECCEZIONE_DOMENICA_6P && dObj.getDay() === 0 && t.startsWith("6P")) t = "DISP";
+                        let currentDispRules = getDispPerData(dStr);
+                        if (currentDispRules) {
+                            const mapG = ["DOMENICA", "LUNEDI", "MARTEDI", "MERCOLEDI", "GIOVEDI", "VENERDI", "SABATO"];
+                            let nomeG = mapG[dObj.getDay()];
+                            let rGiorno = currentDispRules[nomeG] || 
+                                          currentDispRules[nomeG.toLowerCase()] || 
+                                          currentDispRules[nomeG.charAt(0) + nomeG.slice(1).toLowerCase()] || 
+                                          currentDispRules[dObj.getDay().toString()];
+                            
+                            if (rGiorno && Array.isArray(rGiorno)) {
+                                if (rGiorno.map(x => x.toUpperCase()).includes(t)) {
+                                    t = "DISP";
+                                }
+                            }
+                        }
                     }
                 }
                 if (t !== "") {

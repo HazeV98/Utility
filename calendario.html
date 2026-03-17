@@ -455,10 +455,7 @@
     const ECCEZIONE_DOMENICA_6P = true; 
 
     const LISTA_FILE_INFO = ["info_turni_2026-03-02.json", "info_turni_2026-02-06.json"];
-    const LISTA_FILE_ROTAZIONI = [
-        { inizio: "2025-01-01", fine: "2026-03-01", file: "rotazioni_2026-02-06.json" },
-        { inizio: "2026-03-02", fine: "2099-12-31", file: "rotazioni_2026-03-02.json" }
-    ];
+    const LISTA_FILE_ROTAZIONI = ["rotazioni_2026-03-02.json", "rotazioni_2026-02-06.json"];
     
     const RESET_DOPO_AGGIORNAMENTO = {
         rot_fnove: true, 
@@ -501,15 +498,25 @@
     function estraiDataDaNome(nome) { const match = nome.match(/\d{4}-\d{2}-\d{2}/); return match ? match[0] : null; }
 
     function getRotazionePerData(dateStr) {
-        const d = stringToNum(dateStr);
-        const config = LISTA_FILE_ROTAZIONI.find(c => d >= stringToNum(c.inizio) && d <= stringToNum(c.fine));
-        return (config && state.rotCache && state.rotCache[config.file]) ? state.rotCache[config.file] : null;
+        const dSelezionata = stringToNum(dateStr);
+        const dateChiavi = Object.keys(state.rotCache || {}).sort();
+        if (dateChiavi.length === 0) return null;
+
+        let rotCorrente = state.rotCache[dateChiavi[0]]; 
+        for (let i = dateChiavi.length - 1; i >= 0; i--) { 
+            if (dSelezionata >= stringToNum(dateChiavi[i])) { 
+                rotCorrente = state.rotCache[dateChiavi[i]]; 
+                break; 
+            } 
+        }
+        return rotCorrente;
     }
 
     function trovaDataCambioProssimo(dataRifStr) {
         const rif = stringToNum(dataRifStr);
-        const futura = LISTA_FILE_ROTAZIONI.find(c => stringToNum(c.inizio) > rif);
-        return futura ? futura.inizio : null;
+        const dateChiavi = Object.keys(state.rotCache || {}).sort();
+        const futura = dateChiavi.find(d => stringToNum(d) > rif);
+        return futura || null;
     }
 
     function scaricaPDF() {
@@ -549,15 +556,18 @@
         try {
             const nocache = "?v=" + new Date().getTime();
             
-            if (!state.rotCache) state.rotCache = {};
-            for (let c of LISTA_FILE_ROTAZIONI) {
-                try {
-                    const res = await fetch(c.file + nocache);
-                    if (res.ok) state.rotCache[c.file] = await res.json();
-                } catch(e) {}
+            state.rotCache = {};
+            for (let file of LISTA_FILE_ROTAZIONI) {
+                const dataInizio = estraiDataDaNome(file);
+                if (dataInizio) {
+                    try {
+                        const res = await fetch(file + nocache);
+                        if (res.ok) state.rotCache[dataInizio] = await res.json();
+                    } catch(e) {}
+                }
             }
 
-            if (!state.dbCache) state.dbCache = {};
+            state.dbCache = {};
             for (let file of LISTA_FILE_INFO) {
                 const dataInizio = estraiDataDaNome(file);
                 if (dataInizio) {

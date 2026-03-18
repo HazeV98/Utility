@@ -62,10 +62,10 @@
             font-size: 13px; text-align: center; line-height: 1.4;
         }
 
-        #welcomeModal, #stepModal, #editModal, #altroModal, #resetModal, #backupModal, #imageModal, #jumpModal, #icsModal, #multiEditModal, #cambioBibbiaModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
+        #welcomeModal, #stepModal, #editModal, #altroModal, #resetModal, #backupModal, #imageModal, #jumpModal, #icsModal, #multiEditModal, #cambioBibbiaModal, #pdfTipo2Modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
         .modal-content { background: white; margin: 15% auto; padding: 25px; width: 85%; max-width: 400px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; max-height: 80vh; overflow-y: auto; }
 
-        select, input[type="text"], input[type="date"] { width: 100%; box-sizing: border-box; margin: 15px 0; padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 16px; background: white; -webkit-appearance: none; }
+        select, input[type="text"], input[type="date"], input[type="number"] { width: 100%; box-sizing: border-box; margin: 15px 0; padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 16px; background: white; -webkit-appearance: none; }
         .btn { padding: 16px; border: none; border-radius: 14px; color: white; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; font-size: 15px; }
         .btn-reset { padding: 12px 15px; width: auto; font-size: 14px; }
         .instruction-text { font-size: 15px; line-height: 1.6; color: #525f7f; margin-bottom: 10px; }
@@ -129,7 +129,10 @@
     <div style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
         <button class="btn btn-reset" style="background: #2dce89; margin:0; width:100%;" onclick="apriMultiEdit()">✏️ Modifica Multipla</button>
         <hr style="width: 100%; border: 0; border-top: 1px solid #eee;">
-        <button class="btn btn-reset" style="background: #5e72e4; margin:0; width:100%;" onclick="scaricaPDF()">📄 Esporta PDF</button>
+        
+        <button class="btn btn-reset" style="background: #5e72e4; margin:0; width:100%;" onclick="scaricaPDF()">📄 Esporta PDF (Tipo 1)</button>
+        <button class="btn btn-reset" style="background: #32325d; margin:0; width:100%;" onclick="apriPdfTipo2Modal()">📄 Esporta PDF (Tipo 2)</button>
+        
         <button class="btn btn-reset" style="background: #5e72e4; margin:0; width:100%;" onclick="apriIcsModal()">📅 Esporta ICS</button>
         <hr style="width: 100%; border: 0; border-top: 1px solid #eee;">
         <button class="btn btn-reset" style="background: #f1c40f; color: #32325d; margin:0; width:100%;" onclick="apriCambioBibbia()">🔄 Cambio Bibbia</button>
@@ -147,6 +150,34 @@
         </div>
     </div>
     <button class="hamburger-btn" style="margin-right: 0;" onclick="apriMenuDestro()">⋮</button>
+</div>
+
+<div id="pdfTipo2Modal">
+    <div class="modal-content">
+        <h3 style="color: #32325d; margin-top: 0;">Esporta PDF (Tipo 2)</h3>
+        <p class="instruction-text" style="font-size: 14px;">Seleziona mese e anno per esportare la lista dei turni.</p>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <select id="pdfTipo2Mese" style="flex: 1; margin: 0;">
+                <option value="01">Gennaio</option>
+                <option value="02">Febbraio</option>
+                <option value="03">Marzo</option>
+                <option value="04">Aprile</option>
+                <option value="05">Maggio</option>
+                <option value="06">Giugno</option>
+                <option value="07">Luglio</option>
+                <option value="08">Agosto</option>
+                <option value="09">Settembre</option>
+                <option value="10">Ottobre</option>
+                <option value="11">Novembre</option>
+                <option value="12">Dicembre</option>
+            </select>
+            <input type="number" id="pdfTipo2Anno" style="flex: 1; margin: 0; padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 16px;">
+        </div>
+        
+        <button class="btn" style="background: #32325d;" onclick="generaPdfTipo2()">📄 Scarica PDF</button>
+        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiPdfTipo2Modal()">Annulla</button>
+    </div>
 </div>
 
 <div id="multiEditModal">
@@ -422,6 +453,118 @@
 
         salvaLocal();
         location.reload();
+    }
+
+    // --- FUNZIONI PDF TIPO 2 ---
+    function apriPdfTipo2Modal() {
+        chiudiMenuDestro();
+        let currDate = new Date();
+        document.getElementById('pdfTipo2Mese').value = String(currDate.getMonth() + 1).padStart(2, '0');
+        document.getElementById('pdfTipo2Anno').value = currDate.getFullYear();
+        document.getElementById('pdfTipo2Modal').style.display = 'block';
+    }
+
+    function chiudiPdfTipo2Modal() {
+        document.getElementById('pdfTipo2Modal').style.display = 'none';
+    }
+
+    function generaPdfTipo2() {
+        let mese = document.getElementById('pdfTipo2Mese').value;
+        let anno = document.getElementById('pdfTipo2Anno').value;
+        let meseNome = new Date(anno, parseInt(mese)-1, 1).toLocaleDateString('it-IT', { month: 'long' });
+        meseNome = meseNome.charAt(0).toUpperCase() + meseNome.slice(1);
+
+        let html = `
+        <div style="font-family: Arial, sans-serif; font-size: 12px; padding: 10px; color: #000; background: white; width: 100%; box-sizing: border-box;">
+            <h2 style="margin-bottom: 15px; text-align: center; font-size: 18px;">Bibbia ${meseNome} ${anno}</h2>
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #000; background-color: #f8f9fa;">
+                        <th style="padding: 6px 8px;">Data</th>
+                        <th style="padding: 6px 8px;">Turno</th>
+                        <th style="padding: 6px 8px;">Loc. Monta</th>
+                        <th style="padding: 6px 8px;">Dalle</th>
+                        <th style="padding: 6px 8px;">Alle</th>
+                        <th style="padding: 6px 8px;">Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        const turni = calcolaTurni();
+        const dateChiavi = Object.keys(state.dbCache || {}).sort();
+        const giorniInMese = new Date(anno, mese, 0).getDate();
+        const giorniSettimana = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+
+        for (let d = 1; d <= giorniInMese; d++) {
+            let dStr = `${anno}-${mese}-${String(d).padStart(2, '0')}`;
+            let dObj = new Date(anno, parseInt(mese)-1, d);
+            let giornoNome = giorniSettimana[dObj.getDay()];
+            let ev = turni.find(t => t.start === dStr);
+            
+            let titolo = ev ? ev.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim() : "";
+            let codiceBase = titolo.toUpperCase();
+
+            let locMonta = "", dalle = "", alle = "", note = "";
+
+            if (state.note[dStr]) note = state.note[dStr].substring(0, 30) + (state.note[dStr].length > 30 ? "..." : "");
+
+            if (codiceBase !== "RI" && codiceBase !== "RIPOSO" && codiceBase !== "AL" && codiceBase !== "DISP" && codiceBase !== "") {
+                let dbCorrente = {};
+                const dSelezionataNum = stringToNum(dStr);
+                for (let i = dateChiavi.length - 1; i >= 0; i--) { 
+                    if (dSelezionataNum >= stringToNum(dateChiavi[i])) { 
+                        dbCorrente = state.dbCache[dateChiavi[i]]; 
+                        break; 
+                    } 
+                }
+                const mapG = ["_DOM", "_LUN", "_MAR", "_MER", "_GIO", "_VEN", "_SAB"];
+                let suffissoGiorno = mapG[dObj.getDay()];
+                let dettagli = dbCorrente[codiceBase + suffissoGiorno] || dbCorrente[codiceBase];
+
+                if (dettagli) {
+                    locMonta = dettagli.luogoInizio || "";
+                    dalle = dettagli.inizio || "";
+                    alle = dettagli.fine || "";
+                    if (dettagli.inizio2 && dettagli.fine2) {
+                        alle += ` (Ripr: ${dettagli.inizio2}-${dettagli.fine2})`;
+                    }
+                }
+            }
+
+            let bg = dObj.getDay() === 0 ? "background-color: #f9f9f9;" : "";
+
+            html += `
+            <tr style="border-bottom: 1px solid #ddd; ${bg} page-break-inside: avoid;">
+                <td style="padding: 5px 8px;">${String(d).padStart(2, '0')} ${giornoNome}</td>
+                <td style="padding: 5px 8px; font-weight: bold;">${titolo}</td>
+                <td style="padding: 5px 8px;">${locMonta}</td>
+                <td style="padding: 5px 8px;">${dalle}</td>
+                <td style="padding: 5px 8px;">${alle}</td>
+                <td style="padding: 5px 8px; font-size: 10px;">${note}</td>
+            </tr>`;
+        }
+
+        html += `
+                </tbody>
+            </table>
+        </div>`;
+
+        let wrapper = document.createElement('div');
+        wrapper.innerHTML = html;
+
+        chiudiPdfTipo2Modal();
+
+        const opt = {
+            margin:       10,
+            filename:     `Bibbia_${meseNome}_${anno}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+        };
+
+        html2pdf().set(opt).from(wrapper).save();
     }
 
     // --- LOGICA CAMBIO BIBBIA ---

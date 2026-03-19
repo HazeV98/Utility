@@ -677,9 +677,10 @@
                         break; 
                     } 
                 }
-                const mapG = ["_DOM", "_LUN", "_MAR", "_MER", "_GIO", "_VEN", "_SAB"];
-                let suffissoGiorno = mapG[dObj.getDay()];
-                let dettagli = dbCorrente[codiceBase + suffissoGiorno] || dbCorrente[codiceBase];
+                
+                // --- NUOVA LOGICA INTELLIGENTE ---
+                let chiaveTrovata = trovaChiaveEsatta(dbCorrente, codiceBase, dStr);
+                let dettagli = dbCorrente[chiaveTrovata];
 
                 if (dettagli) {
                     locMonta = dettagli.luogoInizio || "";
@@ -790,7 +791,7 @@
     if (!state.sospesoRiposo) state.sospesoRiposo = {};
     if (!state.note) state.note = {};
     if (!state.dispCache) state.dispCache = {};
-    if (!state.coloriRotazione) state.coloriRotazione = {}; // Inizializzazione nuova funzione
+    if (!state.coloriRotazione) state.coloriRotazione = {}; 
 
     let selectedDate, tempRotDate, calendar;
     let currentImagePath = "";
@@ -803,6 +804,53 @@
     function formattaData(d) { let dataObj = new Date(d); let mese = dataObj.toLocaleDateString('it-IT', { month: 'long' }); return dataObj.getDate() + ' ' + mese.charAt(0).toUpperCase() + mese.slice(1); }
     function salvaLocal() { localStorage.setItem('myTurniApp', JSON.stringify(state)); }
     function estraiDataDaNome(nome) { const match = nome.match(/\d{4}-\d{2}-\d{2}/); return match ? match[0] : null; }
+
+    // --- NUOVA FUNZIONE RICERCA INTELLIGENTE SUFFISSO ---
+    function trovaChiaveEsatta(db, codiceBase, dateStr) {
+        if (!db || !codiceBase) return codiceBase;
+        
+        let giornoIdx = new Date(dateStr).getDay(); 
+        let targetDay = giornoIdx === 0 ? 7 : giornoIdx; // LUN=1, MAR=2, ... DOM=7
+        const dayMap = { "LUN": 1, "MAR": 2, "MER": 3, "GIO": 4, "VEN": 5, "SAB": 6, "DOM": 7 };
+
+        // Trova tutte le chiavi nel db che corrispondono al codice base o alle sue varianti (es. 1C01_LUN-VEN)
+        let keys = Object.keys(db).filter(k => k === codiceBase || k.startsWith(codiceBase + "_"));
+        
+        let exactMatch = null;
+        let genericMatch = null;
+
+        for (let k of keys) {
+            if (k === codiceBase) {
+                genericMatch = k;
+                continue;
+            }
+            
+            let suffix = k.substring(codiceBase.length + 1); // Ottiene solo la parte dopo il "_"
+            
+            if (suffix.includes("-")) {
+                let parts = suffix.split("-");
+                if (parts.length === 2 && dayMap[parts[0]] && dayMap[parts[1]]) {
+                    let start = dayMap[parts[0]];
+                    let end = dayMap[parts[1]];
+                    
+                    if (start <= end) { 
+                        // Es. LUN-VEN (1 <= 5)
+                        if (targetDay >= start && targetDay <= end) exactMatch = k;
+                    } else { 
+                        // Es. GIO-DOM (4 -> 7) oppure SAB-LUN (6 -> 1)
+                        if (targetDay >= start || targetDay <= end) exactMatch = k;
+                    }
+                }
+            } else {
+                // Giorno singolo, es. "_SAB"
+                if (dayMap[suffix] && dayMap[suffix] === targetDay) {
+                    exactMatch = k;
+                }
+            }
+        }
+        
+        return exactMatch || genericMatch || codiceBase;
+    }
 
     function getRotazionePerData(dateStr) {
         const dSelezionata = stringToNum(dateStr);
@@ -1103,11 +1151,9 @@
                 } 
             }
             
-            const giorniSuffix = ["_DOM", "_LUN", "_MAR", "_MER", "_GIO", "_VEN", "_SAB"];
-            let giornoIdx = new Date(date).getDay();
-            let suffissoGiorno = giorniSuffix[giornoIdx];
-            
-            let dettagli = dbCorrente[codiceBase + suffissoGiorno] || dbCorrente[codiceBase];
+            // --- NUOVA LOGICA INTELLIGENTE ---
+            let chiaveTrovata = trovaChiaveEsatta(dbCorrente, codiceBase, date);
+            let dettagli = dbCorrente[chiaveTrovata];
 
             if (dettagli) {
                 htmlInfo += `<hr style="margin:10px 0; border:0; border-top:1px solid #eee;">`;
@@ -1129,10 +1175,12 @@
             let isRiposo = (codiceBase === 'RI' || codiceBase === 'RIPOSO' || codiceBase === 'AL');
 
             if (!isRiposo && codiceBase !== 'DISP' && codiceBase !== 'NESSUN TURNO') {
-                if (dbCorrente[codiceBase + suffissoGiorno]) {
-                    currentImagePath = `turni_${dataAttiva}/${codiceBase}${suffissoGiorno}.jpg`;
-                    imgBaseFallback = `turni_${dataAttiva}/${codiceBase}.jpg`;
+                if (chiaveTrovata !== codiceBase && dbCorrente[chiaveTrovata]) {
+                    // Se abbiamo trovato una variante specifica (es. 1C01_LUN-VEN)
+                    currentImagePath = `turni_${dataAttiva}/${chiaveTrovata}.jpg`;
+                    imgBaseFallback = `turni_${dataAttiva}/${codiceBase}.jpg`; // Usa la base se l'immagine specifica non esiste
                 } else {
+                    // Se esiste solo il turno base
                     currentImagePath = `turni_${dataAttiva}/${codiceBase}.jpg`;
                     imgBaseFallback = "";
                 }
@@ -1766,12 +1814,12 @@
             for (let i = dateChiavi.length - 1; i >= 0; i--) { 
                 if (dSelezionata >= stringToNum(dateChiavi[i])) { dbCorrente = state.dbCache[dateChiavi[i]]; break; } 
             }
-            const giorniSuffix = ["_DOM", "_LUN", "_MAR", "_MER", "_GIO", "_VEN", "_SAB"];
-            let giornoIdx = new Date(t.start).getDay();
-            let suffissoGiorno = giorniSuffix[giornoIdx];
             
             let codiceBase = pulitoTitle.toUpperCase();
-            let dettagli = dbCorrente[codiceBase + suffissoGiorno] || dbCorrente[codiceBase];
+            
+            // --- NUOVA LOGICA INTELLIGENTE PER L'ESPORTAZIONE ICS ---
+            let chiaveTrovata = trovaChiaveEsatta(dbCorrente, codiceBase, t.start);
+            let dettagli = dbCorrente[chiaveTrovata];
 
             let orariTitolo = "";
             let descrizione = "";

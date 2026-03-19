@@ -46,6 +46,7 @@
         .stat-value { font-size: 18px; font-weight: bold; color: var(--primary); }
         .stat-value.highlight { color: #f5365c; }
         .stat-value.parental { color: #8965e0; }
+        .stat-value.nebbia { color: #5e72e4; }
     </style>
 </head>
 <body>
@@ -90,7 +91,7 @@
             <h3 class="results-title" id="titoloRisultati">Risultati del periodo</h3>
             
             <div class="stat-row">
-                <div class="stat-label">🏖️ Ferie (FER, FEP)</div>
+                <div class="stat-label">🏖️ Ferie (FER)</div>
                 <div class="stat-value" id="resFerie">0</div>
             </div>
             <div class="stat-row">
@@ -102,11 +103,15 @@
                 <div class="stat-value highlight" id="resSospesi">0</div>
             </div>
             <div class="stat-row">
-                <div class="stat-label">⚕️ Malattia (KMAL)</div>
+                <div class="stat-label">🌫️ Indennità Nebbia</div>
+                <div class="stat-value nebbia" id="resNebbia">0</div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-label">⚕️ Malattia (MAL)</div>
                 <div class="stat-value" id="resMalattia">0</div>
             </div>
             <div class="stat-row">
-                <div class="stat-label">🩸 Donazione Sangue (AVIS)</div>
+                <div class="stat-label">🩸 Donazione Sangue</div>
                 <div class="stat-value" id="resSangue">0</div>
             </div>
             <div class="stat-row">
@@ -136,12 +141,13 @@
                 return;
             }
 
-            let state = JSON.parse(localStorage.getItem('myTurniApp')) || { variazioni: {}, straordinario: {}, sospesoRiposo: {} };
+            let state = JSON.parse(localStorage.getItem('myTurniApp')) || { variazioni: {}, straordinario: {}, sospesoRiposo: {}, nebbia: {} };
             
             let stats = {
                 ferie: 0,
                 parentali: 0,
                 sospesi: 0,
+                nebbia: 0,
                 malattia: 0,
                 sangue: 0,
                 straordMinutiTotali: 0
@@ -154,7 +160,8 @@
                 let allDates = new Set([
                     ...Object.keys(state.variazioni || {}),
                     ...Object.keys(state.sospesoRiposo || {}),
-                    ...Object.keys(state.straordinario || {})
+                    ...Object.keys(state.straordinario || {}),
+                    ...Object.keys(state.nebbia || {})
                 ]);
                 dateArray = Array.from(allDates);
                 
@@ -191,6 +198,9 @@
 
                 if (isSospesoRiposo) stats.sospesi++;
 
+                // CALCOLA NEBBIA
+                if (state.nebbia && state.nebbia[dStr]) stats.nebbia++;
+
                 // CALCOLA ALTRE CAUSALI
                 if (varTurno === "KNOP" || varTurno.includes("KNOP")) stats.parentali++;
                 if (varTurno.includes("FER") || varTurno === "FERIE") stats.ferie++;
@@ -209,6 +219,7 @@
             document.getElementById('resFerie').innerText = stats.ferie;
             document.getElementById('resParentali').innerText = stats.parentali;
             document.getElementById('resSospesi').innerText = stats.sospesi;
+            document.getElementById('resNebbia').innerText = stats.nebbia;
             document.getElementById('resMalattia').innerText = stats.malattia;
             document.getElementById('resSangue').innerText = stats.sangue;
 

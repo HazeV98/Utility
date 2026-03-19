@@ -85,10 +85,10 @@
             <div class="input-help">Lascia vuoti i campi per calcolare i dati totali registrati.</div>
         </div>
 
-        <button class="btn-calc" onclick="calcolaStatistiche()">Calcola Statistiche</button>
+        <button class="btn-calc" onclick="calcolaStatistiche(false)">Calcola Statistiche</button>
 
         <div id="results" class="results-container">
-            <h3 class="results-title" id="titoloRisultati">Risultati del periodo</h3>
+            <h3 class="results-title" id="titoloRisultati">Risultati Totali Registrati</h3>
             
             <div class="stat-row">
                 <div class="stat-label">🏖️ Ferie (FER)</div>
@@ -126,18 +126,18 @@
         function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
         function chiudiMenuLaterale() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; }
 
-        function calcolaStatistiche() {
+        function calcolaStatistiche(isAutoLoad = false) {
             const startStr = document.getElementById('dateStart').value;
             const endStr = document.getElementById('dateEnd').value;
 
             // Avviso se si compila solo un campo
             if ((startStr && !endStr) || (!startStr && endStr)) {
-                alert("Seleziona entrambe le date, oppure lasciale entrambe vuote per i dati totali.");
+                if (!isAutoLoad) alert("Seleziona entrambe le date, oppure lasciale entrambe vuote per i dati totali.");
                 return;
             }
 
             if (startStr && endStr && startStr > endStr) {
-                alert("La data d'inizio deve essere precedente alla fine!");
+                if (!isAutoLoad) alert("La data d'inizio deve essere precedente alla fine!");
                 return;
             }
 
@@ -165,9 +165,9 @@
                 ]);
                 dateArray = Array.from(allDates);
                 
-                if (dateArray.length === 0) {
+                if (dateArray.length === 0 && !isAutoLoad) {
                     alert("Nessun dato registrato nel calendario.");
-                    return;
+                    // Non fermiamo lo script, così mostra semplicemente gli zeri
                 }
                 
                 document.getElementById('titoloRisultati').innerText = "Risultati Totali Registrati";
@@ -229,6 +229,11 @@
 
             document.getElementById('results').style.display = 'block';
         }
+
+        // Calcola automaticamente al caricamento della pagina
+        window.addEventListener('DOMContentLoaded', () => {
+            calcolaStatistiche(true);
+        });
     </script>
 </body>
 </html>

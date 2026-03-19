@@ -296,7 +296,6 @@
                 <option value="tc_rot_17sn">T.C. Rotazione 17 S. Nicolò</option>
                 <option value="rot_17tr">Rotazione Linea 17 Tron.</option>
                 <option value="tc_rot_17tr">T.C. Rotazione Linea 17 Tronc.</option>
-
             </optgroup>
         </select>
         <button id="btnConfRot" class="btn" style="background: #adb5bd" onclick="confermaRotazione()" disabled>Prosegui</button>
@@ -321,6 +320,9 @@
 <div id="editModal" onclick="chiudiEditSeSfondo(event)">
     <div class="modal-content">
         <h3 id="modalDate" style="margin-top:0;">Data</h3>
+        
+        <div id="avvisoVariantiArea" style="display: none; background-color: #fff3cd; border: 1px solid #ffeeba; border-radius: 10px; color: #856404; padding: 12px; margin-bottom: 15px; font-size: 14px; font-weight: bold; line-height: 1.4; text-align: left;"></div>
+        
         <div id="infoTurniArea" style="font-size:0.9em; margin-bottom:15px; padding:10px; background:#f8f9fa; border-radius:10px; text-align:left; color:#525f7f; display:none;"></div>
         
         <button id="btnVisualizzaTurno" class="btn" style="background: #2dce89; margin-bottom: 15px; display: none;" onclick="apriImmagineTurno()">Mostra Immagine Turno</button>
@@ -595,6 +597,9 @@
     // --- CORE ---
     const VERSIONE_TURNI = "1.0"; 
     const DATA_INIZIO_NUOVI_TURNI = "2026-03-02"; 
+    
+    // ---> NUOVA COSTANTE PER ATTIVARE/DISATTIVARE L'AVVISO VARIANTI <---
+    const AVVISO_VARIANTI = true;
 
     const LISTA_FILE_INFO = ["info_turni_2026-03-02.json", "info_turni_2026-02-06.json"];
     const LISTA_FILE_ROTAZIONI = ["rotazioni_2026-03-02.json", "rotazioni_2026-02-06.json"];
@@ -635,6 +640,7 @@
     let imgBaseFallback = ""; 
     let pzInstance = null; 
     let tempColoreAltro = "";
+    let variantiData = {}; // Memorizza i dati del json delle varianti
 
     function stringToNum(s) { if(!s) return 0; let p = s.split('-'); return Math.floor(new Date(p[0], p[1]-1, p[2], 12, 0, 0).getTime() / 86400000); }
     function formattaData(d) { let dataObj = new Date(d); let mese = dataObj.toLocaleDateString('it-IT', { month: 'long' }); return dataObj.getDate() + ' ' + mese.charAt(0).toUpperCase() + mese.slice(1); }
@@ -715,6 +721,14 @@
         try {
             const nocache = "?v=" + new Date().getTime();
             
+            // ---> CARICAMENTO VARIANTI <---
+            if (AVVISO_VARIANTI) {
+                try {
+                    const resVar = await fetch("presenza_varianti.json" + nocache);
+                    if (resVar.ok) variantiData = await resVar.json();
+                } catch(e) {}
+            }
+
             // Carica regole DISP
             state.dispCache = {};
             for (let file of LISTA_FILE_DISP) {
@@ -870,6 +884,7 @@
 
     function gestisciInterazione(date) {
         selectedDate = date;
+
         if (state.setupStep === 1) {
             document.getElementById('stepDateDisplay').innerText = formattaData(date);
             document.getElementById('stepDesc').innerText = "È un tuo giorno di riposo?";
@@ -880,6 +895,26 @@
             document.getElementById('stepModal').style.display = 'block';
         } else {
             document.getElementById('modalDate').innerText = formattaData(date);
+            
+            // ---> LOGICA MOSTRA AVVISO VARIANTI NEL BANNER <---
+            let areaVarianti = document.getElementById('avvisoVariantiArea');
+            areaVarianti.style.display = 'none'; // Nascondi di default
+            
+            if (AVVISO_VARIANTI && variantiData && variantiData.hasOwnProperty(date)) {
+                let lineeData = variantiData[date];
+                let isEmpty = (Array.isArray(lineeData) && lineeData.length === 0) || 
+                              (typeof lineeData === 'string' && lineeData.trim() === '') || 
+                              !lineeData;
+                
+                if (isEmpty) {
+                    areaVarianti.innerHTML = "⚠️ Attenzione: nella data selezionata sono presenti varianti per il servizio, verificare le DDS su spriss.";
+                } else {
+                    let linee = Array.isArray(lineeData) ? lineeData.join(", ") : lineeData;
+                    areaVarianti.innerHTML = "⚠️ Attenzione: nella data selezionata sono presenti varianti per le linee: " + linee;
+                }
+                areaVarianti.style.display = 'block'; // Mostra il banner
+            }
+
             let infoArea = document.getElementById('infoTurniArea');
             let turniCalc = calcolaTurni();
             let turnoCorrenteObj = turniCalc.find(e => e.start === date);

@@ -62,7 +62,7 @@
             font-size: 13px; text-align: center; line-height: 1.4;
         }
 
-        #welcomeModal, #stepModal, #editModal, #altroModal, #resetModal, #backupModal, #imageModal, #jumpModal, #icsModal, #multiEditModal, #cambioBibbiaModal, #pdfTipo2Modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
+        #welcomeModal, #stepModal, #editModal, #altroModal, #resetModal, #backupModal, #imageModal, #jumpModal, #icsModal, #multiEditModal, #cambioBibbiaModal, #pdfTipo2Modal, #coloriRotazioneModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
         .modal-content { background: white; margin: 15% auto; padding: 25px; width: 85%; max-width: 400px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; max-height: 80vh; overflow-y: auto; }
 
         select, input[type="text"], input[type="date"], input[type="number"] { width: 100%; box-sizing: border-box; margin: 15px 0; padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 16px; background: white; -webkit-appearance: none; }
@@ -128,6 +128,7 @@
     </div>
     <div style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
         <button class="btn btn-reset" style="background: #2dce89; margin:0; width:100%;" onclick="apriMultiEdit()">✏️ Modifica Multipla</button>
+        <button class="btn btn-reset" style="background: #11cdef; margin:0; width:100%;" onclick="apriColoriRotazione()">🎨 Colori Rotazione</button>
         <hr style="width: 100%; border: 0; border-top: 1px solid #eee;">
         
         <button class="btn btn-reset" style="background: #5e72e4; margin:0; width:100%;" onclick="scaricaPDF()">📄 Esporta PDF (Tipo 1)</button>
@@ -150,6 +151,59 @@
         </div>
     </div>
     <button class="hamburger-btn" style="margin-right: 0;" onclick="apriMenuDestro()">⋮</button>
+</div>
+
+<div id="coloriRotazioneModal">
+    <div class="modal-content">
+        <h3 style="color: #11cdef; margin-top: 0;">🎨 Colori Rotazione</h3>
+        <p class="instruction-text" style="font-size: 14px;">Assegna un colore per ogni giorno lavorativo della tua rotazione (dal 1° al 6° dopo il riposo).</p>
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-weight: bold; color: #525f7f; font-size: 14px;">1° Giorno:</span>
+            <select id="colRot1" style="width: 60%; margin: 0; padding: 8px; border-radius: 8px; font-size: 14px;">
+                <option value="">Predefinito</option>
+                <option value="#f1c40f">Giallo</option><option value="#fd7e14">Arancione</option><option value="#f5365c">Rosso</option><option value="#e83e8c">Rosa</option><option value="#8965e0">Viola</option><option value="#5e72e4">Blu</option><option value="#11cdef">Azzurro</option><option value="#2dce89">Verde</option>
+            </select>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-weight: bold; color: #525f7f; font-size: 14px;">2° Giorno:</span>
+            <select id="colRot2" style="width: 60%; margin: 0; padding: 8px; border-radius: 8px; font-size: 14px;">
+                <option value="">Predefinito</option>
+                <option value="#f1c40f">Giallo</option><option value="#fd7e14">Arancione</option><option value="#f5365c">Rosso</option><option value="#e83e8c">Rosa</option><option value="#8965e0">Viola</option><option value="#5e72e4">Blu</option><option value="#11cdef">Azzurro</option><option value="#2dce89">Verde</option>
+            </select>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-weight: bold; color: #525f7f; font-size: 14px;">3° Giorno:</span>
+            <select id="colRot3" style="width: 60%; margin: 0; padding: 8px; border-radius: 8px; font-size: 14px;">
+                <option value="">Predefinito</option>
+                <option value="#f1c40f">Giallo</option><option value="#fd7e14">Arancione</option><option value="#f5365c">Rosso</option><option value="#e83e8c">Rosa</option><option value="#8965e0">Viola</option><option value="#5e72e4">Blu</option><option value="#11cdef">Azzurro</option><option value="#2dce89">Verde</option>
+            </select>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-weight: bold; color: #525f7f; font-size: 14px;">4° Giorno:</span>
+            <select id="colRot4" style="width: 60%; margin: 0; padding: 8px; border-radius: 8px; font-size: 14px;">
+                <option value="">Predefinito</option>
+                <option value="#f1c40f">Giallo</option><option value="#fd7e14">Arancione</option><option value="#f5365c">Rosso</option><option value="#e83e8c">Rosa</option><option value="#8965e0">Viola</option><option value="#5e72e4">Blu</option><option value="#11cdef">Azzurro</option><option value="#2dce89">Verde</option>
+            </select>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-weight: bold; color: #525f7f; font-size: 14px;">5° Giorno:</span>
+            <select id="colRot5" style="width: 60%; margin: 0; padding: 8px; border-radius: 8px; font-size: 14px;">
+                <option value="">Predefinito</option>
+                <option value="#f1c40f">Giallo</option><option value="#fd7e14">Arancione</option><option value="#f5365c">Rosso</option><option value="#e83e8c">Rosa</option><option value="#8965e0">Viola</option><option value="#5e72e4">Blu</option><option value="#11cdef">Azzurro</option><option value="#2dce89">Verde</option>
+            </select>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-weight: bold; color: #525f7f; font-size: 14px;">6° Giorno:</span>
+            <select id="colRot6" style="width: 60%; margin: 0; padding: 8px; border-radius: 8px; font-size: 14px;">
+                <option value="">Predefinito</option>
+                <option value="#f1c40f">Giallo</option><option value="#fd7e14">Arancione</option><option value="#f5365c">Rosso</option><option value="#e83e8c">Rosa</option><option value="#8965e0">Viola</option><option value="#5e72e4">Blu</option><option value="#11cdef">Azzurro</option><option value="#2dce89">Verde</option>
+            </select>
+        </div>
+        
+        <button class="btn" style="background: #11cdef;" onclick="salvaColoriRotazione()">Salva Modifiche</button>
+        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiColoriRotazione()">Annulla</button>
+    </div>
 </div>
 
 <div id="pdfTipo2Modal">
@@ -432,6 +486,33 @@
         document.getElementById('multiEditModal').style.display = 'none';
     }
     
+    // --- FUNZIONI COLORI ROTAZIONE ---
+    function apriColoriRotazione() {
+        chiudiMenuDestro();
+        for(let i=1; i<=6; i++) {
+            document.getElementById('colRot'+i).value = (state.coloriRotazione && state.coloriRotazione[i]) ? state.coloriRotazione[i] : "";
+        }
+        document.getElementById('coloriRotazioneModal').style.display = 'block';
+    }
+
+    function chiudiColoriRotazione() {
+        document.getElementById('coloriRotazioneModal').style.display = 'none';
+    }
+
+    function salvaColoriRotazione() {
+        if (!state.coloriRotazione) state.coloriRotazione = {};
+        for(let i=1; i<=6; i++) {
+            const val = document.getElementById('colRot'+i).value;
+            if (val) {
+                state.coloriRotazione[i] = val;
+            } else {
+                delete state.coloriRotazione[i];
+            }
+        }
+        salvaLocal();
+        location.reload();
+    }
+
     function salvaModificaMultipla() {
         const startDateStr = document.getElementById('multiStart').value;
         const endDateStr = document.getElementById('multiEnd').value;
@@ -598,7 +679,6 @@
     const VERSIONE_TURNI = "1.0"; 
     const DATA_INIZIO_NUOVI_TURNI = "2026-03-02"; 
     
-    // ---> NUOVA COSTANTE PER ATTIVARE/DISATTIVARE L'AVVISO VARIANTI <---
     const AVVISO_VARIANTI = true;
 
     const LISTA_FILE_INFO = ["info_turni_2026-03-02.json", "info_turni_2026-02-06.json"];
@@ -634,13 +714,14 @@
     if (!state.sospesoRiposo) state.sospesoRiposo = {};
     if (!state.note) state.note = {};
     if (!state.dispCache) state.dispCache = {};
+    if (!state.coloriRotazione) state.coloriRotazione = {}; // Inizializzazione nuova funzione
 
     let selectedDate, tempRotDate, calendar;
     let currentImagePath = "";
     let imgBaseFallback = ""; 
     let pzInstance = null; 
     let tempColoreAltro = "";
-    let variantiData = {}; // Memorizza i dati del json delle varianti
+    let variantiData = {};
 
     function stringToNum(s) { if(!s) return 0; let p = s.split('-'); return Math.floor(new Date(p[0], p[1]-1, p[2], 12, 0, 0).getTime() / 86400000); }
     function formattaData(d) { let dataObj = new Date(d); let mese = dataObj.toLocaleDateString('it-IT', { month: 'long' }); return dataObj.getDate() + ' ' + mese.charAt(0).toUpperCase() + mese.slice(1); }
@@ -721,7 +802,6 @@
         try {
             const nocache = "?v=" + new Date().getTime();
             
-            // ---> CARICAMENTO VARIANTI <---
             if (AVVISO_VARIANTI) {
                 try {
                     const resVar = await fetch("presenza_varianti.json" + nocache);
@@ -729,7 +809,6 @@
                 } catch(e) {}
             }
 
-            // Carica regole DISP
             state.dispCache = {};
             for (let file of LISTA_FILE_DISP) {
                 const dataInizio = estraiDataDaNome(file);
@@ -896,9 +975,8 @@
         } else {
             document.getElementById('modalDate').innerText = formattaData(date);
             
-            // ---> LOGICA MOSTRA AVVISO VARIANTI NEL BANNER <---
             let areaVarianti = document.getElementById('avvisoVariantiArea');
-            areaVarianti.style.display = 'none'; // Nascondi di default
+            areaVarianti.style.display = 'none'; 
             
             if (AVVISO_VARIANTI && variantiData && variantiData.hasOwnProperty(date)) {
                 let lineeData = variantiData[date];
@@ -912,7 +990,7 @@
                     let linee = Array.isArray(lineeData) ? lineeData.join(", ") : lineeData;
                     areaVarianti.innerHTML = "⚠️ Attenzione: nella data selezionata sono presenti varianti per le linee: " + linee;
                 }
-                areaVarianti.style.display = 'block'; // Mostra il banner
+                areaVarianti.style.display = 'block';
             }
 
             let infoArea = document.getElementById('infoTurniArea');
@@ -1300,6 +1378,27 @@
             processati.add(dStr);
             
             let customColor = (state.colori && state.colori[dStr]) ? state.colori[dStr] : null;
+            
+            let isPastUpdate = (state.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI));
+            let cfgBase = isPastUpdate ? state.history : state;
+
+            if (!customColor && state.coloriRotazione) {
+                let isManualRest = (state.variazioni[dStr] === "RI" || state.variazioni[dStr] === "RIPOSO" || state.variazioni[dStr] === "AL");
+                let isStrutturaleRest = isGiornoRiposoBase(curr, cfgBase);
+                if (!isManualRest && !isStrutturaleRest) {
+                    let indiceGiornata = 1;
+                    for (let k = curr - 1; k >= curr - 10; k--) {
+                        if (isGiornoRiposoBase(k, cfgBase)) {
+                            break;
+                        }
+                        indiceGiornata++;
+                    }
+                    if (indiceGiornata <= 6 && state.coloriRotazione[indiceGiornata]) {
+                        customColor = state.coloriRotazione[indiceGiornata];
+                    }
+                }
+            }
+
             let tColor = (customColor === '#f1c40f') ? '#32325d' : '#ffffff';
 
             let titleAddon = "";
@@ -1317,7 +1416,6 @@
             }
             if (isGiornoRiposo(dStr)) { 
                 let tituloRiposo = 'RI';
-                let cfgBase = (state.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI)) ? state.history : state;
                 if (cfgBase.riposoStart && cfgBase.depositoAttivo !== 'disp_det') {
                     let ref = stringToNum(cfgBase.riposoStart);
                     let pos = ((curr - ref + 6) % 15 + 15) % 15;
@@ -1330,8 +1428,6 @@
                 evs.push(ev);
             }
             else if (i < limitTurni) {
-                let isPastUpdate = (state.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI));
-                let cfgBase = isPastUpdate ? state.history : state;
                 const currentRotRules = getRotazionePerData(dStr);
                 let t = "";
                 if (cfgBase.depositoAttivo.startsWith('disp_')) { t = "DISP"; } 
@@ -1437,6 +1533,28 @@
         chiaviModificate.forEach(dStr => {
             if (!processati.has(dStr)) {
                 let customColor = (state.colori && state.colori[dStr]) ? state.colori[dStr] : null;
+
+                let currMod = stringToNum(dStr);
+                let isPastUpdateMod = (state.history && currMod < stringToNum(DATA_INIZIO_NUOVI_TURNI));
+                let cfgBaseMod = isPastUpdateMod ? state.history : state;
+
+                if (!customColor && state.coloriRotazione) {
+                    let isManualRest = (state.variazioni[dStr] === "RI" || state.variazioni[dStr] === "RIPOSO" || state.variazioni[dStr] === "AL");
+                    let isStrutturaleRest = isGiornoRiposoBase(currMod, cfgBaseMod);
+                    if (!isManualRest && !isStrutturaleRest) {
+                        let indiceGiornata = 1;
+                        for (let k = currMod - 1; k >= currMod - 10; k--) {
+                            if (isGiornoRiposoBase(k, cfgBaseMod)) {
+                                break;
+                            }
+                            indiceGiornata++;
+                        }
+                        if (indiceGiornata <= 6 && state.coloriRotazione[indiceGiornata]) {
+                            customColor = state.coloriRotazione[indiceGiornata];
+                        }
+                    }
+                }
+
                 let tColor = (customColor === '#f1c40f') ? '#32325d' : '#ffffff';
 
                 let titleAddon = "";

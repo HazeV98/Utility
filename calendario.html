@@ -81,6 +81,8 @@
         .color-blue { background: #5e72e4; }
         .color-teal { background: #11cdef; }
         .color-green { background: #2dce89; }
+        
+        #coloriRotazioneModal .color-circle { width: 30px; height: 30px; margin: 4px; }
 
         @media (max-width: 400px) {
             .fc-event { font-size: 0.75em !important; padding: 4px 2px !important; }
@@ -154,55 +156,102 @@
 </div>
 
 <div id="coloriRotazioneModal">
-    <div class="modal-content">
+    <div class="modal-content" style="padding: 20px;">
         <h3 style="color: #11cdef; margin-top: 0;">🎨 Colori Rotazione</h3>
-        <p class="instruction-text" style="font-size: 14px;">Assegna un colore per ogni giorno lavorativo della tua rotazione (dal 1° al 6° dopo il riposo).</p>
+        <p class="instruction-text" style="font-size: 14px; margin-bottom: 20px;">Assegna un colore per ogni giorno lavorativo della tua rotazione (dal 1° al 6° dopo il riposo).</p>
         
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-weight: bold; color: #525f7f; font-size: 14px;">1° Giorno:</span>
-            <select id="colRot1" style="width: 60%; margin: 0; padding: 8px; border-radius: 8px; font-size: 14px;">
-                <option value="">Predefinito</option>
-                <option value="#f1c40f">Giallo</option><option value="#fd7e14">Arancione</option><option value="#f5365c">Rosso</option><option value="#e83e8c">Rosa</option><option value="#8965e0">Viola</option><option value="#5e72e4">Blu</option><option value="#11cdef">Azzurro</option><option value="#2dce89">Verde</option>
-            </select>
-        </div>
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-weight: bold; color: #525f7f; font-size: 14px;">2° Giorno:</span>
-            <select id="colRot2" style="width: 60%; margin: 0; padding: 8px; border-radius: 8px; font-size: 14px;">
-                <option value="">Predefinito</option>
-                <option value="#f1c40f">Giallo</option><option value="#fd7e14">Arancione</option><option value="#f5365c">Rosso</option><option value="#e83e8c">Rosa</option><option value="#8965e0">Viola</option><option value="#5e72e4">Blu</option><option value="#11cdef">Azzurro</option><option value="#2dce89">Verde</option>
-            </select>
-        </div>
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-weight: bold; color: #525f7f; font-size: 14px;">3° Giorno:</span>
-            <select id="colRot3" style="width: 60%; margin: 0; padding: 8px; border-radius: 8px; font-size: 14px;">
-                <option value="">Predefinito</option>
-                <option value="#f1c40f">Giallo</option><option value="#fd7e14">Arancione</option><option value="#f5365c">Rosso</option><option value="#e83e8c">Rosa</option><option value="#8965e0">Viola</option><option value="#5e72e4">Blu</option><option value="#11cdef">Azzurro</option><option value="#2dce89">Verde</option>
-            </select>
-        </div>
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-weight: bold; color: #525f7f; font-size: 14px;">4° Giorno:</span>
-            <select id="colRot4" style="width: 60%; margin: 0; padding: 8px; border-radius: 8px; font-size: 14px;">
-                <option value="">Predefinito</option>
-                <option value="#f1c40f">Giallo</option><option value="#fd7e14">Arancione</option><option value="#f5365c">Rosso</option><option value="#e83e8c">Rosa</option><option value="#8965e0">Viola</option><option value="#5e72e4">Blu</option><option value="#11cdef">Azzurro</option><option value="#2dce89">Verde</option>
-            </select>
-        </div>
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-weight: bold; color: #525f7f; font-size: 14px;">5° Giorno:</span>
-            <select id="colRot5" style="width: 60%; margin: 0; padding: 8px; border-radius: 8px; font-size: 14px;">
-                <option value="">Predefinito</option>
-                <option value="#f1c40f">Giallo</option><option value="#fd7e14">Arancione</option><option value="#f5365c">Rosso</option><option value="#e83e8c">Rosa</option><option value="#8965e0">Viola</option><option value="#5e72e4">Blu</option><option value="#11cdef">Azzurro</option><option value="#2dce89">Verde</option>
-            </select>
-        </div>
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-weight: bold; color: #525f7f; font-size: 14px;">6° Giorno:</span>
-            <select id="colRot6" style="width: 60%; margin: 0; padding: 8px; border-radius: 8px; font-size: 14px;">
-                <option value="">Predefinito</option>
-                <option value="#f1c40f">Giallo</option><option value="#fd7e14">Arancione</option><option value="#f5365c">Rosso</option><option value="#e83e8c">Rosa</option><option value="#8965e0">Viola</option><option value="#5e72e4">Blu</option><option value="#11cdef">Azzurro</option><option value="#2dce89">Verde</option>
-            </select>
+        <div style="margin-bottom: 12px; text-align: left;">
+            <div style="font-weight: bold; color: #525f7f; font-size: 14px; margin-bottom: 5px;">1° Giorno:</div>
+            <div class="day-1" style="display: flex; justify-content: flex-start; flex-wrap: wrap;">
+                <div class="color-circle" style="background: #e9ecef; display:flex; align-items:center; justify-content:center; font-size:12px; color: #32325d;" data-color="" onclick="selezionaColoreRotazione(1, '', this)">✕</div>
+                <div class="color-circle color-yellow" data-color="#f1c40f" onclick="selezionaColoreRotazione(1, '#f1c40f', this)"></div>
+                <div class="color-circle color-orange" data-color="#fd7e14" onclick="selezionaColoreRotazione(1, '#fd7e14', this)"></div>
+                <div class="color-circle color-red" data-color="#f5365c" onclick="selezionaColoreRotazione(1, '#f5365c', this)"></div>
+                <div class="color-circle color-pink" data-color="#e83e8c" onclick="selezionaColoreRotazione(1, '#e83e8c', this)"></div>
+                <div class="color-circle color-purple" data-color="#8965e0" onclick="selezionaColoreRotazione(1, '#8965e0', this)"></div>
+                <div class="color-circle color-blue" data-color="#5e72e4" onclick="selezionaColoreRotazione(1, '#5e72e4', this)"></div>
+                <div class="color-circle color-teal" data-color="#11cdef" onclick="selezionaColoreRotazione(1, '#11cdef', this)"></div>
+                <div class="color-circle color-green" data-color="#2dce89" onclick="selezionaColoreRotazione(1, '#2dce89', this)"></div>
+            </div>
         </div>
         
-        <button class="btn" style="background: #11cdef;" onclick="salvaColoriRotazione()">Salva Modifiche</button>
-        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiColoriRotazione()">Annulla</button>
+        <div style="margin-bottom: 12px; text-align: left;">
+            <div style="font-weight: bold; color: #525f7f; font-size: 14px; margin-bottom: 5px;">2° Giorno:</div>
+            <div class="day-2" style="display: flex; justify-content: flex-start; flex-wrap: wrap;">
+                <div class="color-circle" style="background: #e9ecef; display:flex; align-items:center; justify-content:center; font-size:12px; color: #32325d;" data-color="" onclick="selezionaColoreRotazione(2, '', this)">✕</div>
+                <div class="color-circle color-yellow" data-color="#f1c40f" onclick="selezionaColoreRotazione(2, '#f1c40f', this)"></div>
+                <div class="color-circle color-orange" data-color="#fd7e14" onclick="selezionaColoreRotazione(2, '#fd7e14', this)"></div>
+                <div class="color-circle color-red" data-color="#f5365c" onclick="selezionaColoreRotazione(2, '#f5365c', this)"></div>
+                <div class="color-circle color-pink" data-color="#e83e8c" onclick="selezionaColoreRotazione(2, '#e83e8c', this)"></div>
+                <div class="color-circle color-purple" data-color="#8965e0" onclick="selezionaColoreRotazione(2, '#8965e0', this)"></div>
+                <div class="color-circle color-blue" data-color="#5e72e4" onclick="selezionaColoreRotazione(2, '#5e72e4', this)"></div>
+                <div class="color-circle color-teal" data-color="#11cdef" onclick="selezionaColoreRotazione(2, '#11cdef', this)"></div>
+                <div class="color-circle color-green" data-color="#2dce89" onclick="selezionaColoreRotazione(2, '#2dce89', this)"></div>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 12px; text-align: left;">
+            <div style="font-weight: bold; color: #525f7f; font-size: 14px; margin-bottom: 5px;">3° Giorno:</div>
+            <div class="day-3" style="display: flex; justify-content: flex-start; flex-wrap: wrap;">
+                <div class="color-circle" style="background: #e9ecef; display:flex; align-items:center; justify-content:center; font-size:12px; color: #32325d;" data-color="" onclick="selezionaColoreRotazione(3, '', this)">✕</div>
+                <div class="color-circle color-yellow" data-color="#f1c40f" onclick="selezionaColoreRotazione(3, '#f1c40f', this)"></div>
+                <div class="color-circle color-orange" data-color="#fd7e14" onclick="selezionaColoreRotazione(3, '#fd7e14', this)"></div>
+                <div class="color-circle color-red" data-color="#f5365c" onclick="selezionaColoreRotazione(3, '#f5365c', this)"></div>
+                <div class="color-circle color-pink" data-color="#e83e8c" onclick="selezionaColoreRotazione(3, '#e83e8c', this)"></div>
+                <div class="color-circle color-purple" data-color="#8965e0" onclick="selezionaColoreRotazione(3, '#8965e0', this)"></div>
+                <div class="color-circle color-blue" data-color="#5e72e4" onclick="selezionaColoreRotazione(3, '#5e72e4', this)"></div>
+                <div class="color-circle color-teal" data-color="#11cdef" onclick="selezionaColoreRotazione(3, '#11cdef', this)"></div>
+                <div class="color-circle color-green" data-color="#2dce89" onclick="selezionaColoreRotazione(3, '#2dce89', this)"></div>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 12px; text-align: left;">
+            <div style="font-weight: bold; color: #525f7f; font-size: 14px; margin-bottom: 5px;">4° Giorno:</div>
+            <div class="day-4" style="display: flex; justify-content: flex-start; flex-wrap: wrap;">
+                <div class="color-circle" style="background: #e9ecef; display:flex; align-items:center; justify-content:center; font-size:12px; color: #32325d;" data-color="" onclick="selezionaColoreRotazione(4, '', this)">✕</div>
+                <div class="color-circle color-yellow" data-color="#f1c40f" onclick="selezionaColoreRotazione(4, '#f1c40f', this)"></div>
+                <div class="color-circle color-orange" data-color="#fd7e14" onclick="selezionaColoreRotazione(4, '#fd7e14', this)"></div>
+                <div class="color-circle color-red" data-color="#f5365c" onclick="selezionaColoreRotazione(4, '#f5365c', this)"></div>
+                <div class="color-circle color-pink" data-color="#e83e8c" onclick="selezionaColoreRotazione(4, '#e83e8c', this)"></div>
+                <div class="color-circle color-purple" data-color="#8965e0" onclick="selezionaColoreRotazione(4, '#8965e0', this)"></div>
+                <div class="color-circle color-blue" data-color="#5e72e4" onclick="selezionaColoreRotazione(4, '#5e72e4', this)"></div>
+                <div class="color-circle color-teal" data-color="#11cdef" onclick="selezionaColoreRotazione(4, '#11cdef', this)"></div>
+                <div class="color-circle color-green" data-color="#2dce89" onclick="selezionaColoreRotazione(4, '#2dce89', this)"></div>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 12px; text-align: left;">
+            <div style="font-weight: bold; color: #525f7f; font-size: 14px; margin-bottom: 5px;">5° Giorno:</div>
+            <div class="day-5" style="display: flex; justify-content: flex-start; flex-wrap: wrap;">
+                <div class="color-circle" style="background: #e9ecef; display:flex; align-items:center; justify-content:center; font-size:12px; color: #32325d;" data-color="" onclick="selezionaColoreRotazione(5, '', this)">✕</div>
+                <div class="color-circle color-yellow" data-color="#f1c40f" onclick="selezionaColoreRotazione(5, '#f1c40f', this)"></div>
+                <div class="color-circle color-orange" data-color="#fd7e14" onclick="selezionaColoreRotazione(5, '#fd7e14', this)"></div>
+                <div class="color-circle color-red" data-color="#f5365c" onclick="selezionaColoreRotazione(5, '#f5365c', this)"></div>
+                <div class="color-circle color-pink" data-color="#e83e8c" onclick="selezionaColoreRotazione(5, '#e83e8c', this)"></div>
+                <div class="color-circle color-purple" data-color="#8965e0" onclick="selezionaColoreRotazione(5, '#8965e0', this)"></div>
+                <div class="color-circle color-blue" data-color="#5e72e4" onclick="selezionaColoreRotazione(5, '#5e72e4', this)"></div>
+                <div class="color-circle color-teal" data-color="#11cdef" onclick="selezionaColoreRotazione(5, '#11cdef', this)"></div>
+                <div class="color-circle color-green" data-color="#2dce89" onclick="selezionaColoreRotazione(5, '#2dce89', this)"></div>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 12px; text-align: left;">
+            <div style="font-weight: bold; color: #525f7f; font-size: 14px; margin-bottom: 5px;">6° Giorno:</div>
+            <div class="day-6" style="display: flex; justify-content: flex-start; flex-wrap: wrap;">
+                <div class="color-circle" style="background: #e9ecef; display:flex; align-items:center; justify-content:center; font-size:12px; color: #32325d;" data-color="" onclick="selezionaColoreRotazione(6, '', this)">✕</div>
+                <div class="color-circle color-yellow" data-color="#f1c40f" onclick="selezionaColoreRotazione(6, '#f1c40f', this)"></div>
+                <div class="color-circle color-orange" data-color="#fd7e14" onclick="selezionaColoreRotazione(6, '#fd7e14', this)"></div>
+                <div class="color-circle color-red" data-color="#f5365c" onclick="selezionaColoreRotazione(6, '#f5365c', this)"></div>
+                <div class="color-circle color-pink" data-color="#e83e8c" onclick="selezionaColoreRotazione(6, '#e83e8c', this)"></div>
+                <div class="color-circle color-purple" data-color="#8965e0" onclick="selezionaColoreRotazione(6, '#8965e0', this)"></div>
+                <div class="color-circle color-blue" data-color="#5e72e4" onclick="selezionaColoreRotazione(6, '#5e72e4', this)"></div>
+                <div class="color-circle color-teal" data-color="#11cdef" onclick="selezionaColoreRotazione(6, '#11cdef', this)"></div>
+                <div class="color-circle color-green" data-color="#2dce89" onclick="selezionaColoreRotazione(6, '#2dce89', this)"></div>
+            </div>
+        </div>
+        
+        <button class="btn" style="background: #11cdef; margin-top: 15px;" onclick="salvaColoriRotazione()">Salva Modifiche</button>
+        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 10px;" onclick="chiudiColoriRotazione()">Annulla</button>
     </div>
 </div>
 
@@ -487,10 +536,24 @@
     }
     
     // --- FUNZIONI COLORI ROTAZIONE ---
+    let tempColoriRotazione = {};
+
     function apriColoriRotazione() {
         chiudiMenuDestro();
+        tempColoriRotazione = { ...(state.coloriRotazione || {}) };
+        
         for(let i=1; i<=6; i++) {
-            document.getElementById('colRot'+i).value = (state.coloriRotazione && state.coloriRotazione[i]) ? state.coloriRotazione[i] : "";
+            let container = document.querySelector('#coloriRotazioneModal .day-' + i);
+            if(container) {
+                container.querySelectorAll('.color-circle').forEach(c => {
+                    c.classList.remove('selected');
+                    let cColor = c.getAttribute('data-color') || "";
+                    let targetColor = tempColoriRotazione[i] || "";
+                    if (cColor === targetColor) {
+                        c.classList.add('selected');
+                    }
+                });
+            }
         }
         document.getElementById('coloriRotazioneModal').style.display = 'block';
     }
@@ -499,12 +562,25 @@
         document.getElementById('coloriRotazioneModal').style.display = 'none';
     }
 
+    function selezionaColoreRotazione(giorno, hex, el) {
+        if (hex) {
+            tempColoriRotazione[giorno] = hex;
+        } else {
+            delete tempColoriRotazione[giorno];
+        }
+        
+        let container = document.querySelector('#coloriRotazioneModal .day-' + giorno);
+        if(container) {
+            container.querySelectorAll('.color-circle').forEach(c => c.classList.remove('selected'));
+        }
+        if(el) el.classList.add('selected');
+    }
+
     function salvaColoriRotazione() {
         if (!state.coloriRotazione) state.coloriRotazione = {};
         for(let i=1; i<=6; i++) {
-            const val = document.getElementById('colRot'+i).value;
-            if (val) {
-                state.coloriRotazione[i] = val;
+            if (tempColoriRotazione[i]) {
+                state.coloriRotazione[i] = tempColoriRotazione[i];
             } else {
                 delete state.coloriRotazione[i];
             }

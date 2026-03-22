@@ -36,6 +36,7 @@
         { "nome": "Ufficio programmazione", "valore": "041 272 2404", "tipo": "telefono" },
         { "nome": "Portineria Tronchetto", "valore": "041 272 2181", "tipo": "telefono" },
         { "nome": "Ufficio cove", "valore": "041 272 2473", "tipo": "telefono" },
+        { "nome": "Ufficio formazione", "valore": "041 272 2142", "tipo": "telefono" },
         { "nome": "Ufficio infortuni", "valore": "041 272 2094", "tipo": "telefono" },
         { "nome": "Ufficio malattie", "valore": "041 272 2091", "tipo": "telefono" },
         { "nome": "Rendicontazione", "valore": "041 272 2707", "tipo": "telefono" },

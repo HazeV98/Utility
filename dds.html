@@ -24,32 +24,39 @@
         .sidebar.open { left: 0; }
         .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: var(--primary); color: white; }
         .sidebar-link { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 18px; border-bottom: 1px solid #eee; display: block; }
+        .sidebar-link:active, .sidebar-link:hover { background-color: #f4f7f6; color: var(--primary); font-weight: bold; }
         
         .content-area { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
         
-        /* CARDS DDS */
+        /* CARDS DDS E PROMEMORIA */
         .dds-card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; border-left: 5px solid var(--primary); }
+        .promemoria-card { border-left: 5px solid var(--warning); }
+        
         .dds-title { font-weight: bold; font-size: 16px; color: var(--primary); }
+        .promemoria-card .dds-title { color: #856404; }
+        
         .dds-date { font-size: 13px; color: #666; line-height: 1.4; }
+        .dds-note { font-size: 13px; color: #444; background: #f8f9fa; padding: 10px; border-radius: 8px; border-left: 3px solid #ccc; margin-top: 5px; font-style: italic; white-space: pre-wrap; line-height: 1.4; }
         .dds-reminder-badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; background-color: #eef2ff; color: var(--primary); align-self: flex-start; }
         
         .btn-group { display: flex; gap: 10px; margin-top: 5px; }
         .btn-open { background-color: var(--primary); color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; flex: 1; cursor: pointer; }
         .btn-delete { background-color: white; color: var(--danger); border: 1px solid var(--danger); padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
-        .btn-add-main { background-color: var(--success); color: white; border: none; padding: 16px; font-size: 16px; font-weight: bold; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .btn-add-main { background-color: var(--success); color: white; border: none; padding: 14px; font-size: 15px; font-weight: bold; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; }
         
         /* BOTTONI BACKUP */
         .backup-group { display: flex; gap: 10px; width: 100%; }
         .btn-outline { background-color: white; color: var(--primary); border: 2px solid var(--primary); padding: 12px; font-size: 14px; font-weight: bold; border-radius: 10px; cursor: pointer; flex: 1; text-align: center; }
         .btn-outline:active { background-color: var(--primary); color: white; }
 
-        /* MODALE AGGIUNGI */
+        /* MODALI */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 3000; padding: 15px; box-sizing: border-box; }
         .modal-content { background-color: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 350px; text-align: left; box-shadow: 0 5px 15px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
+        
         .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
         .input-group label { font-size: 14px; font-weight: bold; color: #555; }
-        .input-group input[type="text"], .input-group input[type="file"] { padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 15px; width: 100%; box-sizing: border-box; font-family: inherit; }
+        .input-group input[type="text"], .input-group input[type="file"], .input-group textarea { padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 15px; width: 100%; box-sizing: border-box; font-family: inherit; }
         
         .flatpickr-input { background-color: #fff !important; cursor: pointer !important; }
 
@@ -91,7 +98,11 @@
     </div>
 
     <div class="content-area">
-        <button class="btn-add-main" onclick="apriModaleAggiungi()">➕ Aggiungi Nuova DDS</button>
+        
+        <div style="display: flex; gap: 10px; width: 100%; margin-bottom: 5px;">
+            <button class="btn-add-main" onclick="apriModaleAggiungi()">➕ DDS (PDF)</button>
+            <button class="btn-add-main" style="background-color: var(--warning); color: #333;" onclick="apriModalePromemoria()">🔔 Promemoria</button>
+        </div>
         
         <div class="backup-group">
             <button class="btn-outline" onclick="esportaDDS()">⬇️ Esporta</button>
@@ -122,17 +133,11 @@
             </div>
 
             <div class="input-group">
-                <label>Promemoria all'avvio (scelta multipla):</label>
+                <label>Avvisi all'avvio:</label>
                 <div class="checkbox-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" value="day_before" class="rem-checkbox"> Il giorno prima dell'inizio
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" value="first_day" class="rem-checkbox"> Il primo giorno di validità
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" value="all_days" class="rem-checkbox" checked> Tutti i giorni di validità
-                    </label>
+                    <label class="checkbox-label"><input type="checkbox" value="day_before" class="rem-checkbox"> Il giorno prima</label>
+                    <label class="checkbox-label"><input type="checkbox" value="first_day" class="rem-checkbox"> Il primo giorno</label>
+                    <label class="checkbox-label"><input type="checkbox" value="all_days" class="rem-checkbox" checked> Tutti i giorni</label>
                 </div>
             </div>
 
@@ -141,11 +146,45 @@
         </div>
     </div>
 
+    <div id="modal-promemoria" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top: 0; margin-bottom: 20px; color: #856404; text-align: center;">Nuovo Promemoria</h3>
+            
+            <div class="input-group">
+                <label>Titolo (verrà mostrato nel calendario)</label>
+                <input type="text" id="prom-titolo" placeholder="Es. Visita medica, Patente...">
+            </div>
+
+            <div class="input-group">
+                <label>Giorni di validità (tocca per sceglierli)</label>
+                <input type="text" id="prom-date-picker" placeholder="Seleziona le date..." readonly>
+            </div>
+
+            <div class="input-group">
+                <label>Note / Descrizione (Opzionale)</label>
+                <textarea id="prom-note" rows="3" placeholder="Aggiungi dettagli o note..."></textarea>
+            </div>
+
+            <div class="input-group">
+                <label>Avvisi all'avvio:</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-label"><input type="checkbox" value="day_before" class="rem-prom-checkbox"> Il giorno prima</label>
+                    <label class="checkbox-label"><input type="checkbox" value="first_day" class="rem-prom-checkbox"> Il primo giorno</label>
+                    <label class="checkbox-label"><input type="checkbox" value="all_days" class="rem-prom-checkbox" checked> Tutti i giorni</label>
+                </div>
+            </div>
+
+            <button class="btn-esegui" style="background-color: var(--warning); color: #333;" onclick="salvaPromemoria()">💾 Salva Promemoria</button>
+            <button class="btn-chiudi" onclick="chiudiModalePromemoria()">Annulla</button>
+        </div>
+    </div>
+
     <script>
         function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
         function chiudiMenuLaterale() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; }
 
         let fpInstance;
+        let fpPromemoriaInstance;
         const dbName = "UtilityDB";
         const storeName = "archivio_dds";
         let db;
@@ -168,6 +207,7 @@
             alert("Il tuo browser blocca il database locale.");
         }
 
+        // --- GESTIONE MODALE DDS CON PDF ---
         function apriModaleAggiungi() {
             document.getElementById('dds-titolo').value = '';
             document.getElementById('dds-file').value = '';
@@ -250,6 +290,74 @@
             }
         }
 
+        // --- GESTIONE MODALE PROMEMORIA (SENZA PDF) ---
+        function apriModalePromemoria() {
+            document.getElementById('prom-titolo').value = '';
+            document.getElementById('prom-note').value = '';
+            
+            if (!fpPromemoriaInstance) {
+                fpPromemoriaInstance = flatpickr("#prom-date-picker", {
+                    mode: "multiple",
+                    dateFormat: "Y-m-d",
+                    locale: "it",
+                    altInput: true,
+                    altFormat: "d/m/Y",
+                    conjunction: ", "
+                });
+            }
+            fpPromemoriaInstance.clear();
+
+            document.querySelectorAll('.rem-prom-checkbox').forEach(cb => cb.checked = (cb.value === 'all_days'));
+            document.getElementById('modal-promemoria').style.display = 'flex';
+        }
+
+        function chiudiModalePromemoria() {
+            document.getElementById('modal-promemoria').style.display = 'none';
+        }
+
+        function salvaPromemoria() {
+            try {
+                if (!db) return;
+
+                const titolo = document.getElementById('prom-titolo').value.trim();
+                const note = document.getElementById('prom-note').value.trim();
+                
+                const selectedDates = fpPromemoriaInstance.selectedDates.map(d => {
+                    const offset = d.getTimezoneOffset() * 60000;
+                    return new Date(d.getTime() - offset).toISOString().split('T')[0];
+                }).sort();
+
+                const checkedBoxes = document.querySelectorAll('.rem-prom-checkbox:checked');
+                const selectedReminders = Array.from(checkedBoxes).map(cb => cb.value);
+
+                if (!titolo || selectedDates.length === 0) {
+                    alert("Compila il Titolo e seleziona almeno un giorno sul Calendario.");
+                    return;
+                }
+
+                const nuovoPromemoria = {
+                    titolo: titolo,
+                    dateValidita: selectedDates,
+                    reminder: selectedReminders,
+                    note: note,
+                    isPromemoria: true
+                };
+
+                const tx = db.transaction(storeName, "readwrite");
+                const store = tx.objectStore(storeName);
+                const reqAdd = store.add(nuovoPromemoria);
+
+                reqAdd.onsuccess = function() {
+                    alert("✅ Promemoria salvato con successo!");
+                    chiudiModalePromemoria();
+                    caricaListaDDS();
+                };
+            } catch (globalErr) {
+                alert("Errore imprevisto nel codice.");
+            }
+        }
+
+        // --- CARICAMENTO LISTA E AUTO-CANCELLAZIONE PROMEMORIA ---
         function caricaListaDDS() {
             if (!db) return;
             const listContainer = document.getElementById('dds-list');
@@ -260,7 +368,33 @@
             const reqGetAll = store.getAll();
 
             reqGetAll.onsuccess = function() {
-                const ddsArray = reqGetAll.result;
+                let ddsArray = reqGetAll.result;
+
+                // --- LOGICA AUTO-PULIZIA PROMEMORIA SCADUTI ---
+                const dataOdierna = new Date();
+                const oggiStr = dataOdierna.getFullYear() + "-" + 
+                                String(dataOdierna.getMonth() + 1).padStart(2, '0') + "-" + 
+                                String(dataOdierna.getDate()).padStart(2, '0');
+                
+                let idDaEliminare = [];
+
+                ddsArray = ddsArray.filter(dds => {
+                    if (dds.isPromemoria && dds.dateValidita && dds.dateValidita.length > 0) {
+                        let ultimaData = dds.dateValidita[dds.dateValidita.length - 1];
+                        if (ultimaData < oggiStr) {
+                            idDaEliminare.push(dds.id);
+                            return false; // Rimuove dalla lista visualizzata
+                        }
+                    }
+                    return true;
+                });
+
+                if (idDaEliminare.length > 0) {
+                    const txDel = db.transaction(storeName, "readwrite");
+                    const storeDel = txDel.objectStore(storeName);
+                    idDaEliminare.forEach(id => storeDel.delete(id));
+                }
+                // --- FINE AUTO-PULIZIA ---
 
                 ddsArray.sort((a, b) => {
                     let d1 = a.dateValidita ? a.dateValidita[0] : (a.dataDa || a.dataEntrata);
@@ -269,7 +403,7 @@
                 });
 
                 if (ddsArray.length === 0) {
-                    listContainer.innerHTML = '<div class="empty-state">Nessuna DDS archiviata.<br>Premi su "Aggiungi" per iniziare.</div>';
+                    listContainer.innerHTML = '<div class="empty-state">Nessuna DDS o Promemoria archiviato.<br>Premi sui bottoni in alto per iniziare.</div>';
                     return;
                 }
 
@@ -306,22 +440,32 @@
                     let remTesto = remTesti.length > 0 ? "🔔 " + remTesti.join(" + ") : "";
 
                     const card = document.createElement('div');
-                    card.className = 'dds-card';
+                    card.className = dds.isPromemoria ? 'dds-card promemoria-card' : 'dds-card';
+                    
+                    let iconaTitolo = dds.isPromemoria ? "🔔 " : "";
                     
                     let htmlCard = `
-                        <div class="dds-title">${dds.titolo}</div>
+                        <div class="dds-title">${iconaTitolo}${dds.titolo}</div>
                         <div class="dds-date">Validità: ${validitaTesto}</div>
                     `;
+                    
+                    if (dds.note) {
+                        htmlCard += `<div class="dds-note">📝 ${dds.note}</div>`;
+                    }
+                    
                     if (remTesto) {
                         htmlCard += `<div class="dds-reminder-badge">${remTesto}</div>`;
                     }
                     
-                    htmlCard += `
-                        <div class="btn-group">
-                            <button class="btn-open" onclick="apriPDF(${dds.id})">📄 Apri PDF</button>
-                            <button class="btn-delete" onclick="eliminaDDS(${dds.id})">🗑️</button>
-                        </div>
-                    `;
+                    htmlCard += `<div class="btn-group">`;
+                    
+                    if (!dds.isPromemoria && dds.fileData) {
+                        htmlCard += `<button class="btn-open" onclick="apriPDF(${dds.id})">📄 Apri PDF</button>`;
+                    }
+                    
+                    htmlCard += `<button class="btn-delete" onclick="eliminaDDS(${dds.id})" ${dds.isPromemoria || !dds.fileData ? 'style="flex: 1;"' : ''}>🗑️ Elimina</button>
+                    </div>`;
+                    
                     card.innerHTML = htmlCard;
                     listContainer.appendChild(card);
                 });
@@ -358,7 +502,7 @@
         }
 
         function eliminaDDS(id) {
-            if (confirm("Vuoi davvero eliminare questa DDS dall'archivio?")) {
+            if (confirm("Vuoi davvero eliminare questo elemento dall'archivio?")) {
                 const tx = db.transaction(storeName, "readwrite");
                 const store = tx.objectStore(storeName);
                 const reqDel = store.delete(id);
@@ -382,11 +526,9 @@
                     return;
                 }
                 
-                // Converte i dati in stringa JSON
                 const jsonString = JSON.stringify(data);
                 const blob = new Blob([jsonString], { type: "application/json" });
                 
-                // Crea il download automatico
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -414,8 +556,8 @@
                         throw new Error("Formato non valido");
                     }
 
-                    if (!confirm(`Trovate ${importedData.length} DDS nel file di backup. Vuoi aggiungerle al tuo archivio?`)) {
-                        event.target.value = ''; // Resetta l'input
+                    if (!confirm(`Trovati ${importedData.length} elementi nel file di backup. Vuoi aggiungerli al tuo archivio?`)) {
+                        event.target.value = ''; 
                         return;
                     }
 
@@ -425,16 +567,15 @@
                     let conteggio = 0;
                     
                     importedData.forEach(item => {
-                        // Rimuove il vecchio ID per evitare conflitti, il DB assegnerà nuovi ID in automatico
                         delete item.id; 
                         store.add(item);
                         conteggio++;
                     });
 
                     tx.oncomplete = function() {
-                        alert(`✅ Importazione completata con successo! Sono state aggiunte ${conteggio} DDS.`);
+                        alert(`✅ Importazione completata con successo! Sono stati aggiunti ${conteggio} elementi.`);
                         caricaListaDDS();
-                        event.target.value = ''; // Resetta per permettere una futura importazione
+                        event.target.value = '';
                     };
 
                     tx.onerror = function(err) {

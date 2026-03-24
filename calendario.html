@@ -120,9 +120,7 @@
     <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
     <a href="link.html" class="sidebar-link">🔗 Link</a>
     <a href="contatti.html" class="sidebar-link">📞 Contatti</a>
-    <a href="buoni.html" class="sidebar-link">🍝 Buoni Pasto</a>
-    <a href="dds.html" class="sidebar-link">📂 Archivio DDS</a>
-    <a href="guida.html" class="sidebar-link">📖 Guida</a>
+    <a href="buoni.html" class="sidebar-link">🍔 Buoni Pasto</a>
 </div>
 
 <div id="right-sidebar" class="right-sidebar">
@@ -136,7 +134,7 @@
         <hr style="width: 100%; border: 0; border-top: 1px solid #eee;">
         
         <button class="btn btn-reset" style="background: #5e72e4; margin:0; width:100%;" onclick="scaricaPDF()">📄 Esporta PDF (Tipo 1)</button>
-        <button class="btn btn-reset" style="background: #5e72e4; margin:0; width:100%;" onclick="apriPdfTipo2Modal()">📄 Esporta PDF (Tipo 2)</button>
+        <button class="btn btn-reset" style="background: #32325d; margin:0; width:100%;" onclick="apriPdfTipo2Modal()">📄 Esporta PDF (Tipo 2)</button>
         
         <button class="btn btn-reset" style="background: #5e72e4; margin:0; width:100%;" onclick="apriIcsModal()">📅 Esporta ICS</button>
         <hr style="width: 100%; border: 0; border-top: 1px solid #eee;">
@@ -160,7 +158,7 @@
 <div id="coloriRotazioneModal">
     <div class="modal-content" style="padding: 20px;">
         <h3 style="color: #11cdef; margin-top: 0;">🎨 Colori Rotazione</h3>
-        <p class="instruction-text" style="font-size: 14px; margin-bottom: 20px;">Assegna un colore per ogni giorno della tua rotazione (dal 1° al 6° dopo un riposo).</p>
+        <p class="instruction-text" style="font-size: 14px; margin-bottom: 20px;">Assegna un colore per ogni giorno lavorativo della tua rotazione (dal 1° al 6° dopo il riposo).</p>
         
         <div style="margin-bottom: 12px; text-align: left;">
             <div style="font-weight: bold; color: #525f7f; font-size: 14px; margin-bottom: 5px;">1° Giorno:</div>
@@ -288,7 +286,7 @@
 <div id="multiEditModal">
     <div class="modal-content">
         <h3 style="color: #2dce89; margin-top: 0;">Modifica Multipla</h3>
-        <p class="instruction-text" style="font-size: 14px;">Applica lo stesso turno a più giorni consecutivi (es. FER).</p>
+        <p class="instruction-text" style="font-size: 14px;">Applica lo stesso turno a più giorni consecutivi (es. FERIE).</p>
         
         <label style="font-size: 14px; color: #525f7f; text-align: left; display: block; margin-top: 10px; font-weight:bold;">Da (Inizio):</label>
         <input type="date" id="multiStart">
@@ -428,8 +426,6 @@
         
         <div id="avvisoVariantiArea" style="display: none; background-color: #fff3cd; border: 1px solid #ffeeba; border-radius: 10px; color: #856404; padding: 12px; margin-bottom: 15px; font-size: 14px; font-weight: bold; line-height: 1.4; text-align: left;"></div>
         
-        <div id="avvisoDDSArea" style="display: none; background-color: #eef2ff; border: 1px solid #c8d6e5; border-radius: 10px; color: #0056b3; padding: 12px; margin-bottom: 15px; font-size: 14px; font-weight: bold; line-height: 1.4; text-align: left;"></div>
-        
         <div id="infoTurniArea" style="font-size:0.9em; margin-bottom:15px; padding:10px; background:#f8f9fa; border-radius:10px; text-align:left; color:#525f7f; display:none;"></div>
         
         <button id="btnVisualizzaTurno" class="btn" style="background: #2dce89; margin-bottom: 15px; display: none;" onclick="apriImmagineTurno()">Mostra Immagine Turno</button>
@@ -449,11 +445,6 @@
         
         <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: left; border: 2px solid #e9ecef;">
             
-            <label style="display: flex; align-items: center; font-size: 15px; color: #525f7f; margin-bottom: 10px; font-weight: bold; cursor: pointer;">
-                <input type="checkbox" id="checkBuonoUsatoAltro" style="width: 22px; height: 22px; margin-right: 10px; accent-color: #28a745;">
-                🍝 Buono Usato
-            </label>
-
             <label style="display: flex; align-items: center; font-size: 15px; color: #525f7f; margin-bottom: 10px; font-weight: bold; cursor: pointer;">
                 <input type="checkbox" id="checkSospesoRiposoAltro" style="width: 22px; height: 22px; margin-right: 10px; accent-color: #f5365c;">
                 Sospeso Riposo
@@ -608,13 +599,12 @@
         if (!turnoVal) { alert("Inserisci il turno."); return; }
 
         let currentDate = new Date(startDateStr);
+        currentDate.setHours(12, 0, 0, 0); // FISSA MEZZOGIORNO
         let endDate = new Date(endDateStr);
+        endDate.setHours(12, 0, 0, 0);
 
         while (currentDate <= endDate) {
-            let dStr = currentDate.getFullYear() + "-" + 
-                       String(currentDate.getMonth() + 1).padStart(2, '0') + "-" + 
-                       String(currentDate.getDate()).padStart(2, '0');
-            
+            let dStr = dateToLocalISO(currentDate);
             state.variazioni[dStr] = turnoVal;
             currentDate.setDate(currentDate.getDate() + 1);
         }
@@ -670,7 +660,7 @@
             let giornoNome = giorniSettimana[dObj.getDay()];
             let ev = turni.find(t => t.start === dStr);
             
-            let titolo = ev ? ev.title.replace(/ 🍝| 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim() : "";
+            let titolo = ev ? ev.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim() : "";
             let codiceBase = titolo.toUpperCase();
 
             let locMonta = "", dalle = "", alle = "", note = "";
@@ -687,7 +677,6 @@
                     } 
                 }
                 
-                // --- NUOVA LOGICA INTELLIGENTE ---
                 let chiaveTrovata = trovaChiaveEsatta(dbCorrente, codiceBase, dStr);
                 let dettagli = dbCorrente[chiaveTrovata];
 
@@ -793,12 +782,11 @@
         tc_rot_17tr: true
     };
 
-    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, nebbia: {}, straordinario: {}, sospesoRiposo: {}, buonoPastoUsato: {}, note: {}, setupStep: 0, dbCache: {}, rotCache: {}, dispCache: {} };
+    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, nebbia: {}, straordinario: {}, sospesoRiposo: {}, note: {}, setupStep: 0, dbCache: {}, rotCache: {}, dispCache: {} };
     if (!state.colori) state.colori = {}; 
     if (!state.nebbia) state.nebbia = {};
     if (!state.straordinario) state.straordinario = {};
     if (!state.sospesoRiposo) state.sospesoRiposo = {};
-    if (!state.buonoPastoUsato) state.buonoPastoUsato = {};
     if (!state.note) state.note = {};
     if (!state.dispCache) state.dispCache = {};
     if (!state.coloriRotazione) state.coloriRotazione = {}; 
@@ -809,18 +797,20 @@
     let pzInstance = null; 
     let tempColoreAltro = "";
     let variantiData = {};
-    let ddsDataCache = []; // <-- NUOVA VARIABILE GLOBALE PER LE DDS
 
     function stringToNum(s) { if(!s) return 0; let p = s.split('-'); return Math.floor(new Date(p[0], p[1]-1, p[2], 12, 0, 0).getTime() / 86400000); }
     function formattaData(d) { let dataObj = new Date(d); let mese = dataObj.toLocaleDateString('it-IT', { month: 'long' }); return dataObj.getDate() + ' ' + mese.charAt(0).toUpperCase() + mese.slice(1); }
     function salvaLocal() { localStorage.setItem('myTurniApp', JSON.stringify(state)); }
     function estraiDataDaNome(nome) { const match = nome.match(/\d{4}-\d{2}-\d{2}/); return match ? match[0] : null; }
+    
+    // NUOVA FUNZIONE SICURA PER LE DATE
+    function dateToLocalISO(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); }
 
     function trovaChiaveEsatta(db, codiceBase, dateStr) {
         if (!db || !codiceBase) return codiceBase;
         
         let giornoIdx = new Date(dateStr).getDay(); 
-        let targetDay = giornoIdx === 0 ? 7 : giornoIdx; // LUN=1, MAR=2, ... DOM=7
+        let targetDay = giornoIdx === 0 ? 7 : giornoIdx; 
         const dayMap = { "LUN": 1, "MAR": 2, "MER": 3, "GIO": 4, "VEN": 5, "SAB": 6, "DOM": 7 };
 
         let keys = Object.keys(db).filter(k => k === codiceBase || k.startsWith(codiceBase + "_"));
@@ -834,7 +824,7 @@
                 continue;
             }
             
-            let suffix = k.substring(codiceBase.length + 1);
+            let suffix = k.substring(codiceBase.length + 1); 
             
             if (suffix.includes("-")) {
                 let parts = suffix.split("-");
@@ -976,24 +966,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', async function() {
-        // --- LETTURA SILENZIOSA ARCHIVIO DDS ---
-        try {
-            const request = indexedDB.open("UtilityDB");
-            request.onsuccess = function(event) {
-                const db = event.target.result;
-                if (db.objectStoreNames.contains("archivio_dds")) {
-                    const tx = db.transaction("archivio_dds", "readonly");
-                    const store = tx.objectStore("archivio_dds");
-                    const getReq = store.getAll();
-                    getReq.onsuccess = function() {
-                        ddsDataCache = getReq.result || [];
-                    };
-                }
-            };
-        } catch(e) {
-            console.error("Lettura DDS per il calendario fallita:", e);
-        }
-
         await caricaDatiEsterni();
         
         const imgElem = document.getElementById('turnoImage');
@@ -1141,43 +1113,12 @@
                 areaVarianti.style.display = 'block';
             }
 
-            // --- CONTROLLO DDS IN VIGORE ---
-            let areaDDS = document.getElementById('avvisoDDSArea');
-            if (areaDDS) {
-                areaDDS.style.display = 'none';
-                areaDDS.innerHTML = '';
-                
-                if (typeof ddsDataCache !== 'undefined' && ddsDataCache.length > 0) {
-                    let ddsDelGiorno = [];
-                    ddsDataCache.forEach(dds => {
-                        // Se la DDS è stata salvata con il nuovo sistema del calendario multiplo
-                        if (dds.dateValidita && dds.dateValidita.length > 0) {
-                            if (dds.dateValidita.includes(date)) ddsDelGiorno.push(dds.titolo);
-                        } 
-                        // Se è una vecchia DDS salvata con "Da - A"
-                        else {
-                            const dDa = dds.dataDa || dds.dataEntrata;
-                            const dA = dds.dataA || dds.dataEntrata;
-                            if (dDa && dA) {
-                                if (date >= dDa && date <= dA) ddsDelGiorno.push(dds.titolo);
-                            }
-                        }
-                    });
-                    
-                    if (ddsDelGiorno.length > 0) {
-                        let listaTitoli = ddsDelGiorno.map(t => `• ${t}`).join('<br>');
-                        areaDDS.innerHTML = `📄 <b>DDS in vigore:</b><br><span style="font-weight: normal; color: #333;">${listaTitoli}</span>`;
-                        areaDDS.style.display = 'block';
-                    }
-                }
-            }
-
             let infoArea = document.getElementById('infoTurniArea');
             let turniCalc = calcolaTurni();
             let turnoCorrenteObj = turniCalc.find(e => e.start === date);
             
             let nomeTurnoCompleto = turnoCorrenteObj ? turnoCorrenteObj.title : "Nessun turno";
-            let nomeTurnoPulito = nomeTurnoCompleto.replace(/ 🍝| 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim();
+            let nomeTurnoPulito = nomeTurnoCompleto.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim();
             let codiceBase = nomeTurnoPulito.toUpperCase();
             
             document.getElementById('singleTurnoSelect').style.display = 'block';
@@ -1189,7 +1130,7 @@
                 delete state.variazioni[date];
                 let turniSenzaVariazioni = calcolaTurni();
                 let turnoOrigObj = turniSenzaVariazioni.find(e => e.start === date);
-                let origPulito = turnoOrigObj ? turnoOrigObj.title.replace(/ 🍝| 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim() : "Nessun turno";
+                let origPulito = turnoOrigObj ? turnoOrigObj.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim() : "Nessun turno";
                 htmlInfo += `<br><span style="font-size: 0.9em; color: #8898aa;"><b>Turno originale:</b> ${origPulito}</span>`;
                 state.variazioni[date] = tempVar;
             }
@@ -1214,9 +1155,8 @@
                 htmlInfo += `<b>Inizio:</b> ${dettagli.inizio} (${dettagli.luogoInizio})<br><b>Fine:</b> ${dettagli.fine} (${dettagli.luogoFine})`;
             }
 
-            if (state.buonoPastoUsato[date] || state.nebbia[date] || state.straordinario[date] || state.sospesoRiposo[date] || state.note[date]) {
+            if (state.nebbia[date] || state.straordinario[date] || state.sospesoRiposo[date] || state.note[date]) {
                 htmlInfo += `<hr style="margin:10px 0; border:0; border-top:1px solid #eee;">`;
-                if (state.buonoPastoUsato[date]) htmlInfo += `<div style="margin-bottom: 5px;">🍝 <b>Buono Pasto:</b> Consumato</div>`;
                 if (state.sospesoRiposo[date]) htmlInfo += `<div style="margin-bottom: 5px;"><b>Riposo:</b> Sospeso</div>`;
                 if (state.nebbia[date]) htmlInfo += `<div style="margin-bottom: 5px;">🌫️ <b>Indennità Nebbia:</b> Presente</div>`;
                 if (state.straordinario[date]) htmlInfo += `<div style="margin-bottom: 5px;">⏱️ <b>Straordinario:</b> ${state.straordinario[date].ore}h ${state.straordinario[date].minuti}m</div>`;
@@ -1232,7 +1172,7 @@
             if (!isRiposo && codiceBase !== 'DISP' && codiceBase !== 'NESSUN TURNO') {
                 if (chiaveTrovata !== codiceBase && dbCorrente[chiaveTrovata]) {
                     currentImagePath = `turni_${dataAttiva}/${chiaveTrovata}.jpg`;
-                    imgBaseFallback = `turni_${dataAttiva}/${codiceBase}.jpg`;
+                    imgBaseFallback = `turni_${dataAttiva}/${codiceBase}.jpg`; 
                 } else {
                     currentImagePath = `turni_${dataAttiva}/${codiceBase}.jpg`;
                     imgBaseFallback = "";
@@ -1251,7 +1191,6 @@
     function apriAltroModal() {
         document.getElementById('editModal').style.display = 'none';
         
-        document.getElementById('checkBuonoUsatoAltro').checked = !!state.buonoPastoUsato[selectedDate];
         document.getElementById('checkSospesoRiposoAltro').checked = !!state.sospesoRiposo[selectedDate];
         document.getElementById('checkNebbiaAltro').checked = !!state.nebbia[selectedDate];
         
@@ -1298,12 +1237,6 @@
     }
 
     function salvaAltro() {
-        if (document.getElementById('checkBuonoUsatoAltro').checked) {
-            state.buonoPastoUsato[selectedDate] = true;
-        } else {
-            delete state.buonoPastoUsato[selectedDate];
-        }
-
         if (document.getElementById('checkSospesoRiposoAltro').checked) {
             state.sospesoRiposo[selectedDate] = true;
         } else {
@@ -1427,8 +1360,8 @@
     function impostaTcPattern(pattern) {
         state.tcPattern = pattern;
         state.turnoIndex = 0; 
-        let d = new Date(selectedDate); d.setDate(d.getDate() + 1);
-        state.rotazioneStart = d.toISOString().split('T')[0];
+        let d = new Date(selectedDate); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + 1);
+        state.rotazioneStart = dateToLocalISO(d);
         
         let dataFutura = trovaDataCambioProssimo(state.rotazioneStart);
         if (dataFutura) {
@@ -1441,8 +1374,8 @@
 
     function avviaSelezioneTurnoIniziale() {
         state.setupStep = 2;
-        let d = new Date(selectedDate); d.setDate(d.getDate() + 1);
-        tempRotDate = d.toISOString().split('T')[0];
+        let d = new Date(selectedDate); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + 1);
+        tempRotDate = dateToLocalISO(d);
         document.getElementById('btnConfirmDate').style.display = "none";
         document.getElementById('btnCloseStep').style.display = "none"; 
         document.getElementById('stepTitle').innerText = "Passo 3";
@@ -1466,9 +1399,9 @@
             return;
         }
 
-        let d = new Date(DATA_INIZIO_NUOVI_TURNI);
-        let dStr = d.toISOString().split('T')[0];
-        while(isGiornoRiposo(dStr)) { d.setDate(d.getDate() + 1); dStr = d.toISOString().split('T')[0]; }
+        let d = new Date(DATA_INIZIO_NUOVI_TURNI); d.setHours(12, 0, 0, 0);
+        let dStr = dateToLocalISO(d);
+        while(isGiornoRiposo(dStr)) { d.setDate(d.getDate() + 1); dStr = dateToLocalISO(d); }
         tempRotDate = dStr;
         
         document.getElementById('stepTitle').innerText = "Nuova Rotazione";
@@ -1505,9 +1438,9 @@
         const currentRotRules = getRotazionePerData(tempRotDate);
         if (currentRotRules && currentRotRules[state.depositoAttivo]) {
             if (currentRotRules[state.depositoAttivo][val] && currentRotRules[state.depositoAttivo][val].toUpperCase() === "DISP") {
-                let d = new Date(tempRotDate); d.setDate(d.getDate() + 1);
-                let dStr = d.toISOString().split('T')[0];
-                while(isGiornoRiposo(dStr)) { d.setDate(d.getDate() + 1); dStr = d.toISOString().split('T')[0]; }
+                let d = new Date(tempRotDate); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + 1);
+                let dStr = dateToLocalISO(d);
+                while(isGiornoRiposo(dStr)) { d.setDate(d.getDate() + 1); dStr = dateToLocalISO(d); }
                 tempRotDate = dStr;
                 
                 document.getElementById('stepDateDisplay').innerText = ""; 
@@ -1540,9 +1473,10 @@
     function calcolaTurni() {
         if (!state.riposoStart) return [];
         let evs = []; let today = new Date();
+        today.setHours(12, 0, 0, 0); // FISSA MEZZOGIORNO
         
         let limitTurni = 365; let limitRiposi = 1825;
-        let todayNum = stringToNum(today.toISOString().split('T')[0]);
+        let todayNum = stringToNum(dateToLocalISO(today)); 
         if (state.rotazioneStart) {
             let distDaOggi = Math.abs(todayNum - stringToNum(state.rotazioneStart));
             limitTurni = distDaOggi + 365; limitRiposi = distDaOggi + 1825; 
@@ -1556,8 +1490,8 @@
         let processati = new Set(); 
 
         for (let i = -60; i < limitRiposi; i++) {
-            let dObj = new Date(today); dObj.setDate(today.getDate() + i);
-            let dStr = dObj.toISOString().split('T')[0];
+            let dObj = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i, 12, 0, 0); 
+            let dStr = dateToLocalISO(dObj);
             let curr = stringToNum(dStr);
             processati.add(dStr);
             
@@ -1586,7 +1520,6 @@
             let tColor = (customColor === '#f1c40f') ? '#32325d' : '#ffffff';
 
             let titleAddon = "";
-            if (state.buonoPastoUsato[dStr]) titleAddon += " 🍝";
             if (state.nebbia[dStr]) titleAddon += " 🌫️";
             if (state.straordinario[dStr]) titleAddon += " ⏱️";
             if (state.sospesoRiposo[dStr]) titleAddon += " (Sospeso)";
@@ -1711,7 +1644,6 @@
             ...Object.keys(state.nebbia || {}),
             ...Object.keys(state.straordinario || {}),
             ...Object.keys(state.sospesoRiposo || {}),
-            ...Object.keys(state.buonoPastoUsato || {}),
             ...Object.keys(state.colori || {}),
             ...Object.keys(state.note || {})
         ]);
@@ -1744,7 +1676,6 @@
                 let tColor = (customColor === '#f1c40f') ? '#32325d' : '#ffffff';
 
                 let titleAddon = "";
-                if (state.buonoPastoUsato[dStr]) titleAddon += " 🍝";
                 if (state.nebbia[dStr]) titleAddon += " 🌫️";
                 if (state.straordinario[dStr]) titleAddon += " ⏱️";
                 if (state.sospesoRiposo[dStr]) titleAddon += " (Sospeso)";
@@ -1769,7 +1700,8 @@
     }
 
     function getOptionsTurni(includeDisp = false) {
-        let referenceDate = tempRotDate || new Date().toISOString().split('T')[0];
+        let d = new Date(); d.setHours(12,0,0,0);
+        let referenceDate = tempRotDate || dateToLocalISO(d);
         const rot = getRotazionePerData(referenceDate);
         if (!rot || !rot[state.depositoAttivo]) return ""; 
         let htmlDisp = "", htmlTurni = "", dispAggiunto = false;
@@ -1804,7 +1736,6 @@
         delete state.nebbia[selectedDate];
         delete state.straordinario[selectedDate];
         delete state.sospesoRiposo[selectedDate];
-        delete state.buonoPastoUsato[selectedDate];
         delete state.note[selectedDate];
         salvaLocal(); 
         location.reload(); 
@@ -1864,12 +1795,13 @@
             const icsDate = dateParts[0] + dateParts[1] + dateParts[2];
             
             let d = new Date(t.start);
+            d.setHours(12, 0, 0, 0); // FISSA MEZZOGIORNO
             d.setDate(d.getDate() + 1);
-            const nextDateStr = d.toISOString().split('T')[0];
+            const nextDateStr = dateToLocalISO(d);
             const nextParts = nextDateStr.split('-');
             const icsNextDate = nextParts[0] + nextParts[1] + nextParts[2];
             
-            let pulitoTitle = t.title.replace(/ 🍝| 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim();
+            let pulitoTitle = t.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim();
             const uid = t.start + "-" + pulitoTitle.replace(/\s+/g, '') + "@myturniapp";
             const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + "Z";
             
@@ -1881,7 +1813,6 @@
             
             let codiceBase = pulitoTitle.toUpperCase();
             
-            // --- NUOVA LOGICA INTELLIGENTE PER L'ESPORTAZIONE ICS ---
             let chiaveTrovata = trovaChiaveEsatta(dbCorrente, codiceBase, t.start);
             let dettagli = dbCorrente[chiaveTrovata];
 

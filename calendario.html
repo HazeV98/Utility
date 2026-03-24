@@ -596,14 +596,21 @@
 
         if (!startDateStr || !endDateStr) { alert("Seleziona entrambe le date."); return; }
         if (startDateStr > endDateStr) { alert("La data di inizio deve essere precedente o uguale a quella di fine."); return; }
-        if (!turnoVal) { alert("Inserisci il turno."); return; }
+        
+        if (!turnoVal) { 
+            if(!confirm("Hai lasciato il campo vuoto. Vuoi CANCELLARE le modifiche per questo periodo e ripristinare i turni base?")) return; 
+        }
 
         let currentDate = creaDataSicura(startDateStr);
         let endDate = creaDataSicura(endDateStr);
 
         while (currentDate <= endDate) {
             let dStr = dateToLocalISO(currentDate);
-            state.variazioni[dStr] = turnoVal;
+            if (!turnoVal) {
+                delete state.variazioni[dStr]; 
+            } else {
+                state.variazioni[dStr] = turnoVal; 
+            }
             currentDate.setDate(currentDate.getDate() + 1);
         }
 
@@ -796,7 +803,7 @@
     let tempColoreAltro = "";
     let variantiData = {};
 
-    function stringToNum(s) { if(!s) return 0; let p = s.split('-'); return Math.floor(new Date(p[0], p[1]-1, p[2], 12, 0, 0).getTime() / 86400000); }
+    function stringToNum(s) { if(!s) return 0; let p = s.split('-'); return Math.floor(Date.UTC(p[0], p[1]-1, p[2]) / 86400000); }
     function formattaData(d) { let dataObj = new Date(d); let mese = dataObj.toLocaleDateString('it-IT', { month: 'long' }); return dataObj.getDate() + ' ' + mese.charAt(0).toUpperCase() + mese.slice(1); }
     
     function salvaLocal() { 
@@ -822,7 +829,7 @@
     function trovaChiaveEsatta(db, codiceBase, dateStr) {
         if (!db || !codiceBase) return codiceBase;
         
-        let giornoIdx = new Date(dateStr).getDay(); 
+        let giornoIdx = creaDataSicura(dateStr).getDay(); 
         let targetDay = giornoIdx === 0 ? 7 : giornoIdx; 
         const dayMap = { "LUN": 1, "MAR": 2, "MER": 3, "GIO": 4, "VEN": 5, "SAB": 6, "DOM": 7 };
 

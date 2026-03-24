@@ -598,10 +598,8 @@
         if (startDateStr > endDateStr) { alert("La data di inizio deve essere precedente o uguale a quella di fine."); return; }
         if (!turnoVal) { alert("Inserisci il turno."); return; }
 
-        let currentDate = new Date(startDateStr);
-        currentDate.setHours(12, 0, 0, 0); // FISSA MEZZOGIORNO
-        let endDate = new Date(endDateStr);
-        endDate.setHours(12, 0, 0, 0);
+        let currentDate = creaDataSicura(startDateStr);
+        let endDate = creaDataSicura(endDateStr);
 
         while (currentDate <= endDate) {
             let dStr = dateToLocalISO(currentDate);
@@ -800,11 +798,26 @@
 
     function stringToNum(s) { if(!s) return 0; let p = s.split('-'); return Math.floor(new Date(p[0], p[1]-1, p[2], 12, 0, 0).getTime() / 86400000); }
     function formattaData(d) { let dataObj = new Date(d); let mese = dataObj.toLocaleDateString('it-IT', { month: 'long' }); return dataObj.getDate() + ' ' + mese.charAt(0).toUpperCase() + mese.slice(1); }
-    function salvaLocal() { localStorage.setItem('myTurniApp', JSON.stringify(state)); }
+    
+    function salvaLocal() { 
+        let stateDaSalvare = { ...state }; 
+        delete stateDaSalvare.dbCache; 
+        delete stateDaSalvare.rotCache; 
+        delete stateDaSalvare.dispCache; 
+        localStorage.setItem('myTurniApp', JSON.stringify(stateDaSalvare)); 
+    }
+
     function estraiDataDaNome(nome) { const match = nome.match(/\d{4}-\d{2}-\d{2}/); return match ? match[0] : null; }
     
     // NUOVA FUNZIONE SICURA PER LE DATE
     function dateToLocalISO(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); }
+
+    // NUOVA FUNZIONE ANTIPROIETTILE FUSO ORARIO
+    function creaDataSicura(dataStr) {
+        if(!dataStr) return new Date();
+        let p = dataStr.split('-');
+        return new Date(p[0], p[1] - 1, p[2], 12, 0, 0);
+    }
 
     function trovaChiaveEsatta(db, codiceBase, dateStr) {
         if (!db || !codiceBase) return codiceBase;
@@ -1360,7 +1373,7 @@
     function impostaTcPattern(pattern) {
         state.tcPattern = pattern;
         state.turnoIndex = 0; 
-        let d = new Date(selectedDate); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + 1);
+        let d = creaDataSicura(selectedDate); d.setDate(d.getDate() + 1);
         state.rotazioneStart = dateToLocalISO(d);
         
         let dataFutura = trovaDataCambioProssimo(state.rotazioneStart);
@@ -1374,7 +1387,7 @@
 
     function avviaSelezioneTurnoIniziale() {
         state.setupStep = 2;
-        let d = new Date(selectedDate); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + 1);
+        let d = creaDataSicura(selectedDate); d.setDate(d.getDate() + 1);
         tempRotDate = dateToLocalISO(d);
         document.getElementById('btnConfirmDate').style.display = "none";
         document.getElementById('btnCloseStep').style.display = "none"; 
@@ -1399,7 +1412,7 @@
             return;
         }
 
-        let d = new Date(DATA_INIZIO_NUOVI_TURNI); d.setHours(12, 0, 0, 0);
+        let d = creaDataSicura(DATA_INIZIO_NUOVI_TURNI);
         let dStr = dateToLocalISO(d);
         while(isGiornoRiposo(dStr)) { d.setDate(d.getDate() + 1); dStr = dateToLocalISO(d); }
         tempRotDate = dStr;
@@ -1438,7 +1451,7 @@
         const currentRotRules = getRotazionePerData(tempRotDate);
         if (currentRotRules && currentRotRules[state.depositoAttivo]) {
             if (currentRotRules[state.depositoAttivo][val] && currentRotRules[state.depositoAttivo][val].toUpperCase() === "DISP") {
-                let d = new Date(tempRotDate); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + 1);
+                let d = creaDataSicura(tempRotDate); d.setDate(d.getDate() + 1);
                 let dStr = dateToLocalISO(d);
                 while(isGiornoRiposo(dStr)) { d.setDate(d.getDate() + 1); dStr = dateToLocalISO(d); }
                 tempRotDate = dStr;
@@ -1794,8 +1807,7 @@
             const dateParts = t.start.split('-');
             const icsDate = dateParts[0] + dateParts[1] + dateParts[2];
             
-            let d = new Date(t.start);
-            d.setHours(12, 0, 0, 0); // FISSA MEZZOGIORNO
+            let d = creaDataSicura(t.start);
             d.setDate(d.getDate() + 1);
             const nextDateStr = dateToLocalISO(d);
             const nextParts = nextDateStr.split('-');

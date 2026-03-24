@@ -120,7 +120,7 @@
     <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
     <a href="link.html" class="sidebar-link">🔗 Link</a>
     <a href="contatti.html" class="sidebar-link">📞 Contatti</a>
-    <a href="buoni.html" class="sidebar-link">🍝 Buoni Pasto</a>
+    <a href="buoni.html" class="sidebar-link">🍔 Buoni Pasto</a>
 </div>
 
 <div id="right-sidebar" class="right-sidebar">
@@ -286,7 +286,7 @@
 <div id="multiEditModal">
     <div class="modal-content">
         <h3 style="color: #2dce89; margin-top: 0;">Modifica Multipla</h3>
-        <p class="instruction-text" style="font-size: 14px;">Applica lo stesso turno a più giorni CONSECUTIVI. Lascia il campo del turno vuoto per annullare le modifiche fatte ai giorni selezionati. </p>
+        <p class="instruction-text" style="font-size: 14px;">Applica lo stesso turno a più giorni consecutivi (es. FERIE).</p>
         
         <label style="font-size: 14px; color: #525f7f; text-align: left; display: block; margin-top: 10px; font-weight:bold;">Da (Inizio):</label>
         <input type="date" id="multiStart">
@@ -295,7 +295,7 @@
         <input type="date" id="multiEnd">
         
         <label style="font-size: 14px; color: #525f7f; text-align: left; display: block; margin-top: 10px; font-weight:bold;">Turno da inserire:</label>
-        <input type="text" id="multiTurno" placeholder="Es. FEP, KMAL..." oninput="this.value = this.value.toUpperCase();">
+        <input type="text" id="multiTurno" placeholder="Es. FER, MALATTIA..." oninput="this.value = this.value.toUpperCase();">
         
         <button class="btn" style="background: #2dce89;" onclick="salvaModificaMultipla()">Salva Modifiche</button>
         <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiMultiEdit()">Annulla</button>
@@ -434,7 +434,7 @@
         
         <button id="btnSalvaCambio" class="btn" style="background: #32325d" onclick="salvaCambioSingolo()" disabled>Salva Cambio</button>
         <button class="btn" style="background: #adb5bd;" onclick="resetGiornoSingolo()">Ripristina Originale</button>
-        <button class="btn" style="background: #11cdef;" onclick="apriAltroModal()">Altro (Note, Nebbia, Straord, Sospesi, Colore)</button>
+        <button class="btn" style="background: #11cdef;" onclick="apriAltroModal()">Altro (Note, Nebbia, Straord, Buoni, Sospesi...)</button>
         <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiEdit()">Chiudi</button>
     </div>
 </div>
@@ -455,6 +455,11 @@
                 🌫️ Indennità Nebbia
             </label>
             
+            <label style="display: flex; align-items: center; font-size: 15px; color: #525f7f; margin-bottom: 10px; font-weight: bold; cursor: pointer;">
+                <input type="checkbox" id="checkBuonoPastoAltro" style="width: 22px; height: 22px; margin-right: 10px; accent-color: #f1c40f;">
+                🍝 Buono Pasto Utilizzato
+            </label>
+
             <label style="display: flex; align-items: center; font-size: 15px; color: #525f7f; font-weight: bold; cursor: pointer;">
                 <input type="checkbox" id="checkStraordinarioAltro" style="width: 22px; height: 22px; margin-right: 10px; accent-color: #5e72e4;" onchange="toggleStraordinarioAltro()">
                 ⏱️ Straordinario
@@ -665,7 +670,7 @@
             let giornoNome = giorniSettimana[dObj.getDay()];
             let ev = turni.find(t => t.start === dStr);
             
-            let titolo = ev ? ev.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim() : "";
+            let titolo = ev ? ev.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝/g, '').trim() : "";
             let codiceBase = titolo.toUpperCase();
 
             let locMonta = "", dalle = "", alle = "", note = "";
@@ -787,12 +792,13 @@
         tc_rot_17tr: true
     };
 
-    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, nebbia: {}, straordinario: {}, sospesoRiposo: {}, note: {}, setupStep: 0, dbCache: {}, rotCache: {}, dispCache: {} };
+    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, nebbia: {}, straordinario: {}, sospesoRiposo: {}, note: {}, buonoPasto: {}, setupStep: 0, dbCache: {}, rotCache: {}, dispCache: {} };
     if (!state.colori) state.colori = {}; 
     if (!state.nebbia) state.nebbia = {};
     if (!state.straordinario) state.straordinario = {};
     if (!state.sospesoRiposo) state.sospesoRiposo = {};
     if (!state.note) state.note = {};
+    if (!state.buonoPasto) state.buonoPasto = {};
     if (!state.dispCache) state.dispCache = {};
     if (!state.coloriRotazione) state.coloriRotazione = {}; 
 
@@ -1138,7 +1144,7 @@
             let turnoCorrenteObj = turniCalc.find(e => e.start === date);
             
             let nomeTurnoCompleto = turnoCorrenteObj ? turnoCorrenteObj.title : "Nessun turno";
-            let nomeTurnoPulito = nomeTurnoCompleto.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim();
+            let nomeTurnoPulito = nomeTurnoCompleto.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝/g, '').trim();
             let codiceBase = nomeTurnoPulito.toUpperCase();
             
             document.getElementById('singleTurnoSelect').style.display = 'block';
@@ -1150,7 +1156,7 @@
                 delete state.variazioni[date];
                 let turniSenzaVariazioni = calcolaTurni();
                 let turnoOrigObj = turniSenzaVariazioni.find(e => e.start === date);
-                let origPulito = turnoOrigObj ? turnoOrigObj.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim() : "Nessun turno";
+                let origPulito = turnoOrigObj ? turnoOrigObj.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝/g, '').trim() : "Nessun turno";
                 htmlInfo += `<br><span style="font-size: 0.9em; color: #8898aa;"><b>Turno originale:</b> ${origPulito}</span>`;
                 state.variazioni[date] = tempVar;
             }
@@ -1175,10 +1181,11 @@
                 htmlInfo += `<b>Inizio:</b> ${dettagli.inizio} (${dettagli.luogoInizio})<br><b>Fine:</b> ${dettagli.fine} (${dettagli.luogoFine})`;
             }
 
-            if (state.nebbia[date] || state.straordinario[date] || state.sospesoRiposo[date] || state.note[date]) {
+            if (state.nebbia[date] || state.straordinario[date] || state.sospesoRiposo[date] || state.note[date] || state.buonoPasto[date]) {
                 htmlInfo += `<hr style="margin:10px 0; border:0; border-top:1px solid #eee;">`;
                 if (state.sospesoRiposo[date]) htmlInfo += `<div style="margin-bottom: 5px;"><b>Riposo:</b> Sospeso</div>`;
                 if (state.nebbia[date]) htmlInfo += `<div style="margin-bottom: 5px;">🌫️ <b>Indennità Nebbia:</b> Presente</div>`;
+                if (state.buonoPasto[date]) htmlInfo += `<div style="margin-bottom: 5px;">🍝 <b>Buono Pasto:</b> Utilizzato</div>`;
                 if (state.straordinario[date]) htmlInfo += `<div style="margin-bottom: 5px;">⏱️ <b>Straordinario:</b> ${state.straordinario[date].ore}h ${state.straordinario[date].minuti}m</div>`;
                 if (state.note[date]) htmlInfo += `<div style="margin-top: 5px; white-space: pre-wrap;">📝 <b>Note:</b><br>${state.note[date]}</div>`;
             }
@@ -1213,6 +1220,7 @@
         
         document.getElementById('checkSospesoRiposoAltro').checked = !!state.sospesoRiposo[selectedDate];
         document.getElementById('checkNebbiaAltro').checked = !!state.nebbia[selectedDate];
+        document.getElementById('checkBuonoPastoAltro').checked = !!state.buonoPasto[selectedDate];
         
         let hasStraord = !!state.straordinario[selectedDate];
         document.getElementById('checkStraordinarioAltro').checked = hasStraord;
@@ -1267,6 +1275,12 @@
             state.nebbia[selectedDate] = true;
         } else {
             delete state.nebbia[selectedDate];
+        }
+        
+        if (document.getElementById('checkBuonoPastoAltro').checked) {
+            state.buonoPasto[selectedDate] = true;
+        } else {
+            delete state.buonoPasto[selectedDate];
         }
 
         if (document.getElementById('checkStraordinarioAltro').checked) {
@@ -1542,6 +1556,7 @@
             let titleAddon = "";
             if (state.nebbia[dStr]) titleAddon += " 🌫️";
             if (state.straordinario[dStr]) titleAddon += " ⏱️";
+            if (state.buonoPasto[dStr]) titleAddon += " 🍝";
             if (state.sospesoRiposo[dStr]) titleAddon += " (Sospeso)";
             if (state.note[dStr]) titleAddon += " 📝";
 
@@ -1665,7 +1680,8 @@
             ...Object.keys(state.straordinario || {}),
             ...Object.keys(state.sospesoRiposo || {}),
             ...Object.keys(state.colori || {}),
-            ...Object.keys(state.note || {})
+            ...Object.keys(state.note || {}),
+            ...Object.keys(state.buonoPasto || {})
         ]);
 
         chiaviModificate.forEach(dStr => {
@@ -1698,6 +1714,7 @@
                 let titleAddon = "";
                 if (state.nebbia[dStr]) titleAddon += " 🌫️";
                 if (state.straordinario[dStr]) titleAddon += " ⏱️";
+                if (state.buonoPasto[dStr]) titleAddon += " 🍝";
                 if (state.sospesoRiposo[dStr]) titleAddon += " (Sospeso)";
                 if (state.note[dStr]) titleAddon += " 📝";
 
@@ -1757,6 +1774,7 @@
         delete state.straordinario[selectedDate];
         delete state.sospesoRiposo[selectedDate];
         delete state.note[selectedDate];
+        delete state.buonoPasto[selectedDate];
         salvaLocal(); 
         location.reload(); 
     }
@@ -1820,7 +1838,7 @@
             const nextParts = nextDateStr.split('-');
             const icsNextDate = nextParts[0] + nextParts[1] + nextParts[2];
             
-            let pulitoTitle = t.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)/g, '').trim();
+            let pulitoTitle = t.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝/g, '').trim();
             const uid = t.start + "-" + pulitoTitle.replace(/\s+/g, '') + "@myturniapp";
             const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + "Z";
             

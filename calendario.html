@@ -286,7 +286,7 @@
 <div id="multiEditModal">
     <div class="modal-content">
         <h3 style="color: #2dce89; margin-top: 0;">Modifica Multipla</h3>
-        <p class="instruction-text" style="font-size: 14px;">Applica lo stesso turno a più giorni consecutivi (es. FERIE).</p>
+        <p class="instruction-text" style="font-size: 14px;">Applica lo stesso turno a più giorni CONSECUTIVI. Lascia il campo del turno vuoto per annullare le modifiche fatte ai giorni selezionati. </p>
         
         <label style="font-size: 14px; color: #525f7f; text-align: left; display: block; margin-top: 10px; font-weight:bold;">Da (Inizio):</label>
         <input type="date" id="multiStart">
@@ -295,7 +295,7 @@
         <input type="date" id="multiEnd">
         
         <label style="font-size: 14px; color: #525f7f; text-align: left; display: block; margin-top: 10px; font-weight:bold;">Turno da inserire:</label>
-        <input type="text" id="multiTurno" placeholder="Es. FER, MALATTIA..." oninput="this.value = this.value.toUpperCase();">
+        <input type="text" id="multiTurno" placeholder="Es. FEP, KMAL..." oninput="this.value = this.value.toUpperCase();">
         
         <button class="btn" style="background: #2dce89;" onclick="salvaModificaMultipla()">Salva Modifiche</button>
         <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiMultiEdit()">Annulla</button>

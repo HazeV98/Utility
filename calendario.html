@@ -761,35 +761,35 @@
     }
 
     // --- CORE ---
-    const VERSIONE_TURNI = "1.0"; 
-    const DATA_INIZIO_NUOVI_TURNI = "2026-03-02"; 
+    const VERSIONE_TURNI = "1.0.1"; 
+    const DATA_INIZIO_NUOVI_TURNI = "2026-03-28"; 
     
     const AVVISO_VARIANTI = true;
 
-    const LISTA_FILE_INFO = ["info_turni_2026-03-02.json", "info_turni_2026-02-06.json"];
-    const LISTA_FILE_ROTAZIONI = ["rotazioni_2026-03-02.json", "rotazioni_2026-02-06.json"];
-    const LISTA_FILE_DISP = ["turni_disp_2026-03-02.json"];
+    const LISTA_FILE_INFO = ["info_turni_2026-03-02.json", "info_turni_2026-03-28.json"];
+    const LISTA_FILE_ROTAZIONI = ["rotazioni_2026-03-02.json", "rotazioni_2026-03-28.json"];
+    const LISTA_FILE_DISP = ["turni_disp_2026-03-02.json", "turni_disp_2026-03-28"];
     
     const RESET_DOPO_AGGIORNAMENTO = {
-        rot_fnove: true, 
-        spez_fnove: true, 
+        rot_fnove: false, 
+        spez_fnove: false, 
         rot_proma: true, 
-        spez_proma: true,
-        rot_szaccaria: true, 
-        spez_szaccaria: true, 
-        rot_lido: true, 
-        spez_lido: true,
-        rot_linea14: true, 
+        spez_proma: false,
+        rot_szaccaria: false, 
+        spez_szaccaria: false, 
+        rot_lido: false, 
+        spez_lido: false,
+        rot_linea14: false, 
         rot_linea14_mb: true, 
-        rot_linea13: true, 
-        rot_17sn: true, 
-        rot_17tr: true, 
+        rot_linea13: false, 
+        rot_17sn: false, 
+        rot_17tr: false, 
         rot_linea12: true,
-        tc_spez_fnove: true, 
-        tc_spez_szaccaria: true, 
-        tc_spez_lido: true, 
-        tc_rot_17sn: true, 
-        tc_rot_17tr: true
+        tc_spez_fnove: false, 
+        tc_spez_szaccaria: false, 
+        tc_spez_lido: false, 
+        tc_rot_17sn: false, 
+        tc_rot_17tr: false
     };
 
     let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, nebbia: {}, straordinario: {}, sospesoRiposo: {}, note: {}, buonoPasto: {}, setupStep: 0, dbCache: {}, rotCache: {}, dispCache: {} };

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Area Sviluppatore</title>
+    <meta name="theme-color" content="#343a40">
+    
+    <style>
+        :root {
+            --primary: #0056b3;
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --success: #28a745;
+            --danger: #dc3545;
+            --dark: #343a40;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--dark);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #555;
+            padding-bottom: 10px;
+        }
+
+        h2 { margin: 0; color: #ffc107; font-size: 24px; }
+
+        .admin-card {
+            background-color: #454d55;
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+
+        .admin-card h3 {
+            margin-top: 0;
+            font-size: 18px;
+            color: white;
+            border-bottom: 1px dashed #6c757d;
+            padding-bottom: 10px;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        /* Stile per la checkbox */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            margin-bottom: 20px;
+            color: #adb5bd;
+            cursor: pointer;
+        }
+
+        .checkbox-container input {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+
+        .btn-action {
+            background-color: var(--success);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.2s;
+        }
+
+        .btn-action:active { opacity: 0.8; }
+
+        #risultato-codice {
+            margin-top: 15px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffc107;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        #status-log {
+            font-size: 12px;
+            color: #adb5bd;
+            margin-top: 10px;
+            text-align: center;
+            min-height: 15px;
+        }
+        
+        .back-btn {
+            background-color: #6c757d;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="index.html" style="color: white; text-decoration: none; font-size: 24px;">←</a>
+        <h2>🛠️ Admin Panel</h2>
+        <div style="width: 24px;"></div>
+    </div>
+
+    <div class="admin-card">
+        <h3>🔑 Generatore Accessi</h3>
+        
+        <input type="text" id="gh-owner" placeholder="Username GitHub" value="HazeV98">
+        <input type="text" id="gh-repo" placeholder="Nome Repository" value="Utility">
+        
+        <input type="password" id="gh-token" placeholder="Incolla qui il Token GitHub (PAT)">
+        
+        <label class="checkbox-container">
+            <input type="checkbox" id="remember-token"> Ricorda Token su questo dispositivo
+        </label>
+        
+        <button class="btn-action" onclick="generaESalva()">Genera e Salva su GitHub</button>
+        
+        <div id="risultato-codice"></div>
+        <div id="status-log">In attesa...</div>
+    </div>
+
+    <button class="btn-action back-btn" style="max-width: 400px;" onclick="window.location.href='index.html'">Torna alla Home</button>
+
+    <script>
+        const filePath = 'codici.json'; 
+
+        // CARICAMENTO TOKEN SALVATO ALL'AVVIO
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedToken = localStorage.getItem('gh_admin_token');
+            if (savedToken) {
+                document.getElementById('gh-token').value = savedToken;
+                document.getElementById('remember-token').checked = true;
+            }
+        });
+
+        async function generaESalva() {
+            const owner = document.getElementById('gh-owner').value.trim();
+            const repo = document.getElementById('gh-repo').value.trim();
+            const token = document.getElementById('gh-token').value.trim();
+            const remember = document.getElementById('remember-token').checked;
+            const statusLog = document.getElementById('status-log');
+            const displayCodice = document.getElementById('risultato-codice');
+
+            if (!owner || !repo || !token) {
+                statusLog.innerText = "❌ Compila tutti i campi.";
+                statusLog.style.color = "var(--danger)";
+                return;
+            }
+
+            // GESTIONE MEMORIA TOKEN
+            if (remember) {
+                localStorage.setItem('gh_admin_token', token);
+            } else {
+                localStorage.removeItem('gh_admin_token');
+            }
+
+            statusLog.innerText = "⏳ Connessione a GitHub...";
+            statusLog.style.color = "white";
+            displayCodice.innerText = "";
+
+            const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
+
+            try {
+                let response = await fetch(url, {
+                    headers: { 'Authorization': `token ${token}` }
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error("Token non valido o permessi insufficienti.");
+                }
+
+                let sha = "";
+                let codiciAttuali = [];
+
+                if (response.ok) {
+                    const data = await response.json();
+                    sha = data.sha;
+                    const fileContent = decodeURIComponent(escape(atob(data.content)));
+                    codiciAttuali = JSON.parse(fileContent);
+                } else if (response.status === 404) {
+                    statusLog.innerText = "⚠️ Creazione nuovo file...";
+                }
+
+                let nuovoCodice;
+                let isDuplicato;
+                do {
+                    nuovoCodice = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    isDuplicato = codiciAttuali.some(item => item.codice === nuovoCodice);
+                } while (isDuplicato);
+
+                displayCodice.innerText = nuovoCodice;
+
+                codiciAttuali.push({
+                    codice: nuovoCodice,
+                    data_creazione: new Date().toISOString().split('T')[0],
+                    attivo: true
+                });
+
+                statusLog.innerText = "⏳ Salvataggio...";
+                const nuovoContenuto = btoa(unescape(encodeURIComponent(JSON.stringify(codiciAttuali, null, 2))));
+
+                const putResponse = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `Aggiunto codice ${nuovoCodice}`,
+                        content: nuovoContenuto,
+                        sha: sha || undefined
+                    })
+                });
+
+                if (putResponse.ok) {
+                    statusLog.innerText = "✅ Salvato con successo!";
+                    statusLog.style.color = "var(--success)";
+                } else {
+                    const err = await putResponse.json();
+                    throw new Error(err.message);
+                }
+
+            } catch (error) {
+                console.error(error);
+                statusLog.innerText = "❌ " + error.message;
+                statusLog.style.color = "var(--danger)";
+            }
+        }
+    </script>
+</body>
+</html>

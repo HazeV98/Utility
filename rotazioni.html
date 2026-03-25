@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotazioni Colleghi</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0056b3">
+    
+    <style>
+        /* --- STILI BASE E AUTENTICAZIONE --- */
+        :root {
+            --primary: #0056b3;
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --success: #28a745;
+            --danger: #dc3545;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- HEADER E MENU LATERALE --- */
+        .header { 
+            width: 100%; 
+            max-width: 400px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-top: 10px; 
+            margin-bottom: 30px; 
+        }
+        
+        .hamburger-btn { 
+            background: none; 
+            border: none; 
+            font-size: 30px; 
+            color: var(--primary); 
+            cursor: pointer; 
+            padding: 0; 
+            width: 50px; 
+            text-align: left; 
+        }
+        
+        h2 { 
+            margin: 0; 
+            color: var(--primary); 
+            font-size: 28px; 
+            font-weight: bold; 
+            text-align: center; 
+            flex: 2; 
+        }
+
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 2000; }
+        .sidebar { position: fixed; top: 0; left: -280px; width: 250px; height: 100%; background-color: white; box-shadow: 2px 0 5px rgba(0,0,0,0.2); z-index: 2001; transition: left 0.3s ease; display: flex; flex-direction: column; }
+        .sidebar.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: var(--primary); color: white; }
+        .sidebar-link { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 18px; border-bottom: 1px solid #eee; display: block; }
+        .sidebar-link:active, .sidebar-link:hover { background-color: #f4f7f6; color: var(--primary); font-weight: bold; }
+        
+        #auth-section {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        #content-section { 
+            display: none; 
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        p { color: #555; font-size: 15px; line-height: 1.4; }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            margin: 15px 0;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 20px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .btn:active { transform: translateY(2px); opacity: 0.9; }
+        
+        #error-msg { 
+            color: var(--danger); 
+            font-size: 14px; 
+            margin-top: 10px; 
+            min-height: 20px; 
+            font-weight: bold; 
+        }
+
+        /* --- STILI TELEGRAM E SUPPORTO --- */
+        .support-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .telegram-icon {
+            display: inline-block;
+            transition: transform 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .telegram-icon:active { transform: scale(0.9); }
+
+        /* --- STILI LISTA DOCUMENTI --- */
+        .status-message { text-align: center; color: #666; font-size: 16px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .file-row { display: flex; width: 100%; margin-bottom: 12px; }
+        .file-btn { flex-grow: 1; background-color: var(--primary); color: white; border: none; padding: 16px; font-size: 16px; border-radius: 10px; cursor: pointer; text-decoration: none; display: block; text-align: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .file-btn:active { transform: translateY(2px); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <button class="hamburger-btn" onclick="apriMenuLaterale()">☰</button>
+        <h2>Rotazioni</h2>
+        <div style="width: 50px;"></div>
+    </div>
+
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="chiudiMenuLaterale()"></div>
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3 style="margin:0; color:white;">Menu</h3>
+            <button style="background:none; border:none; color:white; font-size:24px; cursor:pointer;" onclick="chiudiMenuLaterale()">✕</button>
+        </div>
+        <a href="index.html" class="sidebar-link">🏠 Home Page</a>
+        <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
+        <a href="dati_calendario.html" class="sidebar-link">📊 Statistiche Calendario</a>
+        <a href="turni.html" class="sidebar-link">🔄 Turni</a>
+        <a href="orari.html" class="sidebar-link">🕒 Orari</a>
+        <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
+        <a href="rotazioni.html" class="sidebar-link" style="background-color: #f4f7f6; color: var(--primary); font-weight: bold;">👥 Rotazioni</a>
+        <a href="link.html" class="sidebar-link">🔗 Link</a>
+        <a href="contatti.html" class="sidebar-link">📞 Contatti</a>
+        <a href="buoni.html" class="sidebar-link">🍝 Buoni Pasto</a>
+    </div>
+
+    <div id="auth-section">
+        <p>Area riservata. Inserisci il codice di accesso per visualizzare i turni.</p>
+        <input type="text" id="access-code" placeholder="Codice di accesso" maxlength="6" autocomplete="off">
+        <button class="btn" onclick="verificaCodice()">Accedi</button>
+        <div id="error-msg"></div>
+
+        <div class="support-section">
+            <p style="font-size: 14px; margin-bottom: 5px;">Se non hai un codice di accesso contatta un amministratore per averlo con il tasto qui sotto scrivendo nome, cognome e matricola</p>
+            <a href="http://t.me/MattiaB1058" target="_blank" class="telegram-icon">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="#0088cc">
+                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.45c.538-.196 1.006.128.832.941z"/>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <div id="content-section">
+        <div id="rotazioni-list">
+            </div>
+    </div>
+
+    <script>
+        // --- FUNZIONI MENU LATERALE ---
+        function apriMenuLaterale() { 
+            document.getElementById('sidebar').classList.add('open'); 
+            document.getElementById('sidebar-overlay').style.display = 'block'; 
+        }
+        function chiudiMenuLaterale() { 
+            document.getElementById('sidebar').classList.remove('open'); 
+            document.getElementById('sidebar-overlay').style.display = 'none'; 
+        }
+
+        // Impostazioni Repository
+        const GITHUB_USER = "HazeV98"; 
+        const GITHUB_REPO = "Utility_test";
+        const CARTELLA_BASE = "rotazioni";
+
+        // ==========================================
+        // LOGICA DI AUTENTICAZIONE
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            const codiceSalvato = localStorage.getItem('auth_rotazioni');
+            if (codiceSalvato) {
+                eseguiVerifica(codiceSalvato, true);
+            }
+        });
+
+        async function verificaCodice() {
+            const inputCodice = document.getElementById('access-code').value.trim().toUpperCase();
+            const errorMsg = document.getElementById('error-msg');
+            
+            if (!inputCodice) {
+                errorMsg.innerText = "Inserisci un codice valido.";
+                return;
+            }
+            
+            errorMsg.innerText = "Verifica in corso...";
+            errorMsg.style.color = "#666";
+            
+            await eseguiVerifica(inputCodice, false);
+        }
+
+        async function eseguiVerifica(codice, isAutoLogin) {
+            const errorMsg = document.getElementById('error-msg');
+            
+            try {
+                const url = 'codici.json?t=' + new Date().getTime();
+                const response = await fetch(url);
+                
+                if (!response.ok) throw new Error("Errore nel recupero dei codici.");
+                
+                const codiciValidi = await response.json();
+                const codiceTrovato = codiciValidi.find(c => c.codice === codice && c.attivo === true);
+                
+                if (codiceTrovato) {
+                    // SBLOCCO RIUSCITO
+                    document.getElementById('auth-section').style.display = 'none';
+                    document.getElementById('content-section').style.display = 'flex';
+                    localStorage.setItem('auth_rotazioni', codice);
+                    errorMsg.innerText = "";
+                    
+                    // Avvia il caricamento dei file da GitHub
+                    caricaRotazioni();
+                } else {
+                    if (isAutoLogin) {
+                        localStorage.removeItem('auth_rotazioni');
+                        document.getElementById('auth-section').style.display = 'block';
+                        document.getElementById('content-section').style.display = 'none';
+                    } else {
+                        errorMsg.innerText = "❌ Codice errato, inesistente o revocato.";
+                        errorMsg.style.color = "var(--danger)";
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+                errorMsg.innerText = "⚠️ Errore di connessione. Riprova.";
+                errorMsg.style.color = "var(--danger)";
+            }
+        }
+
+        // ==========================================
+        // LOGICA GESTIONE FILE GITHUB
+        // ==========================================
+        
+        // Toglie l'estensione, rimpiazza gli _ con gli spazi e mette la maiuscola
+        function pulisciNome(nome) {
+            let pulito = nome.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+            return pulito.charAt(0).toUpperCase() + pulito.slice(1);
+        }
+
+        async function caricaRotazioni() {
+            const area = document.getElementById('rotazioni-list');
+            area.innerHTML = `<div class="status-message">Caricamento programmi di lavoro in corso...</div>`;
+
+            try {
+                // Legge i file direttamente dalla cartella principale
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${CARTELLA_BASE}`);
+                
+                if (!res.ok) {
+                    area.innerHTML = `<div class="status-message">Nessun documento trovato. L'amministratore non ha ancora caricato i file.</div>`;
+                    return;
+                }
+
+                const items = await res.json();
+                
+                // Filtra solo i PDF
+                const pdfs = items.filter(f => f.type === "file" && f.name.toLowerCase().endsWith('.pdf'));
+
+                if (pdfs.length === 0) {
+                    area.innerHTML = `<div class="status-message">Nessun PDF presente nella cartella.</div>`;
+                    return;
+                }
+
+                area.innerHTML = ""; // Pulisce il messaggio di caricamento
+
+                // Crea la lista dei bottoni (Solo apertura)
+                pdfs.forEach(f => {
+                    const row = document.createElement('div');
+                    row.className = "file-row";
+
+                    const aOpen = document.createElement('a');
+                    aOpen.className = "file-btn";
+                    aOpen.innerText = pulisciNome(f.name);
+                    aOpen.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${f.name}`;
+                    aOpen.target = "_blank";
+
+                    row.appendChild(aOpen);
+                    area.appendChild(row);
+                });
+
+            } catch (e) { 
+                area.innerHTML = `<div class="status-message">Errore di connessione a GitHub. Riprova più tardi.</div>`; 
+            }
+        }
+    </script>
+</body>
+</html>
+ 

@@ -279,12 +279,12 @@
                     if (tapCount === ADMIN_TAPS) {
                         secretBtn.style.display = 'block';
                         localStorage.setItem('dev_mode_active', 'true');
-                        alert("🛠️ Area Sviluppatore Sbloccata!");
+                        alert("🛠️ Area Amministratore Sbloccata");
                     } else if (tapCount === ROTAZIONI_TAPS) {
                         rotazioniBtn.style.display = 'block';
                         localStorage.setItem('rotazioni_visibili', 'true');
                         rotazioniBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        alert("👥 Tasto Rotazioni Sbloccato!");
+                        alert("👥 Tasto Rotazioni Sbloccato");
                     }
                     resetSequence();
                 }, HOLD_DURATION);

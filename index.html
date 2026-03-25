@@ -61,7 +61,7 @@
             flex: 2;
             user-select: none; 
             -webkit-user-select: none;
-            cursor: pointer; /* Indica che è cliccabile */
+            cursor: pointer; 
         }
 
         /* TASTO INSTALLA VERDE */
@@ -167,12 +167,11 @@
         /* --- STILI TASTI NASCOSTI --- */
         #secret-btn {
             display: none;
-            background-color: #dc3545; /* Rosso per Admin */
+            background-color: #dc3545; 
         }
 
         #rotazioni-btn {
-            display: none; /* Nascosto di default */
-            /* Mantiene lo stile .menu-btn standard quando visibile */
+            display: none; 
         }
     </style>
 </head>
@@ -245,12 +244,11 @@
         let tapTimer;
         let holdTimer;
         
-        // Configurazioni sequenze
         const ADMIN_TAPS = 5;
         const ROTAZIONI_TAPS = 3;
-        const HOLD_DURATION = 5000; // 5 secondi
+        const HOLD_DURATION = 5000;
 
-        // Controlla lo stato salvato all'avvio
+        // Controlla all'avvio
         document.addEventListener('DOMContentLoaded', () => {
             if (localStorage.getItem('dev_mode_active') === 'true') {
                 secretBtn.style.display = 'block';
@@ -267,60 +265,52 @@
         }
 
         function handleStart(e) {
-            // Evita comportamenti strani su mobile
-            if (e.type === 'touchstart' && e.touches.length > 1) return;
+            // Se è un tocco fisico su schermo, previene il finto click del mouse
+            if (e.type === 'touchstart') {
+                e.preventDefault();
+            }
             
             clearTimeout(tapTimer); 
+            clearTimeout(holdTimer); // Resetta il timer della pressione lunga se c'è un nuovo tocco
             tapCount++;
 
-            // Gestione della pressione lunga SOLO se il conteggio tap corrisponde a una delle sequenze
             if (tapCount === ROTAZIONI_TAPS || tapCount === ADMIN_TAPS) {
                 holdTimer = setTimeout(() => {
                     if (tapCount === ADMIN_TAPS) {
-                        // Sblocco Admin
                         secretBtn.style.display = 'block';
                         localStorage.setItem('dev_mode_active', 'true');
                         alert("🛠️ Area Sviluppatore Sbloccata!");
                     } else if (tapCount === ROTAZIONI_TAPS) {
-                        // Sblocco Rotazioni
                         rotazioniBtn.style.display = 'block';
                         localStorage.setItem('rotazioni_visibili', 'true');
-                        // Scrolla per mostrare il tasto se necessario
                         rotazioniBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         alert("👥 Tasto Rotazioni Sbloccato!");
                     }
                     resetSequence();
                 }, HOLD_DURATION);
             } else if (tapCount > ADMIN_TAPS) {
-                // Troppi tap, resetta
                 resetSequence();
             } else {
-                // Timer per resettare i tap se passa troppo tempo tra uno e l'altro
                 tapTimer = setTimeout(resetSequence, 500);
             }
         }
 
         function handleEnd() {
-            // Se rilasci prima dei 5 secondi, annulla la pressione lunga
             clearTimeout(holdTimer);
-            // Se avevi raggiunto il numero di tap ma hai rilasciato, resetta tutto
-            if (tapCount === ROTAZIONI_TAPS || tapCount === ADMIN_TAPS) {
-                // Non resettiamo subito qui per permettere un eventuale tap successivo
-                // affidandoci al tapTimer definito in handleStart.
-            }
         }
 
-        // Listener per Touch (Mobile) e Mouse (Desktop)
-        titleTrigger.addEventListener('touchstart', handleStart, { passive: true });
+        // Usiamo passive: false per permettere il preventDefault su mobile
+        titleTrigger.addEventListener('touchstart', handleStart, { passive: false });
         titleTrigger.addEventListener('touchend', handleEnd);
         titleTrigger.addEventListener('touchcancel', handleEnd);
 
         titleTrigger.addEventListener('mousedown', handleStart);
         titleTrigger.addEventListener('mouseup', handleEnd);
-        titleTrigger.addEventListener('mouseleave', handleEnd); // Se il mouse esce mentre premi
+        titleTrigger.addEventListener('mouseleave', handleEnd);
 
-        // --- Resto della logica DDS esistente (mantenuta invariata) ---
-        // (DDS Reminder logic...)
+        // --- Resto della logica DDS esistente ---
+        // (Omettendo per brevità il blocco DDS che non è stato modificato)
     </script>
 </body>
 </html>
+ 

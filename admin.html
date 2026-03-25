@@ -6,6 +6,8 @@
     <title>Area Sviluppatore</title>
     <meta name="theme-color" content="#343a40">
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
     <style>
         :root {
             --primary: #0056b3;
@@ -14,6 +16,7 @@
             --success: #28a745;
             --danger: #dc3545;
             --dark: #343a40;
+            --info: #17a2b8;
         }
 
         body {
@@ -48,6 +51,7 @@
             max-width: 360px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             margin-bottom: 20px;
+            box-sizing: border-box;
         }
 
         .admin-card h3 {
@@ -58,7 +62,7 @@
             padding-bottom: 10px;
         }
 
-        input[type="text"], input[type="password"] {
+        input[type="text"], input[type="password"], input[type="file"] {
             width: 100%;
             padding: 12px;
             margin-bottom: 15px;
@@ -68,7 +72,12 @@
             font-size: 14px;
         }
 
-        /* Stile per la checkbox */
+        input[type="file"] {
+            background-color: white;
+            color: var(--text-color);
+            padding: 10px;
+        }
+
         .checkbox-container {
             display: flex;
             align-items: center;
@@ -96,30 +105,13 @@
             width: 100%;
             transition: opacity 0.2s;
         }
-
+        
+        .btn-upload { background-color: var(--info); }
         .btn-action:active { opacity: 0.8; }
 
-        #risultato-codice {
-            margin-top: 15px;
-            font-size: 22px;
-            font-weight: bold;
-            color: #ffc107;
-            text-align: center;
-            letter-spacing: 2px;
-        }
-
-        #status-log {
-            font-size: 12px;
-            color: #adb5bd;
-            margin-top: 10px;
-            text-align: center;
-            min-height: 15px;
-        }
-        
-        .back-btn {
-            background-color: #6c757d;
-            margin-top: 20px;
-        }
+        #risultato-codice { margin-top: 15px; font-size: 22px; font-weight: bold; color: #ffc107; text-align: center; letter-spacing: 2px; }
+        .status-log { font-size: 13px; color: #adb5bd; margin-top: 15px; text-align: center; min-height: 15px; font-weight: bold; }
+        .back-btn { background-color: #6c757d; margin-top: 10px; max-width: 400px; }
     </style>
 </head>
 <body>
@@ -131,29 +123,40 @@
     </div>
 
     <div class="admin-card">
-        <h3>🔑 Generatore Accessi</h3>
-        
+        <h3>⚙️ Credenziali GitHub</h3>
         <input type="text" id="gh-owner" placeholder="Username GitHub" value="HazeV98">
-        <input type="text" id="gh-repo" placeholder="Nome Repository" value="Utility">
-        
-        <input type="password" id="gh-token" placeholder="Incolla qui il Token GitHub (PAT)">
-        
+        <input type="text" id="gh-repo" placeholder="Nome Repository" value="Utility_test">
+        <input type="password" id="gh-token" placeholder="Token GitHub (PAT)">
         <label class="checkbox-container">
             <input type="checkbox" id="remember-token"> Ricorda Token su questo dispositivo
         </label>
-        
-        <button class="btn-action" onclick="generaESalva()">Genera e Salva su GitHub</button>
-        
-        <div id="risultato-codice"></div>
-        <div id="status-log">In attesa...</div>
     </div>
 
-    <button class="btn-action back-btn" style="max-width: 400px;" onclick="window.location.href='index.html'">Torna alla Home</button>
+    <div class="admin-card">
+        <h3>🔑 Generatore Accessi</h3>
+        <button class="btn-action" onclick="generaESalva()">Genera e Salva su GitHub</button>
+        <div id="risultato-codice"></div>
+        <div id="status-log-auth" class="status-log">In attesa...</div>
+    </div>
+
+    <div class="admin-card">
+        <h3>📦 Uploader </h3>
+        <p style="font-size: 12px; color: #adb5bd; margin-top: 0; line-height: 1.4;">
+            Prepara una cartella "upload", inserisci file singoli e sottocartelle, poi comprimila in <b>.zip</b> e selezionala qui. La struttura verrà specchiata su GitHub.
+        </p>
+        
+        <input type="file" id="zip-file" accept=".zip">
+        
+        <button class="btn-action btn-upload" onclick="caricaZip()">Estrai e Sincronizza</button>
+        <div id="status-log-zip" class="status-log">In attesa...</div>
+    </div>
+
+    <button class="btn-action back-btn" onclick="window.location.href='index.html'">Torna alla Home</button>
 
     <script>
-        const filePath = 'codici.json'; 
-
-        // CARICAMENTO TOKEN SALVATO ALL'AVVIO
+        // ==========================================
+        // GESTIONE MEMORIA TOKEN
+        // ==========================================
         document.addEventListener('DOMContentLoaded', () => {
             const savedToken = localStorage.getItem('gh_admin_token');
             if (savedToken) {
@@ -162,41 +165,40 @@
             }
         });
 
+        function gestisciMemoriaToken(token, remember) {
+            if (remember) localStorage.setItem('gh_admin_token', token);
+            else localStorage.removeItem('gh_admin_token');
+        }
+
+        // ==========================================
+        // MODULO 1: GENERATORE CODICI
+        // ==========================================
+        const codiciPath = 'codici.json'; 
+
         async function generaESalva() {
             const owner = document.getElementById('gh-owner').value.trim();
             const repo = document.getElementById('gh-repo').value.trim();
             const token = document.getElementById('gh-token').value.trim();
             const remember = document.getElementById('remember-token').checked;
-            const statusLog = document.getElementById('status-log');
+            const statusLog = document.getElementById('status-log-auth');
             const displayCodice = document.getElementById('risultato-codice');
 
             if (!owner || !repo || !token) {
-                statusLog.innerText = "❌ Compila tutti i campi.";
+                statusLog.innerText = "❌ Compila Username, Repo e Token.";
                 statusLog.style.color = "var(--danger)";
                 return;
             }
 
-            // GESTIONE MEMORIA TOKEN
-            if (remember) {
-                localStorage.setItem('gh_admin_token', token);
-            } else {
-                localStorage.removeItem('gh_admin_token');
-            }
-
+            gestisciMemoriaToken(token, remember);
             statusLog.innerText = "⏳ Connessione a GitHub...";
             statusLog.style.color = "white";
             displayCodice.innerText = "";
 
-            const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
+            const url = `https://api.github.com/repos/${owner}/${repo}/contents/${codiciPath}`;
 
             try {
-                let response = await fetch(url, {
-                    headers: { 'Authorization': `token ${token}` }
-                });
-
-                if (response.status === 401 || response.status === 403) {
-                    throw new Error("Token non valido o permessi insufficienti.");
-                }
+                let response = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+                if (response.status === 401 || response.status === 403) throw new Error("Token non valido.");
 
                 let sha = "";
                 let codiciAttuali = [];
@@ -206,16 +208,12 @@
                     sha = data.sha;
                     const fileContent = decodeURIComponent(escape(atob(data.content)));
                     codiciAttuali = JSON.parse(fileContent);
-                } else if (response.status === 404) {
-                    statusLog.innerText = "⚠️ Creazione nuovo file...";
                 }
 
                 let nuovoCodice;
-                let isDuplicato;
                 do {
                     nuovoCodice = Math.random().toString(36).substring(2, 8).toUpperCase();
-                    isDuplicato = codiciAttuali.some(item => item.codice === nuovoCodice);
-                } while (isDuplicato);
+                } while (codiciAttuali.some(item => item.codice === nuovoCodice));
 
                 displayCodice.innerText = nuovoCodice;
 
@@ -230,31 +228,146 @@
 
                 const putResponse = await fetch(url, {
                     method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: `Aggiunto codice ${nuovoCodice}`,
-                        content: nuovoContenuto,
-                        sha: sha || undefined
-                    })
+                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: `Aggiunto codice ${nuovoCodice}`, content: nuovoContenuto, sha: sha || undefined })
                 });
 
                 if (putResponse.ok) {
                     statusLog.innerText = "✅ Salvato con successo!";
                     statusLog.style.color = "var(--success)";
+                } else throw new Error("Errore durante il salvataggio.");
+
+            } catch (error) {
+                statusLog.innerText = "❌ " + error.message;
+                statusLog.style.color = "var(--danger)";
+            }
+        }
+
+        // ==========================================
+        // MODULO 2: UPLOAD STRUTTURATO (SMART ZIP)
+        // ==========================================
+        async function caricaZip() {
+            const owner = document.getElementById('gh-owner').value.trim();
+            const repo = document.getElementById('gh-repo').value.trim();
+            const token = document.getElementById('gh-token').value.trim();
+            const remember = document.getElementById('remember-token').checked;
+            
+            const fileInput = document.getElementById('zip-file');
+            const statusLog = document.getElementById('status-log-zip');
+
+            if (!owner || !repo || !token) {
+                statusLog.innerText = "❌ Compila Username, Repo e Token.";
+                statusLog.style.color = "var(--danger)";
+                return;
+            }
+
+            if (fileInput.files.length === 0) {
+                statusLog.innerText = "❌ Seleziona prima il file .zip!";
+                statusLog.style.color = "var(--danger)";
+                return;
+            }
+
+            gestisciMemoriaToken(token, remember);
+
+            statusLog.innerText = "⏳ Lettura struttura in corso...";
+            statusLog.style.color = "white";
+
+            try {
+                const zip = await JSZip.loadAsync(fileInput.files[0]);
+                const filesToUpload = [];
+                const allPaths = [];
+
+                // 1. Estrae tutti i file validi dallo ZIP
+                zip.forEach((relativePath, zipEntry) => {
+                    if (!zipEntry.dir && !relativePath.includes('__MACOSX') && !relativePath.includes('.DS_Store')) {
+                        filesToUpload.push(zipEntry);
+                        allPaths.push(relativePath);
+                    }
+                });
+
+                if (filesToUpload.length === 0) {
+                    statusLog.innerText = "⚠️ Nessun file trovato nello ZIP.";
+                    statusLog.style.color = "#ffc107";
+                    return;
+                }
+
+                // 2. Identifica se i file sono racchiusi in una cartella padre (es. "upload/")
+                let rootFolder = "";
+                let firstPathParts = allPaths[0].split('/');
+                if (firstPathParts.length > 1) {
+                    let possibleRoot = firstPathParts[0] + '/';
+                    // Controlla se TUTTI i file iniziano esattamente con questa cartella
+                    let allShareRoot = allPaths.every(p => p.startsWith(possibleRoot));
+                    if (allShareRoot) {
+                        rootFolder = possibleRoot;
+                    }
+                }
+
+                let successCount = 0;
+                let errorCount = 0;
+
+                // 3. Elabora e carica i file
+                for (let i = 0; i < filesToUpload.length; i++) {
+                    const zipEntry = filesToUpload[i];
+                    
+                    // Se c'è una cartella "contenitore", la elimina dal percorso finale
+                    let pathInRepo = zipEntry.name;
+                    if (rootFolder && pathInRepo.startsWith(rootFolder)) {
+                        pathInRepo = pathInRepo.substring(rootFolder.length);
+                    }
+                    
+                    statusLog.innerText = `⏳ Caricamento ${i + 1} di ${filesToUpload.length}...\n(${pathInRepo})`;
+                    
+                    const base64Data = await zipEntry.async("base64");
+                    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${pathInRepo}`;
+
+                    // Controlla se il file esiste già per ottenere lo SHA e sovrascriverlo
+                    let sha = undefined;
+                    try {
+                        const checkRes = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+                        if (checkRes.ok) {
+                            const checkData = await checkRes.json();
+                            sha = checkData.sha;
+                        }
+                    } catch(e) {} 
+
+                    // Invia a GitHub
+                    const putRes = await fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: `Sincronizzazione via Admin: ${pathInRepo}`,
+                            content: base64Data,
+                            sha: sha || undefined
+                        })
+                    });
+
+                    if (putRes.ok) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                }
+
+                if (errorCount === 0) {
+                    statusLog.innerText = `✅ Completato! ${successCount} file posizionati correttamente.`;
+                    statusLog.style.color = "var(--success)";
+                    fileInput.value = ""; // Svuota l'input
                 } else {
-                    const err = await putResponse.json();
-                    throw new Error(err.message);
+                    statusLog.innerText = `⚠️ Finito: ${successCount} ok, ${errorCount} errori.`;
+                    statusLog.style.color = "#ffc107";
                 }
 
             } catch (error) {
                 console.error(error);
-                statusLog.innerText = "❌ " + error.message;
+                statusLog.innerText = "❌ Errore durante l'elaborazione del file ZIP.";
                 statusLog.style.color = "var(--danger)";
             }
         }
     </script>
 </body>
 </html>
+ 

@@ -61,6 +61,7 @@
             flex: 2;
             user-select: none; 
             -webkit-user-select: none;
+            cursor: pointer; /* Indica che è cliccabile */
         }
 
         /* TASTO INSTALLA VERDE */
@@ -163,10 +164,15 @@
             margin-bottom: 10px; text-align: left; border-left: 4px solid #0056b3; 
         }
 
-        /* --- STILE TASTO SEGRETO --- */
+        /* --- STILI TASTI NASCOSTI --- */
         #secret-btn {
             display: none;
-            background-color: #dc3545; 
+            background-color: #dc3545; /* Rosso per Admin */
+        }
+
+        #rotazioni-btn {
+            display: none; /* Nascosto di default */
+            /* Mantiene lo stile .menu-btn standard quando visibile */
         }
     </style>
 </head>
@@ -175,7 +181,7 @@
     <div class="header">
         <div class="header-side"></div>
         
-        <h2>Utility</h2>
+        <h2 id="main-title">Utility</h2>
         
         <div class="header-side right">
             <button id="install-btn">Installa</button>
@@ -187,15 +193,22 @@
         
         <a href="calendario.html" class="menu-btn">📅 Calendario</a>
         <a href="dati_calendario.html" class="menu-btn">📊 Statistiche Calendario</a>
+        
         <a href="turni.html" class="menu-btn">🔄 Turni</a>
         <a href="orari.html" class="menu-btn">🕒 Orari</a>
+        
+        <a href="rotazioni.html" id="rotazioni-btn" class="menu-btn">👥 Rotazioni</a>
 
-        <a href="documenti.html" class="menu-btn">📄 Documenti</a> 
+        <a href="documenti.html" class="menu-btn">📄 Documenti</a>
+        
         <a href="link.html" class="menu-btn">🔗 Link</a>
         <a href="contatti.html" class="menu-btn">📞 Contatti</a>
-        <a href="buoni.html" class="menu-btn">🍝 Buoni Pasto</a>  
+        <a href="buoni.html" class="menu-btn">🍝 Buoni Pasto</a>
+        
         <a href="dds.html" class="menu-btn">📂 Archivio DDS</a>
-        <a href="guida.html" class="menu-btn" style="background-color: #6c757d;">📖 Guida</a> 
+        
+        <a href="guida.html" class="menu-btn" style="background-color: #6c757d;">📖 Guida</a>
+        
         <a href="admin.html" id="secret-btn" class="menu-btn">🔒 Admin</a>
     </div>
 
@@ -222,48 +235,30 @@
         }
 
         // ==========================================
-        // LOGICA PERSISTENZA TASTO SEGRETO
+        // GESTIONE TASTI NASCOSTI (Admin e Rotazioni)
         // ==========================================
-        const titleTrigger = document.querySelector('h2');
+        const titleTrigger = document.getElementById('main-title');
         const secretBtn = document.getElementById('secret-btn');
+        const rotazioniBtn = document.getElementById('rotazioni-btn');
+        
         let tapCount = 0;
         let tapTimer;
         let holdTimer;
-        const REQUIRED_TAPS = 5;
-        const HOLD_DURATION = 5000;
+        
+        // Configurazioni sequenze
+        const ADMIN_TAPS = 5;
+        const ROTAZIONI_TAPS = 3;
+        const HOLD_DURATION = 5000; // 5 secondi
 
-        // Controlla all'avvio se il tasto deve essere già visibile
+        // Controlla lo stato salvato all'avvio
         document.addEventListener('DOMContentLoaded', () => {
             if (localStorage.getItem('dev_mode_active') === 'true') {
                 secretBtn.style.display = 'block';
             }
-        });
-
-        function handleStart(e) {
-            if (e.type === 'touchstart') e.preventDefault(); 
-            clearTimeout(tapTimer); 
-            tapCount++;
-
-            if (tapCount === REQUIRED_TAPS) {
-                holdTimer = setTimeout(() => {
-                    // ATTIVAZIONE E SALVATAGGIO PERSISTENTE
-                    secretBtn.style.display = 'block';
-                    localStorage.setItem('dev_mode_active', 'true'); // Salva lo stato
-                    secretBtn.scrollIntoView({ behavior: 'smooth' });
-                    alert("🛠️ Area Sviluppatore Sbloccata Permanente!"); 
-                    resetSequence();
-                }, HOLD_DURATION);
-            } else if (tapCount > REQUIRED_TAPS) {
-                resetSequence();
-            } else {
-                tapTimer = setTimeout(resetSequence, 500);
+            if (localStorage.getItem('rotazioni_visibili') === 'true') {
+                rotazioniBtn.style.display = 'block';
             }
-        }
-
-        function handleEnd() {
-            clearTimeout(holdTimer);
-            if (tapCount >= REQUIRED_TAPS) resetSequence();
-        }
+        });
 
         function resetSequence() {
             tapCount = 0;
@@ -271,16 +266,61 @@
             clearTimeout(holdTimer);
         }
 
-        titleTrigger.addEventListener('touchstart', handleStart, { passive: false });
+        function handleStart(e) {
+            // Evita comportamenti strani su mobile
+            if (e.type === 'touchstart' && e.touches.length > 1) return;
+            
+            clearTimeout(tapTimer); 
+            tapCount++;
+
+            // Gestione della pressione lunga SOLO se il conteggio tap corrisponde a una delle sequenze
+            if (tapCount === ROTAZIONI_TAPS || tapCount === ADMIN_TAPS) {
+                holdTimer = setTimeout(() => {
+                    if (tapCount === ADMIN_TAPS) {
+                        // Sblocco Admin
+                        secretBtn.style.display = 'block';
+                        localStorage.setItem('dev_mode_active', 'true');
+                        alert("🛠️ Area Sviluppatore Sbloccata!");
+                    } else if (tapCount === ROTAZIONI_TAPS) {
+                        // Sblocco Rotazioni
+                        rotazioniBtn.style.display = 'block';
+                        localStorage.setItem('rotazioni_visibili', 'true');
+                        // Scrolla per mostrare il tasto se necessario
+                        rotazioniBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        alert("👥 Tasto Rotazioni Sbloccato!");
+                    }
+                    resetSequence();
+                }, HOLD_DURATION);
+            } else if (tapCount > ADMIN_TAPS) {
+                // Troppi tap, resetta
+                resetSequence();
+            } else {
+                // Timer per resettare i tap se passa troppo tempo tra uno e l'altro
+                tapTimer = setTimeout(resetSequence, 500);
+            }
+        }
+
+        function handleEnd() {
+            // Se rilasci prima dei 5 secondi, annulla la pressione lunga
+            clearTimeout(holdTimer);
+            // Se avevi raggiunto il numero di tap ma hai rilasciato, resetta tutto
+            if (tapCount === ROTAZIONI_TAPS || tapCount === ADMIN_TAPS) {
+                // Non resettiamo subito qui per permettere un eventuale tap successivo
+                // affidandoci al tapTimer definito in handleStart.
+            }
+        }
+
+        // Listener per Touch (Mobile) e Mouse (Desktop)
+        titleTrigger.addEventListener('touchstart', handleStart, { passive: true });
         titleTrigger.addEventListener('touchend', handleEnd);
         titleTrigger.addEventListener('touchcancel', handleEnd);
+
         titleTrigger.addEventListener('mousedown', handleStart);
         titleTrigger.addEventListener('mouseup', handleEnd);
-        titleTrigger.addEventListener('mouseleave', handleEnd);
+        titleTrigger.addEventListener('mouseleave', handleEnd); // Se il mouse esce mentre premi
 
-        // --- Resto della logica DDS esistente ---
-        // (Omettendo per brevità il blocco DDS che non è stato modificato)
+        // --- Resto della logica DDS esistente (mantenuta invariata) ---
+        // (DDS Reminder logic...)
     </script>
 </body>
 </html>
- 

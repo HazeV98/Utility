@@ -263,9 +263,9 @@
             document.getElementById('sidebar-overlay').style.display = 'none'; 
         }
 
-        // Impostazioni Repository
+        // Impostazioni Repository 
         const GITHUB_USER = "HazeV98"; 
-        const GITHUB_REPO = "Utility";
+        const GITHUB_REPO = "Utility"; 
         const CARTELLA_BASE = "rotazioni";
 
         let databaseTurni = []; 
@@ -354,6 +354,7 @@
 
                 listaFileGitHub = await res.json();
                 const pdfs = listaFileGitHub.filter(f => f.type === "file" && f.name.toLowerCase().endsWith('.pdf'));
+                const excels = listaFileGitHub.filter(f => f.type === "file" && (f.name.toLowerCase().endsWith('.xlsx') || f.name.toLowerCase().endsWith('.xls')));
 
                 if (pdfs.length === 0) {
                     area.innerHTML = `<div class="status-message">Nessun PDF presente nella cartella.</div>`;
@@ -374,11 +375,17 @@
                     
                     row.appendChild(aOpen);
 
-                    const btnSearch = document.createElement('button');
-                    btnSearch.className = "file-btn btn-search";
-                    btnSearch.innerText = "🔍 Cerca";
-                    btnSearch.onclick = () => apriFinestraRicerca(f.name);
-                    row.appendChild(btnSearch);
+                    // Mostra il tasto Cerca SOLO se nell'elenco c'è un file excel col nome coincidente
+                    const baseNamePdf = f.name.substring(0, f.name.lastIndexOf('.')).toLowerCase();
+                    const hasExcel = excels.some(ex => ex.name.substring(0, ex.name.lastIndexOf('.')).toLowerCase() === baseNamePdf);
+
+                    if (hasExcel) {
+                        const btnSearch = document.createElement('button');
+                        btnSearch.className = "file-btn btn-search";
+                        btnSearch.innerText = "🔍 Cerca";
+                        btnSearch.onclick = () => apriFinestraRicerca(f.name);
+                        row.appendChild(btnSearch);
+                    }
 
                     area.appendChild(row);
                 });
@@ -395,7 +402,6 @@
         function isTurno(txt) {
             if (txt === undefined || txt === null) return false;
             txt = String(txt).replace(/[\s]+/g, '').toUpperCase();
-            // ---> AGGIUNTO 'DI' COME TURNO VALIDO <---
             if (txt === "AL" || txt === "RI" || txt === "DISP" || txt === "ESPE" || txt === "DI") return true;
             if (txt.length === 4 && /[0-9]/.test(txt)) return true;
             if (/^[0-9]{4}$/.test(txt)) return true; 
@@ -449,7 +455,6 @@
                 
                 let foundAnyTurns = false;
 
-                // --- SISTEMA AD ANCORAGGIO ASSOLUTO ---
                 for (let sheetName of workbook.SheetNames) {
                     const worksheet = workbook.Sheets[sheetName];
                     const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
@@ -500,11 +505,7 @@
                                     if (cella) {
                                         let val = String(cella).replace(/[\s]+/g, '').toUpperCase();
                                         if (isTurno(val)) {
-                                            // ---> NORMALIZZAZIONE: DA 'DI' a 'DISP' <---
-                                            if (val === "DI") {
-                                                val = "DISP";
-                                            }
-
+                                            if (val === "DI") val = "DISP";
                                             bloccoGiorni[d] = val;
                                             conteggioValidi++;
                                         }
@@ -514,19 +515,54 @@
 
                             if (conteggioValidi >= 15) {
                                 currentPos++;
-                                
                                 let firstDayCol = dayColIndices[0];
-                                let nameParts = [];
+                                
+                                // 1. Estrazione Nome del primo componente
+                                let nameParts1 = [];
                                 for (let c = 0; c < firstDayCol; c++) {
                                     if (row[c]) {
                                         let txt = String(row[c]).replace(/[0-9]/g, '').trim();
-                                        if (txt.length >= 2 && !["AL", "RI"].includes(txt.toUpperCase()) && !["MARZO","APRILE","MAGGIO","GIUGNO","LUGLIO","AGOSTO","SETTEMBRE","OTTOBRE","NOVEMBRE","DICEMBRE","GENNAIO","FEBBRAIO","MESE","AGENTI","DO","LU","MA","ME","GI","VE","SA"].includes(txt.toUpperCase())) {
-                                            nameParts.push(txt);
+                                        if (txt.length >= 2 && !["AL", "RI","MARZO","APRILE","MAGGIO","GIUGNO","LUGLIO","AGOSTO","SETTEMBRE","OTTOBRE","NOVEMBRE","DICEMBRE","GENNAIO","FEBBRAIO","MESE","AGENTI","DO","LU","MA","ME","GI","VE","SA"].includes(txt.toUpperCase())) {
+                                            nameParts1.push(txt);
+                                        }
+                                    }
+                                }
+                                let nome1 = nameParts1.join(" ");
+
+                                // 2. Controllo riga successiva per l'altro componente dell'armo
+                                let nome2 = "";
+                                if (r + 1 < rows.length) {
+                                    let nextRow = rows[r + 1];
+                                    if (nextRow && nextRow.length > 0) {
+                                        let validiNext = 0;
+                                        for (let d = 0; d < 31; d++) {
+                                            let colIdx = dayColIndices[d];
+                                            if (colIdx !== -1 && colIdx < nextRow.length) {
+                                                let cella = nextRow[colIdx];
+                                                if (cella && isTurno(String(cella).replace(/[\s]+/g, '').toUpperCase())) {
+                                                    validiNext++;
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Se la riga successiva non ha i propri turni compilati (è sotto i 5), è il secondo componente dell'armo
+                                        if (validiNext < 5) {
+                                            let nameParts2 = [];
+                                            for (let c = 0; c < firstDayCol; c++) {
+                                                if (nextRow[c]) {
+                                                    let txt = String(nextRow[c]).replace(/[0-9]/g, '').trim();
+                                                    if (txt.length >= 2 && !["AL", "RI","MARZO","APRILE","MAGGIO","GIUGNO","LUGLIO","AGOSTO","SETTEMBRE","OTTOBRE","NOVEMBRE","DICEMBRE","GENNAIO","FEBBRAIO","MESE","AGENTI","DO","LU","MA","ME","GI","VE","SA"].includes(txt.toUpperCase())) {
+                                                        nameParts2.push(txt);
+                                                    }
+                                                }
+                                            }
+                                            nome2 = nameParts2.join(" ");
                                         }
                                     }
                                 }
                                 
-                                let nomeFinale = nameParts.join(" ");
+                                let nomeFinale = nome1;
+                                if (nome2) nomeFinale += " e " + nome2;
                                 if (!nomeFinale) nomeFinale = `Collega (Posizione ${currentPos})`;
 
                                 databaseTurni.push({
@@ -545,7 +581,7 @@
                 }
 
                 if (foundAnyTurns) {
-                    statusEl.innerHTML = `<span style="color:var(--success); font-weight:bold;">Connesso al database Excel.</span> Trovati ${databaseTurni.length} colleghi pronti per la ricerca.`;
+                    statusEl.innerHTML = `<span style="color:var(--success); font-weight:bold;">Connesso al database Excel.</span> Trovati ${databaseTurni.length} colleghi/armi pronti per la ricerca.`;
                     sezioniRicerca.style.display = 'block';
                 } else {
                     statusEl.innerHTML = "<span style='color:var(--danger);'>Errore: Struttura del calendario (riga con numeri 1, 2, 3...) non trovata in nessuna scheda dell'Excel.</span>";

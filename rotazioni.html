@@ -269,7 +269,7 @@
         const CARTELLA_BASE = "rotazioni";
 
         let databaseTurni = []; 
-        let listaFileGitHub = []; // Variabile globale che conterrà l'elenco esatto dei file forniti dall'API
+        let listaFileGitHub = []; 
 
         // ==========================================
         // LOGICA DI AUTENTICAZIONE
@@ -345,7 +345,6 @@
 
             try {
                 const timestamp = new Date().getTime();
-                // L'API di GitHub ci restituisce l'elenco ESATTO e aggiornato di ciò che c'è nella cartella
                 const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${CARTELLA_BASE}?t=${timestamp}`);
                 
                 if (!res.ok) {
@@ -353,9 +352,7 @@
                     return;
                 }
 
-                // Salviamo la lista globale così possiamo estrarre i link diretti
                 listaFileGitHub = await res.json();
-                
                 const pdfs = listaFileGitHub.filter(f => f.type === "file" && f.name.toLowerCase().endsWith('.pdf'));
 
                 if (pdfs.length === 0) {
@@ -377,7 +374,6 @@
                     
                     row.appendChild(aOpen);
 
-                    // Il tasto appare sempre per avviare la ricerca
                     const btnSearch = document.createElement('button');
                     btnSearch.className = "file-btn btn-search";
                     btnSearch.innerText = "🔍 Cerca";
@@ -422,91 +418,110 @@
             document.getElementById('risultato-cambi').innerHTML = "";
             databaseTurni = [];
 
-            // 1. Troviamo il nome base del PDF
+            const timestamp = new Date().getTime();
             const baseName = pdfName.substring(0, pdfName.lastIndexOf('.'));
-            const baseNameLower = baseName.toLowerCase().trim();
-
-            // 2. Cerchiamo il gemello Excel pescando direttamente dalla lista che GitHub ci ha fornito
-            const excelFile = listaFileGitHub.find(item => {
-                if (item.type !== "file") return false;
-                const itemNameLower = item.name.toLowerCase();
-                return itemNameLower === baseNameLower + ".xlsx" || itemNameLower === baseNameLower + ".xls";
-            });
-
-            if (!excelFile) {
-                statusEl.innerHTML = `<span style='color:var(--danger);'>Errore:</span> File Excel non trovato. Controlla che si chiami esattamente come il PDF all'interno della cartella '${CARTELLA_BASE}'.`;
-                return;
-            }
+            
+            // Tentativo 1: Connessione diretta forzata
+            let targetUrl = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${encodeURIComponent(baseName)}.xlsx?t=${timestamp}`;
+            let res;
 
             try {
-                // 3. LA SOLUZIONE: Usiamo il download_url nativo di GitHub, salta la cache di .github.io
-                const timestamp = new Date().getTime();
-                const urlExcelGrezzo = excelFile.download_url + `?t=${timestamp}`;
+                res = await fetch(targetUrl);
+                
+                // Tentativo 2: Connessione tramite le API di GitHub
+                if (!res.ok) {
+                    const baseNameLower = baseName.toLowerCase().trim();
+                    const excelFile = listaFileGitHub.find(item => {
+                        if (item.type !== "file") return false;
+                        const itemNameLower = item.name.toLowerCase();
+                        return itemNameLower === baseNameLower + ".xlsx" || itemNameLower === baseNameLower + ".xls";
+                    });
 
-                const res = await fetch(urlExcelGrezzo);
-                if (!res.ok) throw new Error("Il file esiste, ma GitHub ha bloccato il download diretto.");
+                    if (excelFile) {
+                        res = await fetch(excelFile.download_url + `?t=${timestamp}`);
+                    }
+                }
+
+                if (!res || !res.ok) throw new Error("File Excel non trovato o impossibile da scaricare. Verifica il nome del file.");
 
                 const arrayBuffer = await res.arrayBuffer();
                 const data = new Uint8Array(arrayBuffer);
                 const workbook = XLSX.read(data, {type: 'array'});
-                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
+                
                 let currentPos = 0;
+                let foundAnyTurns = false;
 
-                rows.forEach(row => {
-                    let firstTurnoIndex = -1;
-                    let lastTurnoIndex = -1;
-                    
-                    for(let i = 0; i < row.length; i++) {
-                        if (isTurno(row[i])) {
-                            if (firstTurnoIndex === -1) firstTurnoIndex = i;
-                            lastTurnoIndex = i;
-                        }
-                    }
-                    
-                    if (lastTurnoIndex !== -1 && (lastTurnoIndex - firstTurnoIndex) >= 27) {
-                        currentPos++;
-                        let startIndex = lastTurnoIndex - 30; 
-                        if (startIndex < 0) startIndex = 0;
+                // --- NOVITÀ: Ricerca Multi-Foglio ---
+                // Il sistema ora scansiona tutti i fogli dell'Excel, ignorando "Algoritmo" o fogli vuoti,
+                // e si concentra solo su quello che contiene la reale griglia dei 31 giorni.
+                for (let sheetName of workbook.SheetNames) {
+                    const worksheet = workbook.Sheets[sheetName];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    let foundInThisSheet = false;
+
+                    rows.forEach(row => {
+                        let firstTurnoIndex = -1;
+                        let lastTurnoIndex = -1;
                         
-                        let bloccoGiorni = [];
-                        
-                        for (let i = startIndex; i <= lastTurnoIndex; i++) {
-                            let cella = row[i];
-                            if (isTurno(cella)) {
-                                bloccoGiorni.push(String(cella).replace(/[\s]+/g, '').toUpperCase());
-                            } else {
-                                bloccoGiorni.push(""); 
+                        for(let i = 0; i < row.length; i++) {
+                            if (isTurno(row[i])) {
+                                if (firstTurnoIndex === -1) firstTurnoIndex = i;
+                                lastTurnoIndex = i;
                             }
                         }
                         
-                        let nameParts = [];
-                        for (let i = 0; i < startIndex; i++) {
-                            if (row[i]) {
-                                let txt = String(row[i]).replace(/[0-9]/g, '').trim();
-                                if (txt.length >= 2 && !["AL", "RI"].includes(txt.toUpperCase()) && !["MARZO","MESE","AGENTI","DO","LU","MA","ME","GI","VE","SA"].includes(txt.toUpperCase())) {
-                                    nameParts.push(txt);
+                        if (lastTurnoIndex !== -1 && (lastTurnoIndex - firstTurnoIndex) >= 27) {
+                            foundInThisSheet = true;
+                            currentPos++;
+                            let startIndex = lastTurnoIndex - 30; 
+                            if (startIndex < 0) startIndex = 0;
+                            
+                            let bloccoGiorni = [];
+                            
+                            for (let i = startIndex; i <= lastTurnoIndex; i++) {
+                                let cella = row[i];
+                                if (isTurno(cella)) {
+                                    bloccoGiorni.push(String(cella).replace(/[\s]+/g, '').toUpperCase());
+                                } else {
+                                    bloccoGiorni.push(""); 
                                 }
                             }
+                            
+                            let nameParts = [];
+                            for (let i = 0; i < startIndex; i++) {
+                                if (row[i]) {
+                                    let txt = String(row[i]).replace(/[0-9]/g, '').trim();
+                                    // Filtriamo via le lettere isolate e i nomi dei mesi
+                                    if (txt.length >= 2 && !["AL", "RI"].includes(txt.toUpperCase()) && !["MARZO","APRILE","MAGGIO","GIUGNO","LUGLIO","AGOSTO","MESE","AGENTI","DO","LU","MA","ME","GI","VE","SA"].includes(txt.toUpperCase())) {
+                                        nameParts.push(txt);
+                                    }
+                                }
+                            }
+                            
+                            let nomeFinale = nameParts.join(" ");
+                            if (!nomeFinale) nomeFinale = `Collega (Posizione ${currentPos})`;
+
+                            databaseTurni.push({
+                                pos: currentPos,
+                                nome: nomeFinale,
+                                turni: bloccoGiorni 
+                            });
                         }
-                        
-                        let nomeFinale = nameParts.join(" ");
-                        if (!nomeFinale) nomeFinale = `Collega (Posizione ${currentPos})`;
+                    });
 
-                        databaseTurni.push({
-                            pos: currentPos,
-                            nome: nomeFinale,
-                            turni: bloccoGiorni 
-                        });
+                    // Se abbiamo trovato i turni, segniamo che abbiamo avuto successo e non serve scansionare gli altri fogli
+                    if (foundInThisSheet && databaseTurni.length > 0) {
+                        foundAnyTurns = true;
+                        break; 
                     }
-                });
+                }
 
-                if (databaseTurni.length > 0) {
+                if (foundAnyTurns) {
                     statusEl.innerHTML = `<span style="color:var(--success); font-weight:bold;">Connesso al database Excel.</span> Trovati ${databaseTurni.length} colleghi pronti per la ricerca.`;
                     sezioniRicerca.style.display = 'block';
                 } else {
-                    statusEl.innerHTML = "<span style='color:var(--danger);'>Errore: Struttura turni non rilevata nell'Excel.</span>";
+                    statusEl.innerHTML = "<span style='color:var(--danger);'>Errore: Struttura turni non rilevata nell'Excel. (Nessun foglio valido trovato)</span>";
                 }
 
             } catch (error) {

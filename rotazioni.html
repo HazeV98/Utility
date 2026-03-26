@@ -8,6 +8,8 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0056b3">
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <style>
         /* --- STILI BASE E AUTENTICAZIONE --- */
         :root {
@@ -89,15 +91,19 @@
         
         p { color: #555; font-size: 15px; line-height: 1.4; }
 
-        input[type="text"] {
+        input[type="text"], input[type="number"], select {
             width: 100%;
             padding: 15px;
-            margin: 15px 0;
+            margin: 10px 0;
             border: 2px solid #ccc;
             border-radius: 8px;
             box-sizing: border-box;
-            font-size: 20px;
+            font-size: 16px;
             text-align: center;
+        }
+
+        input[type="text"] {
+            font-size: 20px;
             text-transform: uppercase;
             letter-spacing: 2px;
         }
@@ -126,7 +132,6 @@
             font-weight: bold; 
         }
 
-        /* --- STILI TELEGRAM E SUPPORTO --- */
         .support-section {
             margin-top: 30px;
             padding-top: 20px;
@@ -141,11 +146,33 @@
 
         .telegram-icon:active { transform: scale(0.9); }
 
-        /* --- STILI LISTA DOCUMENTI --- */
+        /* --- STILI LISTA DOCUMENTI E BOTTONI --- */
         .status-message { text-align: center; color: #666; font-size: 16px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .file-row { display: flex; width: 100%; margin-bottom: 12px; }
-        .file-btn { flex-grow: 1; background-color: var(--primary); color: white; border: none; padding: 16px; font-size: 16px; border-radius: 10px; cursor: pointer; text-decoration: none; display: block; text-align: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .file-row { display: flex; width: 100%; margin-bottom: 12px; gap: 8px; }
+        .file-btn { flex-grow: 1; background-color: var(--primary); color: white; border: none; padding: 16px 10px; font-size: 15px; border-radius: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .file-btn:active { transform: translateY(2px); }
+        .btn-search { background-color: #28a745; flex: 0.5; font-size: 14px; } /* Bottone ricerca verde e un po' più piccolo */
+
+        /* --- STILI PER LA FINESTRA DI RICERCA (MODAL) --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 3000; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: white; padding: 20px; border-radius: 12px; max-width: 90%; width: 400px;
+            max-height: 85vh; overflow-y: auto; position: relative;
+        }
+        .close-modal {
+            position: absolute; right: 15px; top: 15px; font-size: 24px; cursor: pointer; color: #666;
+        }
+        .modulo-ricerca {
+            background: #fafafa; border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-top: 15px;
+        }
+        .modulo-ricerca h4 { margin-top: 0; color: var(--primary); margin-bottom: 5px;}
+        .risultato-box {
+            background: #e9ecef; border-left: 4px solid var(--primary); padding: 10px; margin-top: 10px; min-height: 30px; font-size: 14px;
+        }
+        .risultato-box ul { padding-left: 20px; margin: 5px 0 0 0; }
     </style>
 </head>
 <body>
@@ -192,7 +219,37 @@
 
     <div id="content-section">
         <div id="rotazioni-list">
+        </div>
+    </div>
+
+    <div id="search-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" onclick="chiudiModal()">&times;</span>
+            <h3 id="modal-title" style="margin-top:0; color:var(--primary);">Ricerca Turni</h3>
+            <div id="modal-status" class="status-message" style="padding: 10px; font-size:14px;">In attesa...</div>
+
+            <div id="modal-search-sections" style="display:none;">
+                <div class="modulo-ricerca">
+                    <h4>Cerca chi fa un turno</h4>
+                    <input type="number" id="input-giorno-turno" min="1" max="31" placeholder="Giorno (Es. 15)">
+                    <input type="text" id="input-codice-turno" placeholder="Codice (Es. 4P01)">
+                    <button class="btn" style="padding: 12px; margin-top:5px;" onclick="cercaTurno()">Cerca Colleghi</button>
+                    <div id="risultato-turno" class="risultato-box"></div>
+                </div>
+
+                <div class="modulo-ricerca">
+                    <h4>Trova cambi turno</h4>
+                    <input type="number" id="input-giorno-cambio" min="1" max="31" placeholder="Giorno del mese (1-31)">
+                    <select id="select-fase-cambio">
+                        <option value="Terzo">Di Terzo (Primi due giorni)</option>
+                        <option value="Mezzo">Di Mezzo (3° e 4° giorno)</option>
+                        <option value="Primo">Di Primo (5° e 6° giorno)</option>
+                    </select>
+                    <button class="btn" style="padding: 12px; margin-top:5px;" onclick="cercaCambi()">Trova Sostituti</button>
+                    <div id="risultato-cambi" class="risultato-box"></div>
+                </div>
             </div>
+        </div>
     </div>
 
     <script>
@@ -210,6 +267,8 @@
         const GITHUB_USER = "HazeV98"; 
         const GITHUB_REPO = "Utility_test";
         const CARTELLA_BASE = "rotazioni";
+
+        let databaseTurni = []; // Conterrà i dati Excel
 
         // ==========================================
         // LOGICA DI AUTENTICAZIONE
@@ -249,13 +308,10 @@
                 const codiceTrovato = codiciValidi.find(c => c.codice === codice && c.attivo === true);
                 
                 if (codiceTrovato) {
-                    // SBLOCCO RIUSCITO
                     document.getElementById('auth-section').style.display = 'none';
                     document.getElementById('content-section').style.display = 'flex';
                     localStorage.setItem('auth_rotazioni', codice);
                     errorMsg.innerText = "";
-                    
-                    // Avvia il caricamento dei file da GitHub
                     caricaRotazioni();
                 } else {
                     if (isAutoLogin) {
@@ -275,10 +331,8 @@
         }
 
         // ==========================================
-        // LOGICA GESTIONE FILE GITHUB
+        // CARICAMENTO LISTA DA GITHUB
         // ==========================================
-        
-        // Toglie l'estensione, rimpiazza gli _ con gli spazi e mette la maiuscola
         function pulisciNome(nome) {
             let pulito = nome.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
             return pulito.charAt(0).toUpperCase() + pulito.slice(1);
@@ -289,7 +343,6 @@
             area.innerHTML = `<div class="status-message">Caricamento programmi di lavoro in corso...</div>`;
 
             try {
-                // Legge i file direttamente dalla cartella principale
                 const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${CARTELLA_BASE}`);
                 
                 if (!res.ok) {
@@ -298,8 +351,6 @@
                 }
 
                 const items = await res.json();
-                
-                // Filtra solo i PDF
                 const pdfs = items.filter(f => f.type === "file" && f.name.toLowerCase().endsWith('.pdf'));
 
                 if (pdfs.length === 0) {
@@ -307,25 +358,240 @@
                     return;
                 }
 
-                area.innerHTML = ""; // Pulisce il messaggio di caricamento
+                area.innerHTML = "";
 
-                // Crea la lista dei bottoni (Solo apertura)
+                // Generazione dei bottoni PDF + Bottone Ricerca Excel
                 pdfs.forEach(f => {
                     const row = document.createElement('div');
                     row.className = "file-row";
 
+                    // Bottone Apri PDF
                     const aOpen = document.createElement('a');
                     aOpen.className = "file-btn";
-                    aOpen.innerText = pulisciNome(f.name);
+                    aOpen.innerText = "📄 " + pulisciNome(f.name);
                     aOpen.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${f.name}`;
                     aOpen.target = "_blank";
 
+                    // Bottone Ricerca
+                    const btnSearch = document.createElement('button');
+                    btnSearch.className = "file-btn btn-search";
+                    btnSearch.innerText = "🔍 Cerca";
+                    // Passiamo il nome esatto del PDF per ricavare l'Excel
+                    btnSearch.onclick = () => apriFinestraRicerca(f.name);
+
                     row.appendChild(aOpen);
+                    row.appendChild(btnSearch);
                     area.appendChild(row);
                 });
 
             } catch (e) { 
                 area.innerHTML = `<div class="status-message">Errore di connessione a GitHub. Riprova più tardi.</div>`; 
+            }
+        }
+
+        // ==========================================
+        // LOGICA RICERCA CON LETTURA EXCEL DIETRO LE QUINTE
+        // ==========================================
+        
+        // Regola Excel infallibile
+        function isTurno(txt) {
+            if (txt === undefined || txt === null) return false;
+            txt = String(txt).replace(/[\s]+/g, '').toUpperCase();
+            if (txt === "AL" || txt === "RI" || txt === "DISP" || txt === "ESPE") return true;
+            if (txt.length === 4 && /[0-9]/.test(txt)) return true;
+            if (/^[0-9]{4}$/.test(txt)) return true; 
+            return false;
+        }
+
+        function chiudiModal() {
+            document.getElementById('search-modal').style.display = 'none';
+        }
+
+        async function apriFinestraRicerca(pdfName) {
+            const modal = document.getElementById('search-modal');
+            const statusEl = document.getElementById('modal-status');
+            const sezioniRicerca = document.getElementById('modal-search-sections');
+            
+            modal.style.display = 'flex';
+            sezioniRicerca.style.display = 'none';
+            statusEl.innerHTML = "Scaricamento e lettura della griglia Excel in corso...";
+            
+            // Pulisce campi precedenti
+            document.getElementById('risultato-turno').innerHTML = "";
+            document.getElementById('risultato-cambi').innerHTML = "";
+            databaseTurni = [];
+
+            // Calcola il nome del file Excel (prova .xlsx)
+            const excelName = pdfName.substring(0, pdfName.lastIndexOf('.')) + ".xlsx";
+            const urlExcel = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${excelName}`;
+
+            try {
+                let res = await fetch(urlExcel);
+                
+                // Se non trova il .xlsx, prova il .xls
+                if (!res.ok) {
+                    const xlsName = pdfName.substring(0, pdfName.lastIndexOf('.')) + ".xls";
+                    res = await fetch(`https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${xlsName}`);
+                    if (!res.ok) throw new Error("File Excel non trovato nella repository.");
+                }
+
+                const arrayBuffer = await res.arrayBuffer();
+                const data = new Uint8Array(arrayBuffer);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                let currentPos = 0;
+
+                // Stesso identico ciclo perfetto dell'app stand-alone
+                rows.forEach(row => {
+                    let firstTurnoIndex = -1;
+                    let lastTurnoIndex = -1;
+                    
+                    for(let i = 0; i < row.length; i++) {
+                        if (isTurno(row[i])) {
+                            if (firstTurnoIndex === -1) firstTurnoIndex = i;
+                            lastTurnoIndex = i;
+                        }
+                    }
+                    
+                    if (lastTurnoIndex !== -1 && (lastTurnoIndex - firstTurnoIndex) >= 27) {
+                        currentPos++;
+                        let startIndex = lastTurnoIndex - 30; 
+                        if (startIndex < 0) startIndex = 0;
+                        
+                        let bloccoGiorni = [];
+                        
+                        for (let i = startIndex; i <= lastTurnoIndex; i++) {
+                            let cella = row[i];
+                            if (isTurno(cella)) {
+                                bloccoGiorni.push(String(cella).replace(/[\s]+/g, '').toUpperCase());
+                            } else {
+                                bloccoGiorni.push(""); 
+                            }
+                        }
+                        
+                        let nameParts = [];
+                        for (let i = 0; i < startIndex; i++) {
+                            if (row[i]) {
+                                let txt = String(row[i]).replace(/[0-9]/g, '').trim();
+                                if (txt.length >= 2 && !["AL", "RI"].includes(txt.toUpperCase()) && !["MARZO","MESE","AGENTI","DO","LU","MA","ME","GI","VE","SA"].includes(txt.toUpperCase())) {
+                                    nameParts.push(txt);
+                                }
+                            }
+                        }
+                        
+                        let nomeFinale = nameParts.join(" ");
+                        if (!nomeFinale) nomeFinale = `Collega (Posizione ${currentPos})`;
+
+                        databaseTurni.push({
+                            pos: currentPos,
+                            nome: nomeFinale,
+                            turni: bloccoGiorni 
+                        });
+                    }
+                });
+
+                if (databaseTurni.length > 0) {
+                    statusEl.innerHTML = `<span style="color:var(--success); font-weight:bold;">Connesso al database Excel.</span> Trovati ${databaseTurni.length} colleghi pronti per la ricerca.`;
+                    sezioniRicerca.style.display = 'block';
+                } else {
+                    statusEl.innerHTML = "<span style='color:var(--danger);'>Errore: Struttura turni non rilevata nell'Excel.</span>";
+                }
+
+            } catch (error) {
+                statusEl.innerHTML = `<span style='color:var(--danger);'>Errore:</span> ${error.message}<br>Assicurati di aver caricato nella cartella '${CARTELLA_BASE}' un file <b>${excelName}</b> corrispondente.`;
+            }
+        }
+
+        // --- MOTORE 1: CERCA TURNO ---
+        function cercaTurno() {
+            const giorno = parseInt(document.getElementById('input-giorno-turno').value);
+            const codice = document.getElementById('input-codice-turno').value.trim().toUpperCase();
+            const boxRisultato = document.getElementById('risultato-turno');
+
+            if (!giorno || !codice) {
+                boxRisultato.innerHTML = "Compila tutti i campi prima di cercare.";
+                return;
+            }
+
+            const indiceGiorno = giorno - 1;
+            let trovati = [];
+
+            databaseTurni.forEach(dipendente => {
+                if (dipendente.turni[indiceGiorno] === codice) {
+                    trovati.push(dipendente.nome);
+                }
+            });
+
+            if (trovati.length > 0) {
+                boxRisultato.innerHTML = `<strong>Trovati il giorno ${giorno} a fare ${codice}:</strong><ul><li>` + trovati.join("</li><li>") + "</li></ul>";
+            } else {
+                boxRisultato.innerHTML = "Nessuno trovato con questo turno in questa data.";
+            }
+        }
+
+        // --- MOTORE 2: CERCA CAMBI ---
+        function analizzaCicloLavorativo(turniMese, indiceGiorno) {
+            const turnoAttuale = turniMese[indiceGiorno];
+            if (turnoAttuale === "AL" || turnoAttuale === "RI" || turnoAttuale === "") return { fase: "Riposo", giornoEsatto: 0 };
+
+            let giorniLavorati = 1; 
+            let trovatoRiposoPassato = false;
+
+            for (let i = indiceGiorno - 1; i >= 0; i--) {
+                if (turniMese[i] === "AL" || turniMese[i] === "RI" || turniMese[i] === "") {
+                    trovatoRiposoPassato = true;
+                    break;
+                }
+                giorniLavorati++;
+            }
+
+            if (trovatoRiposoPassato) {
+                return determinaFaseDaGiorno(giorniLavorati);
+            }
+
+            let giorniAlProssimoRiposo = 0;
+            for (let i = indiceGiorno + 1; i < turniMese.length; i++) {
+                if (turniMese[i] === "AL" || turniMese[i] === "RI" || turniMese[i] === "") break;
+                giorniAlProssimoRiposo++;
+            }
+
+            const giornoStimato = 6 - giorniAlProssimoRiposo;
+            return determinaFaseDaGiorno(giornoStimato > 0 ? giornoStimato : giorniLavorati);
+        }
+
+        function determinaFaseDaGiorno(n) {
+            if (n === 1 || n === 2) return { fase: "Terzo", giornoEsatto: n };
+            if (n === 3 || n === 4) return { fase: "Mezzo", giornoEsatto: n };
+            if (n === 5 || n === 6) return { fase: "Primo", giornoEsatto: n };
+            return { fase: "Oltre 6 giorni", giornoEsatto: n };
+        }
+
+        function cercaCambi() {
+            const giorno = parseInt(document.getElementById('input-giorno-cambio').value);
+            const faseDesiderata = document.getElementById('select-fase-cambio').value;
+            const boxRisultato = document.getElementById('risultato-cambi');
+
+            if (!giorno) {
+                boxRisultato.innerHTML = "Inserisci il giorno del mese.";
+                return;
+            }
+
+            const indiceGiorno = giorno - 1;
+            let risultatiHtml = [];
+
+            databaseTurni.forEach(dipendente => {
+                const analisi = analizzaCicloLavorativo(dipendente.turni, indiceGiorno);
+                if (analisi.fase === faseDesiderata) {
+                    risultatiHtml.push(`<strong>${dipendente.nome}</strong> (Giorno lav. ${analisi.giornoEsatto}) - [Turno: ${dipendente.turni[indiceGiorno]}]`);
+                }
+            });
+
+            if (risultatiHtml.length > 0) {
+                boxRisultato.innerHTML = `<strong>Colleghi di ${faseDesiderata} il giorno ${giorno}:</strong><ul><li>` + risultatiHtml.join("</li><li>") + "</li></ul>";
+            } else {
+                boxRisultato.innerHTML = "Nessun collega trovato in questa fase per il giorno indicato.";
             }
         }
     </script>

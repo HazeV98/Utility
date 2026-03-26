@@ -151,7 +151,7 @@
         .file-row { display: flex; width: 100%; margin-bottom: 12px; gap: 8px; }
         .file-btn { flex-grow: 1; background-color: var(--primary); color: white; border: none; padding: 16px 10px; font-size: 15px; border-radius: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .file-btn:active { transform: translateY(2px); }
-        .btn-search { background-color: #28a745; flex: 0.5; font-size: 14px; } /* Bottone ricerca verde e un po' più piccolo */
+        .btn-search { background-color: #28a745; flex: 0.5; font-size: 14px; } 
 
         /* --- STILI PER LA FINESTRA DI RICERCA (MODAL) --- */
         .modal-overlay {
@@ -268,7 +268,7 @@
         const GITHUB_REPO = "Utility_test";
         const CARTELLA_BASE = "rotazioni";
 
-        let databaseTurni = []; // Conterrà i dati Excel
+        let databaseTurni = []; 
 
         // ==========================================
         // LOGICA DI AUTENTICAZIONE
@@ -299,6 +299,7 @@
             const errorMsg = document.getElementById('error-msg');
             
             try {
+                // Svuota-cache per l'autenticazione
                 const url = 'codici.json?t=' + new Date().getTime();
                 const response = await fetch(url);
                 
@@ -343,7 +344,9 @@
             area.innerHTML = `<div class="status-message">Caricamento programmi di lavoro in corso...</div>`;
 
             try {
-                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${CARTELLA_BASE}`);
+                // "?t=..." forza GitHub a non usare versioni vecchie in memoria
+                const timestamp = new Date().getTime();
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${CARTELLA_BASE}?t=${timestamp}`);
                 
                 if (!res.ok) {
                     area.innerHTML = `<div class="status-message">Nessun documento trovato. L'amministratore non ha ancora caricato i file.</div>`;
@@ -360,27 +363,34 @@
 
                 area.innerHTML = "";
 
-                // Generazione dei bottoni PDF + Bottone Ricerca Excel
                 pdfs.forEach(f => {
                     const row = document.createElement('div');
                     row.className = "file-row";
 
-                    // Bottone Apri PDF
                     const aOpen = document.createElement('a');
                     aOpen.className = "file-btn";
                     aOpen.innerText = "📄 " + pulisciNome(f.name);
-                    aOpen.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${f.name}`;
+                    aOpen.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${f.name}?t=${timestamp}`;
                     aOpen.target = "_blank";
-
-                    // Bottone Ricerca
-                    const btnSearch = document.createElement('button');
-                    btnSearch.className = "file-btn btn-search";
-                    btnSearch.innerText = "🔍 Cerca";
-                    // Passiamo il nome esatto del PDF per ricavare l'Excel
-                    btnSearch.onclick = () => apriFinestraRicerca(f.name);
-
+                    
                     row.appendChild(aOpen);
-                    row.appendChild(btnSearch);
+
+                    // Controlla nell'elenco pre-scaricato se esiste l'Excel gemello
+                    const baseName = f.name.substring(0, f.name.lastIndexOf('.'));
+                    const hasExcel = items.some(item => 
+                        item.type === "file" && 
+                        (item.name === baseName + ".xlsx" || item.name === baseName + ".xls")
+                    );
+
+                    // Aggiunge il bottone di ricerca solo se l'Excel esiste
+                    if (hasExcel) {
+                        const btnSearch = document.createElement('button');
+                        btnSearch.className = "file-btn btn-search";
+                        btnSearch.innerText = "🔍 Cerca";
+                        btnSearch.onclick = () => apriFinestraRicerca(f.name);
+                        row.appendChild(btnSearch);
+                    }
+
                     area.appendChild(row);
                 });
 
@@ -393,7 +403,6 @@
         // LOGICA RICERCA CON LETTURA EXCEL DIETRO LE QUINTE
         // ==========================================
         
-        // Regola Excel infallibile
         function isTurno(txt) {
             if (txt === undefined || txt === null) return false;
             txt = String(txt).replace(/[\s]+/g, '').toUpperCase();
@@ -416,22 +425,20 @@
             sezioniRicerca.style.display = 'none';
             statusEl.innerHTML = "Scaricamento e lettura della griglia Excel in corso...";
             
-            // Pulisce campi precedenti
             document.getElementById('risultato-turno').innerHTML = "";
             document.getElementById('risultato-cambi').innerHTML = "";
             databaseTurni = [];
 
-            // Calcola il nome del file Excel (prova .xlsx)
+            const timestamp = new Date().getTime();
             const excelName = pdfName.substring(0, pdfName.lastIndexOf('.')) + ".xlsx";
-            const urlExcel = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${excelName}`;
+            const urlExcel = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${excelName}?t=${timestamp}`;
 
             try {
                 let res = await fetch(urlExcel);
                 
-                // Se non trova il .xlsx, prova il .xls
                 if (!res.ok) {
                     const xlsName = pdfName.substring(0, pdfName.lastIndexOf('.')) + ".xls";
-                    res = await fetch(`https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${xlsName}`);
+                    res = await fetch(`https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${xlsName}?t=${timestamp}`);
                     if (!res.ok) throw new Error("File Excel non trovato nella repository.");
                 }
 
@@ -443,7 +450,6 @@
 
                 let currentPos = 0;
 
-                // Stesso identico ciclo perfetto dell'app stand-alone
                 rows.forEach(row => {
                     let firstTurnoIndex = -1;
                     let lastTurnoIndex = -1;

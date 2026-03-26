@@ -269,6 +269,7 @@
         const CARTELLA_BASE = "rotazioni";
 
         let databaseTurni = []; 
+        let listaFileGitHub = []; // Variabile globale che conterrà l'elenco esatto dei file forniti dall'API
 
         // ==========================================
         // LOGICA DI AUTENTICAZIONE
@@ -344,6 +345,7 @@
 
             try {
                 const timestamp = new Date().getTime();
+                // L'API di GitHub ci restituisce l'elenco ESATTO e aggiornato di ciò che c'è nella cartella
                 const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${CARTELLA_BASE}?t=${timestamp}`);
                 
                 if (!res.ok) {
@@ -351,8 +353,10 @@
                     return;
                 }
 
-                const items = await res.json();
-                const pdfs = items.filter(f => f.type === "file" && f.name.toLowerCase().endsWith('.pdf'));
+                // Salviamo la lista globale così possiamo estrarre i link diretti
+                listaFileGitHub = await res.json();
+                
+                const pdfs = listaFileGitHub.filter(f => f.type === "file" && f.name.toLowerCase().endsWith('.pdf'));
 
                 if (pdfs.length === 0) {
                     area.innerHTML = `<div class="status-message">Nessun PDF presente nella cartella.</div>`;
@@ -373,8 +377,7 @@
                     
                     row.appendChild(aOpen);
 
-                    // Il tasto Cerca ora appare SEMPRE per ogni PDF trovato.
-                    // Sarà poi la finestra di ricerca a dirti se l'Excel effettivamente c'è o no.
+                    // Il tasto appare sempre per avviare la ricerca
                     const btnSearch = document.createElement('button');
                     btnSearch.className = "file-btn btn-search";
                     btnSearch.innerText = "🔍 Cerca";
@@ -419,19 +422,29 @@
             document.getElementById('risultato-cambi').innerHTML = "";
             databaseTurni = [];
 
-            const timestamp = new Date().getTime();
-            // Genera il nome dell'Excel basandosi sul nome esatto del PDF
-            const excelName = pdfName.substring(0, pdfName.lastIndexOf('.')) + ".xlsx";
-            const urlExcel = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${excelName}?t=${timestamp}`;
+            // 1. Troviamo il nome base del PDF
+            const baseName = pdfName.substring(0, pdfName.lastIndexOf('.'));
+            const baseNameLower = baseName.toLowerCase().trim();
+
+            // 2. Cerchiamo il gemello Excel pescando direttamente dalla lista che GitHub ci ha fornito
+            const excelFile = listaFileGitHub.find(item => {
+                if (item.type !== "file") return false;
+                const itemNameLower = item.name.toLowerCase();
+                return itemNameLower === baseNameLower + ".xlsx" || itemNameLower === baseNameLower + ".xls";
+            });
+
+            if (!excelFile) {
+                statusEl.innerHTML = `<span style='color:var(--danger);'>Errore:</span> File Excel non trovato. Controlla che si chiami esattamente come il PDF all'interno della cartella '${CARTELLA_BASE}'.`;
+                return;
+            }
 
             try {
-                let res = await fetch(urlExcel);
-                
-                if (!res.ok) {
-                    const xlsName = pdfName.substring(0, pdfName.lastIndexOf('.')) + ".xls";
-                    res = await fetch(`https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${xlsName}?t=${timestamp}`);
-                    if (!res.ok) throw new Error("File Excel non trovato nella repository.");
-                }
+                // 3. LA SOLUZIONE: Usiamo il download_url nativo di GitHub, salta la cache di .github.io
+                const timestamp = new Date().getTime();
+                const urlExcelGrezzo = excelFile.download_url + `?t=${timestamp}`;
+
+                const res = await fetch(urlExcelGrezzo);
+                if (!res.ok) throw new Error("Il file esiste, ma GitHub ha bloccato il download diretto.");
 
                 const arrayBuffer = await res.arrayBuffer();
                 const data = new Uint8Array(arrayBuffer);
@@ -497,7 +510,7 @@
                 }
 
             } catch (error) {
-                statusEl.innerHTML = `<span style='color:var(--danger);'>Errore:</span> ${error.message}<br>Assicurati di aver caricato nella cartella '${CARTELLA_BASE}' un file Excel avente esattamente lo stesso nome del PDF.`;
+                statusEl.innerHTML = `<span style='color:var(--danger);'>Errore:</span> ${error.message}`;
             }
         }
 

@@ -202,7 +202,7 @@
     </div>
 
     <div id="auth-section">
-        <p>Area riservata. Inserisci il codice di accesso per visualizzare i turni.</p>
+        <p>Area riservata. Inserisci il codice di accesso per visualizzare le rotazioni</p>
         <input type="text" id="access-code" placeholder="Codice di accesso" maxlength="6" autocomplete="off">
         <button class="btn" onclick="verificaCodice()">Accedi</button>
         <div id="error-msg"></div>
@@ -232,8 +232,8 @@
                 <div class="modulo-ricerca">
                     <h4>Cerca chi fa un turno</h4>
                     <input type="number" id="input-giorno-turno" min="1" max="31" placeholder="Giorno (Es. 15)">
-                    <input type="text" id="input-codice-turno" placeholder="Codice (Es. 4P01)">
-                    <button class="btn" style="padding: 12px; margin-top:5px;" onclick="cercaTurno()">Cerca Colleghi</button>
+                    <input type="text" id="input-codice-turno" placeholder="Turno">
+                    <button class="btn" style="padding: 12px; margin-top:5px;" onclick="cercaTurno()">Cerca</button>
                     <div id="risultato-turno" class="risultato-box"></div>
                 </div>
 
@@ -241,11 +241,11 @@
                     <h4>Trova cambi turno</h4>
                     <input type="number" id="input-giorno-cambio" min="1" max="31" placeholder="Giorno del mese (1-31)">
                     <select id="select-fase-cambio">
-                        <option value="Terzo">Di Terzo (Primi due giorni)</option>
-                        <option value="Mezzo">Di Mezzo (3° e 4° giorno)</option>
-                        <option value="Primo">Di Primo (5° e 6° giorno)</option>
+                        <option value="Terzo">Di Terzo</option>
+                        <option value="Mezzo">Di Mezzo</option>
+                        <option value="Primo">Di Primo</option>
                     </select>
-                    <button class="btn" style="padding: 12px; margin-top:5px;" onclick="cercaCambi()">Trova Sostituti</button>
+                    <button class="btn" style="padding: 12px; margin-top:5px;" onclick="cercaCambi()">Cerca</button>
                     <div id="risultato-cambi" class="risultato-box"></div>
                 </div>
             </div>
@@ -341,7 +341,7 @@
 
         async function caricaRotazioni() {
             const area = document.getElementById('rotazioni-list');
-            area.innerHTML = `<div class="status-message">Caricamento programmi di lavoro in corso...</div>`;
+            area.innerHTML = `<div class="status-message">Caricamento rotazioni in corso...</div>`;
 
             try {
                 const timestamp = new Date().getTime();
@@ -419,7 +419,7 @@
             
             modal.style.display = 'flex';
             sezioniRicerca.style.display = 'none';
-            statusEl.innerHTML = "Scaricamento e lettura della griglia Excel in corso...";
+            statusEl.innerHTML = "Caricamento in corso...";
             
             document.getElementById('risultato-turno').innerHTML = "";
             document.getElementById('risultato-cambi').innerHTML = "";

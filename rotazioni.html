@@ -299,7 +299,6 @@
             const errorMsg = document.getElementById('error-msg');
             
             try {
-                // Svuota-cache per l'autenticazione
                 const url = 'codici.json?t=' + new Date().getTime();
                 const response = await fetch(url);
                 
@@ -344,7 +343,6 @@
             area.innerHTML = `<div class="status-message">Caricamento programmi di lavoro in corso...</div>`;
 
             try {
-                // "?t=..." forza GitHub a non usare versioni vecchie in memoria
                 const timestamp = new Date().getTime();
                 const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${CARTELLA_BASE}?t=${timestamp}`);
                 
@@ -375,21 +373,13 @@
                     
                     row.appendChild(aOpen);
 
-                    // Controlla nell'elenco pre-scaricato se esiste l'Excel gemello
-                    const baseName = f.name.substring(0, f.name.lastIndexOf('.'));
-                    const hasExcel = items.some(item => 
-                        item.type === "file" && 
-                        (item.name === baseName + ".xlsx" || item.name === baseName + ".xls")
-                    );
-
-                    // Aggiunge il bottone di ricerca solo se l'Excel esiste
-                    if (hasExcel) {
-                        const btnSearch = document.createElement('button');
-                        btnSearch.className = "file-btn btn-search";
-                        btnSearch.innerText = "🔍 Cerca";
-                        btnSearch.onclick = () => apriFinestraRicerca(f.name);
-                        row.appendChild(btnSearch);
-                    }
+                    // Il tasto Cerca ora appare SEMPRE per ogni PDF trovato.
+                    // Sarà poi la finestra di ricerca a dirti se l'Excel effettivamente c'è o no.
+                    const btnSearch = document.createElement('button');
+                    btnSearch.className = "file-btn btn-search";
+                    btnSearch.innerText = "🔍 Cerca";
+                    btnSearch.onclick = () => apriFinestraRicerca(f.name);
+                    row.appendChild(btnSearch);
 
                     area.appendChild(row);
                 });
@@ -430,6 +420,7 @@
             databaseTurni = [];
 
             const timestamp = new Date().getTime();
+            // Genera il nome dell'Excel basandosi sul nome esatto del PDF
             const excelName = pdfName.substring(0, pdfName.lastIndexOf('.')) + ".xlsx";
             const urlExcel = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${excelName}?t=${timestamp}`;
 
@@ -506,7 +497,7 @@
                 }
 
             } catch (error) {
-                statusEl.innerHTML = `<span style='color:var(--danger);'>Errore:</span> ${error.message}<br>Assicurati di aver caricato nella cartella '${CARTELLA_BASE}' un file <b>${excelName}</b> corrispondente.`;
+                statusEl.innerHTML = `<span style='color:var(--danger);'>Errore:</span> ${error.message}<br>Assicurati di aver caricato nella cartella '${CARTELLA_BASE}' un file Excel avente esattamente lo stesso nome del PDF.`;
             }
         }
 

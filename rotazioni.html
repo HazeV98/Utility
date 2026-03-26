@@ -107,6 +107,13 @@
             text-transform: uppercase;
             letter-spacing: 2px;
         }
+
+        /* --- Sblocca il maiuscolo solo per i placeholder (testo di suggerimento) --- */
+        input[type="text"]::placeholder {
+            text-transform: none;
+            font-size: 16px;
+            letter-spacing: normal;
+        }
         
         .btn {
             background-color: var(--primary);
@@ -419,6 +426,8 @@
             
             modal.style.display = 'flex';
             sezioniRicerca.style.display = 'none';
+            // Assicuriamoci che il messaggio sia visibile in fase di caricamento
+            statusEl.style.display = 'block';
             statusEl.innerHTML = "Caricamento in corso...";
             
             document.getElementById('risultato-turno').innerHTML = "";
@@ -581,7 +590,8 @@
                 }
 
                 if (foundAnyTurns) {
-                    statusEl.innerHTML = `<span style="color:var(--success); font-weight:bold;">Connesso al database Excel.</span> Trovati ${databaseTurni.length} colleghi/armi pronti per la ricerca.`;
+                    // Nasconde completamente il messaggio per lasciare spazio ai moduli
+                    statusEl.style.display = 'none';
                     sezioniRicerca.style.display = 'block';
                 } else {
                     statusEl.innerHTML = "<span style='color:var(--danger);'>Errore: Struttura del calendario (riga con numeri 1, 2, 3...) non trovata in nessuna scheda dell'Excel.</span>";

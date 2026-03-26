@@ -395,7 +395,8 @@
         function isTurno(txt) {
             if (txt === undefined || txt === null) return false;
             txt = String(txt).replace(/[\s]+/g, '').toUpperCase();
-            if (txt === "AL" || txt === "RI" || txt === "DISP" || txt === "ESPE") return true;
+            // ---> AGGIUNTO 'DI' COME TURNO VALIDO <---
+            if (txt === "AL" || txt === "RI" || txt === "DISP" || txt === "ESPE" || txt === "DI") return true;
             if (txt.length === 4 && /[0-9]/.test(txt)) return true;
             if (/^[0-9]{4}$/.test(txt)) return true; 
             return false;
@@ -421,14 +422,12 @@
             const timestamp = new Date().getTime();
             const baseName = pdfName.substring(0, pdfName.lastIndexOf('.'));
             
-            // Tentativo 1: Connessione diretta forzata
             let targetUrl = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${encodeURIComponent(baseName)}.xlsx?t=${timestamp}`;
             let res;
 
             try {
                 res = await fetch(targetUrl);
                 
-                // Tentativo 2: Connessione tramite le API di GitHub
                 if (!res.ok) {
                     const baseNameLower = baseName.toLowerCase().trim();
                     const excelFile = listaFileGitHub.find(item => {
@@ -448,72 +447,100 @@
                 const data = new Uint8Array(arrayBuffer);
                 const workbook = XLSX.read(data, {type: 'array'});
                 
-                let currentPos = 0;
                 let foundAnyTurns = false;
 
-                // --- NOVITÀ: Ricerca Multi-Foglio ---
-                // Il sistema ora scansiona tutti i fogli dell'Excel, ignorando "Algoritmo" o fogli vuoti,
-                // e si concentra solo su quello che contiene la reale griglia dei 31 giorni.
+                // --- SISTEMA AD ANCORAGGIO ASSOLUTO ---
                 for (let sheetName of workbook.SheetNames) {
                     const worksheet = workbook.Sheets[sheetName];
                     const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-                    let foundInThisSheet = false;
+                    let headerRowIndex = -1;
+                    let dayColIndices = new Array(31).fill(-1);
 
-                    rows.forEach(row => {
-                        let firstTurnoIndex = -1;
-                        let lastTurnoIndex = -1;
+                    for (let r = 0; r < rows.length; r++) {
+                        let row = rows[r];
+                        if (!row) continue;
                         
-                        for(let i = 0; i < row.length; i++) {
-                            if (isTurno(row[i])) {
-                                if (firstTurnoIndex === -1) firstTurnoIndex = i;
-                                lastTurnoIndex = i;
+                        for (let c = 0; c < row.length - 2; c++) {
+                            let cell1 = String(row[c]).trim();
+                            let cell2 = String(row[c+1]).trim();
+                            let cell3 = String(row[c+2]).trim();
+                            
+                            if (cell1 === "1" && cell2 === "2" && cell3 === "3") {
+                                headerRowIndex = r;
+                                
+                                for (let d = 1; d <= 31; d++) {
+                                    for (let look = c; look < row.length; look++) {
+                                        if (String(row[look]).trim() === String(d)) {
+                                            dayColIndices[d - 1] = look;
+                                            break;
+                                        }
+                                    }
+                                }
+                                break;
                             }
                         }
+                        if (headerRowIndex !== -1) break;
+                    }
+
+                    if (headerRowIndex !== -1) {
+                        let currentPos = 0;
                         
-                        if (lastTurnoIndex !== -1 && (lastTurnoIndex - firstTurnoIndex) >= 27) {
-                            foundInThisSheet = true;
-                            currentPos++;
-                            let startIndex = lastTurnoIndex - 30; 
-                            if (startIndex < 0) startIndex = 0;
-                            
-                            let bloccoGiorni = [];
-                            
-                            for (let i = startIndex; i <= lastTurnoIndex; i++) {
-                                let cella = row[i];
-                                if (isTurno(cella)) {
-                                    bloccoGiorni.push(String(cella).replace(/[\s]+/g, '').toUpperCase());
-                                } else {
-                                    bloccoGiorni.push(""); 
-                                }
-                            }
-                            
-                            let nameParts = [];
-                            for (let i = 0; i < startIndex; i++) {
-                                if (row[i]) {
-                                    let txt = String(row[i]).replace(/[0-9]/g, '').trim();
-                                    // Filtriamo via le lettere isolate e i nomi dei mesi
-                                    if (txt.length >= 2 && !["AL", "RI"].includes(txt.toUpperCase()) && !["MARZO","APRILE","MAGGIO","GIUGNO","LUGLIO","AGOSTO","MESE","AGENTI","DO","LU","MA","ME","GI","VE","SA"].includes(txt.toUpperCase())) {
-                                        nameParts.push(txt);
+                        for (let r = headerRowIndex + 1; r < rows.length; r++) {
+                            let row = rows[r];
+                            if (!row || row.length === 0) continue;
+
+                            let bloccoGiorni = new Array(31).fill("");
+                            let conteggioValidi = 0;
+
+                            for (let d = 0; d < 31; d++) {
+                                let colIdx = dayColIndices[d];
+                                if (colIdx !== -1 && colIdx < row.length) {
+                                    let cella = row[colIdx];
+                                    if (cella) {
+                                        let val = String(cella).replace(/[\s]+/g, '').toUpperCase();
+                                        if (isTurno(val)) {
+                                            // ---> NORMALIZZAZIONE: DA 'DI' a 'DISP' <---
+                                            if (val === "DI") {
+                                                val = "DISP";
+                                            }
+
+                                            bloccoGiorni[d] = val;
+                                            conteggioValidi++;
+                                        }
                                     }
                                 }
                             }
-                            
-                            let nomeFinale = nameParts.join(" ");
-                            if (!nomeFinale) nomeFinale = `Collega (Posizione ${currentPos})`;
 
-                            databaseTurni.push({
-                                pos: currentPos,
-                                nome: nomeFinale,
-                                turni: bloccoGiorni 
-                            });
+                            if (conteggioValidi >= 15) {
+                                currentPos++;
+                                
+                                let firstDayCol = dayColIndices[0];
+                                let nameParts = [];
+                                for (let c = 0; c < firstDayCol; c++) {
+                                    if (row[c]) {
+                                        let txt = String(row[c]).replace(/[0-9]/g, '').trim();
+                                        if (txt.length >= 2 && !["AL", "RI"].includes(txt.toUpperCase()) && !["MARZO","APRILE","MAGGIO","GIUGNO","LUGLIO","AGOSTO","SETTEMBRE","OTTOBRE","NOVEMBRE","DICEMBRE","GENNAIO","FEBBRAIO","MESE","AGENTI","DO","LU","MA","ME","GI","VE","SA"].includes(txt.toUpperCase())) {
+                                            nameParts.push(txt);
+                                        }
+                                    }
+                                }
+                                
+                                let nomeFinale = nameParts.join(" ");
+                                if (!nomeFinale) nomeFinale = `Collega (Posizione ${currentPos})`;
+
+                                databaseTurni.push({
+                                    pos: currentPos,
+                                    nome: nomeFinale,
+                                    turni: bloccoGiorni 
+                                });
+                            }
                         }
-                    });
-
-                    // Se abbiamo trovato i turni, segniamo che abbiamo avuto successo e non serve scansionare gli altri fogli
-                    if (foundInThisSheet && databaseTurni.length > 0) {
-                        foundAnyTurns = true;
-                        break; 
+                        
+                        if (databaseTurni.length > 0) {
+                            foundAnyTurns = true;
+                            break;
+                        }
                     }
                 }
 
@@ -521,7 +548,7 @@
                     statusEl.innerHTML = `<span style="color:var(--success); font-weight:bold;">Connesso al database Excel.</span> Trovati ${databaseTurni.length} colleghi pronti per la ricerca.`;
                     sezioniRicerca.style.display = 'block';
                 } else {
-                    statusEl.innerHTML = "<span style='color:var(--danger);'>Errore: Struttura turni non rilevata nell'Excel. (Nessun foglio valido trovato)</span>";
+                    statusEl.innerHTML = "<span style='color:var(--danger);'>Errore: Struttura del calendario (riga con numeri 1, 2, 3...) non trovata in nessuna scheda dell'Excel.</span>";
                 }
 
             } catch (error) {

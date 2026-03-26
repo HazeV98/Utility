@@ -1469,24 +1469,38 @@
     function attivaRotazioneFinale() {
         const valStr = document.getElementById('tSel').value;
         if (!valStr) return;
-        const val = parseInt(valStr);
-        if(isNaN(val)) return;
+        
+        // GESTIONE SPECIALE: RIPOSO MANUALE o DISP IN RUOTA
+        let isSkipDay = false;
+        if (valStr === "RIPOSO") {
+            isSkipDay = true;
+        } else {
+            const val = parseInt(valStr);
+            if(isNaN(val)) return;
 
-        const currentRotRules = getRotazionePerData(tempRotDate);
-        if (currentRotRules && currentRotRules[state.depositoAttivo]) {
-            if (currentRotRules[state.depositoAttivo][val] && currentRotRules[state.depositoAttivo][val].toUpperCase() === "DISP") {
-                let d = creaDataSicura(tempRotDate); d.setDate(d.getDate() + 1);
-                let dStr = dateToLocalISO(d);
-                while(isGiornoRiposo(dStr)) { d.setDate(d.getDate() + 1); dStr = dateToLocalISO(d); }
-                tempRotDate = dStr;
-                
-                document.getElementById('stepDateDisplay').innerText = ""; 
-                document.getElementById('stepDesc').innerHTML = `Che turno avrai il <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong>?`;
-                
-                document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
-                return; 
+            const currentRotRules = getRotazionePerData(tempRotDate);
+            if (currentRotRules && currentRotRules[state.depositoAttivo]) {
+                if (currentRotRules[state.depositoAttivo][val] && currentRotRules[state.depositoAttivo][val].toUpperCase() === "DISP") {
+                    isSkipDay = true;
+                }
             }
         }
+
+        if (isSkipDay) {
+            let d = creaDataSicura(tempRotDate); d.setDate(d.getDate() + 1);
+            let dStr = dateToLocalISO(d);
+            while(isGiornoRiposo(dStr)) { d.setDate(d.getDate() + 1); dStr = dateToLocalISO(d); }
+            tempRotDate = dStr;
+            
+            document.getElementById('stepDateDisplay').innerText = ""; 
+            document.getElementById('stepDesc').innerHTML = `Che turno avrai il <strong style="color: var(--turno);">${formattaData(tempRotDate)}</strong>?`;
+            
+            document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
+            return; 
+        }
+
+        const val = parseInt(valStr);
+        if(isNaN(val)) return;
 
         if (state.setupStep === 2) {
             state.turnoIndex = val; state.rotazioneStart = tempRotDate;
@@ -1755,6 +1769,9 @@
         if (!rot || !rot[state.depositoAttivo]) return ""; 
         let htmlDisp = "", htmlTurni = "", dispAggiunto = false;
         
+        // OPZIONE RIPOSO IN CIMA
+        let htmlRiposo = `<option value="RIPOSO" style="font-weight:bold; color:var(--riposo);">RIPOSO</option>`;
+        
         rot[state.depositoAttivo].map((n, i) => ({ n: n.toUpperCase(), i: i }))
             .sort((a, b) => a.n.localeCompare(b.n, undefined, {numeric: true}))
             .forEach(item => {
@@ -1766,7 +1783,7 @@
             htmlDisp = `<option value="DISP">DISP</option>`;
         }
         
-        return htmlDisp + htmlTurni;
+        return htmlRiposo + htmlDisp + htmlTurni;
     }
 
     function salvaCambioSingolo() { 
@@ -1916,4 +1933,3 @@
 </script>
 </body>
 </html>
- 

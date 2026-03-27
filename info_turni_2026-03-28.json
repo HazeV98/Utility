@@ -3274,5 +3274,41 @@
     "luogoInizio": "DEP. F.TE NOVE",
     "fine": "5:24",
     "luogoFine": "DEP. F.TE NOVE"
+  }, 
+  "CO01": {
+    "inizio": "05:30",
+    "luogoInizio": "Tronchetto",
+    "fine": "12.34",
+    "luogoFine": "Tronchetto"
+  },
+  "CO51": {
+    "inizio": "05:30",
+    "luogoInizio": "Tronchetto",
+    "fine": "12.34",
+    "luogoFine": "Tronchetto"
+  }, 
+  "CO02": {
+    "inizio": "11:30",
+    "luogoInizio": "Tronchetto",
+    "fine": "18.34",
+    "luogoFine": "Tronchetto"
+  },
+  "CO52": {
+    "inizio": "11:30",
+    "luogoInizio": "Tronchetto",
+    "fine": "18.34",
+    "luogoFine": "Tronchetto"
+  },
+  "CO03": {
+    "inizio": "18:30",
+    "luogoInizio": "Tronchetto",
+    "fine": "01.34",
+    "luogoFine": "Tronchetto"
+  },
+  "CO53": {
+    "inizio": "18:30",
+    "luogoInizio": "Tronchetto",
+    "fine": "01.34",
+    "luogoFine": "Tronchetto"
   }
 }

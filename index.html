@@ -233,6 +233,39 @@
             navigator.serviceWorker.register('sw.js').then(() => console.log("SW OK"));
         }
 
+                // ==========================================
+        // GESTIONE INSTALLAZIONE PWA (TASTO VERDE)
+        // ==========================================
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Previene il banner automatico di Chrome
+            e.preventDefault();
+            // Salva l'evento in memoria
+            deferredPrompt = e;
+            // Mostra il nostro tasto verde
+            installBtn.style.display = 'block';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                // Mostra la richiesta nativa di installazione
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installBtn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            // Nascondi definitivamente il tasto una volta installata
+            installBtn.style.display = 'none';
+        });
+
+
         // ==========================================
         // GESTIONE TASTI NASCOSTI (Admin e Rotazioni)
         // ==========================================

@@ -251,7 +251,7 @@
         // --- FUNZIONE CENTRALE CHE DETERMINA SE SPETTA IL BUONO ---
         function isBuonoMaturato(dStr, state, esclusiArray) {
             let isSospeso = state.sospesoRiposo && state.sospesoRiposo[dStr];
-            let isBuonoUsato = state.buonoPastoUsato && state.buonoPastoUsato[dStr]; 
+            let isBuonoUsato = state.buonoPasto && state.buonoPasto[dStr]; // <-- CORRETTO
             
             if (isBuonoUsato) return false;
             

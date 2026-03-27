@@ -249,11 +249,13 @@
         }
 
         // --- FUNZIONE CENTRALE CHE DETERMINA SE SPETTA IL BUONO ---
-        function isBuonoMaturato(dStr, state, esclusiArray) {
+        // Aggiunto parametro "ignoraUso" per il calcolatore delle presenze
+        function isBuonoMaturato(dStr, state, esclusiArray, ignoraUso = false) {
             let isSospeso = state.sospesoRiposo && state.sospesoRiposo[dStr];
-            let isBuonoUsato = state.buonoPasto && state.buonoPasto[dStr]; // <-- CORRETTO
+            let isBuonoUsato = state.buonoPasto && state.buonoPasto[dStr]; 
             
-            if (isBuonoUsato) return false;
+            // Se stiamo calcolando le presenze, non ci interessa se il buono è già stato usato!
+            if (!ignoraUso && isBuonoUsato) return false;
             
             let turnoVal = (state.variazioni && state.variazioni[dStr]) ? state.variazioni[dStr].toUpperCase() : "";
 
@@ -551,7 +553,8 @@
             for (let i = giornoInizio; i <= giornoFine; i++) {
                 let d = new Date(anno, mese, i, 0, 0, 0);
                 let dStr = formatStr(d);
-                if (isBuonoMaturato(dStr, state, esclusiArray)) {
+                // Passiamo "true" alla funzione per dirgli: "Ignora se il buono è già stato usato!"
+                if (isBuonoMaturato(dStr, state, esclusiArray, true)) {
                     conteggio++;
                 }
             }

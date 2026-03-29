@@ -472,6 +472,16 @@
                 <input type="number" id="minutiStraordAltro" placeholder="Minuti" min="0" max="59" style="flex: 1; padding: 12px; margin: 0; border: 2px solid #e9ecef; border-radius: 10px; font-size: 15px;">
             </div>
 
+            <label style="display: flex; align-items: center; font-size: 15px; color: #525f7f; margin-top: 15px; font-weight: bold; cursor: pointer;">
+                <input type="checkbox" id="checkPermessoSPAltro" style="width: 22px; height: 22px; margin-right: 10px; accent-color: #f5365c;" onchange="togglePermessoSPAltro()">
+                💸 Permesso Senza Paga
+            </label>
+            
+            <div id="permessoSPInputsAltro" style="display: none; margin-top: 10px; flex-direction: row; gap: 10px;">
+                <input type="number" id="orePermessoSPAltro" placeholder="Ore" min="0" style="flex: 1; padding: 12px; margin: 0; border: 2px solid #e9ecef; border-radius: 10px; font-size: 15px;">
+                <input type="number" id="minutiPermessoSPAltro" placeholder="Minuti" min="0" max="59" style="flex: 1; padding: 12px; margin: 0; border: 2px solid #e9ecef; border-radius: 10px; font-size: 15px;">
+            </div>
+
             <hr style="border: 0; border-top: 1px solid #e9ecef; margin: 15px 0;">
             
             <label style="display: block; font-size: 15px; color: #525f7f; margin-bottom: 8px; font-weight: bold;">📝 Note:</label>
@@ -672,7 +682,7 @@
             let giornoNome = giorniSettimana[dObj.getDay()];
             let ev = turni.find(t => t.start === dStr);
             
-            let titolo = ev ? ev.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝/g, '').trim() : "";
+            let titolo = ev ? ev.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝| 💸/g, '').trim() : "";
             let codiceBase = titolo.toUpperCase();
 
             let locMonta = "", dalle = "", alle = "", note = "";
@@ -794,13 +804,14 @@
         tc_rot_17tr: false
     };
 
-    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, nebbia: {}, straordinario: {}, sospesoRiposo: {}, note: {}, buonoPasto: {}, setupStep: 0, dbCache: {}, rotCache: {}, dispCache: {} };
+    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, nebbia: {}, straordinario: {}, sospesoRiposo: {}, note: {}, buonoPasto: {}, permessoSP: {}, setupStep: 0, dbCache: {}, rotCache: {}, dispCache: {} };
     if (!state.colori) state.colori = {}; 
     if (!state.nebbia) state.nebbia = {};
     if (!state.straordinario) state.straordinario = {};
     if (!state.sospesoRiposo) state.sospesoRiposo = {};
     if (!state.note) state.note = {};
     if (!state.buonoPasto) state.buonoPasto = {};
+    if (!state.permessoSP) state.permessoSP = {};
     if (!state.dispCache) state.dispCache = {};
     if (!state.coloriRotazione) state.coloriRotazione = {}; 
 
@@ -1146,7 +1157,7 @@
             let turnoCorrenteObj = turniCalc.find(e => e.start === date);
             
             let nomeTurnoCompleto = turnoCorrenteObj ? turnoCorrenteObj.title : "Nessun turno";
-            let nomeTurnoPulito = nomeTurnoCompleto.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝/g, '').trim();
+            let nomeTurnoPulito = nomeTurnoCompleto.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝| 💸/g, '').trim();
             let codiceBase = nomeTurnoPulito.toUpperCase();
             
             document.getElementById('singleTurnoSelect').style.display = 'block';
@@ -1158,7 +1169,7 @@
                 delete state.variazioni[date];
                 let turniSenzaVariazioni = calcolaTurni();
                 let turnoOrigObj = turniSenzaVariazioni.find(e => e.start === date);
-                let origPulito = turnoOrigObj ? turnoOrigObj.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝/g, '').trim() : "Nessun turno";
+                let origPulito = turnoOrigObj ? turnoOrigObj.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝| 💸/g, '').trim() : "Nessun turno";
                 htmlInfo += `<br><span style="font-size: 0.9em; color: #8898aa;"><b>Turno originale:</b> ${origPulito}</span>`;
                 state.variazioni[date] = tempVar;
             }
@@ -1183,12 +1194,13 @@
                 htmlInfo += `<b>Inizio:</b> ${dettagli.inizio} (${dettagli.luogoInizio})<br><b>Fine:</b> ${dettagli.fine} (${dettagli.luogoFine})`;
             }
 
-            if (state.nebbia[date] || state.straordinario[date] || state.sospesoRiposo[date] || state.note[date] || state.buonoPasto[date]) {
+            if (state.nebbia[date] || state.straordinario[date] || state.sospesoRiposo[date] || state.note[date] || state.buonoPasto[date] || state.permessoSP[date]) {
                 htmlInfo += `<hr style="margin:10px 0; border:0; border-top:1px solid #eee;">`;
                 if (state.sospesoRiposo[date]) htmlInfo += `<div style="margin-bottom: 5px;"><b>Riposo:</b> Sospeso</div>`;
                 if (state.nebbia[date]) htmlInfo += `<div style="margin-bottom: 5px;">🌫️ <b>Indennità Nebbia:</b> Presente</div>`;
                 if (state.buonoPasto[date]) htmlInfo += `<div style="margin-bottom: 5px;">🍝 <b>Buono Pasto:</b> Utilizzato</div>`;
                 if (state.straordinario[date]) htmlInfo += `<div style="margin-bottom: 5px;">⏱️ <b>Straordinario:</b> ${state.straordinario[date].ore}h ${state.straordinario[date].minuti}m</div>`;
+                if (state.permessoSP[date]) htmlInfo += `<div style="margin-bottom: 5px;">💸 <b>Perm. Senza Paga:</b> ${state.permessoSP[date].ore}h ${state.permessoSP[date].minuti}m</div>`;
                 if (state.note[date]) htmlInfo += `<div style="margin-top: 5px; white-space: pre-wrap;">📝 <b>Note:</b><br>${state.note[date]}</div>`;
             }
 
@@ -1229,6 +1241,12 @@
         document.getElementById('straordinarioInputsAltro').style.display = hasStraord ? 'flex' : 'none';
         document.getElementById('oreStraordAltro').value = hasStraord ? state.straordinario[selectedDate].ore : '';
         document.getElementById('minutiStraordAltro').value = hasStraord ? state.straordinario[selectedDate].minuti : '';
+
+        let hasPermessoSP = !!state.permessoSP[selectedDate];
+        document.getElementById('checkPermessoSPAltro').checked = hasPermessoSP;
+        document.getElementById('permessoSPInputsAltro').style.display = hasPermessoSP ? 'flex' : 'none';
+        document.getElementById('orePermessoSPAltro').value = hasPermessoSP ? state.permessoSP[selectedDate].ore : '';
+        document.getElementById('minutiPermessoSPAltro').value = hasPermessoSP ? state.permessoSP[selectedDate].minuti : '';
         
         document.getElementById('notaAltro').value = state.note[selectedDate] || "";
         
@@ -1250,6 +1268,11 @@
     function toggleStraordinarioAltro() {
         const isChecked = document.getElementById('checkStraordinarioAltro').checked;
         document.getElementById('straordinarioInputsAltro').style.display = isChecked ? 'flex' : 'none';
+    }
+
+    function togglePermessoSPAltro() {
+        const isChecked = document.getElementById('checkPermessoSPAltro').checked;
+        document.getElementById('permessoSPInputsAltro').style.display = isChecked ? 'flex' : 'none';
     }
 
     function selezionaColoreAltro(hex, el) {
@@ -1292,6 +1315,15 @@
             };
         } else {
             delete state.straordinario[selectedDate];
+        }
+
+        if (document.getElementById('checkPermessoSPAltro').checked) {
+            state.permessoSP[selectedDate] = {
+                ore: document.getElementById('orePermessoSPAltro').value || "0",
+                minuti: document.getElementById('minutiPermessoSPAltro').value || "0"
+            };
+        } else {
+            delete state.permessoSP[selectedDate];
         }
 
         const notaVal = document.getElementById('notaAltro').value.trim();
@@ -1584,6 +1616,7 @@
             if (state.straordinario[dStr]) titleAddon += " ⏱️";
             if (state.buonoPasto[dStr]) titleAddon += " 🍝";
             if (state.sospesoRiposo[dStr]) titleAddon += " (Sospeso)";
+            if (state.permessoSP[dStr]) titleAddon += " 💸";
             if (state.note[dStr]) titleAddon += " 📝";
 
             if (state.variazioni[dStr]) {
@@ -1707,7 +1740,8 @@
             ...Object.keys(state.sospesoRiposo || {}),
             ...Object.keys(state.colori || {}),
             ...Object.keys(state.note || {}),
-            ...Object.keys(state.buonoPasto || {})
+            ...Object.keys(state.buonoPasto || {}),
+            ...Object.keys(state.permessoSP || {})
         ]);
 
         chiaviModificate.forEach(dStr => {
@@ -1742,6 +1776,7 @@
                 if (state.straordinario[dStr]) titleAddon += " ⏱️";
                 if (state.buonoPasto[dStr]) titleAddon += " 🍝";
                 if (state.sospesoRiposo[dStr]) titleAddon += " (Sospeso)";
+                if (state.permessoSP[dStr]) titleAddon += " 💸";
                 if (state.note[dStr]) titleAddon += " 📝";
 
                 let titleTxt = state.variazioni[dStr] ? state.variazioni[dStr] : "NOTA";
@@ -1804,6 +1839,7 @@
         delete state.sospesoRiposo[selectedDate];
         delete state.note[selectedDate];
         delete state.buonoPasto[selectedDate];
+        delete state.permessoSP[selectedDate];
         salvaLocal(); 
         location.reload(); 
     }
@@ -1867,7 +1903,7 @@
             const nextParts = nextDateStr.split('-');
             const icsNextDate = nextParts[0] + nextParts[1] + nextParts[2];
             
-            let pulitoTitle = t.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝/g, '').trim();
+            let pulitoTitle = t.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝| 💸/g, '').trim();
             const uid = t.start + "-" + pulitoTitle.replace(/\s+/g, '') + "@myturniapp";
             const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + "Z";
             
@@ -1933,3 +1969,4 @@
 </script>
 </body>
 </html>
+ 

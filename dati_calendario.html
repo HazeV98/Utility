@@ -120,6 +120,10 @@
                 <div class="stat-label">⏱️ Ore Straordinario</div>
                 <div class="stat-value" id="resStraord">0h 0m</div>
             </div>
+            <div class="stat-row">
+                <div class="stat-label">💸 Permesso Senza Paga</div>
+                <div class="stat-value highlight" id="resPermessoSP">0h 0m</div>
+            </div>
         </div>
     </div>
 
@@ -143,7 +147,7 @@
                 return;
             }
 
-            let state = JSON.parse(localStorage.getItem('myTurniApp')) || { variazioni: {}, straordinario: {}, sospesoRiposo: {}, nebbia: {} };
+            let state = JSON.parse(localStorage.getItem('myTurniApp')) || { variazioni: {}, straordinario: {}, sospesoRiposo: {}, nebbia: {}, permessoSP: {} };
             
             let stats = {
                 ferie: 0,
@@ -152,7 +156,8 @@
                 nebbia: 0,
                 malattia: 0,
                 sangue: 0,
-                straordMinutiTotali: 0
+                straordMinutiTotali: 0,
+                permessoSPMinutiTotali: 0
             };
 
             let dateArray = [];
@@ -163,7 +168,8 @@
                     ...Object.keys(state.variazioni || {}),
                     ...Object.keys(state.sospesoRiposo || {}),
                     ...Object.keys(state.straordinario || {}),
-                    ...Object.keys(state.nebbia || {})
+                    ...Object.keys(state.nebbia || {}),
+                    ...Object.keys(state.permessoSP || {})
                 ]);
                 dateArray = Array.from(allDates);
                 
@@ -215,6 +221,13 @@
                     let m = parseInt(state.straordinario[dStr].minuti) || 0;
                     stats.straordMinutiTotali += (h * 60) + m;
                 }
+
+                // CALCOLA PERMESSO SENZA PAGA
+                if (state.permessoSP && state.permessoSP[dStr]) {
+                    let hSP = parseInt(state.permessoSP[dStr].ore) || 0;
+                    let mSP = parseInt(state.permessoSP[dStr].minuti) || 0;
+                    stats.permessoSPMinutiTotali += (hSP * 60) + mSP;
+                }
             });
 
             // Stampa a schermo
@@ -228,6 +241,10 @@
             let finalHours = Math.floor(stats.straordMinutiTotali / 60);
             let finalMins = stats.straordMinutiTotali % 60;
             document.getElementById('resStraord').innerText = `${finalHours}h ${finalMins}m`;
+
+            let finalHoursSP = Math.floor(stats.permessoSPMinutiTotali / 60);
+            let finalMinsSP = stats.permessoSPMinutiTotali % 60;
+            document.getElementById('resPermessoSP').innerText = `${finalHoursSP}h ${finalMinsSP}m`;
 
             document.getElementById('results').style.display = 'block';
         }

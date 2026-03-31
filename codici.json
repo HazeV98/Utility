@@ -22,5 +22,11 @@
     "nome": "Fuin Raffaele",
     "data_creazione": "2026-03-27",
     "attivo": true
+  },
+  {
+    "codice": "XD2FDC",
+    "nome": "Scarpa Giada",
+    "data_creazione": "2026-03-31",
+    "attivo": true
   }
 ]

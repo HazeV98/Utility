@@ -28,5 +28,11 @@
     "nome": "Scarpa Giada",
     "data_creazione": "2026-03-31",
     "attivo": true
+  },
+  {
+    "codice": "BY4DDP",
+    "nome": "Scarpa Enrico",
+    "data_creazione": "2026-03-31",
+    "attivo": true
   }
 ]

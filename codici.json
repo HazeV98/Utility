@@ -34,5 +34,11 @@
     "nome": "Scarpa Enrico",
     "data_creazione": "2026-03-31",
     "attivo": true
+  },
+  {
+    "codice": "X0TQBB",
+    "nome": "Falconi Federico",
+    "data_creazione": "2026-03-31",
+    "attivo": true
   }
 ]

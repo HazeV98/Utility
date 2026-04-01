@@ -314,7 +314,12 @@
         <label style="font-size: 14px; color: #525f7f; text-align: left; display: block; margin-top: 10px; font-weight:bold;">Turno da inserire:</label>
         <input type="text" id="multiTurno" placeholder="Es. FER, KMAL..." oninput="this.value = this.value.toUpperCase();">
         
-        <button class="btn" style="background: #2dce89;" onclick="salvaModificaMultipla()">Salva Modifiche</button>
+        <label style="display: flex; align-items: center; font-size: 14px; color: #525f7f; margin-top: 15px; font-weight: bold; cursor: pointer; text-align: left;">
+            <input type="checkbox" id="checkEscludiRiposi" style="width: 20px; height: 20px; margin-right: 10px; accent-color: #2dce89;" checked>
+            Escludi i Riposi (RI / AL)
+        </label>
+        
+        <button class="btn" style="background: #2dce89; margin-top: 20px;" onclick="salvaModificaMultipla()">Salva Modifiche</button>
         <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiMultiEdit()">Annulla</button>
     </div>
 </div>
@@ -627,6 +632,7 @@
         const startDateStr = document.getElementById('multiStart').value;
         const endDateStr = document.getElementById('multiEnd').value;
         const turnoVal = document.getElementById('multiTurno').value.trim().toUpperCase();
+        const escludiRiposi = document.getElementById('checkEscludiRiposi').checked;
 
         if (!startDateStr || !endDateStr) { alert("Seleziona entrambe le date."); return; }
         if (startDateStr > endDateStr) { alert("La data di inizio deve essere precedente o uguale a quella di fine."); return; }
@@ -640,11 +646,25 @@
 
         while (currentDate <= endDate) {
             let dStr = dateToLocalISO(currentDate);
-            if (!turnoVal) {
-                delete state.variazioni[dStr]; 
-            } else {
-                state.variazioni[dStr] = turnoVal; 
+            
+            let saltaGiorno = false;
+            if (escludiRiposi) {
+                let varCorrente = state.variazioni[dStr];
+                let eRiposoManuale = (varCorrente === "RI" || varCorrente === "RIPOSO" || varCorrente === "AL");
+                let eRiposoStrutturale = (!varCorrente && isGiornoRiposo(dStr));
+                if (eRiposoManuale || eRiposoStrutturale) {
+                    saltaGiorno = true;
+                }
             }
+
+            if (!saltaGiorno) {
+                if (!turnoVal) {
+                    delete state.variazioni[dStr]; 
+                } else {
+                    state.variazioni[dStr] = turnoVal; 
+                }
+            }
+            
             currentDate.setDate(currentDate.getDate() + 1);
         }
 

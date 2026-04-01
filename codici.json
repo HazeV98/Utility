@@ -40,5 +40,11 @@
     "nome": "Falconi Federico",
     "data_creazione": "2026-03-31",
     "attivo": true
+  },
+  {
+    "codice": "13AKDU",
+    "nome": "Vianello Gianluigi",
+    "data_creazione": "2026-04-01",
+    "attivo": true
   }
 ]

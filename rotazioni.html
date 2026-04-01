@@ -251,6 +251,7 @@
                         <option value="Terzo">Di Terzo</option>
                         <option value="Mezzo">Di Mezzo</option>
                         <option value="Primo">Di Primo</option>
+                        <option value="Riposo">Di Riposo</option>
                     </select>
                     <button class="btn" style="padding: 12px; margin-top:5px;" onclick="cercaCambi()">Cerca</button>
                     <div id="risultato-cambi" class="risultato-box"></div>
@@ -632,7 +633,22 @@
         // --- MOTORE 2: CERCA CAMBI ---
         function analizzaCicloLavorativo(turniMese, indiceGiorno) {
             const turnoAttuale = turniMese[indiceGiorno];
-            if (turnoAttuale === "AL" || turnoAttuale === "RI" || turnoAttuale === "") return { fase: "Riposo", giornoEsatto: 0 };
+            
+            // Nuova logica di gestione per i giorni di Riposo (AL, RI o Vuoti)
+            if (turnoAttuale === "AL" || turnoAttuale === "RI" || turnoAttuale === "") {
+                let tipoRiposo = "Vuoto";
+                if (turnoAttuale === "AL") {
+                    let domani = (indiceGiorno + 1 < turniMese.length) ? turniMese[indiceGiorno + 1] : "";
+                    if (domani === "RI" || domani === "AL") tipoRiposo = "Doppio (Oggi AL)";
+                    else tipoRiposo = "Singolo (AL)";
+                } else if (turnoAttuale === "RI") {
+                    let ieri = (indiceGiorno - 1 >= 0) ? turniMese[indiceGiorno - 1] : "";
+                    let domani = (indiceGiorno + 1 < turniMese.length) ? turniMese[indiceGiorno + 1] : "";
+                    if (ieri === "AL" || ieri === "RI" || domani === "AL" || domani === "RI") tipoRiposo = "Doppio (Oggi RI)";
+                    else tipoRiposo = "Singolo (RI)";
+                }
+                return { fase: "Riposo", giornoEsatto: 0, tipoRiposo: tipoRiposo };
+            }
 
             let giorniLavorati = 1; 
             let trovatoRiposoPassato = false;
@@ -682,7 +698,13 @@
             databaseTurni.forEach(dipendente => {
                 const analisi = analizzaCicloLavorativo(dipendente.turni, indiceGiorno);
                 if (analisi.fase === faseDesiderata) {
-                    risultatiHtml.push(`<strong>${dipendente.nome}</strong> (Giorno lav. ${analisi.giornoEsatto}) - [Turno: ${dipendente.turni[indiceGiorno]}]`);
+                    if (faseDesiderata === "Riposo") {
+                        if (analisi.tipoRiposo !== "Vuoto") {
+                            risultatiHtml.push(`<strong>${dipendente.nome}</strong> - [Riposo ${analisi.tipoRiposo}]`);
+                        }
+                    } else {
+                        risultatiHtml.push(`<strong>${dipendente.nome}</strong> (Giorno lav. ${analisi.giornoEsatto}) - [Turno: ${dipendente.turni[indiceGiorno]}]`);
+                    }
                 }
             });
 

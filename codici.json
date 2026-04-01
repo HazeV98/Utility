@@ -46,5 +46,11 @@
     "nome": "Vianello Gianluigi",
     "data_creazione": "2026-04-01",
     "attivo": true
+  },
+  {
+    "codice": "G9G42L",
+    "nome": "Padoan Davide",
+    "data_creazione": "2026-04-01",
+    "attivo": true
   }
 ]

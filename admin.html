@@ -62,7 +62,7 @@
             padding-bottom: 10px;
         }
 
-        input[type="text"], input[type="password"], input[type="file"] {
+        input[type="text"], input[type="password"], input[type="file"], input[type="date"] {
             width: 100%;
             padding: 12px;
             margin-bottom: 15px;
@@ -70,6 +70,7 @@
             border-radius: 8px;
             box-sizing: border-box;
             font-size: 14px;
+            font-family: inherit;
         }
 
         input[type="file"] {
@@ -112,50 +113,33 @@
         .status-log { font-size: 13px; color: #adb5bd; margin-top: 15px; text-align: center; min-height: 15px; font-weight: bold; }
         .back-btn { background-color: #6c757d; margin-top: 10px; max-width: 400px; }
 
-        /* Stili per display codice e bottone copia */
-        .codice-display-container {
-            display: flex; align-items: center; justify-content: center; margin-top: 15px;
-        }
-        .codice-testo {
-            font-size: 26px; font-weight: bold; color: #ffc107; letter-spacing: 3px;
-        }
-        .btn-copia {
-            background: none; border: none; font-size: 24px; cursor: pointer; margin-left: 10px; transition: transform 0.1s;
-        }
+        /* Stili per display codice e modale */
+        .codice-display-container { display: flex; align-items: center; justify-content: center; margin-top: 15px; }
+        .codice-testo { font-size: 26px; font-weight: bold; color: #ffc107; letter-spacing: 3px; }
+        .btn-copia { background: none; border: none; font-size: 24px; cursor: pointer; margin-left: 10px; transition: transform 0.1s; }
         .btn-copia:active { transform: scale(0.9); }
 
-        /* Stili per la finestra modale gestione codici */
-        .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center;
-        }
-        .modal-content {
-            background: white; padding: 20px; border-radius: 12px; max-width: 90%; width: 400px;
-            max-height: 85vh; overflow-y: auto; position: relative; color: var(--text-color);
-        }
-        .close-modal {
-            position: absolute; right: 15px; top: 15px; font-size: 28px; cursor: pointer; color: #666; font-weight: bold;
-        }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; max-width: 90%; width: 400px; max-height: 85vh; overflow-y: auto; position: relative; color: var(--text-color); }
+        .close-modal { position: absolute; right: 15px; top: 15px; font-size: 28px; cursor: pointer; color: #666; font-weight: bold; }
         
-        /* Stile specifico per barra di ricerca per non farla sembrare maiuscola */
-        #ricerca-codici {
-            margin-bottom: 15px; 
-            border: 1px solid #ccc; 
-            color: #333; 
-            text-transform: none; 
-            letter-spacing: normal;
-        }
-
-        .codice-item {
-            background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid var(--primary);
-            display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
+        #ricerca-codici { margin-bottom: 15px; border: 1px solid #ccc; color: #333; text-transform: none; letter-spacing: normal; }
+        .codice-item { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid var(--primary); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .codice-info { font-size: 14px; line-height: 1.4; }
         .codice-info strong { font-size: 16px; color: var(--primary); display: block; margin-bottom: 4px; text-transform: capitalize; }
-        .btn-revoca {
-            background: var(--danger); color: white; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;
-        }
+        .btn-revoca { background: var(--danger); color: white; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
         .btn-revoca:active { opacity: 0.8; }
+
+        /* Stili Editor Calendario */
+        .editor-label { display: block; font-size: 13px; color: #adb5bd; margin-bottom: 5px; text-align: left; font-weight: bold; }
+        .switch-cal { position: relative; display: inline-block; width: 44px; height: 24px; margin-left: auto; }
+        .switch-cal input { opacity: 0; width: 0; height: 0; }
+        .slider-cal { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #6c757d; transition: .3s; border-radius: 24px; }
+        .slider-cal:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider-cal { background-color: var(--success); }
+        input:checked + .slider-cal:before { transform: translateX(20px); }
+        .reset-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; border-bottom: 1px solid #4a5056; padding-bottom: 8px; color: #e9ecef; }
+        .reset-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
     </style>
 </head>
 <body>
@@ -177,46 +161,72 @@
     </div>
 
     <div class="admin-card">
+        <h3>📅 Gestione Calendario</h3>
+        <p style="font-size: 12px; color: #adb5bd; margin-top: 0; line-height: 1.4; margin-bottom: 15px;">
+            Carica la configurazione del calendario, modifica le date di validità, aggiorna l'elenco dei file e imposta quali rotazioni dovranno essere resettate.
+        </p>
+
+        <button class="btn-action" style="background-color: var(--primary);" onclick="caricaDatiCalendario()">⬇️ Carica Dati Calendario</button>
+        
+        <div id="calendario-editor" style="display: none; margin-top: 20px; border-top: 1px dashed #6c757d; padding-top: 15px;">
+            
+            <label class="editor-label">Versione App:</label>
+            <input type="text" id="cal-versione" placeholder="Es. 1.0.1">
+            
+            <label class="editor-label">Data Inizio Nuovi Turni:</label>
+            <input type="date" id="cal-data">
+            
+            <label class="editor-label">File DB Informazioni (separati da virgola):</label>
+            <input type="text" id="cal-info" placeholder="Es. info_turni_2026.json, info_turni_2027.json">
+            
+            <label class="editor-label">File Turni Rotazioni (separati da virgola):</label>
+            <input type="text" id="cal-rotazioni">
+            
+            <label class="editor-label">File Turni DISP (separati da virgola):</label>
+            <input type="text" id="cal-disp">
+            
+            <label class="editor-label" style="margin-top: 20px; margin-bottom: 10px;">Interruttori Reset dopo Aggiornamento:</label>
+            <div id="cal-reset-switches" style="max-height: 250px; overflow-y: auto; background: #3a4148; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+                </div>
+            
+            <button class="btn-action" style="background-color: var(--success);" onclick="salvaDatiCalendario()">⬆️ Salva su GitHub</button>
+        </div>
+
+        <div id="status-log-cal" class="status-log">In attesa...</div>
+    </div>
+
+    <div class="admin-card">
         <h3>🔑 Generatore Accessi</h3>
-        
         <input type="text" id="nome-collega" placeholder="Cognome e Nome collega">
-        
         <button class="btn-action" onclick="generaESalva()">Genera e Salva</button>
         <div id="risultato-codice"></div>
         <div id="status-log-auth" class="status-log">In attesa...</div>
-        
         <button class="btn-action" style="background-color: #6c757d; margin-top: 20px;" onclick="apriGestioneCodici()">Gestisci Codici Attivi</button>
     </div>
 
     <div class="admin-card">
-        <h3>📦 Uploader </h3>
+        <h3>📦 Uploader ZIP</h3>
         <p style="font-size: 12px; color: #adb5bd; margin-top: 0; line-height: 1.4;">
-            Prepara una cartella "upload", inserisci file singoli e sottocartelle, poi comprimila in <b>.zip</b> e selezionala qui. La struttura verrà specchiata su GitHub.
+            Comprimi la tua cartella in <b>.zip</b> e selezionala qui.
         </p>
-        
         <input type="file" id="zip-file" accept=".zip">
-        
         <button class="btn-action btn-upload" onclick="caricaZip()">Estrai e Sincronizza</button>
         <div id="status-log-zip" class="status-log">In attesa...</div>
     </div>
 
     <div class="admin-card">
         <h3>🧰 Strumenti Esterni</h3>
-        
         <button class="btn-action" style="background-color: #FF4B4B;" onclick="window.open('http://100.80.221.32:8501/', '_blank')">Apri Toolbox Turni</button>
     </div>
 
-    <button class="btn-action back-btn" onclick="window.location.href='index.html'">Torna alla Home</button>
+    <button class="btn-action back-btn" style="margin-bottom: 30px;" onclick="window.location.href='index.html'">Torna alla Home</button>
 
     <div id="manage-modal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-modal" onclick="chiudiModal()">&times;</span>
             <h3 style="margin-top:0; color:var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px;">Gestione Codici</h3>
-            
             <input type="text" id="ricerca-codici" placeholder="🔍 Cerca per nome..." oninput="filtraCodici()">
-            
-            <div id="codici-list-container">
-                </div>
+            <div id="codici-list-container"></div>
         </div>
     </div>
 
@@ -238,41 +248,185 @@
         }
 
         function copiaTesto(testo) {
-            navigator.clipboard.writeText(testo).then(() => {
-                alert("Codice copiato negli appunti: " + testo);
-            }).catch(err => {
-                console.error("Errore copia appunti:", err);
-            });
+            navigator.clipboard.writeText(testo).then(() => { alert("Codice copiato negli appunti: " + testo); });
         }
 
         // ==========================================
-        // MODULO 1: GENERATORE E GESTIONE CODICI
+        // MODULO: GESTIONE CALENDARIO
+        // ==========================================
+        let calendarioSha = "";
+        let calendarioContent = "";
+        let resetKeysOrder = [];
+
+        async function caricaDatiCalendario() {
+            const owner = document.getElementById('gh-owner').value.trim();
+            const repo = document.getElementById('gh-repo').value.trim();
+            const token = document.getElementById('gh-token').value.trim();
+            const statusLog = document.getElementById('status-log-cal');
+
+            if (!owner || !repo || !token) {
+                statusLog.innerText = "❌ Compila Username, Repo e Token in alto.";
+                statusLog.style.color = "var(--danger)";
+                return;
+            }
+            
+            gestisciMemoriaToken(token, document.getElementById('remember-token').checked);
+            statusLog.innerText = "⏳ Download calendario in corso...";
+            statusLog.style.color = "white";
+
+            const url = `https://api.github.com/repos/${owner}/${repo}/contents/calendario.html?t=${new Date().getTime()}`;
+            
+            try {
+                let response = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+                if (!response.ok) throw new Error("Errore: Impossibile scaricare calendario.html");
+                
+                const data = await response.json();
+                calendarioSha = data.sha;
+                calendarioContent = decodeURIComponent(escape(atob(data.content)));
+                
+                // Espressioni Regolari per trovare le variabili nel codice
+                const reVersion = /const VERSIONE_TURNI\s*=\s*"([^"]+)";/;
+                const reDate = /const DATA_INIZIO_NUOVI_TURNI\s*=\s*"([^"]+)";/;
+                const reInfo = /const LISTA_FILE_INFO\s*=\s*\[(.*?)\];/;
+                const reRot = /const LISTA_FILE_ROTAZIONI\s*=\s*\[(.*?)\];/;
+                const reDisp = /const LISTA_FILE_DISP\s*=\s*\[(.*?)\];/;
+                const reReset = /const RESET_DOPO_AGGIORNAMENTO\s*=\s*(\{[\s\S]*?\});/;
+
+                document.getElementById('cal-versione').value = (calendarioContent.match(reVersion) || [])[1] || "";
+                document.getElementById('cal-data').value = (calendarioContent.match(reDate) || [])[1] || "";
+                
+                let parseArray = (match) => {
+                    if(!match || !match[1]) return "";
+                    return match[1].split(',').map(s => s.trim().replace(/^"|"$/g, '')).filter(s=>s).join(', ');
+                };
+                
+                document.getElementById('cal-info').value = parseArray(calendarioContent.match(reInfo));
+                document.getElementById('cal-rotazioni').value = parseArray(calendarioContent.match(reRot));
+                document.getElementById('cal-disp').value = parseArray(calendarioContent.match(reDisp));
+                
+                // Parsing dell'oggetto RESET_DOPO_AGGIORNAMENTO
+                let resetMatch = calendarioContent.match(reReset);
+                let switchesHtml = "";
+                resetKeysOrder = [];
+                if(resetMatch && resetMatch[1]) {
+                    let pairs = resetMatch[1].match(/(\w+):\s*(true|false)/g);
+                    if(pairs) {
+                        pairs.forEach(p => {
+                            let [k, v] = p.split(':');
+                            k = k.trim();
+                            v = v.trim() === 'true';
+                            resetKeysOrder.push(k);
+                            
+                            switchesHtml += `
+                                <div class="reset-row">
+                                    <span>${k}</span>
+                                    <label class="switch-cal">
+                                        <input type="checkbox" id="reset_${k}" ${v ? 'checked' : ''}>
+                                        <span class="slider-cal"></span>
+                                    </label>
+                                </div>
+                            `;
+                        });
+                    }
+                }
+                document.getElementById('cal-reset-switches').innerHTML = switchesHtml;
+                
+                document.getElementById('calendario-editor').style.display = 'block';
+                statusLog.innerText = "✅ Dati precompilati con successo!";
+                statusLog.style.color = "var(--success)";
+                
+            } catch (error) {
+                statusLog.innerText = "❌ " + error.message;
+                statusLog.style.color = "var(--danger)";
+            }
+        }
+
+        async function salvaDatiCalendario() {
+            const owner = document.getElementById('gh-owner').value.trim();
+            const repo = document.getElementById('gh-repo').value.trim();
+            const token = document.getElementById('gh-token').value.trim();
+            const statusLog = document.getElementById('status-log-cal');
+
+            statusLog.innerText = "⏳ Iniezione modifiche e salvataggio...";
+            statusLog.style.color = "white";
+
+            let vVersione = document.getElementById('cal-versione').value.trim();
+            let vData = document.getElementById('cal-data').value;
+            
+            let stringifyArray = (str) => {
+                if(!str.trim()) return "";
+                return str.split(',').map(s => `"${s.trim()}"`).join(', ');
+            };
+            
+            let vInfo = stringifyArray(document.getElementById('cal-info').value);
+            let vRot = stringifyArray(document.getElementById('cal-rotazioni').value);
+            let vDisp = stringifyArray(document.getElementById('cal-disp').value);
+
+            let resetStrs = [];
+            resetKeysOrder.forEach(k => {
+                let isChecked = document.getElementById(`reset_${k}`).checked;
+                resetStrs.push(`\n        ${k}: ${isChecked}`);
+            });
+            let vReset = `{${resetStrs.join(',')}\n    }`;
+
+            // Sostituzione stringhe nel file HTML
+            let newContent = calendarioContent;
+            newContent = newContent.replace(/const VERSIONE_TURNI\s*=\s*"([^"]*)";/, `const VERSIONE_TURNI = "${vVersione}";`);
+            newContent = newContent.replace(/const DATA_INIZIO_NUOVI_TURNI\s*=\s*"([^"]*)";/, `const DATA_INIZIO_NUOVI_TURNI = "${vData}";`);
+            newContent = newContent.replace(/const LISTA_FILE_INFO\s*=\s*\[(.*?)\];/, `const LISTA_FILE_INFO = [${vInfo}];`);
+            newContent = newContent.replace(/const LISTA_FILE_ROTAZIONI\s*=\s*\[(.*?)\];/, `const LISTA_FILE_ROTAZIONI = [${vRot}];`);
+            newContent = newContent.replace(/const LISTA_FILE_DISP\s*=\s*\[(.*?)\];/, `const LISTA_FILE_DISP = [${vDisp}];`);
+            newContent = newContent.replace(/const RESET_DOPO_AGGIORNAMENTO\s*=\s*(\{[\s\S]*?\});/, `const RESET_DOPO_AGGIORNAMENTO = ${vReset};`);
+
+            const url = `https://api.github.com/repos/${owner}/${repo}/contents/calendario.html`;
+            try {
+                // Per supportare correttamente accenti ed emoji durante la codifica base64
+                const b64Content = btoa(unescape(encodeURIComponent(newContent)));
+                
+                const putRes = await fetch(url, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: `Aggiornamento config calendario via Admin a v${vVersione}`,
+                        content: b64Content,
+                        sha: calendarioSha
+                    })
+                });
+
+                if (putRes.ok) {
+                    const updatedData = await putRes.json();
+                    calendarioSha = updatedData.content.sha; 
+                    calendarioContent = newContent;
+                    statusLog.innerText = "✅ Calendario aggiornato con successo su GitHub!";
+                    statusLog.style.color = "var(--success)";
+                } else {
+                    throw new Error("Impossibile caricare il file modificato.");
+                }
+            } catch (error) {
+                statusLog.innerText = "❌ " + error.message;
+                statusLog.style.color = "var(--danger)";
+            }
+        }
+
+
+        // ==========================================
+        // MODULO: GENERATORE E GESTIONE CODICI
         // ==========================================
         const codiciPath = 'codici.json'; 
-        let codiciAttiviCache = []; // Variabile globale per mantenere i codici in memoria durante la ricerca
+        let codiciAttiviCache = []; 
 
         async function generaESalva() {
             const owner = document.getElementById('gh-owner').value.trim();
             const repo = document.getElementById('gh-repo').value.trim();
             const token = document.getElementById('gh-token').value.trim();
             const nomeCollega = document.getElementById('nome-collega').value.trim();
-            const remember = document.getElementById('remember-token').checked;
             const statusLog = document.getElementById('status-log-auth');
             const displayCodice = document.getElementById('risultato-codice');
 
-            if (!owner || !repo || !token) {
-                statusLog.innerText = "❌ Compila Username, Repo e Token.";
-                statusLog.style.color = "var(--danger)";
-                return;
-            }
+            if (!owner || !repo || !token) { statusLog.innerText = "❌ Compila Username, Repo e Token."; statusLog.style.color = "var(--danger)"; return; }
+            if (!nomeCollega) { statusLog.innerText = "❌ Inserisci il nome a cui è destinato il codice."; statusLog.style.color = "var(--danger)"; return; }
 
-            if (!nomeCollega) {
-                statusLog.innerText = "❌ Inserisci il nome a cui è destinato il codice.";
-                statusLog.style.color = "var(--danger)";
-                return;
-            }
-
-            gestisciMemoriaToken(token, remember);
+            gestisciMemoriaToken(token, document.getElementById('remember-token').checked);
             statusLog.innerText = "⏳ Connessione a GitHub...";
             statusLog.style.color = "white";
             displayCodice.innerHTML = "";
@@ -283,19 +437,15 @@
                 let response = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
                 if (response.status === 401 || response.status === 403) throw new Error("Token non valido.");
 
-                let sha = "";
-                let codiciAttuali = [];
-
+                let sha = ""; let codiciAttuali = [];
                 if (response.ok) {
                     const data = await response.json();
                     sha = data.sha;
-                    const fileContent = decodeURIComponent(escape(atob(data.content)));
-                    codiciAttuali = JSON.parse(fileContent);
+                    codiciAttuali = JSON.parse(decodeURIComponent(escape(atob(data.content))));
                 }
 
                 let nuovoCodice;
-                do {
-                    nuovoCodice = Math.random().toString(36).substring(2, 8).toUpperCase();
+                do { nuovoCodice = Math.random().toString(36).substring(2, 8).toUpperCase();
                 } while (codiciAttuali.some(item => item.codice === nuovoCodice));
 
                 displayCodice.innerHTML = `
@@ -305,288 +455,143 @@
                     </div>
                 `;
 
-                codiciAttuali.push({
-                    codice: nuovoCodice,
-                    nome: nomeCollega,
-                    data_creazione: new Date().toISOString().split('T')[0],
-                    attivo: true
-                });
+                codiciAttuali.push({ codice: nuovoCodice, nome: nomeCollega, data_creazione: new Date().toISOString().split('T')[0], attivo: true });
 
                 statusLog.innerText = "⏳ Salvataggio...";
                 const nuovoContenuto = btoa(unescape(encodeURIComponent(JSON.stringify(codiciAttuali, null, 2))));
 
                 const putResponse = await fetch(url, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: `Aggiunto codice per ${nomeCollega}`, content: nuovoContenuto, sha: sha || undefined })
                 });
 
                 if (putResponse.ok) {
-                    statusLog.innerText = "✅ Salvato con successo!";
-                    statusLog.style.color = "var(--success)";
-                    document.getElementById('nome-collega').value = ""; 
+                    statusLog.innerText = "✅ Salvato con successo!"; statusLog.style.color = "var(--success)"; document.getElementById('nome-collega').value = ""; 
                 } else throw new Error("Errore durante il salvataggio.");
 
-            } catch (error) {
-                statusLog.innerText = "❌ " + error.message;
-                statusLog.style.color = "var(--danger)";
-            }
+            } catch (error) { statusLog.innerText = "❌ " + error.message; statusLog.style.color = "var(--danger)"; }
         }
 
-        // FUNZIONI FINESTRA MODALE E RICERCA CODICI
-        function chiudiModal() {
-            document.getElementById('manage-modal').style.display = 'none';
-        }
-
-        async function apriGestioneCodici() {
-            document.getElementById('manage-modal').style.display = 'flex';
-            await caricaListaCodici();
-        }
+        // GESTIONE LISTA CODICI
+        function chiudiModal() { document.getElementById('manage-modal').style.display = 'none'; }
+        async function apriGestioneCodici() { document.getElementById('manage-modal').style.display = 'flex'; await caricaListaCodici(); }
 
         async function caricaListaCodici() {
-            const owner = document.getElementById('gh-owner').value.trim();
-            const repo = document.getElementById('gh-repo').value.trim();
-            const token = document.getElementById('gh-token').value.trim();
+            const owner = document.getElementById('gh-owner').value.trim(); const repo = document.getElementById('gh-repo').value.trim(); const token = document.getElementById('gh-token').value.trim();
             const listContainer = document.getElementById('codici-list-container');
 
-            if (!owner || !repo || !token) {
-                listContainer.innerHTML = "<div style='color:var(--danger); text-align:center; padding: 20px;'>Compila Username, Repo e Token nella schermata principale.</div>";
-                return;
-            }
+            if (!owner || !repo || !token) { listContainer.innerHTML = "<div style='color:var(--danger); text-align:center; padding: 20px;'>Compila i campi credenziali.</div>"; return; }
 
-            listContainer.innerHTML = "<div style='text-align:center; padding: 20px; color: #666;'>Scaricamento codici in corso...</div>";
-
-            const url = `https://api.github.com/repos/${owner}/${repo}/contents/${codiciPath}`;
-
+            listContainer.innerHTML = "<div style='text-align:center; padding: 20px; color: #666;'>Scaricamento...</div>";
             try {
-                let response = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+                let response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${codiciPath}`, { headers: { 'Authorization': `token ${token}` } });
                 if (!response.ok) throw new Error("Errore nel recupero da GitHub.");
                 
                 const data = await response.json();
-                const fileContent = decodeURIComponent(escape(atob(data.content)));
-                const codici = JSON.parse(fileContent);
-
-                // Filtra solo i codici attivi
+                let codici = JSON.parse(decodeURIComponent(escape(atob(data.content))));
                 let attivi = codici.filter(c => c.attivo === true);
 
-                // Ordina in ordine alfabetico (A-Z) in base al nome
-                attivi.sort((a, b) => {
-                    let nomeA = (a.nome || "Z_Sconosciuto").toLowerCase();
-                    let nomeB = (b.nome || "Z_Sconosciuto").toLowerCase();
-                    return nomeA.localeCompare(nomeB);
-                });
-
-                codiciAttiviCache = attivi; // Salva la lista in memoria per la ricerca
-                document.getElementById('ricerca-codici').value = ""; // Resetta la barra di ricerca
-                
+                attivi.sort((a, b) => (a.nome || "Z").toLowerCase().localeCompare((b.nome || "Z").toLowerCase()));
+                codiciAttiviCache = attivi; 
+                document.getElementById('ricerca-codici').value = ""; 
                 disegnaListaCodici(codiciAttiviCache);
 
-            } catch (error) {
-                listContainer.innerHTML = `<div style='color:var(--danger); text-align:center; padding: 20px;'>Errore: ${error.message}</div>`;
-            }
+            } catch (error) { listContainer.innerHTML = `<div style='color:var(--danger); text-align:center; padding: 20px;'>Errore: ${error.message}</div>`; }
         }
 
-        // Funzione per la ricerca in tempo reale
         function filtraCodici() {
             const query = document.getElementById('ricerca-codici').value.toLowerCase().trim();
-            const filtrati = codiciAttiviCache.filter(c => {
-                const nome = (c.nome || "").toLowerCase();
-                return nome.includes(query);
-            });
-            disegnaListaCodici(filtrati);
+            disegnaListaCodici(codiciAttiviCache.filter(c => (c.nome || "").toLowerCase().includes(query)));
         }
 
-        // Funzione per disegnare la lista sulla base di un array (intero o filtrato)
-        function disegnaListaCodici(listaCodici) {
+        function disegnaListaCodici(lista) {
             const listContainer = document.getElementById('codici-list-container');
             listContainer.innerHTML = "";
+            if (lista.length === 0) { listContainer.innerHTML = "<div style='text-align:center; padding: 20px; color: #666;'>Nessun codice.</div>"; return; }
 
-            if (listaCodici.length === 0) {
-                listContainer.innerHTML = "<div style='text-align:center; padding: 20px; color: #666;'>Nessun codice trovato.</div>";
-                return;
-            }
-
-            listaCodici.forEach(c => {
-                const item = document.createElement('div');
-                item.className = 'codice-item';
+            lista.forEach(c => {
+                const item = document.createElement('div'); item.className = 'codice-item';
                 item.innerHTML = `
-                    <div class="codice-info">
-                        <strong>${c.nome || 'Nome non specificato'}</strong>
-                        Codice: <b>${c.codice}</b><br>
-                        <span style="font-size: 11px; color: #888;">Data: ${c.data_creazione}</span>
-                    </div>
+                    <div class="codice-info"><strong>${c.nome || 'Non specificato'}</strong>Codice: <b>${c.codice}</b><br><span style="font-size: 11px; color: #888;">Data: ${c.data_creazione}</span></div>
                     <button class="btn-revoca" onclick="revocaCodice('${c.codice}')">Revoca</button>
                 `;
                 listContainer.appendChild(item);
             });
         }
 
-        async function revocaCodice(codiceDaRevocare) {
-            if (!confirm(`Sei sicuro di voler REVOCARE l'accesso per il codice ${codiceDaRevocare}?`)) return;
-
-            const owner = document.getElementById('gh-owner').value.trim();
-            const repo = document.getElementById('gh-repo').value.trim();
-            const token = document.getElementById('gh-token').value.trim();
+        async function revocaCodice(codiceRevoca) {
+            if (!confirm(`Vuoi REVOCARE l'accesso per ${codiceRevoca}?`)) return;
+            const owner = document.getElementById('gh-owner').value.trim(); const repo = document.getElementById('gh-repo').value.trim(); const token = document.getElementById('gh-token').value.trim();
             const listContainer = document.getElementById('codici-list-container');
-            
-            listContainer.innerHTML = "<div style='text-align:center; padding: 20px; color: var(--primary); font-weight: bold;'>Sincronizzazione revoca in corso...</div>";
-
-            const url = `https://api.github.com/repos/${owner}/${repo}/contents/${codiciPath}`;
+            listContainer.innerHTML = "<div style='text-align:center; padding: 20px; font-weight: bold;'>Revoca in corso...</div>";
 
             try {
-                // 1. Scarica il file attuale
+                const url = `https://api.github.com/repos/${owner}/${repo}/contents/${codiciPath}`;
                 let response = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
                 const data = await response.json();
-                const sha = data.sha;
-                const fileContent = decodeURIComponent(escape(atob(data.content)));
-                let codici = JSON.parse(fileContent);
+                let codici = JSON.parse(decodeURIComponent(escape(atob(data.content))));
 
-                // 2. Trova il codice e cambialo in disattivo
                 let trovato = false;
-                codici.forEach(c => {
-                    if (c.codice === codiceDaRevocare) {
-                        c.attivo = false;
-                        trovato = true;
-                    }
-                });
+                codici.forEach(c => { if (c.codice === codiceRevoca) { c.attivo = false; trovato = true; } });
+                if (!trovato) throw new Error("Codice non trovato.");
 
-                if (!trovato) throw new Error("Codice non trovato nel database.");
+                const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(codici, null, 2))));
+                const putResponse = await fetch(url, { method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: `Revocato ${codiceRevoca}`, content: b64, sha: data.sha }) });
 
-                // 3. Ricarica su GitHub
-                const nuovoContenuto = btoa(unescape(encodeURIComponent(JSON.stringify(codici, null, 2))));
-
-                const putResponse = await fetch(url, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: `Revocato codice ${codiceDaRevocare}`, content: nuovoContenuto, sha: sha })
-                });
-
-                if (putResponse.ok) {
-                    await caricaListaCodici(); // Ricarica, riordina e ripristina la visualizzazione
-                } else throw new Error("Errore durante l'aggiornamento su GitHub.");
-
-            } catch (error) {
-                listContainer.innerHTML = `<div style='color:var(--danger); text-align:center; padding: 20px;'>Errore: ${error.message}</div>`;
-            }
+                if (putResponse.ok) await caricaListaCodici(); else throw new Error("Errore durante l'aggiornamento.");
+            } catch (error) { listContainer.innerHTML = `<div style='color:var(--danger); text-align:center; padding: 20px;'>Errore: ${error.message}</div>`; }
         }
 
         // ==========================================
-        // MODULO 2: UPLOAD STRUTTURATO (SMART ZIP)
+        // MODULO: UPLOADER (SMART ZIP)
         // ==========================================
         async function caricaZip() {
-            const owner = document.getElementById('gh-owner').value.trim();
-            const repo = document.getElementById('gh-repo').value.trim();
-            const token = document.getElementById('gh-token').value.trim();
-            const remember = document.getElementById('remember-token').checked;
-            
-            const fileInput = document.getElementById('zip-file');
-            const statusLog = document.getElementById('status-log-zip');
+            const owner = document.getElementById('gh-owner').value.trim(); const repo = document.getElementById('gh-repo').value.trim(); const token = document.getElementById('gh-token').value.trim();
+            const fileInput = document.getElementById('zip-file'); const statusLog = document.getElementById('status-log-zip');
 
-            if (!owner || !repo || !token) {
-                statusLog.innerText = "❌ Compila Username, Repo e Token.";
-                statusLog.style.color = "var(--danger)";
-                return;
-            }
+            if (!owner || !repo || !token) { statusLog.innerText = "❌ Compila credenziali."; statusLog.style.color = "var(--danger)"; return; }
+            if (fileInput.files.length === 0) { statusLog.innerText = "❌ Seleziona file .zip!"; statusLog.style.color = "var(--danger)"; return; }
 
-            if (fileInput.files.length === 0) {
-                statusLog.innerText = "❌ Seleziona prima il file .zip!";
-                statusLog.style.color = "var(--danger)";
-                return;
-            }
-
-            gestisciMemoriaToken(token, remember);
-
-            statusLog.innerText = "⏳ Lettura struttura in corso...";
-            statusLog.style.color = "white";
+            gestisciMemoriaToken(token, document.getElementById('remember-token').checked);
+            statusLog.innerText = "⏳ Lettura struttura in corso..."; statusLog.style.color = "white";
 
             try {
                 const zip = await JSZip.loadAsync(fileInput.files[0]);
-                const filesToUpload = [];
-                const allPaths = [];
+                const filesToUpload = []; const allPaths = [];
 
-                zip.forEach((relativePath, zipEntry) => {
-                    if (!zipEntry.dir && !relativePath.includes('__MACOSX') && !relativePath.includes('.DS_Store')) {
-                        filesToUpload.push(zipEntry);
-                        allPaths.push(relativePath);
-                    }
-                });
-
-                if (filesToUpload.length === 0) {
-                    statusLog.innerText = "⚠️ Nessun file trovato nello ZIP.";
-                    statusLog.style.color = "#ffc107";
-                    return;
-                }
+                zip.forEach((relPath, zipEntry) => { if (!zipEntry.dir && !relPath.includes('__MACOSX') && !relPath.includes('.DS_Store')) { filesToUpload.push(zipEntry); allPaths.push(relPath); } });
+                if (filesToUpload.length === 0) { statusLog.innerText = "⚠️ Nessun file nello ZIP."; statusLog.style.color = "#ffc107"; return; }
 
                 let rootFolder = "";
-                let firstPathParts = allPaths[0].split('/');
-                if (firstPathParts.length > 1) {
-                    let possibleRoot = firstPathParts[0] + '/';
-                    let allShareRoot = allPaths.every(p => p.startsWith(possibleRoot));
-                    if (allShareRoot) {
-                        rootFolder = possibleRoot;
-                    }
+                if (allPaths[0].split('/').length > 1) {
+                    let possibleRoot = allPaths[0].split('/')[0] + '/';
+                    if (allPaths.every(p => p.startsWith(possibleRoot))) rootFolder = possibleRoot;
                 }
 
-                let successCount = 0;
-                let errorCount = 0;
+                let successCount = 0; let errorCount = 0;
 
                 for (let i = 0; i < filesToUpload.length; i++) {
                     const zipEntry = filesToUpload[i];
-                    
                     let pathInRepo = zipEntry.name;
-                    if (rootFolder && pathInRepo.startsWith(rootFolder)) {
-                        pathInRepo = pathInRepo.substring(rootFolder.length);
-                    }
+                    if (rootFolder && pathInRepo.startsWith(rootFolder)) pathInRepo = pathInRepo.substring(rootFolder.length);
                     
-                    statusLog.innerText = `⏳ Caricamento ${i + 1} di ${filesToUpload.length}...\n(${pathInRepo})`;
-                    
+                    statusLog.innerText = `⏳ Caricamento ${i + 1}/${filesToUpload.length}...\n(${pathInRepo})`;
                     const base64Data = await zipEntry.async("base64");
                     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${pathInRepo}`;
 
                     let sha = undefined;
-                    try {
-                        const checkRes = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
-                        if (checkRes.ok) {
-                            const checkData = await checkRes.json();
-                            sha = checkData.sha;
-                        }
-                    } catch(e) {} 
+                    try { const checkRes = await fetch(url, { headers: { 'Authorization': `token ${token}` } }); if (checkRes.ok) { sha = (await checkRes.json()).sha; } } catch(e) {} 
 
-                    const putRes = await fetch(url, {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `token ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            message: `Sincronizzazione via Admin: ${pathInRepo}`,
-                            content: base64Data,
-                            sha: sha || undefined
-                        })
-                    });
-
-                    if (putRes.ok) {
-                        successCount++;
-                    } else {
-                        errorCount++;
-                    }
+                    const putRes = await fetch(url, { method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: `Admin: ${pathInRepo}`, content: base64Data, sha: sha }) });
+                    if (putRes.ok) successCount++; else errorCount++;
                 }
 
-                if (errorCount === 0) {
-                    statusLog.innerText = `✅ Completato! ${successCount} file posizionati correttamente.`;
-                    statusLog.style.color = "var(--success)";
-                    fileInput.value = ""; 
-                } else {
-                    statusLog.innerText = `⚠️ Finito: ${successCount} ok, ${errorCount} errori.`;
-                    statusLog.style.color = "#ffc107";
-                }
+                if (errorCount === 0) { statusLog.innerText = `✅ ${successCount} file caricati.`; statusLog.style.color = "var(--success)"; fileInput.value = ""; } 
+                else { statusLog.innerText = `⚠️ ${successCount} ok, ${errorCount} errori.`; statusLog.style.color = "#ffc107"; }
 
-            } catch (error) {
-                console.error(error);
-                statusLog.innerText = "❌ Errore durante l'elaborazione del file ZIP.";
-                statusLog.style.color = "var(--danger)";
-            }
+            } catch (error) { statusLog.innerText = "❌ Errore elaborazione ZIP."; statusLog.style.color = "var(--danger)"; }
         }
     </script>
 </body>
 </html>
+ 

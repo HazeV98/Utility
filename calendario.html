@@ -162,6 +162,21 @@
         <h3 style="color: #11cdef; margin-top: 0;">🎨 Colori Rotazione</h3>
         <p class="instruction-text" style="font-size: 14px; margin-bottom: 20px;">Assegna un colore per ogni giorno lavorativo della tua rotazione (dal 1° al 6° dopo il riposo).</p>
         
+        <div style="margin-bottom: 12px; text-align: left; padding-bottom: 10px; border-bottom: 2px dashed #eee;">
+            <div style="font-weight: bold; color: var(--riposo); font-size: 14px; margin-bottom: 5px;">Giorno di Riposo (RI / AL):</div>
+            <div class="day-riposo" style="display: flex; justify-content: flex-start; flex-wrap: wrap;">
+                <div class="color-circle" style="background: #e9ecef; display:flex; align-items:center; justify-content:center; font-size:12px; color: #32325d;" data-color="" onclick="selezionaColoreRotazione('riposo', '', this)">✕</div>
+                <div class="color-circle color-yellow" data-color="#f1c40f" onclick="selezionaColoreRotazione('riposo', '#f1c40f', this)"></div>
+                <div class="color-circle color-orange" data-color="#fd7e14" onclick="selezionaColoreRotazione('riposo', '#fd7e14', this)"></div>
+                <div class="color-circle color-red" data-color="#f5365c" onclick="selezionaColoreRotazione('riposo', '#f5365c', this)"></div>
+                <div class="color-circle color-pink" data-color="#e83e8c" onclick="selezionaColoreRotazione('riposo', '#e83e8c', this)"></div>
+                <div class="color-circle color-purple" data-color="#8965e0" onclick="selezionaColoreRotazione('riposo', '#8965e0', this)"></div>
+                <div class="color-circle color-blue" data-color="#5e72e4" onclick="selezionaColoreRotazione('riposo', '#5e72e4', this)"></div>
+                <div class="color-circle color-teal" data-color="#11cdef" onclick="selezionaColoreRotazione('riposo', '#11cdef', this)"></div>
+                <div class="color-circle color-green" data-color="#2dce89" onclick="selezionaColoreRotazione('riposo', '#2dce89', this)"></div>
+            </div>
+        </div>
+        
         <div style="margin-bottom: 12px; text-align: left;">
             <div style="font-weight: bold; color: #525f7f; font-size: 14px; margin-bottom: 5px;">1° Giorno:</div>
             <div class="day-1" style="display: flex; justify-content: flex-start; flex-wrap: wrap;">
@@ -559,7 +574,8 @@
         chiudiMenuDestro();
         tempColoriRotazione = { ...(state.coloriRotazione || {}) };
         
-        for(let i=1; i<=6; i++) {
+        const giorniDaColorare = ['riposo', 1, 2, 3, 4, 5, 6];
+        for(let i of giorniDaColorare) {
             let container = document.querySelector('#coloriRotazioneModal .day-' + i);
             if(container) {
                 container.querySelectorAll('.color-circle').forEach(c => {
@@ -595,7 +611,8 @@
 
     function salvaColoriRotazione() {
         if (!state.coloriRotazione) state.coloriRotazione = {};
-        for(let i=1; i<=6; i++) {
+        const giorniDaColorare = ['riposo', 1, 2, 3, 4, 5, 6];
+        for(let i of giorniDaColorare) {
             if (tempColoriRotazione[i]) {
                 state.coloriRotazione[i] = tempColoriRotazione[i];
             } else {
@@ -1595,12 +1612,13 @@
             if (!customColor && state.coloriRotazione) {
                 let isManualRest = (state.variazioni[dStr] === "RI" || state.variazioni[dStr] === "RIPOSO" || state.variazioni[dStr] === "AL");
                 let isStrutturaleRest = isGiornoRiposoBase(curr, cfgBase);
-                if (!isManualRest && !isStrutturaleRest) {
+                
+                if (isManualRest || isStrutturaleRest) {
+                    if (state.coloriRotazione['riposo']) customColor = state.coloriRotazione['riposo'];
+                } else {
                     let indiceGiornata = 1;
                     for (let k = curr - 1; k >= curr - 10; k--) {
-                        if (isGiornoRiposoBase(k, cfgBase)) {
-                            break;
-                        }
+                        if (isGiornoRiposoBase(k, cfgBase)) break;
                         indiceGiornata++;
                     }
                     if (indiceGiornata <= 6 && state.coloriRotazione[indiceGiornata]) {
@@ -1755,12 +1773,13 @@
                 if (!customColor && state.coloriRotazione) {
                     let isManualRest = (state.variazioni[dStr] === "RI" || state.variazioni[dStr] === "RIPOSO" || state.variazioni[dStr] === "AL");
                     let isStrutturaleRest = isGiornoRiposoBase(currMod, cfgBaseMod);
-                    if (!isManualRest && !isStrutturaleRest) {
+                    
+                    if (isManualRest || isStrutturaleRest) {
+                        if (state.coloriRotazione['riposo']) customColor = state.coloriRotazione['riposo'];
+                    } else {
                         let indiceGiornata = 1;
                         for (let k = currMod - 1; k >= currMod - 10; k--) {
-                            if (isGiornoRiposoBase(k, cfgBaseMod)) {
-                                break;
-                            }
+                            if (isGiornoRiposoBase(k, cfgBaseMod)) break;
                             indiceGiornata++;
                         }
                         if (indiceGiornata <= 6 && state.coloriRotazione[indiceGiornata]) {

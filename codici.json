@@ -70,5 +70,11 @@
     "nome": "Poggi Ettore",
     "data_creazione": "2026-04-02",
     "attivo": true
+  },
+  {
+    "codice": "YNYPW1",
+    "nome": "De Grandis Matteo",
+    "data_creazione": "2026-04-02",
+    "attivo": true
   }
 ]

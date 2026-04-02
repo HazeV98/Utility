@@ -52,5 +52,11 @@
     "nome": "Padoan Davide",
     "data_creazione": "2026-04-01",
     "attivo": true
+  },
+  {
+    "codice": "QTGQ3J",
+    "nome": "Zane Maura",
+    "data_creazione": "2026-04-02",
+    "attivo": true
   }
 ]

@@ -82,5 +82,11 @@
     "nome": "Boscolo Tommaso",
     "data_creazione": "2026-04-02",
     "attivo": true
+  },
+  {
+    "codice": "IU6858",
+    "nome": "Zennaro Marco",
+    "data_creazione": "2026-04-02",
+    "attivo": true
   }
 ]

@@ -76,5 +76,11 @@
     "nome": "De Grandis Matteo",
     "data_creazione": "2026-04-02",
     "attivo": true
+  },
+  {
+    "codice": "P0B6UP",
+    "nome": "Boscolo Tommaso",
+    "data_creazione": "2026-04-02",
+    "attivo": true
   }
 ]

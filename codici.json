@@ -64,5 +64,11 @@
     "nome": "Vitturi Mattia",
     "data_creazione": "2026-04-02",
     "attivo": true
+  },
+  {
+    "codice": "3LGN28",
+    "nome": "Poggi Ettore",
+    "data_creazione": "2026-04-02",
+    "attivo": true
   }
 ]

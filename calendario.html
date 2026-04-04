@@ -858,6 +858,7 @@
     let pzInstance = null; 
     let tempColoreAltro = "";
     let variantiData = {};
+    let anagraficaData = {}; // <-- Aggiunta per anagrafica rotazioni
 
     function stringToNum(s) { if(!s) return 0; let p = s.split('-'); return Math.floor(Date.UTC(p[0], p[1]-1, p[2]) / 86400000); }
     function formattaData(d) { let dataObj = new Date(d); let mese = dataObj.toLocaleDateString('it-IT', { month: 'long' }); return dataObj.getDate() + ' ' + mese.charAt(0).toUpperCase() + mese.slice(1); }
@@ -998,6 +999,15 @@
         try {
             const nocache = "?v=" + new Date().getTime();
             
+            // --- INIZIO NUOVO BLOCCO ANAGRAFICA ---
+            if (localStorage.getItem('hasPassCode') === 'true') {
+                try {
+                    const resAnagrafica = await fetch("anagrafica_rotazioni.json" + nocache);
+                    if (resAnagrafica.ok) anagraficaData = await resAnagrafica.json();
+                } catch(e) {}
+            }
+            // --- FINE NUOVO BLOCCO ANAGRAFICA ---
+
             if (AVVISO_VARIANTI) {
                 try {
                     const resVar = await fetch("presenza_varianti.json" + nocache);
@@ -1209,6 +1219,27 @@
                 let origPulito = turnoOrigObj ? turnoOrigObj.title.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝| 💸/g, '').trim() : "Nessun turno";
                 htmlInfo += `<br><span style="font-size: 0.9em; color: #8898aa;"><b>Turno originale:</b> ${origPulito}</span>`;
                 state.variazioni[date] = tempVar;
+
+                // --- INIZIO NUOVO BLOCCO RICERCA PROPRIETARIO ---
+                if (localStorage.getItem('hasPassCode') === 'true') {
+                    let turnoAttualePulito = tempVar.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝| 💸/g, '').trim().toUpperCase();
+                    let proprietari = trovaProprietariTurno(date, turnoAttualePulito);
+                    
+                    if (proprietari.length > 0) {
+                        let cfgBase = (state.history && stringToNum(date) < stringToNum(DATA_INIZIO_NUOVI_TURNI)) ? state.history : state;
+                        let deposito = cfgBase.depositoAttivo;
+                        
+                        let nomiProprietari = proprietari.map(idx => {
+                            if (anagraficaData && anagraficaData[deposito] && anagraficaData[deposito][idx]) {
+                                return anagraficaData[deposito][idx];
+                            }
+                            return "Riga " + (idx + 1);
+                        }).join(", ");
+                        
+                        htmlInfo += `<br><span style="font-size: 0.9em; color: var(--turno);"><b>Di rotazione a:</b> ${nomiProprietari}</span>`;
+                    }
+                }
+                // --- FINE NUOVO BLOCCO RICERCA PROPRIETARIO ---
             }
             
             const dateChiavi = Object.keys(state.dbCache || {}).sort();
@@ -1597,6 +1628,67 @@
         } else if (state.setupStep === 3) { state.turnoIndex = val; state.rotazioneStart = tempRotDate; }
 
         state.setupStep = 3; salvaLocal(); location.reload();
+    }
+
+    function trovaProprietariTurno(dStr, targetTurno) {
+        let proprietari = [];
+        const curr = stringToNum(dStr);
+        let cfgBase = (state.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI)) ? state.history : state;
+        
+        if (!cfgBase.rotazioneStart || cfgBase.depositoAttivo.startsWith('disp_')) return proprietari;
+
+        const currentRotRules = getRotazionePerData(dStr);
+        if (!currentRotRules || !currentRotRules[cfgBase.depositoAttivo]) return proprietari;
+        
+        const rotList = currentRotRules[cfgBase.depositoAttivo];
+
+        let activeCfgStart = (state.futureConfig && curr >= stringToNum(state.futureConfig.dataInizio)) ? state.futureConfig.dataInizio : cfgBase.rotazioneStart;
+        let refRot = stringToNum(activeCfgStart), w = 0;
+        
+        if (curr >= refRot) { for (let j = refRot; j < curr; j++) { if (!isGiornoRiposoBase(j, cfgBase)) w++; } }
+        else { for (let j = refRot; j > curr; j--) { if (!isGiornoRiposoBase(j, cfgBase)) w--; } }
+        
+        let refRip = stringToNum(cfgBase.riposoStart);
+        let startPos = ((refRot - refRip + 6) % 15 + 15) % 15;
+        let offset = [1, 3, 5, 8, 10, 12].includes(startPos) ? 1 : 0;
+
+        // Escludiamo il calcolo inverso per i TC perché dipende dal tcPattern personale di ogni individuo (doppio vs alternato)
+        if (cfgBase.depositoAttivo.startsWith('tc_')) return proprietari;
+        
+        let expandedRotList = [];
+        let originalToExpanded = [];
+        
+        for (let j = 0; j < rotList.length; j++) {
+            originalToExpanded[j] = expandedRotList.length;
+            let currentTurn = rotList[j].toUpperCase();
+
+            if (currentTurn.includes('+')) {
+                let parts = currentTurn.split('+');
+                expandedRotList.push(parts[0].trim());
+                if (parts.length > 1) {
+                    expandedRotList.push(parts[1].trim());
+                }
+            } else {
+                expandedRotList.push(currentTurn);
+                expandedRotList.push(currentTurn);
+            }
+        }
+        
+        let L_exp = expandedRotList.length;
+        
+        for (let testIdx = 0; testIdx < rotList.length; testIdx++) {
+            let baseExpIdx = originalToExpanded[testIdx];
+            let blockStartIdx = baseExpIdx - (baseExpIdx % 2); 
+            
+            let idxExp = (blockStartIdx + w + offset) % L_exp;
+            if (idxExp < 0) idxExp += L_exp;
+            
+            if (expandedRotList[idxExp] === targetTurno) {
+                proprietari.push(testIdx);
+            }
+        }
+        
+        return proprietari;
     }
 
     function calcolaTurni() {

@@ -11,7 +11,7 @@
 
     <style>
         /* --- STILI GLOBALI UNIFICATI --- */
-        :root { --primary: #0056b3; --bg-color: #f4f7f6; --text-color: #333; }
+        :root { --primary: #0056b3; --bg-color: #f4f7f6; --text-color: #333; --success: #28a745; --danger: #dc3545;}
         body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         
         /* HEADER */
@@ -31,8 +31,8 @@
         .content-area { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
         .status-message { text-align: center; color: #666; font-size: 16px; padding: 20px; background: white; border-radius: 10px; }
         .folder-btn { background-color: white; color: var(--primary); border: 2px solid var(--primary); padding: 18px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; text-align: center; }
-        .file-row { display: flex; gap: 8px; width: 100%; }
-        .file-btn { flex-grow: 1; background-color: var(--primary); color: white; border: none; padding: 16px; font-size: 16px; border-radius: 10px; cursor: pointer; text-decoration: none; display: block; text-align: center; font-weight: bold; }
+        .file-row { display: flex; gap: 8px; width: 100%; align-items: stretch; }
+        .file-btn { flex-grow: 1; background-color: var(--primary); color: white; border: none; padding: 16px; font-size: 16px; border-radius: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         .download-btn { width: 55px; background-color: white; color: var(--primary); border: 2px solid var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; }
         .file-btn:active, .download-btn:active, .folder-btn:active { transform: translateY(2px); }
         .back-btn { background-color: #6c757d; color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; font-size: 16px; margin-bottom: 5px; }
@@ -46,6 +46,45 @@
         .suggestion-item { padding: 14px 15px; border-bottom: 1px solid #eee; cursor: pointer; color: var(--text-color); display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover, .suggestion-item:active { background-color: #f4f7f6; color: var(--primary); }
+
+        /* MODALE RICERCA CORSE (JSON) */
+        .modal-overlay-search {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center;
+        }
+        .modal-content-search {
+            background: white; padding: 20px; border-radius: 12px; max-width: 90%; width: 400px;
+            max-height: 85vh; overflow-y: auto; position: relative;
+        }
+        .close-modal {
+            position: absolute; right: 15px; top: 15px; font-size: 24px; cursor: pointer; color: #666;
+        }
+        
+        /* BOTTONI SELEZIONE TIPO (PARTENZA/ARRIVO) */
+        .tipo-toggle-container { display: flex; gap: 10px; margin-bottom: 20px; margin-top: 5px; }
+        .btn-tipo { flex: 1; padding: 14px; border: 2px solid #ccc; background: white; color: #555; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+        .btn-tipo.active { border-color: var(--primary); background: var(--primary); color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        /* STATO "ANNEBBIATO" PER IL RESTO DEL FORM */
+        #sc-rest-form { opacity: 0.3; pointer-events: none; transition: opacity 0.3s ease; }
+        #sc-rest-form.unlocked { opacity: 1; pointer-events: auto; }
+
+        .sc-form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        .sc-form-group label { font-size: 14px; font-weight: bold; color: #555; margin-bottom: 5px; }
+        .sc-form-group input, .sc-form-group select {
+            width: 100%; padding: 12px; border: 2px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; font-family: inherit;
+        }
+        .sc-form-group input:focus, .sc-form-group select:focus { border-color: var(--primary); outline: none; }
+        
+        .risultato-box { background: #e9ecef; border-left: 4px solid var(--primary); padding: 15px; margin-top: 15px; font-size: 15px; line-height: 1.5; border-radius: 0 8px 8px 0; }
+        
+        /* SUGGERIMENTI TENDINA ORARIO JSON */
+        #sc-suggestions {
+            display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-radius: 0 0 8px 8px; max-height: 150px; overflow-y: auto; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: -2px;
+        }
+        .sc-suggestion-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 16px; font-weight: bold; }
+        .sc-suggestion-item:last-child { border-bottom: none; }
+        .sc-suggestion-item:hover, .sc-suggestion-item:active { background-color: #f4f7f6; color: var(--primary); }
     </style>
 </head>
 <body>
@@ -79,15 +118,55 @@
         <div class="status-message">Caricamento cartelle...</div>
     </div>
 
-    <div id="imageModal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); overflow: hidden;" onclick="chiudiSeSfondo(event)">
-        <div style="position: absolute; top: calc(20px + env(safe-area-inset-top)); right: 20px; font-size: 35px; color: white; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 10001;" onclick="chiudiImageModal()">&times;</div>
+    <div id="imageModal" style="display: none; position: fixed; z-index: 20000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); overflow: hidden;" onclick="chiudiSeSfondo(event)">
+        <div style="position: absolute; top: calc(20px + env(safe-area-inset-top)); right: 20px; font-size: 35px; color: white; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 20001;" onclick="chiudiImageModal()">&times;</div>
         <div id="imageFlexContainer" style="display:flex; flex-direction: column; justify-content:center; align-items:center; height:100%; padding:20px; padding-bottom: 80px; position: relative;">
             <img id="turnoImage" src="" style="max-width: 100%; max-height: 70vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
-            <div id="imageBanner" style="position: relative; z-index: 10001; margin-top: 15px; background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px; border-radius: 12px; font-size: 13px; text-align: center; max-width: 90%; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+            <div id="imageBanner" style="position: relative; z-index: 20001; margin-top: 15px; background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px; border-radius: 12px; font-size: 13px; text-align: center; max-width: 90%; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
                 ⚠️ Controllare sempre la presenza di eventuali varianti ai turni.
             </div>
         </div>
-        <button onclick="scaricaImmagineTurno()" style="position: absolute; bottom: calc(30px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: #11cdef; color: white; border: none; padding: 12px 24px; border-radius: 20px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 10001;">📥 Scarica</button>
+        <button onclick="scaricaImmagineTurno()" style="position: absolute; bottom: calc(30px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: #11cdef; color: white; border: none; padding: 12px 24px; border-radius: 20px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 20001;">📥 Scarica</button>
+    </div>
+
+    <div id="searchCorseModal" class="modal-overlay-search" onclick="chiudiSeSfondoSearch(event)">
+        <div class="modal-content-search">
+            <span class="close-modal" onclick="chiudiSearchCorseModal()">&times;</span>
+            <h3 style="margin-top:0; color:var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px;">Cerca Corsa</h3>
+            
+            <div id="sc-status" class="status-message" style="padding: 10px; font-size:14px; display:none;">Caricamento dati in corso...</div>
+            
+            <div id="sc-form" style="display:none; margin-top: 15px;">
+                
+                <div class="tipo-toggle-container">
+                    <button id="btn-partenza" class="btn-tipo" onclick="selezionaTipo('partenza')">🛫 Partenza</button>
+                    <button id="btn-arrivo" class="btn-tipo" onclick="selezionaTipo('arrivo')">🛬 Arrivo</button>
+                </div>
+                <input type="hidden" id="sc-tipo" value="">
+
+                <div id="sc-rest-form">
+                    <div class="sc-form-group">
+                        <label id="label-luogo">Luogo:</label>
+                        <select id="sc-luogo" onchange="aggiornaSuggerimentiOrario()"></select>
+                    </div>
+                    
+                    <div class="sc-form-group">
+                        <label>Giorno:</label>
+                        <input type="date" id="sc-giorno">
+                    </div>
+                    
+                    <div class="sc-form-group" style="position: relative;">
+                        <label id="label-orario">Orario:</label>
+                        <input type="text" id="sc-orario" inputmode="numeric" placeholder="es. 07.30" oninput="formattaOrario(event)" autocomplete="off">
+                        <div id="sc-suggestions"></div>
+                    </div>
+                    
+                    <button class="file-btn" style="width: 100%; border-radius: 8px; margin-top: 5px;" onclick="eseguiRicercaCorsa()">Trova Turno</button>
+                </div>
+
+                <div id="sc-risultato" class="risultato-box" style="display:none;"></div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -95,13 +174,14 @@
         function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
         function chiudiMenuLaterale() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; }
 
-        // --- LOGICA SPECIFICA TURNI ---
+        // --- LOGICA SPECIFICA TURNI E RICERCA JSON ---
         const GITHUB_USER = "HazeV98"; 
         const GITHUB_REPO = "Utility";
         let numCartelle = 0;
         
         let currentImgList = [];
         let currentImgDir = "";
+        let currentCorseData = null; 
         
         // --- VARIABILI VISUALIZZATORE IMMAGINE ---
         let pzInstance = null;
@@ -232,6 +312,7 @@
                 const files = await res.json();
                 
                 let pdfs = files.filter(f => f.name.toLowerCase().endsWith(".pdf"));
+                let jsons = files.filter(f => f.name.toLowerCase().endsWith(".json")); 
                 
                 pdfs.sort((a, b) => {
                     if (a.name.includes("libro_turni_completo")) return -1;
@@ -249,7 +330,7 @@
                     area.appendChild(b); 
                 }
                 
-                // BARRA DI RICERCA
+                // BARRA DI RICERCA IMMAGINI
                 if (currentImgList.length > 0) {
                     const searchDiv = document.createElement('div');
                     searchDiv.className = "search-container";
@@ -287,12 +368,36 @@
                     aDown.onclick = () => downloadForzato(f.download_url, nomeOrig);
 
                     row.appendChild(aOpen); row.appendChild(aDown);
+
+                    // ==========================================
+                    // INIEZIONE TASTO CERCA CORSE (JSON)
+                    // ==========================================
+                    const baseName = nomeOrig.substring(0, nomeOrig.lastIndexOf('.'));
+                    const hasJson = jsons.some(j => j.name.substring(0, j.name.lastIndexOf('.')) === baseName);
+
+                    if (hasJson) {
+                        aDown.style.width = "50px"; 
+                        
+                        const btnSearch = document.createElement('button');
+                        btnSearch.className = "file-btn";
+                        btnSearch.style.backgroundColor = "var(--success)";
+                        btnSearch.style.flexGrow = "0";
+                        btnSearch.style.width = "50px";
+                        btnSearch.style.padding = "0";
+                        btnSearch.style.fontSize = "20px";
+                        btnSearch.style.marginLeft = "8px";
+                        btnSearch.innerText = "🔍";
+                        btnSearch.onclick = () => apriRicercaCorse(nomeOrig, dir);
+                        
+                        row.appendChild(btnSearch);
+                    }
+
                     area.appendChild(row);
                 });
             } catch (e) { area.innerHTML = "<div class='status-message'>Errore caricamento PDF.</div>"; }
         }
 
-        // --- FUNZIONE PER LA RICERCA DINAMICA ---
+        // --- FUNZIONE PER LA RICERCA DINAMICA IMMAGINI E APERTURA DIRETTA ---
         function filtraTurni() {
             const input = document.getElementById('shiftSearch');
             const box = document.getElementById('suggestionsBox');
@@ -319,14 +424,7 @@
                     item.className = 'suggestion-item';
                     item.innerHTML = `<span>Turno ${nomeSenzaExt}</span> <span>🖼️</span>`;
                     item.onclick = () => {
-                        // APRE IL VISUALIZZATORE IN-APP
-                        currentImagePath = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${currentImgDir}/${m.name}`;
-                        let imgElement = document.getElementById('turnoImage');
-                        imgElement.onerror = erroreImmagine; 
-                        imgElement.src = currentImagePath;
-                        if (pzInstance) { pzInstance.reset(); }
-                        document.getElementById('imageModal').style.display = 'block';
-                        
+                        apriImmagineTurno(m.name);
                         box.style.display = 'none';
                         input.value = ''; 
                     };
@@ -366,12 +464,284 @@
             document.body.removeChild(a);
         }
 
-        // Chiude la tendina dei suggerimenti se l'utente clicca fuori
+        function apriImmagineTurno(nomeFile) {
+            currentImagePath = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${currentImgDir}/${nomeFile}`;
+            let imgElement = document.getElementById('turnoImage');
+            imgElement.onerror = erroreImmagine; 
+            imgElement.src = currentImagePath;
+            if (pzInstance) { pzInstance.reset(); }
+            document.getElementById('imageModal').style.display = 'block';
+        }
+
+        // Apertura immagine passando dal nome "Pilota" (es. "1C01") della ricerca JSON
+        function apriImmagineTurnoDallaRicerca(turnoPilota) {
+            if (!currentImgList || currentImgList.length === 0) {
+                alert("Nessuna immagine disponibile per l'apertura rapida.");
+                return;
+            }
+
+            // Cerca il file immagine corrispondente
+            const match = currentImgList.find(f => {
+                const nomeSenzaExt = f.name.replace(/\.[^/.]+$/, "").toUpperCase();
+                return nomeSenzaExt.includes(turnoPilota.toUpperCase());
+            });
+
+            if (match) {
+                apriImmagineTurno(match.name);
+            } else {
+                alert("Immagine per il turno " + turnoPilota + " non trovata nell'archivio.");
+            }
+        }
+
+
+        // ==========================================
+        // LOGICA RICERCA CORSE (MODALE JSON)
+        // ==========================================
+        function chiudiSeSfondoSearch(event) {
+            if (event.target.id === 'searchCorseModal') {
+                chiudiSearchCorseModal();
+            }
+        }
+
+        function chiudiSearchCorseModal() {
+            document.getElementById('searchCorseModal').style.display = 'none';
+        }
+
+        async function apriRicercaCorse(pdfName, dirName) {
+            document.getElementById('searchCorseModal').style.display = 'flex';
+            document.getElementById('sc-form').style.display = 'none';
+            document.getElementById('sc-risultato').style.display = 'none';
+            const statusEl = document.getElementById('sc-status');
+            
+            // Resetta lo stato del form
+            document.getElementById('sc-tipo').value = "";
+            document.getElementById('btn-partenza').classList.remove('active');
+            document.getElementById('btn-arrivo').classList.remove('active');
+            document.getElementById('sc-rest-form').classList.remove('unlocked');
+            
+            document.getElementById('label-luogo').innerText = "Luogo:";
+            document.getElementById('label-orario').innerText = "Orario:";
+            document.getElementById('sc-orario').value = "";
+            document.getElementById('sc-giorno').valueAsDate = new Date(); 
+
+            statusEl.style.display = 'block';
+            statusEl.innerText = "Caricamento dati corse in corso...";
+
+            const baseName = pdfName.substring(0, pdfName.lastIndexOf('.'));
+            const jsonName = baseName + ".json";
+            
+            try {
+                // Recupera il file JSON dalla stessa cartella dove risiede il PDF
+                const url = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${dirName}/${encodeURIComponent(jsonName)}?t=${new Date().getTime()}`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("File dati (JSON) non trovato per questa linea.");
+                
+                currentCorseData = await res.json();
+                
+                statusEl.style.display = 'none';
+                document.getElementById('sc-form').style.display = 'block';
+
+            } catch(e) {
+                statusEl.innerHTML = `<span style='color:var(--danger);'>Errore: ${e.message}</span>`;
+            }
+        }
+
+        function selezionaTipo(tipo) {
+            document.getElementById('sc-tipo').value = tipo;
+            
+            if (tipo === 'partenza') {
+                document.getElementById('btn-partenza').classList.add('active');
+                document.getElementById('btn-arrivo').classList.remove('active');
+                document.getElementById('label-luogo').innerText = "Luogo di partenza:";
+                document.getElementById('label-orario').innerText = "Orario di partenza:";
+            } else {
+                document.getElementById('btn-arrivo').classList.add('active');
+                document.getElementById('btn-partenza').classList.remove('active');
+                document.getElementById('label-luogo').innerText = "Luogo di arrivo:";
+                document.getElementById('label-orario').innerText = "Orario di arrivo:";
+            }
+            
+            // Sblocca il resto del modulo togliendo la "nebbia"
+            document.getElementById('sc-rest-form').classList.add('unlocked');
+            
+            // Svuota l'orario, rimuove i suggerimenti e aggiorna i luoghi possibili
+            document.getElementById('sc-orario').value = "";
+            document.getElementById('sc-suggestions').style.display = 'none';
+            document.getElementById('sc-risultato').style.display = 'none';
+            popolaLuoghi();
+        }
+
+        function popolaLuoghi() {
+            if (!currentCorseData) return;
+            const tipo = document.getElementById('sc-tipo').value;
+            
+            let luoghi = new Set();
+            for (let turno in currentCorseData) {
+                currentCorseData[turno].forEach(corsa => {
+                    let luogoCorretto = tipo === 'partenza' ? corsa.partenza_luogo : corsa.arrivo_luogo;
+                    if (luogoCorretto) luoghi.add(luogoCorretto.trim());
+                });
+            }
+            
+            let luoghiArr = Array.from(luoghi).sort();
+            let select = document.getElementById('sc-luogo');
+            select.innerHTML = '<option value="">-- Seleziona Luogo --</option>';
+            luoghiArr.forEach(l => {
+                select.innerHTML += `<option value="${l}">${l}</option>`;
+            });
+        }
+
+        // FORMATTAZIONE CAMPO ORARIO IN TEMPO REALE E SUGGERIMENTI
+        function formattaOrario(e) {
+            let val = e.target.value.replace(/\D/g, ''); 
+            if (val.length > 4) val = val.substring(0, 4); 
+            
+            if (val.length > 2) {
+                val = val.substring(0, 2) + '.' + val.substring(2);
+            }
+            
+            e.target.value = val;
+            mostraSuggerimentiOrario(val);
+        }
+
+        function aggiornaSuggerimentiOrario() {
+            const val = document.getElementById('sc-orario').value;
+            mostraSuggerimentiOrario(val);
+        }
+
+        function mostraSuggerimentiOrario(typedVal) {
+            const luogo = document.getElementById('sc-luogo').value;
+            const tipo = document.getElementById('sc-tipo').value;
+            const suggBox = document.getElementById('sc-suggestions');
+            
+            if (!luogo || typedVal.length === 0) {
+                suggBox.style.display = 'none';
+                return;
+            }
+
+            let orari = new Set();
+            for (let turno in currentCorseData) {
+                currentCorseData[turno].forEach(corsa => {
+                    let targetLuogo = tipo === 'partenza' ? corsa.partenza_luogo : corsa.arrivo_luogo;
+                    let targetOra = tipo === 'partenza' ? corsa.partenza_ora : corsa.arrivo_ora;
+
+                    if (targetLuogo && targetLuogo.trim() === luogo) {
+                        if (targetOra) orari.add(targetOra.trim());
+                    }
+                });
+            }
+
+            let orariFormattati = Array.from(orari).map(o => {
+                let p = o.replace('.', ':').split(':');
+                if (p.length < 2) return "";
+                let h = p[0].padStart(2, '0');
+                let m = p[1].padStart(2, '0');
+                return `${h}.${m}`;
+            }).filter(o => o !== "").sort();
+
+            let filtrati = orariFormattati.filter(o => o.startsWith(typedVal));
+
+            if (filtrati.length > 0) {
+                suggBox.innerHTML = '';
+                filtrati.forEach(o => {
+                    let div = document.createElement('div');
+                    div.className = 'sc-suggestion-item';
+                    div.innerText = o;
+                    div.onclick = function() {
+                        document.getElementById('sc-orario').value = o;
+                        suggBox.style.display = 'none';
+                    };
+                    suggBox.appendChild(div);
+                });
+                suggBox.style.display = 'block';
+            } else {
+                suggBox.style.display = 'none';
+            }
+        }
+
+        // RICERCA VERA E PROPRIA NEL JSON
+        function eseguiRicercaCorsa() {
+            const tipo = document.getElementById('sc-tipo').value;
+            const luogo = document.getElementById('sc-luogo').value;
+            const giorno = document.getElementById('sc-giorno').value; 
+            const orarioInput = document.getElementById('sc-orario').value;
+            const box = document.getElementById('sc-risultato');
+
+            if (!luogo || !orarioInput || orarioInput.length < 5) {
+                box.style.display = 'block';
+                box.innerHTML = "<span style='color:var(--danger);'>Seleziona un luogo e inserisci un orario completo (es. 07.30).</span>";
+                return;
+            }
+
+            let p = orarioInput.split('.');
+            let hInt = parseInt(p[0], 10);
+            let mStr = p[1];
+            
+            let targetFormat1 = `${hInt}:${mStr}`; // Formato "6:31"
+            let targetFormat2 = `${hInt}.${mStr}`; // Formato "6.31"
+            let targetFormat3 = `${p[0]}:${mStr}`; // Formato "06:31"
+
+            let turniTrovati = [];
+
+            for (let turno in currentCorseData) {
+                let corse = currentCorseData[turno];
+                for (let i = 0; i < corse.length; i++) {
+                    let corsa = corse[i];
+                    let targetLuogo = tipo === 'partenza' ? corsa.partenza_luogo : corsa.arrivo_luogo;
+                    let targetOra = tipo === 'partenza' ? corsa.partenza_ora : corsa.arrivo_ora;
+
+                    if (targetLuogo && targetLuogo.trim() === luogo) {
+                        let o = targetOra ? targetOra.trim() : "";
+                        if (o === targetFormat1 || o === targetFormat2 || o === targetFormat3) {
+                            
+                            // Estrazione della versione "Pilota" del turno (il codice da 4 caratteri es: 4P01, 1C01)
+                            let matchPilota = turno.match(/\d[A-Z0-9]{3}/i);
+                            let nomePilota = matchPilota ? matchPilota[0].toUpperCase() : turno.toUpperCase();
+                            
+                            if (!turniTrovati.includes(nomePilota)) turniTrovati.push(nomePilota);
+                        }
+                    }
+                }
+            }
+
+            box.style.display = 'block';
+            let etichettaAzione = tipo === 'partenza' ? 'Partenza da' : 'Arrivo a';
+            
+            if (turniTrovati.length > 0) {
+                let dataFormattata = giorno ? giorno.split('-').reverse().join('/') : "Oggi";
+                
+                // Creazione dei tastini apri turno
+                let tastiniHtml = turniTrovati.map(t => {
+                    return `<button class="file-btn" style="display:inline-flex; width:auto; margin: 5px 5px 0 0; padding: 10px 15px; font-size: 14px;" onclick="apriImmagineTurnoDallaRicerca('${t}')">🖼️ ${t}</button>`;
+                }).join('');
+
+                box.innerHTML = `<strong>Data Selezionata:</strong> ${dataFormattata}<br>
+                                 <strong>${etichettaAzione}:</strong> ${luogo} alle ${orarioInput}<br>
+                                 <div style="margin-top:15px; color:var(--text-color); font-size:16px;">
+                                    <strong>Turni che effettuano la corsa:</strong><br>
+                                    ${tastiniHtml}
+                                 </div>`;
+            } else {
+                box.innerHTML = "Nessun turno trovato per questa specifica corsa nel database.";
+            }
+        }
+
+        // ==========================================
+        // GESTIONE CHIUSURA TENDINE CLICCANDO FUORI E CHIUSURA MODALI
+        // ==========================================
         document.addEventListener('click', function(e) {
-            const box = document.getElementById('suggestionsBox');
-            const input = document.getElementById('shiftSearch');
-            if (box && e.target !== input && !box.contains(e.target)) {
-                box.style.display = 'none';
+            // Tendina Ricerca Immagini
+            const boxImg = document.getElementById('suggestionsBox');
+            const inputImg = document.getElementById('shiftSearch');
+            if (boxImg && inputImg && e.target !== inputImg && !boxImg.contains(e.target)) {
+                boxImg.style.display = 'none';
+            }
+
+            // Tendina Ricerca Corse (JSON)
+            const scSuggBox = document.getElementById('sc-suggestions');
+            const scInputOrario = document.getElementById('sc-orario');
+            if (scSuggBox && scInputOrario && e.target !== scInputOrario && !scSuggBox.contains(e.target)) {
+                scSuggBox.style.display = 'none';
             }
         });
 

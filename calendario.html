@@ -1217,39 +1217,54 @@
                     let parts = date.split('-');
                     let anno = parts[0];
                     let meseIdx = parseInt(parts[1], 10) - 1;
-                    let giorno = parseInt(parts[2], 10);
+                    // Prendo il giorno senza lo zero davanti per far combaciare la logica di turni.html
+                    let giornoNum = parseInt(parts[2], 10).toString(); 
                     
                     const mesiNomi = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
                     let meseNome = mesiNomi[meseIdx];
                     
                     let urlRotazioni = `rotazioni/rotazioni_${meseNome}_${anno}.json?v=${new Date().getTime()}`;
                     
-                    htmlInfo += `<div id="proprietario-turno-container" style="font-size: 0.9em; color: var(--turno); margin-top: 5px;"></div>`;
+                    htmlInfo += `<div id="proprietario-turno-container" style="font-size: 0.9em; color: var(--turno); margin-top: 5px;"><i>Ricerca titolare in corso...</i></div>`;
                     
                     fetch(urlRotazioni)
                         .then(res => {
                             if (!res.ok) throw new Error("File non trovato");
                             return res.json();
                         })
-                        .then(data => {
+                        .then(rotData => {
                             let trovati = [];
-                            data.forEach(dip => {
-                                if (dip.turni && dip.turni[giorno - 1] === turnoAttualePulito) {
-                                    trovati.push(dip.nome);
+                            
+                            // Utilizzo la STESSA LOGICA di turni.html
+                            for (let rotName in rotData) {
+                                let dipendenti = rotData[rotName];
+                                for (let nome in dipendenti) {
+                                    let tAssegnato = dipendenti[nome][giornoNum];
+                                    if (tAssegnato) {
+                                        // Rimuovo gli spazi per un confronto sicuro (tClean come su turni.html)
+                                        let tClean = tAssegnato.toUpperCase().replace(/\s+/g, '');
+                                        let tCercatoClean = turnoAttualePulito.replace(/\s+/g, '');
+                                        
+                                        if (tClean === tCercatoClean) {
+                                            trovati.push(nome.split(" - ").join(" e "));
+                                        }
+                                    }
                                 }
-                            });
+                            }
                             
                             let container = document.getElementById('proprietario-turno-container');
                             if (container) {
                                 if (trovati.length > 0) {
                                     container.innerHTML = `<b>Da rotazione assegnato a:</b> ${trovati.join(", ")}`;
                                 } else {
-                                    container.innerHTML = ``; 
+                                    container.innerHTML = ``; // Lascia vuoto se non trova nessuno
                                 }
                             }
                         })
                         .catch(e => {
-                            // File JSON del mese non trovato, silenzioso.
+                            // File JSON del mese non trovato, silenzioso
+                            let container = document.getElementById('proprietario-turno-container');
+                            if (container) container.innerHTML = ``;
                         });
                 }
                 // --- FINE NUOVO BLOCCO RICERCA PROPRIETARIO ---
@@ -2052,4 +2067,3 @@
 </script>
 </body>
 </html>
- 

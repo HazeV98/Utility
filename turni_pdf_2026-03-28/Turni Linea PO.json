@@ -150,13 +150,5 @@
       "arrivo_luogo": "F.TE NOVE",
       "arrivo_ora": "17:04"
     }
-  ],
-  "PO41": [
-    {
-      "partenza_luogo": "P.SABBIONI",
-      "partenza_ora": "6:00",
-      "arrivo_luogo": "P.SABBIONI",
-      "arrivo_ora": "13:04"
-    }
   ]
 }

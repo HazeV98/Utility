@@ -7,23 +7,7 @@
       "arrivo_ora": "11:24"
     }
   ],
-  "AT51": [
-    {
-      "partenza_luogo": "DEP. TRONCHETT",
-      "partenza_ora": "4:20",
-      "arrivo_luogo": "DEP. TRONCHETT",
-      "arrivo_ora": "11:24"
-    }
-  ],
   "AT02": [
-    {
-      "partenza_luogo": "DEP. TRONCHETT",
-      "partenza_ora": "10:20",
-      "arrivo_luogo": "DEP. TRONCHETT",
-      "arrivo_ora": "17:24"
-    }
-  ],
-  "AT52": [
     {
       "partenza_luogo": "DEP. TRONCHETT",
       "partenza_ora": "10:20",
@@ -39,23 +23,7 @@
       "arrivo_ora": "23:24"
     }
   ],
-  "AT53": [
-    {
-      "partenza_luogo": "DEP. TRONCHETT",
-      "partenza_ora": "16:20",
-      "arrivo_luogo": "DEP. TRONCHETT",
-      "arrivo_ora": "23:24"
-    }
-  ],
   "AT04": [
-    {
-      "partenza_luogo": "DEP. TRONCHETT",
-      "partenza_ora": "22:20",
-      "arrivo_luogo": "DEP. TRONCHETT",
-      "arrivo_ora": "5:24"
-    }
-  ],
-  "AT54": [
     {
       "partenza_luogo": "DEP. TRONCHETT",
       "partenza_ora": "22:20",
@@ -71,23 +39,7 @@
       "arrivo_ora": "11:24"
     }
   ],
-  "AT61": [
-    {
-      "partenza_luogo": "DEP. TRONCHETT",
-      "partenza_ora": "4:20",
-      "arrivo_luogo": "DEP. TRONCHETT",
-      "arrivo_ora": "11:24"
-    }
-  ],
   "AT12": [
-    {
-      "partenza_luogo": "DEP. TRONCHETT",
-      "partenza_ora": "10:20",
-      "arrivo_luogo": "DEP. TRONCHETT",
-      "arrivo_ora": "17:24"
-    }
-  ],
-  "AT62": [
     {
       "partenza_luogo": "DEP. TRONCHETT",
       "partenza_ora": "10:20",
@@ -103,23 +55,7 @@
       "arrivo_ora": "23:24"
     }
   ],
-  "AT63": [
-    {
-      "partenza_luogo": "DEP. TRONCHETT",
-      "partenza_ora": "16:20",
-      "arrivo_luogo": "DEP. TRONCHETT",
-      "arrivo_ora": "23:24"
-    }
-  ],
   "AT14": [
-    {
-      "partenza_luogo": "DEP. TRONCHETT",
-      "partenza_ora": "22:20",
-      "arrivo_luogo": "DEP. TRONCHETT",
-      "arrivo_ora": "5:24"
-    }
-  ],
-  "AT64": [
     {
       "partenza_luogo": "DEP. TRONCHETT",
       "partenza_ora": "22:20",

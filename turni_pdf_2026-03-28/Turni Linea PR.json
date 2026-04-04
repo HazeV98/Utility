@@ -7,23 +7,7 @@
       "arrivo_ora": "4:04"
     }
   ],
-  "PR70": [
-    {
-      "partenza_luogo": "CANTIERE",
-      "partenza_ora": "21:00",
-      "arrivo_luogo": "CANTIERE",
-      "arrivo_ora": "4:04"
-    }
-  ],
   "PR50": [
-    {
-      "partenza_luogo": "CANTIERE",
-      "partenza_ora": "6:50",
-      "arrivo_luogo": "CANTIERE",
-      "arrivo_ora": "13:54"
-    }
-  ],
-  "PR100": [
     {
       "partenza_luogo": "CANTIERE",
       "partenza_ora": "6:50",

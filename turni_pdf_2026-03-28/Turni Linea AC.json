@@ -1,18 +1,1 @@
-{
-  "AC22": [
-    {
-      "partenza_luogo": "DEP. TRONCHETT",
-      "partenza_ora": "13:00",
-      "arrivo_luogo": "DEP. TRONCHETT",
-      "arrivo_ora": "20:04"
-    }
-  ],
-  "AC72": [
-    {
-      "partenza_luogo": "DEP. TRONCHETT",
-      "partenza_ora": "13:00",
-      "arrivo_luogo": "DEP. TRONCHETT",
-      "arrivo_ora": "20:04"
-    }
-  ]
-}
+{}

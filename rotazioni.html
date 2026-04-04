@@ -18,6 +18,7 @@
             --text-color: #333;
             --success: #28a745;
             --danger: #dc3545;
+            --info: #17a2b8;
         }
 
         body {
@@ -84,7 +85,6 @@
             display: none; 
             width: 100%;
             max-width: 400px;
-            display: flex;
             flex-direction: column;
             gap: 15px;
         }
@@ -102,84 +102,69 @@
             text-align: center;
         }
 
-        input[type="text"] {
-            font-size: 20px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        /* --- Sblocca il maiuscolo solo per i placeholder (testo di suggerimento) --- */
-        input[type="text"]::placeholder {
-            text-transform: none;
-            font-size: 16px;
-            letter-spacing: normal;
-        }
+        input[type="text"] { font-size: 20px; text-transform: uppercase; letter-spacing: 2px; }
+        input[type="text"]::placeholder { text-transform: none; font-size: 16px; letter-spacing: normal; }
         
         .btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 16px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            transition: opacity 0.2s;
-            margin-bottom: 10px;
+            background-color: var(--primary); color: white; border: none; padding: 16px;
+            font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer;
+            width: 100%; transition: opacity 0.2s; margin-bottom: 10px;
         }
-
         .btn:active { transform: translateY(2px); opacity: 0.9; }
         
-        #error-msg { 
-            color: var(--danger); 
-            font-size: 14px; 
-            margin-top: 10px; 
-            min-height: 20px; 
-            font-weight: bold; 
-        }
+        #error-msg { color: var(--danger); font-size: 14px; margin-top: 10px; min-height: 20px; font-weight: bold; }
 
-        .support-section {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
-
-        .telegram-icon {
-            display: inline-block;
-            transition: transform 0.2s ease;
-            margin-top: 10px;
-        }
-
+        .support-section { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+        .telegram-icon { display: inline-block; transition: transform 0.2s ease; margin-top: 10px; }
         .telegram-icon:active { transform: scale(0.9); }
 
-        /* --- STILI LISTA DOCUMENTI E BOTTONI --- */
+        /* --- STILI CARDS MENSILI E BOTTONI --- */
         .status-message { text-align: center; color: #666; font-size: 16px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .file-row { display: flex; width: 100%; margin-bottom: 12px; gap: 8px; }
-        .file-btn { flex-grow: 1; background-color: var(--primary); color: white; border: none; padding: 16px 10px; font-size: 15px; border-radius: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .file-btn:active { transform: translateY(2px); }
-        .btn-search { background-color: #28a745; flex: 0.5; font-size: 14px; } 
+        
+        .month-card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 100%; box-sizing: border-box; }
+        .month-card h3 { margin-top: 0; color: var(--primary); text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; text-transform: capitalize; }
+        .btn-grid { display: flex; flex-direction: column; gap: 10px; }
 
-        /* --- STILI PER LA FINESTRA DI RICERCA (MODAL) --- */
+        .file-btn { width: 100%; background-color: var(--primary); color: white; border: none; padding: 14px 10px; font-size: 16px; border-radius: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: opacity 0.2s; box-sizing: border-box;}
+        .file-btn:active { transform: translateY(2px); opacity: 0.9; }
+        .btn-search { background-color: var(--success); } 
+        .btn-table { background-color: var(--info); color: white; }
+        .btn-pdf { background-color: #6c757d; }
+
+        /* --- STILI PER LE MODAL (RICERCA E TABELLA) --- */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 3000; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center;
         }
         .modal-content {
-            background: white; padding: 20px; border-radius: 12px; max-width: 90%; width: 400px;
-            max-height: 85vh; overflow-y: auto; position: relative;
+            background: white; padding: 20px; border-radius: 12px; max-width: 95%; width: 400px;
+            max-height: 85vh; overflow-y: auto; position: relative; box-sizing: border-box;
         }
-        .close-modal {
-            position: absolute; right: 15px; top: 15px; font-size: 24px; cursor: pointer; color: #666;
-        }
-        .modulo-ricerca {
-            background: #fafafa; border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-top: 15px;
-        }
+        .modal-table-content { width: 98%; max-width: 1200px; padding: 15px; } /* Più larga per le tabelle */
+        
+        .close-modal { position: absolute; right: 15px; top: 15px; font-size: 24px; cursor: pointer; color: #666; background: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10; }
+        
+        .modulo-ricerca { background: #fafafa; border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-top: 15px; }
         .modulo-ricerca h4 { margin-top: 0; color: var(--primary); margin-bottom: 5px;}
-        .risultato-box {
-            background: #e9ecef; border-left: 4px solid var(--primary); padding: 10px; margin-top: 10px; min-height: 30px; font-size: 14px;
-        }
+        .risultato-box { background: #e9ecef; border-left: 4px solid var(--primary); padding: 10px; margin-top: 10px; min-height: 30px; font-size: 14px; }
         .risultato-box ul { padding-left: 20px; margin: 5px 0 0 0; }
+
+        /* --- STILI TABELLA HTML (JSON) --- */
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; border: 1px solid #ddd; border-radius: 8px; }
+        .rotazioni-table { border-collapse: separate; border-spacing: 0; width: max-content; background: white; font-size: 14px; text-align: center; }
+        .rotazioni-table th, .rotazioni-table td { border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; padding: 10px; white-space: nowrap; }
+        .rotazioni-table th { background-color: var(--primary); color: white; position: sticky; top: 0; z-index: 2; border-top: 1px solid var(--primary); }
+        
+        /* Blocca la prima colonna a sinistra */
+        .rotazioni-table td:first-child, .rotazioni-table th:first-child { position: sticky; left: 0; z-index: 3; }
+        .rotazioni-table td:first-child { background-color: #f9f9f9; font-weight: bold; text-align: left; border-right: 2px solid #aaa; color: var(--primary); }
+        .rotazioni-table th:first-child { z-index: 4; border-right: 2px solid #003d82; }
+
+        /* Colori dinamici per le celle */
+        .cell-al { background-color: #28a745; color: white; font-weight: bold; }
+        .cell-ri { background-color: #5cb85c; color: white; }
+        .cell-disp { background-color: #ffc107; color: black; font-weight: bold;}
+        .cell-espe { background-color: #6f42c1; color: white; }
     </style>
 </head>
 <body>
@@ -225,13 +210,12 @@
     </div>
 
     <div id="content-section">
-        <div id="rotazioni-list">
-        </div>
+        <div id="rotazioni-list"></div>
     </div>
 
-    <div id="search-modal" class="modal-overlay">
+    <div id="search-modal" class="modal-overlay" onclick="chiudiSeSfondo(event, 'search-modal')">
         <div class="modal-content">
-            <span class="close-modal" onclick="chiudiModal()">&times;</span>
+            <span class="close-modal" onclick="chiudiModal('search-modal')">&times;</span>
             <h3 id="modal-title" style="margin-top:0; color:var(--primary);">Ricerca Turni</h3>
             <div id="modal-status" class="status-message" style="padding: 10px; font-size:14px;">In attesa...</div>
 
@@ -260,16 +244,18 @@
         </div>
     </div>
 
+    <div id="table-modal" class="modal-overlay" onclick="chiudiSeSfondo(event, 'table-modal')">
+        <div class="modal-content modal-table-content">
+            <span class="close-modal" onclick="chiudiModal('table-modal')">&times;</span>
+            <h3 id="table-modal-title" style="margin-top:0; color:var(--primary); padding-right: 30px;">Tabella Rotazione</h3>
+            <div id="table-container"></div>
+        </div>
+    </div>
+
     <script>
         // --- FUNZIONI MENU LATERALE ---
-        function apriMenuLaterale() { 
-            document.getElementById('sidebar').classList.add('open'); 
-            document.getElementById('sidebar-overlay').style.display = 'block'; 
-        }
-        function chiudiMenuLaterale() { 
-            document.getElementById('sidebar').classList.remove('open'); 
-            document.getElementById('sidebar-overlay').style.display = 'none'; 
-        }
+        function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
+        function chiudiMenuLaterale() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; }
 
         // Impostazioni Repository 
         const GITHUB_USER = "HazeV98"; 
@@ -277,7 +263,6 @@
         const CARTELLA_BASE = "rotazioni";
 
         let databaseTurni = []; 
-        let listaFileGitHub = []; 
 
         // ==========================================
         // LOGICA DI AUTENTICAZIONE
@@ -293,10 +278,7 @@
             const inputCodice = document.getElementById('access-code').value.trim().toUpperCase();
             const errorMsg = document.getElementById('error-msg');
             
-            if (!inputCodice) {
-                errorMsg.innerText = "Inserisci un codice valido.";
-                return;
-            }
+            if (!inputCodice) { errorMsg.innerText = "Inserisci un codice valido."; return; }
             
             errorMsg.innerText = "Verifica in corso...";
             errorMsg.style.color = "#666";
@@ -306,11 +288,9 @@
 
         async function eseguiVerifica(codice, isAutoLogin) {
             const errorMsg = document.getElementById('error-msg');
-            
             try {
                 const url = 'codici.json?t=' + new Date().getTime();
                 const response = await fetch(url);
-                
                 if (!response.ok) throw new Error("Errore nel recupero dei codici.");
                 
                 const codiciValidi = await response.json();
@@ -333,14 +313,13 @@
                     }
                 }
             } catch (error) {
-                console.error(error);
                 errorMsg.innerText = "⚠️ Errore di connessione. Riprova.";
                 errorMsg.style.color = "var(--danger)";
             }
         }
 
         // ==========================================
-        // CARICAMENTO LISTA DA GITHUB
+        // CREAZIONE UI RAGGRUPPATA PER MESI
         // ==========================================
         function pulisciNome(nome) {
             let pulito = nome.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
@@ -349,64 +328,184 @@
 
         async function caricaRotazioni() {
             const area = document.getElementById('rotazioni-list');
-            area.innerHTML = `<div class="status-message">Caricamento rotazioni in corso...</div>`;
+            area.innerHTML = `<div class="status-message">Scansione rotazioni in corso...</div>`;
 
             try {
                 const timestamp = new Date().getTime();
                 const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${CARTELLA_BASE}?t=${timestamp}`);
-                
-                if (!res.ok) {
-                    area.innerHTML = `<div class="status-message">Nessun documento trovato. L'amministratore non ha ancora caricato i file.</div>`;
-                    return;
-                }
+                if (!res.ok) throw new Error();
 
-                listaFileGitHub = await res.json();
-                const pdfs = listaFileGitHub.filter(f => f.type === "file" && f.name.toLowerCase().endsWith('.pdf'));
-                const excels = listaFileGitHub.filter(f => f.type === "file" && (f.name.toLowerCase().endsWith('.xlsx') || f.name.toLowerCase().endsWith('.xls')));
+                const files = await res.json();
+                let groups = {};
 
-                if (pdfs.length === 0) {
-                    area.innerHTML = `<div class="status-message">Nessun PDF presente nella cartella.</div>`;
-                    return;
-                }
+                // Raggruppa i file per nome base (es. "rotazioni_aprile_2026")
+                files.forEach(f => {
+                    if(f.type !== "file") return;
+                    let ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase();
+                    let baseName = f.name.substring(0, f.name.lastIndexOf('.'));
+                    
+                    if(['.pdf', '.xlsx', '.xls', '.json'].includes(ext)) {
+                        if(!groups[baseName]) groups[baseName] = { pdf: null, excel: null, json: null, base: baseName };
+                        if(ext === '.pdf') groups[baseName].pdf = f;
+                        if(ext === '.xlsx' || ext === '.xls') groups[baseName].excel = f;
+                        if(ext === '.json') groups[baseName].json = f;
+                    }
+                });
 
                 area.innerHTML = "";
 
-                pdfs.forEach(f => {
-                    const row = document.createElement('div');
-                    row.className = "file-row";
+                if (Object.keys(groups).length === 0) {
+                    area.innerHTML = `<div class="status-message">Nessun documento trovato.</div>`;
+                    return;
+                }
 
-                    const aOpen = document.createElement('a');
-                    aOpen.className = "file-btn";
-                    aOpen.innerText = "📄 " + pulisciNome(f.name);
-                    aOpen.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${f.name}?t=${timestamp}`;
-                    aOpen.target = "_blank";
-                    
-                    row.appendChild(aOpen);
+                // Genera una Card per ogni gruppo di file
+                for (let base in groups) {
+                    let g = groups[base];
+                    let monthCard = document.createElement('div');
+                    monthCard.className = "month-card";
+                    monthCard.innerHTML = `<h3>${pulisciNome(g.base)}</h3>`;
 
-                    // Mostra il tasto Cerca SOLO se nell'elenco c'è un file excel col nome coincidente
-                    const baseNamePdf = f.name.substring(0, f.name.lastIndexOf('.')).toLowerCase();
-                    const hasExcel = excels.some(ex => ex.name.substring(0, ex.name.lastIndexOf('.')).toLowerCase() === baseNamePdf);
+                    let btnGrid = document.createElement('div');
+                    btnGrid.className = "btn-grid";
 
-                    if (hasExcel) {
-                        const btnSearch = document.createElement('button');
+                    // 1. GESTIONE JSON (La via preferenziale, più veloce ed esteticamente migliore)
+                    if (g.json) {
+                        try {
+                            let dataRes = await fetch(g.json.download_url + `?t=${timestamp}`);
+                            let jsonData = await dataRes.json();
+
+                            // Tasti per Visualizzare le Tabelle (uno per ogni rotazione dentro il JSON)
+                            Object.keys(jsonData).forEach(rotName => {
+                                let btnTab = document.createElement('button');
+                                btnTab.className = "file-btn btn-table";
+                                btnTab.innerHTML = `📅 Tabella: ${rotName}`;
+                                btnTab.onclick = () => apriTabella(rotName, jsonData);
+                                btnGrid.appendChild(btnTab);
+                            });
+
+                            // Tasto Cerca basato su JSON
+                            let btnSearch = document.createElement('button');
+                            btnSearch.className = "file-btn btn-search";
+                            btnSearch.innerHTML = `🔍 Cerca Colleghi e Cambi`;
+                            btnSearch.onclick = () => apriRicercaJson(jsonData, g.base);
+                            btnGrid.appendChild(btnSearch);
+
+                        } catch(e) { console.error("Errore lettura JSON", e); }
+                    } 
+                    // 2. GESTIONE VECCHI EXCEL (Retrocompatibilità)
+                    else if (g.excel) {
+                        let btnSearch = document.createElement('button');
                         btnSearch.className = "file-btn btn-search";
-                        btnSearch.innerText = "🔍 Cerca";
-                        btnSearch.onclick = () => apriFinestraRicerca(f.name);
-                        row.appendChild(btnSearch);
+                        btnSearch.innerHTML = `🔍 Cerca (Modalità Lenta)`;
+                        btnSearch.onclick = () => apriFinestraRicerca(g.pdf ? g.pdf.name : g.excel.name, files);
+                        btnGrid.appendChild(btnSearch);
                     }
 
-                    area.appendChild(row);
-                });
+                    // 3. TASTO PDF (Sempre in fondo se esiste)
+                    if (g.pdf) {
+                        let btnPdf = document.createElement('a');
+                        btnPdf.className = "file-btn btn-pdf";
+                        btnPdf.innerHTML = `📄 Apri PDF Originale`;
+                        btnPdf.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${g.pdf.name}?t=${timestamp}`;
+                        btnPdf.target = "_blank";
+                        btnGrid.appendChild(btnPdf);
+                    }
+
+                    monthCard.appendChild(btnGrid);
+                    area.appendChild(monthCard);
+                }
 
             } catch (e) { 
-                area.innerHTML = `<div class="status-message">Errore di connessione a GitHub. Riprova più tardi.</div>`; 
+                area.innerHTML = `<div class="status-message">Errore di connessione. Riprova più tardi.</div>`; 
             }
         }
 
         // ==========================================
-        // LOGICA RICERCA CON LETTURA EXCEL DIETRO LE QUINTE
+        // GESTIONE TABELLA VISUALE (JSON)
         // ==========================================
-        
+        function chiudiModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        function chiudiSeSfondo(event, modalId) {
+            if (event.target.id === modalId) chiudiModal(modalId);
+        }
+
+        function getClassForTurno(turno) {
+            let t = turno.toUpperCase().replace(/\s+/g, '');
+            if (t === 'AL') return 'cell-al';
+            if (t === 'RI') return 'cell-ri';
+            if (t === 'DISP' || t === 'DI') return 'cell-disp';
+            if (t === 'ESPE') return 'cell-espe';
+            return '';
+        }
+
+        function apriTabella(rotName, data) {
+            const modal = document.getElementById('table-modal');
+            const title = document.getElementById('table-modal-title');
+            const container = document.getElementById('table-container');
+
+            title.innerText = rotName;
+            
+            let html = `<div class="table-responsive"><table class="rotazioni-table">`;
+            html += `<thead><tr><th>Nome Turnista</th>`;
+            for(let i=1; i<=31; i++) html += `<th>${i}</th>`;
+            html += `</tr></thead><tbody>`;
+
+            const dipendenti = data[rotName];
+            for (let nome in dipendenti) {
+                html += `<tr><td>${nome}</td>`;
+                for(let i=1; i<=31; i++) {
+                    let turno = dipendenti[nome][i.toString()] || "";
+                    let classCss = getClassForTurno(turno);
+                    html += `<td class="${classCss}">${turno}</td>`;
+                }
+                html += `</tr>`;
+            }
+            html += `</tbody></table></div>`;
+            
+            container.innerHTML = html;
+            modal.style.display = 'flex';
+        }
+
+        // ==========================================
+        // LOGICA RICERCA (SIA JSON CHE EXCEL)
+        // ==========================================
+
+        // --- Mappatura super veloce tramite JSON ---
+        function apriRicercaJson(jsonData, baseName) {
+            databaseTurni = []; // Svuota il database per prepararlo ai nuovi dati
+
+            for (let rotName in jsonData) {
+                let dipendenti = jsonData[rotName];
+                for (let nome in dipendenti) {
+                    let turniArr = [];
+                    for (let i = 1; i <= 31; i++) {
+                        let val = dipendenti[nome][i.toString()] || "";
+                        // Uniforma la scritta DI in DISP come faceva la vecchia logica
+                        if (val.toUpperCase().replace(/\s+/g, '') === "DI") val = "DISP";
+                        turniArr.push(val.toUpperCase().replace(/\s+/g, ''));
+                    }
+                    databaseTurni.push({
+                        nome: nome + ` <br><span style='font-size:0.85em;color:#666;font-weight:normal;'>[${rotName}]</span>`,
+                        turni: turniArr
+                    });
+                }
+            }
+
+            const modal = document.getElementById('search-modal');
+            const statusEl = document.getElementById('modal-status');
+            const sezioniRicerca = document.getElementById('modal-search-sections');
+
+            modal.style.display = 'flex';
+            statusEl.style.display = 'none';
+            sezioniRicerca.style.display = 'block';
+
+            document.getElementById('risultato-turno').innerHTML = "";
+            document.getElementById('risultato-cambi').innerHTML = "";
+        }
+
+        // --- Vecchia Mappatura Lenta tramite EXCEL (Se JSON non disponibile) ---
         function isTurno(txt) {
             if (txt === undefined || txt === null) return false;
             txt = String(txt).replace(/[\s]+/g, '').toUpperCase();
@@ -416,20 +515,15 @@
             return false;
         }
 
-        function chiudiModal() {
-            document.getElementById('search-modal').style.display = 'none';
-        }
-
-        async function apriFinestraRicerca(pdfName) {
+        async function apriFinestraRicerca(pdfName, tuttiIFile) {
             const modal = document.getElementById('search-modal');
             const statusEl = document.getElementById('modal-status');
             const sezioniRicerca = document.getElementById('modal-search-sections');
             
             modal.style.display = 'flex';
             sezioniRicerca.style.display = 'none';
-            // Assicuriamoci che il messaggio sia visibile in fase di caricamento
             statusEl.style.display = 'block';
-            statusEl.innerHTML = "Caricamento in corso...";
+            statusEl.innerHTML = "Caricamento in corso... (L'apertura dell'Excel richiede qualche istante)";
             
             document.getElementById('risultato-turno').innerHTML = "";
             document.getElementById('risultato-cambi').innerHTML = "";
@@ -444,20 +538,18 @@
             try {
                 res = await fetch(targetUrl);
                 
-                if (!res.ok) {
+                if (!res.ok && tuttiIFile) {
                     const baseNameLower = baseName.toLowerCase().trim();
-                    const excelFile = listaFileGitHub.find(item => {
+                    const excelFile = tuttiIFile.find(item => {
                         if (item.type !== "file") return false;
                         const itemNameLower = item.name.toLowerCase();
                         return itemNameLower === baseNameLower + ".xlsx" || itemNameLower === baseNameLower + ".xls";
                     });
 
-                    if (excelFile) {
-                        res = await fetch(excelFile.download_url + `?t=${timestamp}`);
-                    }
+                    if (excelFile) res = await fetch(excelFile.download_url + `?t=${timestamp}`);
                 }
 
-                if (!res || !res.ok) throw new Error("File Excel non trovato o impossibile da scaricare. Verifica il nome del file.");
+                if (!res || !res.ok) throw new Error("File Excel non trovato.");
 
                 const arrayBuffer = await res.arrayBuffer();
                 const data = new Uint8Array(arrayBuffer);
@@ -472,24 +564,19 @@
                     let headerRowIndex = -1;
                     let dayColIndices = new Array(31).fill(-1);
 
+                    // CERCA RIGA GIORNI
                     for (let r = 0; r < rows.length; r++) {
                         let row = rows[r];
                         if (!row) continue;
                         
                         for (let c = 0; c < row.length - 2; c++) {
-                            let cell1 = String(row[c]).trim();
-                            let cell2 = String(row[c+1]).trim();
-                            let cell3 = String(row[c+2]).trim();
+                            let cell1 = String(row[c]).trim(); let cell2 = String(row[c+1]).trim(); let cell3 = String(row[c+2]).trim();
                             
                             if (cell1 === "1" && cell2 === "2" && cell3 === "3") {
                                 headerRowIndex = r;
-                                
                                 for (let d = 1; d <= 31; d++) {
                                     for (let look = c; look < row.length; look++) {
-                                        if (String(row[look]).trim() === String(d)) {
-                                            dayColIndices[d - 1] = look;
-                                            break;
-                                        }
+                                        if (String(row[look]).trim() === String(d)) { dayColIndices[d - 1] = look; break; }
                                     }
                                 }
                                 break;
@@ -498,9 +585,9 @@
                         if (headerRowIndex !== -1) break;
                     }
 
+                    // ESTRAZIONE DATI
                     if (headerRowIndex !== -1) {
                         let currentPos = 0;
-                        
                         for (let r = headerRowIndex + 1; r < rows.length; r++) {
                             let row = rows[r];
                             if (!row || row.length === 0) continue;
@@ -527,7 +614,6 @@
                                 currentPos++;
                                 let firstDayCol = dayColIndices[0];
                                 
-                                // 1. Estrazione Nome del primo componente
                                 let nameParts1 = [];
                                 for (let c = 0; c < firstDayCol; c++) {
                                     if (row[c]) {
@@ -539,7 +625,6 @@
                                 }
                                 let nome1 = nameParts1.join(" ");
 
-                                // 2. Controllo riga successiva per l'altro componente dell'armo
                                 let nome2 = "";
                                 if (r + 1 < rows.length) {
                                     let nextRow = rows[r + 1];
@@ -549,13 +634,9 @@
                                             let colIdx = dayColIndices[d];
                                             if (colIdx !== -1 && colIdx < nextRow.length) {
                                                 let cella = nextRow[colIdx];
-                                                if (cella && isTurno(String(cella).replace(/[\s]+/g, '').toUpperCase())) {
-                                                    validiNext++;
-                                                }
+                                                if (cella && isTurno(String(cella).replace(/[\s]+/g, '').toUpperCase())) validiNext++;
                                             }
                                         }
-                                        
-                                        // Se la riga successiva non ha i propri turni compilati (è sotto i 5), è il secondo componente dell'armo
                                         if (validiNext < 5) {
                                             let nameParts2 = [];
                                             for (let c = 0; c < firstDayCol; c++) {
@@ -575,27 +656,18 @@
                                 if (nome2) nomeFinale += " e " + nome2;
                                 if (!nomeFinale) nomeFinale = `Collega (Posizione ${currentPos})`;
 
-                                databaseTurni.push({
-                                    pos: currentPos,
-                                    nome: nomeFinale,
-                                    turni: bloccoGiorni 
-                                });
+                                databaseTurni.push({ pos: currentPos, nome: nomeFinale, turni: bloccoGiorni });
                             }
                         }
-                        
-                        if (databaseTurni.length > 0) {
-                            foundAnyTurns = true;
-                            break;
-                        }
+                        if (databaseTurni.length > 0) { foundAnyTurns = true; break; }
                     }
                 }
 
                 if (foundAnyTurns) {
-                    // Nasconde completamente il messaggio per lasciare spazio ai moduli
                     statusEl.style.display = 'none';
                     sezioniRicerca.style.display = 'block';
                 } else {
-                    statusEl.innerHTML = "<span style='color:var(--danger);'>Errore: Struttura del calendario (riga con numeri 1, 2, 3...) non trovata in nessuna scheda dell'Excel.</span>";
+                    statusEl.innerHTML = "<span style='color:var(--danger);'>Errore: Struttura del calendario non trovata in nessuna scheda.</span>";
                 }
 
             } catch (error) {
@@ -634,7 +706,6 @@
         function analizzaCicloLavorativo(turniMese, indiceGiorno) {
             const turnoAttuale = turniMese[indiceGiorno];
             
-            // Nuova logica di gestione per i giorni di Riposo (AL, RI o Vuoti)
             if (turnoAttuale === "AL" || turnoAttuale === "RI" || turnoAttuale === "") {
                 let tipoRiposo = "Vuoto";
                 if (turnoAttuale === "AL") {
@@ -709,7 +780,7 @@
             });
 
             if (risultatiHtml.length > 0) {
-                boxRisultato.innerHTML = `<strong>Colleghi di ${faseDesiderata} il giorno ${giorno}:</strong><ul><li>` + risultatiHtml.join("</li><li>") + "</li></ul>";
+                boxRisultato.innerHTML = `<strong>Colleghi di ${faseDesiderata} il giorno ${giorno}:</strong><ul><li>` + risultatiHtml.join("</li><li style='margin-top:10px;'>") + "</li></ul>";
             } else {
                 boxRisultato.innerHTML = "Nessun collega trovato in questa fase per il giorno indicato.";
             }
@@ -717,4 +788,3 @@
     </script>
 </body>
 </html>
- 

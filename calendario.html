@@ -99,7 +99,7 @@
         .sidebar-link:active, .sidebar-link:hover { background-color: #f4f7f6; color: var(--turno); font-weight: bold; }
 
         /* --- STILI MENU LATERALE DESTRO (AZIONI) --- */
-        .right-sidebar { position: fixed; top: 0; right: -280px; width: 250px; height: 100%; background-color: white; box-shadow: -2px 0 5px rgba(0,0,0,0.2); z-index: 2001; transition: right 0.3s ease; display: flex; flex-direction: column; }
+        .right-sidebar { position: fixed; top: 0; right: -280px; width: 250px; height: 100%; background-color: white; box-shadow: -2px 0 5px rgba(0,0,0,0.2); z-index: 2001; transition: right right 0.3s ease; display: flex; flex-direction: column; }
         .right-sidebar.open { right: 0; }
     </style>
 </head>
@@ -962,6 +962,67 @@
         return futura || null;
     }
 
+    function trovaProprietariTurno(dStr, targetTurno) {
+        let proprietari = [];
+        const curr = stringToNum(dStr);
+        let cfgBase = (state.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI)) ? state.history : state;
+        
+        if (!cfgBase.rotazioneStart || cfgBase.depositoAttivo.startsWith('disp_')) return proprietari;
+
+        const currentRotRules = getRotazionePerData(dStr);
+        if (!currentRotRules || !currentRotRules[cfgBase.depositoAttivo]) return proprietari;
+        
+        const rotList = currentRotRules[cfgBase.depositoAttivo];
+
+        let activeCfgStart = (state.futureConfig && curr >= stringToNum(state.futureConfig.dataInizio)) ? state.futureConfig.dataInizio : cfgBase.rotazioneStart;
+        let refRot = stringToNum(activeCfgStart), w = 0;
+        
+        if (curr >= refRot) { for (let j = refRot; j < curr; j++) { if (!isGiornoRiposoBase(j, cfgBase)) w++; } }
+        else { for (let j = refRot; j > curr; j--) { if (!isGiornoRiposoBase(j, cfgBase)) w--; } }
+        
+        let refRip = stringToNum(cfgBase.riposoStart);
+        let startPos = ((refRot - refRip + 6) % 15 + 15) % 15;
+        let offset = [1, 3, 5, 8, 10, 12].includes(startPos) ? 1 : 0;
+
+        // Escludiamo il calcolo inverso per i TC perché dipende dal tcPattern personale di ogni individuo (doppio vs alternato)
+        if (cfgBase.depositoAttivo.startsWith('tc_')) return proprietari;
+        
+        let expandedRotList = [];
+        let originalToExpanded = [];
+        
+        for (let j = 0; j < rotList.length; j++) {
+            originalToExpanded[j] = expandedRotList.length;
+            let currentTurn = rotList[j].toString().toUpperCase().trim();
+
+            if (currentTurn.includes('+')) {
+                let parts = currentTurn.split('+');
+                expandedRotList.push(parts[0].trim());
+                if (parts.length > 1) {
+                    expandedRotList.push(parts[1].trim());
+                }
+            } else {
+                expandedRotList.push(currentTurn);
+                expandedRotList.push(currentTurn);
+            }
+        }
+        
+        let L_exp = expandedRotList.length;
+        
+        for (let testIdx = 0; testIdx < rotList.length; testIdx++) {
+            let baseExpIdx = originalToExpanded[testIdx];
+            let blockStartIdx = baseExpIdx - (baseExpIdx % 2); 
+            
+            let idxExp = (blockStartIdx + w + offset) % L_exp;
+            if (idxExp < 0) idxExp += L_exp;
+            
+            if (expandedRotList[idxExp] === targetTurno) {
+                proprietari.push(testIdx);
+            }
+        }
+        
+        return proprietari;
+    }
+
     function scaricaPDF() {
         chiudiMenuDestro();
         const element = document.getElementById('calendar');
@@ -1000,7 +1061,7 @@
             const nocache = "?v=" + new Date().getTime();
             
             // --- INIZIO NUOVO BLOCCO ANAGRAFICA ---
-            if (localStorage.getItem('hasPassCode') === 'true') {
+            if (localStorage.getItem('auth_rotazioni')) {
                 try {
                     const resAnagrafica = await fetch("anagrafica_rotazioni.json" + nocache);
                     if (resAnagrafica.ok) anagraficaData = await resAnagrafica.json();
@@ -1221,7 +1282,7 @@
                 state.variazioni[date] = tempVar;
 
                 // --- INIZIO NUOVO BLOCCO RICERCA PROPRIETARIO ---
-                if (localStorage.getItem('hasPassCode') === 'true') {
+                if (localStorage.getItem('auth_rotazioni')) {
                     let turnoAttualePulito = tempVar.replace(/ 🌫️| ⏱️| 📝|\(Sospeso\)| 🍝| 💸/g, '').trim().toUpperCase();
                     let proprietari = trovaProprietariTurno(date, turnoAttualePulito);
                     
@@ -1628,67 +1689,6 @@
         } else if (state.setupStep === 3) { state.turnoIndex = val; state.rotazioneStart = tempRotDate; }
 
         state.setupStep = 3; salvaLocal(); location.reload();
-    }
-
-    function trovaProprietariTurno(dStr, targetTurno) {
-        let proprietari = [];
-        const curr = stringToNum(dStr);
-        let cfgBase = (state.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI)) ? state.history : state;
-        
-        if (!cfgBase.rotazioneStart || cfgBase.depositoAttivo.startsWith('disp_')) return proprietari;
-
-        const currentRotRules = getRotazionePerData(dStr);
-        if (!currentRotRules || !currentRotRules[cfgBase.depositoAttivo]) return proprietari;
-        
-        const rotList = currentRotRules[cfgBase.depositoAttivo];
-
-        let activeCfgStart = (state.futureConfig && curr >= stringToNum(state.futureConfig.dataInizio)) ? state.futureConfig.dataInizio : cfgBase.rotazioneStart;
-        let refRot = stringToNum(activeCfgStart), w = 0;
-        
-        if (curr >= refRot) { for (let j = refRot; j < curr; j++) { if (!isGiornoRiposoBase(j, cfgBase)) w++; } }
-        else { for (let j = refRot; j > curr; j--) { if (!isGiornoRiposoBase(j, cfgBase)) w--; } }
-        
-        let refRip = stringToNum(cfgBase.riposoStart);
-        let startPos = ((refRot - refRip + 6) % 15 + 15) % 15;
-        let offset = [1, 3, 5, 8, 10, 12].includes(startPos) ? 1 : 0;
-
-        // Escludiamo il calcolo inverso per i TC perché dipende dal tcPattern personale di ogni individuo (doppio vs alternato)
-        if (cfgBase.depositoAttivo.startsWith('tc_')) return proprietari;
-        
-        let expandedRotList = [];
-        let originalToExpanded = [];
-        
-        for (let j = 0; j < rotList.length; j++) {
-            originalToExpanded[j] = expandedRotList.length;
-            let currentTurn = rotList[j].toUpperCase();
-
-            if (currentTurn.includes('+')) {
-                let parts = currentTurn.split('+');
-                expandedRotList.push(parts[0].trim());
-                if (parts.length > 1) {
-                    expandedRotList.push(parts[1].trim());
-                }
-            } else {
-                expandedRotList.push(currentTurn);
-                expandedRotList.push(currentTurn);
-            }
-        }
-        
-        let L_exp = expandedRotList.length;
-        
-        for (let testIdx = 0; testIdx < rotList.length; testIdx++) {
-            let baseExpIdx = originalToExpanded[testIdx];
-            let blockStartIdx = baseExpIdx - (baseExpIdx % 2); 
-            
-            let idxExp = (blockStartIdx + w + offset) % L_exp;
-            if (idxExp < 0) idxExp += L_exp;
-            
-            if (expandedRotList[idxExp] === targetTurno) {
-                proprietari.push(testIdx);
-            }
-        }
-        
-        return proprietari;
     }
 
     function calcolaTurni() {

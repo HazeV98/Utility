@@ -104,9 +104,10 @@
         <a href="index.html" class="sidebar-link">🏠 Home Page</a>
         <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
         <a href="dati_calendario.html" class="sidebar-link">📊 Statistiche Calendario</a>
-        <a href="turni.html" class="sidebar-link">🔄 Turni</a>
+        <a href="turni.html" class="sidebar-link" style="background-color: #f4f7f6; color: var(--primary); font-weight: bold;">🔄 Turni</a>
         <a href="orari.html" class="sidebar-link">🕒 Orari</a>
         <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
+        <a href="rotazioni.html" class="sidebar-link">👥 Rotazioni</a>
         <a href="link.html" class="sidebar-link">🔗 Link</a>
         <a href="contatti.html" class="sidebar-link">📞 Contatti</a>
         <a href="buoni.html" class="sidebar-link">🍝 Buoni Pasto</a>
@@ -473,14 +474,12 @@
             document.getElementById('imageModal').style.display = 'block';
         }
 
-        // Apertura immagine passando dal nome "Pilota" (es. "1C01") della ricerca JSON
         function apriImmagineTurnoDallaRicerca(turnoPilota) {
             if (!currentImgList || currentImgList.length === 0) {
                 alert("Nessuna immagine disponibile per l'apertura rapida.");
                 return;
             }
 
-            // Cerca il file immagine corrispondente
             const match = currentImgList.find(f => {
                 const nomeSenzaExt = f.name.replace(/\.[^/.]+$/, "").toUpperCase();
                 return nomeSenzaExt.includes(turnoPilota.toUpperCase());
@@ -531,7 +530,6 @@
             const jsonName = baseName + ".json";
             
             try {
-                // Recupera il file JSON dalla stessa cartella dove risiede il PDF
                 const url = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${dirName}/${encodeURIComponent(jsonName)}?t=${new Date().getTime()}`;
                 const res = await fetch(url);
                 if (!res.ok) throw new Error("File dati (JSON) non trovato per questa linea.");
@@ -561,10 +559,8 @@
                 document.getElementById('label-orario').innerText = "Orario di arrivo:";
             }
             
-            // Sblocca il resto del modulo togliendo la "nebbia"
             document.getElementById('sc-rest-form').classList.add('unlocked');
             
-            // Svuota l'orario, rimuove i suggerimenti e aggiorna i luoghi possibili
             document.getElementById('sc-orario').value = "";
             document.getElementById('sc-suggestions').style.display = 'none';
             document.getElementById('sc-risultato').style.display = 'none';
@@ -591,7 +587,6 @@
             });
         }
 
-        // FORMATTAZIONE CAMPO ORARIO IN TEMPO REALE E SUGGERIMENTI
         function formattaOrario(e) {
             let val = e.target.value.replace(/\D/g, ''); 
             if (val.length > 4) val = val.substring(0, 4); 
@@ -659,8 +654,10 @@
             }
         }
 
-        // RICERCA VERA E PROPRIA NEL JSON
-        function eseguiRicercaCorsa() {
+        // ==========================================
+        // RICERCA CORSE (E INTEGRAZIONE SEGRETA ROTAZIONI)
+        // ==========================================
+        async function eseguiRicercaCorsa() {
             const tipo = document.getElementById('sc-tipo').value;
             const luogo = document.getElementById('sc-luogo').value;
             const giorno = document.getElementById('sc-giorno').value; 
@@ -673,13 +670,16 @@
                 return;
             }
 
+            box.style.display = 'block';
+            box.innerHTML = "Ricerca in corso...";
+
             let p = orarioInput.split('.');
             let hInt = parseInt(p[0], 10);
             let mStr = p[1];
             
-            let targetFormat1 = `${hInt}:${mStr}`; // Formato "6:31"
-            let targetFormat2 = `${hInt}.${mStr}`; // Formato "6.31"
-            let targetFormat3 = `${p[0]}:${mStr}`; // Formato "06:31"
+            let targetFormat1 = `${hInt}:${mStr}`; 
+            let targetFormat2 = `${hInt}.${mStr}`; 
+            let targetFormat3 = `${p[0]}:${mStr}`; 
 
             let turniTrovati = [];
 
@@ -693,24 +693,76 @@
                     if (targetLuogo && targetLuogo.trim() === luogo) {
                         let o = targetOra ? targetOra.trim() : "";
                         if (o === targetFormat1 || o === targetFormat2 || o === targetFormat3) {
-                            
-                            // Estrazione della versione "Pilota" del turno (il codice da 4 caratteri es: 4P01, 1C01)
                             let matchPilota = turno.match(/\d[A-Z0-9]{3}/i);
                             let nomePilota = matchPilota ? matchPilota[0].toUpperCase() : turno.toUpperCase();
-                            
                             if (!turniTrovati.includes(nomePilota)) turniTrovati.push(nomePilota);
                         }
                     }
                 }
             }
 
-            box.style.display = 'block';
             let etichettaAzione = tipo === 'partenza' ? 'Partenza da' : 'Arrivo a';
             
             if (turniTrovati.length > 0) {
                 let dataFormattata = giorno ? giorno.split('-').reverse().join('/') : "Oggi";
                 
-                // Creazione dei tastini apri turno
+                // -----------------------------------------------------------
+                // INTEGRAZIONE ROTAZIONI (Visibile SOLO se autenticati)
+                // -----------------------------------------------------------
+                let rotazioniHtml = "";
+                
+                if (localStorage.getItem('auth_rotazioni')) {
+                    try {
+                        let dateObj;
+                        if (giorno) {
+                            let parts = giorno.split('-');
+                            dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                        } else {
+                            dateObj = new Date();
+                        }
+                        
+                        let dayNum = dateObj.getDate();
+                        let mNames = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
+                        let monthName = mNames[dateObj.getMonth()];
+                        let yearNum = dateObj.getFullYear();
+                        
+                        let rotUrl = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/rotazioni/rotazioni_${monthName}_${yearNum}.json?t=${new Date().getTime()}`;
+                        
+                        let resRot = await fetch(rotUrl);
+                        if (resRot.ok) {
+                            let rotData = await resRot.json();
+                            let colleghiTrovati = [];
+                            
+                            for (let rotName in rotData) {
+                                let dipendenti = rotData[rotName];
+                                for (let nome in dipendenti) {
+                                    let tAssegnato = dipendenti[nome][dayNum.toString()];
+                                    if (tAssegnato) {
+                                        let tClean = tAssegnato.toUpperCase().replace(/\s+/g, '');
+                                        turniTrovati.forEach(tReq => {
+                                            if (tReq.toUpperCase() === tClean) {
+                                                colleghiTrovati.push(`<strong>${tReq}:</strong> ${nome.split(" - ").join(" e ")}`);
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                            
+                            if (colleghiTrovati.length > 0) {
+                                let labelGiorno = giorno ? `${dayNum} ${monthName}` : "Oggi";
+                                rotazioniHtml = `
+                                    <div style="margin-top:15px; padding-top:10px; border-top: 1px dashed #ccc; font-size:15px; color:#444;">
+                                        <div style="color:var(--primary); margin-bottom:5px;"><strong>👥 Assegnazione turni (${labelGiorno}):</strong></div>
+                                        ${colleghiTrovati.join('<br>')}
+                                    </div>`;
+                            }
+                        }
+                    } catch(e) {
+                        // Errore silenzioso: l'utente normale non vedrà mai nulla di strano se fallisce
+                    }
+                }
+                // -----------------------------------------------------------
+
                 let tastiniHtml = turniTrovati.map(t => {
                     return `<button class="file-btn" style="display:inline-flex; width:auto; margin: 5px 5px 0 0; padding: 10px 15px; font-size: 14px;" onclick="apriImmagineTurnoDallaRicerca('${t}')">🖼️ ${t}</button>`;
                 }).join('');
@@ -720,7 +772,8 @@
                                  <div style="margin-top:15px; color:var(--text-color); font-size:16px;">
                                     <strong>Turni che effettuano la corsa:</strong><br>
                                     ${tastiniHtml}
-                                 </div>`;
+                                 </div>
+                                 ${rotazioniHtml}`;
             } else {
                 box.innerHTML = "Nessun turno trovato per questa specifica corsa nel database.";
             }
@@ -730,14 +783,12 @@
         // GESTIONE CHIUSURA TENDINE CLICCANDO FUORI E CHIUSURA MODALI
         // ==========================================
         document.addEventListener('click', function(e) {
-            // Tendina Ricerca Immagini
             const boxImg = document.getElementById('suggestionsBox');
             const inputImg = document.getElementById('shiftSearch');
             if (boxImg && inputImg && e.target !== inputImg && !boxImg.contains(e.target)) {
                 boxImg.style.display = 'none';
             }
 
-            // Tendina Ricerca Corse (JSON)
             const scSuggBox = document.getElementById('sc-suggestions');
             const scInputOrario = document.getElementById('sc-orario');
             if (scSuggBox && scInputOrario && e.target !== scInputOrario && !scSuggBox.contains(e.target)) {
@@ -749,3 +800,4 @@
     </script>
 </body>
 </html>
+ 

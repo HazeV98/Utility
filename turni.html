@@ -11,13 +11,18 @@
 
     <style>
         /* --- STILI GLOBALI UNIFICATI --- */
-        :root { --primary: #0056b3; --bg-color: #f4f7f6; --text-color: #333; }
+        :root { --primary: #0056b3; --bg-color: #f4f7f6; --text-color: #333; --danger: #dc3545; --success: #28a745; }
         body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         
-        /* HEADER */
-        .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        /* HEADER E RICERCA BASE */
+        .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px; }
         .hamburger-btn { background: none; border: none; font-size: 30px; color: var(--primary); cursor: pointer; padding: 0; width: 50px; text-align: left; }
-        h2 { margin: 0; color: var(--primary); font-size: 24px; }
+        h2 { margin: 0; color: var(--primary); font-size: 28px; text-align: center; font-weight: bold; flex: 2; }
+
+        .search-container { position: relative; width: 100%; max-width: 400px; margin-bottom: 20px; }
+        .search-bar { width: 100%; padding: 15px 45px 15px 20px; font-size: 16px; border: 2px solid #ccc; border-radius: 25px; box-sizing: border-box; outline: none; transition: border-color 0.3s; text-transform: uppercase; }
+        .search-bar:focus { border-color: var(--primary); }
+        .search-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #888; font-size: 20px; pointer-events: none; }
         
         /* MENU LATERALE */
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 2000; }
@@ -27,25 +32,52 @@
         .sidebar-link { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 18px; border-bottom: 1px solid #eee; display: block; }
         .sidebar-link:active, .sidebar-link:hover { background-color: #f4f7f6; color: var(--primary); font-weight: bold; }
 
-        /* CONTENUTI SPECIFICI E BOTTONI */
-        .content-area { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
-        .status-message { text-align: center; color: #666; font-size: 16px; padding: 20px; background: white; border-radius: 10px; }
-        .folder-btn { background-color: white; color: var(--primary); border: 2px solid var(--primary); padding: 18px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; text-align: center; }
-        .file-row { display: flex; gap: 8px; width: 100%; }
-        .file-btn { flex-grow: 1; background-color: var(--primary); color: white; border: none; padding: 16px; font-size: 16px; border-radius: 10px; cursor: pointer; text-decoration: none; display: block; text-align: center; font-weight: bold; }
-        .download-btn { width: 55px; background-color: white; color: var(--primary); border: 2px solid var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; }
-        .file-btn:active, .download-btn:active, .folder-btn:active { transform: translateY(2px); }
-        .back-btn { background-color: #6c757d; color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; font-size: 16px; margin-bottom: 5px; }
-        .back-btn:active { transform: translateY(2px); }
+        /* LISTA FILE E PULSANTI */
+        #turni-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
+        .status-message { text-align: center; color: #666; font-size: 16px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        .file-row { display: flex; width: 100%; gap: 8px; }
+        .file-btn { flex-grow: 1; background-color: var(--primary); color: white; border: none; padding: 16px 10px; font-size: 15px; border-radius: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: opacity 0.2s; }
+        .file-btn:active { transform: translateY(2px); opacity: 0.9; }
+        .btn-search { background-color: var(--success); flex: 0.35; font-size: 14px; } 
 
-        /* BARRA DI RICERCA IMMAGINI */
-        .search-container { position: relative; width: 100%; margin-bottom: 5px; }
-        #shiftSearch { width: 100%; padding: 15px; border: 2px solid var(--primary); border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; font-family: inherit; }
-        #shiftSearch:focus { box-shadow: 0 0 5px rgba(0, 86, 179, 0.3); }
-        .suggestions-box { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 8px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.15); display: none; margin-top: 5px; }
-        .suggestion-item { padding: 14px 15px; border-bottom: 1px solid #eee; cursor: pointer; color: var(--text-color); display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        /* MODALE IMMAGINE PANZOOM */
+        .modal-overlay-img { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); z-index: 3000; flex-direction: column; }
+        .modal-header { position: absolute; top: 0; left: 0; width: 100%; padding: 15px; display: flex; justify-content: space-between; box-sizing: border-box; z-index: 3001; background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%); }
+        .btn-modal { background: rgba(255,255,255,0.2); border: none; color: white; font-size: 24px; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .btn-modal:active { background: rgba(255,255,255,0.4); }
+        .image-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; width: 100%; height: 100%; }
+        #turnoImage { max-width: 100%; max-height: 100vh; object-fit: contain; transform-origin: center center; }
+
+        /* MODALE RICERCA CORSE (JSON) */
+        .modal-overlay-search {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 3000; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: white; padding: 20px; border-radius: 12px; max-width: 90%; width: 400px;
+            max-height: 85vh; overflow-y: auto; position: relative;
+        }
+        .close-modal {
+            position: absolute; right: 15px; top: 15px; font-size: 24px; cursor: pointer; color: #666;
+        }
+        
+        .sc-form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        .sc-form-group label { font-size: 14px; font-weight: bold; color: #555; margin-bottom: 5px; }
+        .sc-form-group input, .sc-form-group select {
+            width: 100%; padding: 12px; border: 2px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; font-family: inherit;
+        }
+        .sc-form-group input:focus, .sc-form-group select:focus { border-color: var(--primary); outline: none; }
+        
+        .risultato-box { background: #e9ecef; border-left: 4px solid var(--primary); padding: 15px; margin-top: 15px; font-size: 15px; line-height: 1.5; border-radius: 0 8px 8px 0; }
+        
+        /* SUGGERIMENTI TENDINA ORARIO */
+        .suggestions-box {
+            display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-radius: 0 0 8px 8px; max-height: 150px; overflow-y: auto; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: -2px;
+        }
+        .suggestion-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 16px; }
         .suggestion-item:last-child { border-bottom: none; }
-        .suggestion-item:hover, .suggestion-item:active { background-color: #f4f7f6; color: var(--primary); }
+        .suggestion-item:hover, .suggestion-item:active { background-color: #f4f7f6; color: var(--primary); font-weight: bold; }
     </style>
 </head>
 <body>
@@ -65,281 +97,380 @@
         <a href="index.html" class="sidebar-link">🏠 Home Page</a>
         <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
         <a href="dati_calendario.html" class="sidebar-link">📊 Statistiche Calendario</a>
-        <a href="turni.html" class="sidebar-link">🔄 Turni</a>
+        <a href="turni.html" class="sidebar-link" style="background-color: #f4f7f6; color: var(--primary); font-weight: bold;">🔄 Turni</a>
         <a href="orari.html" class="sidebar-link">🕒 Orari</a>
         <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
+        <a id="link-rotazioni" href="rotazioni.html" class="sidebar-link" style="display: none;">👥 Rotazioni</a>
         <a href="link.html" class="sidebar-link">🔗 Link</a>
         <a href="contatti.html" class="sidebar-link">📞 Contatti</a>
         <a href="buoni.html" class="sidebar-link">🍝 Buoni Pasto</a>
-        <a href="dds.html" class="sidebar-link">📂 Archivio DDS</a>
-        <a href="guida.html" class="sidebar-link">📖 Guida</a>
     </div>
 
-    <div id="content-area" class="content-area">
-        <div class="status-message">Caricamento cartelle...</div>
+    <div class="search-container">
+        <input type="text" id="mainSearch" class="search-bar" placeholder="Cerca turno (es. 1C01)" autocomplete="off">
+        <span class="search-icon">🔍</span>
     </div>
 
-    <div id="imageModal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); overflow: hidden;" onclick="chiudiSeSfondo(event)">
-        <div style="position: absolute; top: calc(20px + env(safe-area-inset-top)); right: 20px; font-size: 35px; color: white; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 10001;" onclick="chiudiImageModal()">&times;</div>
-        <div id="imageFlexContainer" style="display:flex; flex-direction: column; justify-content:center; align-items:center; height:100%; padding:20px; padding-bottom: 80px; position: relative;">
-            <img id="turnoImage" src="" style="max-width: 100%; max-height: 70vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
-            <div id="imageBanner" style="position: relative; z-index: 10001; margin-top: 15px; background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px; border-radius: 12px; font-size: 13px; text-align: center; max-width: 90%; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                ⚠️ Controllare sempre la presenza di eventuali varianti ai turni.
+    <div id="turni-list">
+        <div class="status-message">Caricamento in corso...</div>
+    </div>
+
+    <div id="imageModal" class="modal-overlay-img" onclick="chiudiSeSfondo(event)">
+        <div class="modal-header">
+            <button class="btn-modal" onclick="chiudiImageModal()" title="Chiudi">✕</button>
+            <button class="btn-modal" onclick="scaricaImmagineTurno()" title="Scarica">⬇️</button>
+        </div>
+        <div class="image-container" id="imageFlexContainer">
+            <img id="turnoImage" src="" alt="Turno" onerror="erroreImmagine()">
+        </div>
+    </div>
+
+    <div id="searchCorseModal" class="modal-overlay-search">
+        <div class="modal-content">
+            <span class="close-modal" onclick="chiudiSearchCorseModal()">&times;</span>
+            <h3 style="margin-top:0; color:var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px;">Cerca Corsa</h3>
+            
+            <div id="sc-status" class="status-message" style="padding: 10px; font-size:14px; display:none;">Caricamento dati in corso...</div>
+            
+            <div id="sc-form" style="display:none; margin-top: 15px;">
+                
+                <div class="sc-form-group">
+                    <label>Tipo di ricerca:</label>
+                    <select id="sc-tipo" onchange="cambiaTipoRicerca()">
+                        <option value="partenza">Partenza</option>
+                        <option value="arrivo">Arrivo</option>
+                    </select>
+                </div>
+
+                <div class="sc-form-group">
+                    <label id="label-luogo">Luogo di partenza:</label>
+                    <select id="sc-luogo" onchange="aggiornaSuggerimentiOrario()"></select>
+                </div>
+                
+                <div class="sc-form-group">
+                    <label>Giorno:</label>
+                    <input type="date" id="sc-giorno">
+                </div>
+                
+                <div class="sc-form-group" style="position: relative;">
+                    <label id="label-orario">Orario di partenza:</label>
+                    <input type="text" id="sc-orario" inputmode="numeric" placeholder="es. 07.30" oninput="formattaOrario(event)" autocomplete="off">
+                    <div id="sc-suggestions" class="suggestions-box"></div>
+                </div>
+                
+                <button class="file-btn" style="width: 100%; border-radius: 8px; margin-top: 5px;" onclick="eseguiRicercaCorsa()">Trova Turno</button>
+                <div id="sc-risultato" class="risultato-box" style="display:none;"></div>
             </div>
         </div>
-        <button onclick="scaricaImmagineTurno()" style="position: absolute; bottom: calc(30px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: #11cdef; color: white; border: none; padding: 12px 24px; border-radius: 20px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 10001;">📥 Scarica</button>
     </div>
 
     <script>
-        // --- FUNZIONI MENU LATERALE ---
+        // Impostazioni Repository
+        const GITHUB_USER = "HazeV98"; 
+        const GITHUB_REPO = "Utility"; 
+        const CARTELLA_BASE = "turni";
+
+        let listaFileTurni = [];
+        let pzInstance = null;
+        let currentImagePath = "";
+        let currentCorseData = null; 
+
+        // Menu e visualizzazione tasti speciali
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('rotazioni_visibili') === 'true') {
+                document.getElementById('link-rotazioni').style.display = 'block';
+            }
+            caricaTurni();
+        });
+
         function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
         function chiudiMenuLaterale() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; }
 
-        // --- LOGICA SPECIFICA TURNI ---
-        const GITHUB_USER = "HazeV98"; 
-        const GITHUB_REPO = "Utility";
-        let numCartelle = 0;
-        
-        let currentImgList = [];
-        let currentImgDir = "";
-        
-        // --- VARIABILI VISUALIZZATORE IMMAGINE ---
-        let pzInstance = null;
-        let currentImagePath = "";
-
-        async function downloadForzato(url, filename) {
-            try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                const blobUrl = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = blobUrl;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(blobUrl);
-            } catch (e) {
-                window.open(url, '_blank');
-            }
+        function pulisciNome(nome) {
+            return nome.replace(/\.[^/.]+$/, "").replace(/_/g, " ").toUpperCase();
         }
 
-        async function init() {
-            // Inizializza Panzoom per il visualizzatore immagini
-            const imgElem = document.getElementById('turnoImage');
-            if (typeof Panzoom !== 'undefined') {
-                pzInstance = Panzoom(imgElem, { maxScale: 5, minScale: 1 });
-                document.getElementById('imageFlexContainer').addEventListener('wheel', pzInstance.zoomWithWheel);
-                
-                function eseguiZoomToggle(e) {
-                    if (!pzInstance) return;
-                    let currentScale = pzInstance.getScale();
-                    if (currentScale < 1.1) {
-                        pzInstance.zoom(1.75, { animate: true });
-                    } else {
-                        pzInstance.reset({ animate: true });
-                    }
-                }
-
-                let lastTap = 0;
-                let isPinching = false;
-
-                imgElem.addEventListener('touchstart', function(e) { if (e.touches.length > 1) { isPinching = true; } });
-
-                imgElem.addEventListener('touchend', function(e) {
-                    if (isPinching) {
-                        if (e.touches.length === 0) { setTimeout(() => isPinching = false, 300); }
-                        return;
-                    }
-                    let currentTime = new Date().getTime();
-                    let tapLength = currentTime - lastTap;
-                    if (tapLength < 300 && tapLength > 0) {
-                        eseguiZoomToggle(e);
-                        if (e.cancelable) e.preventDefault();
-                    }
-                    lastTap = currentTime;
-                });
-
-                imgElem.addEventListener('dblclick', function(e) { eseguiZoomToggle(e); });
-            }
-
-            // Inizializza le cartelle Github
-            const area = document.getElementById('content-area');
+        // ==========================================
+        // CARICAMENTO FILE DA GITHUB E GENERAZIONE UI
+        // ==========================================
+        async function caricaTurni() {
+            const area = document.getElementById('turni-list');
             try {
-                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`);
-                const files = await res.json();
-                const dirs = files.filter(f => f.type === "dir" && (f.name.startsWith("turni_pdf_") || f.name.startsWith("turni_varianti_")));
-                numCartelle = dirs.length;
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${CARTELLA_BASE}?t=${new Date().getTime()}`);
+                if (!res.ok) throw new Error("Errore nel recupero della cartella.");
                 
-                if (numCartelle === 1) { 
-                    caricaFiles(dirs[0].name); 
-                } else {
-                    area.innerHTML = ""; 
-                    dirs.sort((a,b) => b.name.localeCompare(a.name));
-                    
-                    dirs.forEach(d => {
-                        const btn = document.createElement('button'); 
-                        btn.className = "folder-btn";
-                        btn.onclick = () => caricaFiles(d.name); 
-                        area.appendChild(btn);
-                        
-                        if (d.name.includes("varianti")) {
-                            btn.innerText = "Caricamento...";
-                            fetch(`https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${d.name}/nome.txt?v=${new Date().getTime()}`)
-                                .then(response => {
-                                    if (response.ok) return response.text();
-                                    throw new Error("File txt assente");
-                                })
-                                .then(testo => {
-                                    btn.innerText = testo.trim() || d.name.replace("turni_varianti_", "").replace(/_/g, " ");
-                                })
-                                .catch(() => {
-                                    btn.innerText = d.name.replace("turni_varianti_", "").replace(/_/g, " ");
-                                });
-                        } else {
-                            let label = d.name.replace("turni_pdf_", "").split("-").reverse().join("-");
-                            btn.innerText = "Turni dal " + label;
-                        }
-                    });
-                }
-            } catch (e) { area.innerHTML = "<div class='status-message'>Errore di connessione.</div>"; }
-        }
+                listaFileTurni = await res.json();
+                
+                // Filtriamo i PDF e i JSON
+                const pdfs = listaFileTurni.filter(f => f.type === "file" && f.name.toLowerCase().endsWith('.pdf'));
+                const jsons = listaFileTurni.filter(f => f.type === "file" && f.name.toLowerCase().endsWith('.json'));
 
-        async function caricaFiles(dir) {
-            const area = document.getElementById('content-area'); 
-            area.innerHTML = "<div class='status-message'>Caricamento dati...</div>";
-            
-            let imgDir = "";
-            if (dir.startsWith("turni_pdf_")) {
-                imgDir = dir.replace("turni_pdf_", "turni_");
-            } else if (dir.startsWith("turni_varianti_")) {
-                imgDir = dir.replace("turni_varianti_", "turni_jpg_varianti_");
-            }
-            
-            currentImgDir = imgDir;
-            currentImgList = [];
-            
-            try {
-                const imgRes = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${imgDir}`);
-                if (imgRes.ok) {
-                    const imgFiles = await imgRes.json();
-                    currentImgList = imgFiles.filter(f => f.name.toLowerCase().endsWith(".jpg") || f.name.toLowerCase().endsWith(".png"));
+                if (pdfs.length === 0) {
+                    area.innerHTML = '<div class="status-message">Nessun file PDF trovato.</div>';
+                    return;
                 }
-            } catch(e) { console.log("Cartella immagini per ricerca non trovata", e); }
-            
-            try {
-                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${dir}`);
-                const files = await res.json();
+
+                area.innerHTML = '';
                 
-                let pdfs = files.filter(f => f.name.toLowerCase().endsWith(".pdf"));
-                
-                pdfs.sort((a, b) => {
-                    if (a.name.includes("libro_turni_completo")) return -1;
-                    if (b.name.includes("libro_turni_completo")) return 1;
-                    return a.name.localeCompare(b.name, undefined, {numeric: true});
-                });
-                
-                area.innerHTML = "";
-                
-                if (numCartelle > 1) { 
-                    const b = document.createElement('button'); 
-                    b.className = "back-btn"; 
-                    b.innerText = "← Indietro"; 
-                    b.onclick = init; 
-                    area.appendChild(b); 
-                }
-                
-                // BARRA DI RICERCA
-                if (currentImgList.length > 0) {
-                    const searchDiv = document.createElement('div');
-                    searchDiv.className = "search-container";
-                    searchDiv.innerHTML = `
-                        <input type="text" id="shiftSearch" placeholder="Cerca turno" autocomplete="off" oninput="filtraTurni()" onfocus="filtraTurni()">
-                        <div id="suggestionsBox" class="suggestions-box"></div>
-                    `;
-                    area.appendChild(searchDiv);
-                }
-                
-                // Generazione Lista PDF
                 pdfs.forEach(f => {
-                    let nomeOrig = f.name;
-                    let nomeVis = "";
-                    if (nomeOrig.includes("libro_turni_completo")) {
-                        nomeVis = "Libro turni completo";
-                    } else {
-                        let n = nomeOrig.replace(/\.pdf$/i, "").replace(/_/g, " ");
-                        n = n.split(/\s+dal\s+/i)[0]; 
-                        n = n.replace(/\s+pdf$/i, "").trim(); 
-                        n = n.replace(/\blinea\b/gi, "linea");
-                        nomeVis = n.charAt(0).toUpperCase() + n.slice(1);
+                    const row = document.createElement('div');
+                    row.className = "file-row";
+
+                    const btnOpen = document.createElement('button');
+                    btnOpen.className = "file-btn";
+                    btnOpen.innerText = "📄 " + pulisciNome(f.name);
+                    btnOpen.onclick = () => apriDocumento(f.name);
+                    row.appendChild(btnOpen);
+
+                    // Controlla se esiste un JSON con lo stesso nome
+                    const baseName = f.name.substring(0, f.name.lastIndexOf('.'));
+                    const hasJson = jsons.some(j => j.name.substring(0, j.name.lastIndexOf('.')) === baseName);
+
+                    if (hasJson) {
+                        const btnSearch = document.createElement('button');
+                        btnSearch.className = "file-btn btn-search";
+                        btnSearch.innerText = "🔍 Cerca";
+                        btnSearch.onclick = () => apriRicercaCorse(f.name);
+                        row.appendChild(btnSearch);
                     }
 
-                    const row = document.createElement('div'); row.className = "file-row";
-                    if (nomeOrig.includes("libro")) row.style.marginBottom = "10px";
-
-                    const aOpen = document.createElement('a');
-                    aOpen.className = "file-btn"; aOpen.innerText = nomeVis;
-                    aOpen.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${dir}/${nomeOrig}`;
-                    aOpen.target = "_blank";
-
-                    const aDown = document.createElement('div');
-                    aDown.className = "download-btn"; aDown.innerHTML = "⬇️";
-                    aDown.onclick = () => downloadForzato(f.download_url, nomeOrig);
-
-                    row.appendChild(aOpen); row.appendChild(aDown);
                     area.appendChild(row);
                 });
-            } catch (e) { area.innerHTML = "<div class='status-message'>Errore caricamento PDF.</div>"; }
+
+                // Abilita la ricerca principale sui nomi dei file
+                document.getElementById('mainSearch').addEventListener('input', function(e) {
+                    const query = e.target.value.toLowerCase().trim();
+                    const rows = area.querySelectorAll('.file-row');
+                    rows.forEach(row => {
+                        const btnText = row.querySelector('.file-btn').innerText.toLowerCase();
+                        row.style.display = btnText.includes(query) ? "flex" : "none";
+                    });
+                });
+
+            } catch (error) {
+                area.innerHTML = `<div class="status-message" style="color:var(--danger);">Errore: Impossibile caricare i file.</div>`;
+            }
         }
 
-        // --- FUNZIONE PER LA RICERCA DINAMICA ---
-        function filtraTurni() {
-            const input = document.getElementById('shiftSearch');
-            const box = document.getElementById('suggestionsBox');
-            if (!input || !box) return;
+        function apriDocumento(fileName) {
+            // Per i PDF usiamo l'apertura in nuova scheda tramite il link diretto raw di GitHub
+            const url = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${fileName}?t=${new Date().getTime()}`;
+            window.open(url, '_blank');
+        }
 
-            input.value = input.value.toUpperCase(); 
-            const query = input.value.trim();
+        // ==========================================
+        // LOGICA RICERCA CORSE (MODALE JSON)
+        // ==========================================
+        function chiudiSearchCorseModal() {
+            document.getElementById('searchCorseModal').style.display = 'none';
+        }
+
+        async function apriRicercaCorse(pdfName) {
+            document.getElementById('searchCorseModal').style.display = 'flex';
+            document.getElementById('sc-form').style.display = 'none';
+            document.getElementById('sc-risultato').style.display = 'none';
+            const statusEl = document.getElementById('sc-status');
             
-            if (query.length === 0) {
-                box.style.display = 'none';
+            statusEl.style.display = 'block';
+            statusEl.innerText = "Caricamento dati corse in corso...";
+
+            // Resetta e preimposta valori
+            document.getElementById('sc-tipo').value = "partenza";
+            document.getElementById('label-luogo').innerText = "Luogo di partenza:";
+            document.getElementById('label-orario').innerText = "Orario di partenza:";
+            document.getElementById('sc-orario').value = "";
+            document.getElementById('sc-giorno').valueAsDate = new Date(); 
+
+            const baseName = pdfName.substring(0, pdfName.lastIndexOf('.'));
+            const jsonName = baseName + ".json";
+            
+            try {
+                const url = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${encodeURIComponent(jsonName)}?t=${new Date().getTime()}`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("File dati (JSON) non trovato per questa linea.");
+                
+                currentCorseData = await res.json();
+                popolaLuoghi();
+
+                statusEl.style.display = 'none';
+                document.getElementById('sc-form').style.display = 'block';
+
+            } catch(e) {
+                statusEl.innerHTML = `<span style='color:var(--danger);'>Errore: ${e.message}</span>`;
+            }
+        }
+
+        function cambiaTipoRicerca() {
+            const tipo = document.getElementById('sc-tipo').value;
+            
+            // Aggiorna le etichette per chiarezza
+            document.getElementById('label-luogo').innerText = tipo === 'partenza' ? 'Luogo di partenza:' : 'Luogo di arrivo:';
+            document.getElementById('label-orario').innerText = tipo === 'partenza' ? 'Orario di partenza:' : 'Orario di arrivo:';
+            
+            // Svuota l'orario e aggiorna i luoghi possibili
+            document.getElementById('sc-orario').value = "";
+            document.getElementById('sc-suggestions').style.display = 'none';
+            popolaLuoghi();
+        }
+
+        function popolaLuoghi() {
+            if (!currentCorseData) return;
+            const tipo = document.getElementById('sc-tipo').value;
+            
+            let luoghi = new Set();
+            for (let turno in currentCorseData) {
+                currentCorseData[turno].forEach(corsa => {
+                    let luogoCorretto = tipo === 'partenza' ? corsa.partenza_luogo : corsa.arrivo_luogo;
+                    if (luogoCorretto) luoghi.add(luogoCorretto.trim());
+                });
+            }
+            
+            let luoghiArr = Array.from(luoghi).sort();
+            let select = document.getElementById('sc-luogo');
+            select.innerHTML = '<option value="">-- Seleziona Luogo --</option>';
+            luoghiArr.forEach(l => {
+                select.innerHTML += `<option value="${l}">${l}</option>`;
+            });
+        }
+
+        // FORMATTAZIONE CAMPO ORARIO IN TEMPO REALE
+        function formattaOrario(e) {
+            // Tieni solo i numeri e limita a 4 caratteri
+            let val = e.target.value.replace(/\D/g, ''); 
+            if (val.length > 4) val = val.substring(0, 4); 
+            
+            // Inserisci il punto in automatico dopo le prime due cifre
+            if (val.length > 2) {
+                val = val.substring(0, 2) + '.' + val.substring(2);
+            }
+            
+            e.target.value = val;
+            mostraSuggerimentiOrario(val);
+        }
+
+        function aggiornaSuggerimentiOrario() {
+            const val = document.getElementById('sc-orario').value;
+            mostraSuggerimentiOrario(val);
+        }
+
+        function mostraSuggerimentiOrario(typedVal) {
+            const luogo = document.getElementById('sc-luogo').value;
+            const tipo = document.getElementById('sc-tipo').value;
+            const suggBox = document.getElementById('sc-suggestions');
+            
+            if (!luogo || typedVal.length === 0) {
+                suggBox.style.display = 'none';
                 return;
             }
 
-            const matches = currentImgList.filter(f => {
-                const nomeSenzaExt = f.name.replace(/\.[^/.]+$/, "").toUpperCase();
-                return nomeSenzaExt.includes(query);
-            });
+            let orari = new Set();
+            for (let turno in currentCorseData) {
+                currentCorseData[turno].forEach(corsa => {
+                    let targetLuogo = tipo === 'partenza' ? corsa.partenza_luogo : corsa.arrivo_luogo;
+                    let targetOra = tipo === 'partenza' ? corsa.partenza_ora : corsa.arrivo_ora;
 
-            if (matches.length > 0) {
-                box.innerHTML = '';
-                matches.forEach(m => {
-                    const nomeSenzaExt = m.name.replace(/\.[^/.]+$/, "").toUpperCase();
-                    const item = document.createElement('div');
-                    item.className = 'suggestion-item';
-                    item.innerHTML = `<span>Turno ${nomeSenzaExt}</span> <span>🖼️</span>`;
-                    item.onclick = () => {
-                        // APRE IL VISUALIZZATORE IN-APP
-                        currentImagePath = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${currentImgDir}/${m.name}`;
-                        let imgElement = document.getElementById('turnoImage');
-                        imgElement.onerror = erroreImmagine; 
-                        imgElement.src = currentImagePath;
-                        if (pzInstance) { pzInstance.reset(); }
-                        document.getElementById('imageModal').style.display = 'block';
-                        
-                        box.style.display = 'none';
-                        input.value = ''; 
-                    };
-                    box.appendChild(item);
+                    if (targetLuogo && targetLuogo.trim() === luogo) {
+                        if (targetOra) orari.add(targetOra.trim());
+                    }
                 });
-                box.style.display = 'block';
+            }
+
+            // Converte l'orario del JSON (es. "6:31") in formato a due cifre con punto (es. "06.31")
+            let orariFormattati = Array.from(orari).map(o => {
+                let p = o.replace('.', ':').split(':');
+                if (p.length < 2) return "";
+                let h = p[0].padStart(2, '0');
+                let m = p[1].padStart(2, '0');
+                return `${h}.${m}`;
+            }).filter(o => o !== "").sort();
+
+            let filtrati = orariFormattati.filter(o => o.startsWith(typedVal));
+
+            if (filtrati.length > 0) {
+                suggBox.innerHTML = '';
+                filtrati.forEach(o => {
+                    let div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.innerText = o;
+                    div.onclick = function() {
+                        document.getElementById('sc-orario').value = o;
+                        suggBox.style.display = 'none';
+                    };
+                    suggBox.appendChild(div);
+                });
+                suggBox.style.display = 'block';
             } else {
-                box.innerHTML = '<div style="padding: 14px 15px; color: #888;">Nessun turno trovato con questo nome.</div>';
-                box.style.display = 'block';
+                suggBox.style.display = 'none';
             }
         }
 
-        // --- FUNZIONI MODALE IMMAGINE ---
+        // Chiusura tendina cliccando fuori
+        document.addEventListener('click', function(e) {
+            const suggBox = document.getElementById('sc-suggestions');
+            const inputOrario = document.getElementById('sc-orario');
+            if (suggBox && e.target !== inputOrario && !suggBox.contains(e.target)) {
+                suggBox.style.display = 'none';
+            }
+        });
+
+        // RICERCA VERA E PROPRIA NEL JSON
+        function eseguiRicercaCorsa() {
+            const tipo = document.getElementById('sc-tipo').value;
+            const luogo = document.getElementById('sc-luogo').value;
+            const giorno = document.getElementById('sc-giorno').value; 
+            const orarioInput = document.getElementById('sc-orario').value;
+            const box = document.getElementById('sc-risultato');
+
+            if (!luogo || !orarioInput || orarioInput.length < 5) {
+                box.style.display = 'block';
+                box.innerHTML = "<span style='color:var(--danger);'>Seleziona un luogo e inserisci un orario completo (es. 07.30).</span>";
+                return;
+            }
+
+            // Scompone l'orario inserito per poterlo confrontare in varie forme col JSON
+            let p = orarioInput.split('.');
+            let hInt = parseInt(p[0], 10);
+            let mStr = p[1];
+            
+            let targetFormat1 = `${hInt}:${mStr}`; // Formato esatto come "6:31"
+            let targetFormat2 = `${hInt}.${mStr}`; // Formato "6.31"
+            let targetFormat3 = `${p[0]}:${mStr}`; // Formato "06:31"
+
+            let turniTrovati = [];
+
+            for (let turno in currentCorseData) {
+                let corse = currentCorseData[turno];
+                for (let i = 0; i < corse.length; i++) {
+                    let corsa = corse[i];
+                    let targetLuogo = tipo === 'partenza' ? corsa.partenza_luogo : corsa.arrivo_luogo;
+                    let targetOra = tipo === 'partenza' ? corsa.partenza_ora : corsa.arrivo_ora;
+
+                    if (targetLuogo && targetLuogo.trim() === luogo) {
+                        let o = targetOra ? targetOra.trim() : "";
+                        if (o === targetFormat1 || o === targetFormat2 || o === targetFormat3) {
+                            if (!turniTrovati.includes(turno)) turniTrovati.push(turno);
+                        }
+                    }
+                }
+            }
+
+            box.style.display = 'block';
+            let etichettaAzione = tipo === 'partenza' ? 'Partenza da' : 'Arrivo a';
+            
+            if (turniTrovati.length > 0) {
+                let dataFormattata = giorno ? giorno.split('-').reverse().join('/') : "Oggi";
+                box.innerHTML = `<strong>Data Selezionata:</strong> ${dataFormattata}<br>
+                                 <strong>${etichettaAzione}:</strong> ${luogo} alle ${orarioInput}<br>
+                                 <div style="margin-top:10px; color:var(--primary); font-size:18px;">
+                                    <strong>Il turno che effettua la corsa è:</strong> ${turniTrovati.join(', ')}
+                                 </div>`;
+            } else {
+                box.innerHTML = "Nessun turno trovato per questa specifica corsa nel database.";
+            }
+        }
+        
+        // --- FUNZIONI MODALE IMMAGINE (PANZOOM) ---
+        // (Mantenute integre per retrocompatibilità in caso ci siano PNG/JPG)
         function chiudiSeSfondo(event) { 
             if (event.target.id === 'imageModal' || event.target.id === 'imageFlexContainer') chiudiImageModal(); 
         }
@@ -352,7 +483,6 @@
 
         function erroreImmagine() {
             document.getElementById('turnoImage').onerror = null; 
-            alert("L'immagine del turno non è stata trovata.");
             chiudiImageModal();
         }
 
@@ -365,17 +495,7 @@
             a.click();
             document.body.removeChild(a);
         }
-
-        // Chiude la tendina dei suggerimenti se l'utente clicca fuori
-        document.addEventListener('click', function(e) {
-            const box = document.getElementById('suggestionsBox');
-            const input = document.getElementById('shiftSearch');
-            if (box && e.target !== input && !box.contains(e.target)) {
-                box.style.display = 'none';
-            }
-        });
-
-        window.onload = init;
     </script>
 </body>
 </html>
+ 

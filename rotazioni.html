@@ -155,9 +155,22 @@
         .rotazioni-table th, .rotazioni-table td { border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; padding: 10px; white-space: nowrap; }
         .rotazioni-table th { background-color: var(--primary); color: white; position: sticky; top: 0; z-index: 2; border-top: 1px solid var(--primary); }
         
-        /* Blocca la prima colonna a sinistra */
-        .rotazioni-table td:first-child, .rotazioni-table th:first-child { position: sticky; left: 0; z-index: 3; }
-        .rotazioni-table td:first-child { background-color: #f9f9f9; font-weight: bold; text-align: left; border-right: 2px solid #aaa; color: var(--primary); }
+        /* Blocca la prima colonna a sinistra, la rende stretta e fa andare a capo i nomi */
+        .rotazioni-table td:first-child, .rotazioni-table th:first-child { 
+            position: sticky; left: 0; z-index: 3; 
+            min-width: 100px; 
+            max-width: 140px; 
+            white-space: normal; /* Permette di andare a capo */
+            line-height: 1.3;
+        }
+        .rotazioni-table td:first-child { 
+            background-color: #f9f9f9; 
+            font-weight: bold; 
+            text-align: left; 
+            border-right: 2px solid #aaa; 
+            color: var(--primary); 
+            font-size: 13px; /* Leggermente più piccolo per far stare meglio i nomi */
+        }
         .rotazioni-table th:first-child { z-index: 4; border-right: 2px solid #003d82; }
 
         /* Colori dinamici per le celle */
@@ -369,27 +382,44 @@
                     let btnGrid = document.createElement('div');
                     btnGrid.className = "btn-grid";
 
-                    // 1. GESTIONE JSON (La via preferenziale, più veloce ed esteticamente migliore)
+                    // 1. GESTIONE JSON (La via preferenziale)
                     if (g.json) {
                         try {
                             let dataRes = await fetch(g.json.download_url + `?t=${timestamp}`);
                             let jsonData = await dataRes.json();
 
-                            // Tasti per Visualizzare le Tabelle (uno per ogni rotazione dentro il JSON)
+                            // Crea un riquadro separato PER OGNI rotazione nel JSON
                             Object.keys(jsonData).forEach(rotName => {
+                                let rotContainer = document.createElement('div');
+                                rotContainer.style.background = "#fafafa";
+                                rotContainer.style.border = "1px solid #ddd";
+                                rotContainer.style.padding = "12px";
+                                rotContainer.style.borderRadius = "10px";
+                                rotContainer.style.marginBottom = "10px";
+
+                                let rotTitle = document.createElement('h4');
+                                rotTitle.innerText = rotName;
+                                rotTitle.style.margin = "0 0 10px 0";
+                                rotTitle.style.color = "var(--primary)";
+                                rotTitle.style.fontSize = "16px";
+                                rotContainer.appendChild(rotTitle);
+
                                 let btnTab = document.createElement('button');
                                 btnTab.className = "file-btn btn-table";
-                                btnTab.innerHTML = `📅 Tabella: ${rotName}`;
+                                btnTab.innerHTML = `📅 Visualizza Tabella`;
                                 btnTab.onclick = () => apriTabella(rotName, jsonData);
-                                btnGrid.appendChild(btnTab);
-                            });
+                                rotContainer.appendChild(btnTab);
 
-                            // Tasto Cerca basato su JSON
-                            let btnSearch = document.createElement('button');
-                            btnSearch.className = "file-btn btn-search";
-                            btnSearch.innerHTML = `🔍 Cerca Colleghi e Cambi`;
-                            btnSearch.onclick = () => apriRicercaJson(jsonData, g.base);
-                            btnGrid.appendChild(btnSearch);
+                                let btnSearch = document.createElement('button');
+                                btnSearch.className = "file-btn btn-search";
+                                btnSearch.style.marginTop = "8px";
+                                btnSearch.innerHTML = `🔍 Cerca Colleghi e Cambi`;
+                                // Passa SOLO il nome specifico della rotazione per isolare la ricerca
+                                btnSearch.onclick = () => apriRicercaJson(rotName, jsonData);
+                                rotContainer.appendChild(btnSearch);
+
+                                btnGrid.appendChild(rotContainer);
+                            });
 
                         } catch(e) { console.error("Errore lettura JSON", e); }
                     } 
@@ -448,13 +478,16 @@
             title.innerText = rotName;
             
             let html = `<div class="table-responsive"><table class="rotazioni-table">`;
-            html += `<thead><tr><th>Nome Turnista</th>`;
+            html += `<thead><tr><th>Colleghi</th>`;
             for(let i=1; i<=31; i++) html += `<th>${i}</th>`;
             html += `</tr></thead><tbody>`;
 
             const dipendenti = data[rotName];
             for (let nome in dipendenti) {
-                html += `<tr><td>${nome}</td>`;
+                // Impila i nomi uno sotto l'altro dividendo sul trattino
+                let nomeFormattato = nome.split(" - ").join("<br>");
+                html += `<tr><td>${nomeFormattato}</td>`;
+                
                 for(let i=1; i<=31; i++) {
                     let turno = dipendenti[nome][i.toString()] || "";
                     let classCss = getClassForTurno(turno);
@@ -473,29 +506,30 @@
         // ==========================================
 
         // --- Mappatura super veloce tramite JSON ---
-        function apriRicercaJson(jsonData, baseName) {
+        function apriRicercaJson(rotName, jsonData) {
             databaseTurni = []; // Svuota il database per prepararlo ai nuovi dati
-
-            for (let rotName in jsonData) {
-                let dipendenti = jsonData[rotName];
-                for (let nome in dipendenti) {
-                    let turniArr = [];
-                    for (let i = 1; i <= 31; i++) {
-                        let val = dipendenti[nome][i.toString()] || "";
-                        // Uniforma la scritta DI in DISP come faceva la vecchia logica
-                        if (val.toUpperCase().replace(/\s+/g, '') === "DI") val = "DISP";
-                        turniArr.push(val.toUpperCase().replace(/\s+/g, ''));
-                    }
-                    databaseTurni.push({
-                        nome: nome + ` <br><span style='font-size:0.85em;color:#666;font-weight:normal;'>[${rotName}]</span>`,
-                        turni: turniArr
-                    });
+            
+            // Estrapola SOLO i dati della rotazione specifica cliccata
+            let dipendenti = jsonData[rotName];
+            for (let nome in dipendenti) {
+                let turniArr = [];
+                for (let i = 1; i <= 31; i++) {
+                    let val = dipendenti[nome][i.toString()] || "";
+                    if (val.toUpperCase().replace(/\s+/g, '') === "DI") val = "DISP";
+                    turniArr.push(val.toUpperCase().replace(/\s+/g, ''));
                 }
+                databaseTurni.push({
+                    nome: nome.split(" - ").join(" e "), // Unisce con la "e" per la visualizzazione testuale
+                    turni: turniArr
+                });
             }
 
             const modal = document.getElementById('search-modal');
             const statusEl = document.getElementById('modal-status');
             const sezioniRicerca = document.getElementById('modal-search-sections');
+            const title = document.getElementById('modal-title');
+
+            title.innerText = "Ricerca: " + rotName;
 
             modal.style.display = 'flex';
             statusEl.style.display = 'none';
@@ -519,7 +553,9 @@
             const modal = document.getElementById('search-modal');
             const statusEl = document.getElementById('modal-status');
             const sezioniRicerca = document.getElementById('modal-search-sections');
+            const title = document.getElementById('modal-title');
             
+            title.innerText = "Ricerca Globale";
             modal.style.display = 'flex';
             sezioniRicerca.style.display = 'none';
             statusEl.style.display = 'block';
@@ -788,3 +824,4 @@
     </script>
 </body>
 </html>
+ 

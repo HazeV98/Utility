@@ -152,8 +152,8 @@
         /* --- STILI TABELLA HTML (JSON) --- */
         .table-responsive { 
             width: 100%; 
-            max-height: 70vh; /* Limita l'altezza per attivare lo scroll verticale */
-            overflow: auto; /* Scroll sia orizzontale che verticale */
+            max-height: 70vh; 
+            overflow: auto; 
             -webkit-overflow-scrolling: touch; 
             margin-top: 10px; 
             border: 1px solid #ddd; 
@@ -189,7 +189,7 @@
             border-right: 2px solid #aaa; 
             color: var(--primary); 
             font-size: 13px; 
-            z-index: 3; /* Sopra le celle normali */
+            z-index: 3; 
         }
         
         /* L'intestazione in alto a sinistra deve stare sopra a tutto (Z-index 4) */
@@ -494,6 +494,9 @@
             return '';
         }
 
+        // Lista di parole chiave per identificare le righe di intestazione da saltare
+        const paroleDaSaltare = ["GENNAIO", "FEBBRAIO", "MARZO", "APRILE", "MAGGIO", "GIUGNO", "LUGLIO", "AGOSTO", "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE", "MESE", "AGENTI"];
+
         function apriTabella(rotName, data) {
             const modal = document.getElementById('table-modal');
             const title = document.getElementById('table-modal-title');
@@ -508,6 +511,11 @@
 
             const dipendenti = data[rotName];
             for (let nome in dipendenti) {
+                let nomeUpper = nome.toUpperCase();
+                
+                // Filtro intelligente e universale
+                if (paroleDaSaltare.some(parola => nomeUpper.includes(parola)) || nome.trim() === "") continue;
+
                 let nomeFormattato = nome.split(" - ").join("<br>");
                 html += `<tr><td>${nomeFormattato}</td>`;
                 
@@ -534,6 +542,11 @@
             
             let dipendenti = jsonData[rotName];
             for (let nome in dipendenti) {
+                let nomeUpper = nome.toUpperCase();
+                
+                // Stesso filtro usato per la tabella
+                if (paroleDaSaltare.some(parola => nomeUpper.includes(parola)) || nome.trim() === "") continue;
+
                 let turniArr = [];
                 for (let i = 1; i <= 31; i++) {
                     let val = dipendenti[nome][i.toString()] || "";

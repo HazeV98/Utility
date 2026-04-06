@@ -166,28 +166,16 @@
         }
 
         /* --- STILI TASTI NASCOSTI --- */
-        #secret-btn {
-            display: none;
-            background-color: var(--danger); /* Tasto Admin rosso fuoco */
-        }
-
-        #generatore-btn {
-            display: none;
-            background-color: var(--danger); /* Tasto Generatore rosso fuoco */
-        }
-
-        #rotazioni-btn {
-            display: none; 
-        }
+        #secret-btn { display: none; background-color: var(--danger); }
+        #generatore-btn { display: none; background-color: var(--danger); }
+        #rotazioni-btn { display: none; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div class="header-side"></div>
-        
         <h2 id="main-title">Utility</h2>
-        
         <div class="header-side right">
             <button id="install-btn">Installa</button>
         </div>
@@ -195,23 +183,16 @@
 
     <div class="menu-grid">
         <a href="calendario.html?oggi=true" class="menu-btn btn-oggi">Turno di Oggi</a>
-        
         <a href="calendario.html" class="menu-btn">📅 Calendario</a>
         <a href="dati_calendario.html" class="menu-btn">📊 Statistiche Calendario</a>
-        
         <a href="turni.html" class="menu-btn">🔄 Turni</a>
         <a href="orari.html" class="menu-btn">🕒 Orari</a>
-        
         <a href="rotazioni.html" id="rotazioni-btn" class="menu-btn">👥 Rotazioni</a>
-
         <a href="documenti.html" class="menu-btn">📄 Documenti</a>
-        
         <a href="link.html" class="menu-btn">🔗 Link</a>
         <a href="contatti.html" class="menu-btn">📞 Contatti</a>
         <a href="buoni.html" class="menu-btn">🍝 Buoni Pasto</a>
-        
         <a href="dds.html" class="menu-btn">📂 Archivio DDS</a>
-        
         <a href="guida.html" class="menu-btn" style="background-color: #6c757d;">📖 Guida</a>
         
         <a href="generatore.html" id="generatore-btn" class="menu-btn">🔑 Generatore Codici</a>
@@ -241,86 +222,54 @@
         }
 
         // ==========================================
-        // GESTIONE INSTALLAZIONE PWA (TASTO VERDE)
+        // GESTIONE INSTALLAZIONE PWA
         // ==========================================
         let deferredPrompt;
         const installBtn = document.getElementById('install-btn');
-
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             installBtn.style.display = 'block';
         });
-
         installBtn.addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    installBtn.style.display = 'none';
-                }
+                if (outcome === 'accepted') installBtn.style.display = 'none';
                 deferredPrompt = null;
             }
         });
 
-        window.addEventListener('appinstalled', () => {
-            installBtn.style.display = 'none';
-        });
-
-
         // ==========================================
-        // GESTIONE TASTI NASCOSTI (Admin, Generatore, Rotazioni)
+        // GESTIONE TASTI NASCOSTI E ROTAZIONI
         // ==========================================
         const titleTrigger = document.getElementById('main-title');
         const secretBtn = document.getElementById('secret-btn');
         const rotazioniBtn = document.getElementById('rotazioni-btn');
         const generatoreBtn = document.getElementById('generatore-btn');
         
-        let tapCount = 0;
-        let tapTimer;
-        let holdTimer;
-        
+        let tapCount = 0; let tapTimer; let holdTimer;
         const ADMIN_TAPS = 5;
         const GENERATORE_TAPS = 3;
         const HOLD_DURATION = 3000;
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Controlla salvataggi tasti segreti
-            if (localStorage.getItem('dev_mode_active') === 'true') {
-                if(secretBtn) secretBtn.style.display = 'block';
-            }
-            if (localStorage.getItem('generatore_sbloccato') === 'true') {
-                if(generatoreBtn) generatoreBtn.style.display = 'block';
-            }
-
-            // Logica Rotazioni automatica (in base a "nove" nel calendario)
+            if (localStorage.getItem('dev_mode_active') === 'true') { if(secretBtn) secretBtn.style.display = 'block'; }
+            if (localStorage.getItem('generatore_sbloccato') === 'true') { if(generatoreBtn) generatoreBtn.style.display = 'block'; }
             try {
                 const appDataStr = localStorage.getItem('myTurniApp');
-                if (appDataStr && appDataStr.toLowerCase().includes('nove')) {
-                    if(rotazioniBtn) rotazioniBtn.style.display = 'block';
-                }
-            } catch(e) { console.error("Errore lettura dati calendario", e); }
-
-            // Avvia controllo promemoria DDS
+                if (appDataStr && appDataStr.toLowerCase().includes('nove')) { if(rotazioniBtn) rotazioniBtn.style.display = 'block'; }
+            } catch(e) {}
+            
             checkLocalDDSReminders();
-            // Avvia controllo aggiornamenti DDS
             checkDDSUpdates();
         });
 
-        function resetSequence() {
-            tapCount = 0;
-            clearTimeout(tapTimer);
-            clearTimeout(holdTimer);
-        }
+        function resetSequence() { tapCount = 0; clearTimeout(tapTimer); clearTimeout(holdTimer); }
 
         function handleStart(e) {
-            if (e.type === 'touchstart') {
-                e.preventDefault();
-            }
-            
-            clearTimeout(tapTimer); 
-            clearTimeout(holdTimer); 
-            tapCount++;
+            if (e.type === 'touchstart') e.preventDefault();
+            clearTimeout(tapTimer); clearTimeout(holdTimer); tapCount++;
 
             if (tapCount === GENERATORE_TAPS || tapCount === ADMIN_TAPS) {
                 holdTimer = setTimeout(() => {
@@ -338,16 +287,11 @@
                     }
                     resetSequence();
                 }, HOLD_DURATION);
-            } else if (tapCount > ADMIN_TAPS) {
-                resetSequence();
-            } else {
-                tapTimer = setTimeout(resetSequence, 500);
-            }
+            } else if (tapCount > ADMIN_TAPS) { resetSequence(); } 
+            else { tapTimer = setTimeout(resetSequence, 500); }
         }
 
-        function handleEnd() {
-            clearTimeout(holdTimer);
-        }
+        function handleEnd() { clearTimeout(holdTimer); }
 
         titleTrigger.addEventListener('touchstart', handleStart, { passive: false });
         titleTrigger.addEventListener('touchend', handleEnd);
@@ -367,25 +311,18 @@
             const todayStr = `${year}-${month}-${day}`;
 
             const lastReminderDate = localStorage.getItem('last_dds_reminder_date');
-            
-            // Se lo abbiamo già mostrato oggi, interrompi
             if (lastReminderDate === todayStr) return;
 
             const request = indexedDB.open("ddsDatabase");
-
             request.onsuccess = function(event) {
                 const db = event.target.result;
-                
-                // Controlla se lo store esiste per evitare errori alla prima apertura
                 if (!db.objectStoreNames.contains("disposizioni")) return;
-
                 const tx = db.transaction("disposizioni", "readonly");
                 const store = tx.objectStore("disposizioni");
                 const requestGetAll = store.getAll();
 
                 requestGetAll.onsuccess = function() {
                     const allDDS = requestGetAll.result;
-                    // Trova le disposizioni per oggi che hanno il flag "avviso" a true
                     const todayReminders = allDDS.filter(item => item.data === todayStr && item.avviso === true);
 
                     if (todayReminders.length > 0) {
@@ -399,8 +336,6 @@
                                 list.appendChild(div);
                             });
                             document.getElementById('ddsReminderModal').style.display = 'flex';
-                            
-                            // Salva la data di oggi così non ricompare finché non cambia giorno
                             localStorage.setItem('last_dds_reminder_date', todayStr);
                         }
                     }

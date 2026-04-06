@@ -19,6 +19,7 @@
             --bg-color: #f4f7f6;
             --text-color: #333;
             --success: #28a745;
+            --danger: #dc3545;
         }
 
         body {
@@ -167,7 +168,12 @@
         /* --- STILI TASTI NASCOSTI --- */
         #secret-btn {
             display: none;
-            background-color: #dc3545; 
+            background-color: var(--danger); /* Tasto Admin rosso fuoco */
+        }
+
+        #generatore-btn {
+            display: none;
+            background-color: var(--danger); /* Tasto Generatore rosso fuoco */
         }
 
         #rotazioni-btn {
@@ -208,6 +214,7 @@
         
         <a href="guida.html" class="menu-btn" style="background-color: #6c757d;">📖 Guida</a>
         
+        <a href="generatore.html" id="generatore-btn" class="menu-btn">🔑 Generatore Codici</a>
         <a href="admin.html" id="secret-btn" class="menu-btn">🔒 Admin</a>
     </div>
 
@@ -233,24 +240,20 @@
             navigator.serviceWorker.register('sw.js').then(() => console.log("SW OK"));
         }
 
-                // ==========================================
+        // ==========================================
         // GESTIONE INSTALLAZIONE PWA (TASTO VERDE)
         // ==========================================
         let deferredPrompt;
         const installBtn = document.getElementById('install-btn');
 
         window.addEventListener('beforeinstallprompt', (e) => {
-            // Previene il banner automatico di Chrome
             e.preventDefault();
-            // Salva l'evento in memoria
             deferredPrompt = e;
-            // Mostra il nostro tasto verde
             installBtn.style.display = 'block';
         });
 
         installBtn.addEventListener('click', async () => {
             if (deferredPrompt) {
-                // Mostra la richiesta nativa di installazione
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
                 if (outcome === 'accepted') {
@@ -261,34 +264,47 @@
         });
 
         window.addEventListener('appinstalled', () => {
-            // Nascondi definitivamente il tasto una volta installata
             installBtn.style.display = 'none';
         });
 
 
         // ==========================================
-        // GESTIONE TASTI NASCOSTI (Admin e Rotazioni)
+        // GESTIONE TASTI NASCOSTI (Admin, Generatore, Rotazioni)
         // ==========================================
         const titleTrigger = document.getElementById('main-title');
         const secretBtn = document.getElementById('secret-btn');
         const rotazioniBtn = document.getElementById('rotazioni-btn');
+        const generatoreBtn = document.getElementById('generatore-btn');
         
         let tapCount = 0;
         let tapTimer;
         let holdTimer;
         
         const ADMIN_TAPS = 5;
-        const ROTAZIONI_TAPS = 3;
+        const GENERATORE_TAPS = 3;
         const HOLD_DURATION = 3000;
 
-        // Controlla all'avvio
         document.addEventListener('DOMContentLoaded', () => {
+            // Controlla salvataggi tasti segreti
             if (localStorage.getItem('dev_mode_active') === 'true') {
-                secretBtn.style.display = 'block';
+                if(secretBtn) secretBtn.style.display = 'block';
             }
-            if (localStorage.getItem('rotazioni_visibili') === 'true') {
-                rotazioniBtn.style.display = 'block';
+            if (localStorage.getItem('generatore_sbloccato') === 'true') {
+                if(generatoreBtn) generatoreBtn.style.display = 'block';
             }
+
+            // Logica Rotazioni automatica (in base a "nove" nel calendario)
+            try {
+                const appDataStr = localStorage.getItem('myTurniApp');
+                if (appDataStr && appDataStr.toLowerCase().includes('nove')) {
+                    if(rotazioniBtn) rotazioniBtn.style.display = 'block';
+                }
+            } catch(e) { console.error("Errore lettura dati calendario", e); }
+
+            // Avvia controllo promemoria DDS
+            checkLocalDDSReminders();
+            // Avvia controllo aggiornamenti DDS
+            checkDDSUpdates();
         });
 
         function resetSequence() {
@@ -298,26 +314,27 @@
         }
 
         function handleStart(e) {
-            // Se è un tocco fisico su schermo, previene il finto click del mouse
             if (e.type === 'touchstart') {
                 e.preventDefault();
             }
             
             clearTimeout(tapTimer); 
-            clearTimeout(holdTimer); // Resetta il timer della pressione lunga se c'è un nuovo tocco
+            clearTimeout(holdTimer); 
             tapCount++;
 
-            if (tapCount === ROTAZIONI_TAPS || tapCount === ADMIN_TAPS) {
+            if (tapCount === GENERATORE_TAPS || tapCount === ADMIN_TAPS) {
                 holdTimer = setTimeout(() => {
                     if (tapCount === ADMIN_TAPS) {
-                        secretBtn.style.display = 'block';
+                        if(secretBtn) secretBtn.style.display = 'block';
                         localStorage.setItem('dev_mode_active', 'true');
                         alert("🛠️ Area Amministratore Sbloccata");
-                    } else if (tapCount === ROTAZIONI_TAPS) {
-                        rotazioniBtn.style.display = 'block';
-                        localStorage.setItem('rotazioni_visibili', 'true');
-                        rotazioniBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        alert("👥 Tasto Rotazioni Sbloccato");
+                    } else if (tapCount === GENERATORE_TAPS) {
+                        if(generatoreBtn) {
+                            generatoreBtn.style.display = 'block';
+                            generatoreBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        localStorage.setItem('generatore_sbloccato', 'true');
+                        alert("🔑 Generatore Codici Sbloccato");
                     }
                     resetSequence();
                 }, HOLD_DURATION);
@@ -332,17 +349,85 @@
             clearTimeout(holdTimer);
         }
 
-        // Usiamo passive: false per permettere il preventDefault su mobile
         titleTrigger.addEventListener('touchstart', handleStart, { passive: false });
         titleTrigger.addEventListener('touchend', handleEnd);
         titleTrigger.addEventListener('touchcancel', handleEnd);
-
         titleTrigger.addEventListener('mousedown', handleStart);
         titleTrigger.addEventListener('mouseup', handleEnd);
         titleTrigger.addEventListener('mouseleave', handleEnd);
 
-        // --- Resto della logica DDS esistente ---
-        // (Omettendo per brevità il blocco DDS che non è stato modificato)
+        // ==========================================
+        // LOGICA DDS: PROMEMORIA LOCALI (Modal al caricamento)
+        // ==========================================
+        function checkLocalDDSReminders() {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+
+            const lastReminderDate = localStorage.getItem('last_dds_reminder_date');
+            
+            // Se lo abbiamo già mostrato oggi, interrompi
+            if (lastReminderDate === todayStr) return;
+
+            const request = indexedDB.open("ddsDatabase");
+
+            request.onsuccess = function(event) {
+                const db = event.target.result;
+                
+                // Controlla se lo store esiste per evitare errori alla prima apertura
+                if (!db.objectStoreNames.contains("disposizioni")) return;
+
+                const tx = db.transaction("disposizioni", "readonly");
+                const store = tx.objectStore("disposizioni");
+                const requestGetAll = store.getAll();
+
+                requestGetAll.onsuccess = function() {
+                    const allDDS = requestGetAll.result;
+                    // Trova le disposizioni per oggi che hanno il flag "avviso" a true
+                    const todayReminders = allDDS.filter(item => item.data === todayStr && item.avviso === true);
+
+                    if (todayReminders.length > 0) {
+                        const list = document.getElementById('ddsReminderList');
+                        if (list) {
+                            list.innerHTML = '';
+                            todayReminders.forEach(item => {
+                                const div = document.createElement('div');
+                                div.className = 'dds-reminder-item';
+                                div.innerHTML = `<strong>${item.titolo}</strong><br><small>${item.descrizione || ''}</small>`;
+                                list.appendChild(div);
+                            });
+                            document.getElementById('ddsReminderModal').style.display = 'flex';
+                            
+                            // Salva la data di oggi così non ricompare finché non cambia giorno
+                            localStorage.setItem('last_dds_reminder_date', todayStr);
+                        }
+                    }
+                };
+            };
+        }
+
+        // ==========================================
+        // LOGICA DDS: AGGIORNAMENTI REMOTI (Badge Giallo)
+        // ==========================================
+        async function checkDDSUpdates() {
+            try {
+                const res = await fetch('last_dds.json?v=' + new Date().getTime());
+                if (!res.ok) return;
+                const data = await res.json();
+                const lastSeen = localStorage.getItem('last_dds_seen');
+                const lastUpdateDate = data.last_update;
+
+                if (lastUpdateDate !== lastSeen) {
+                    const ddsBtn = document.querySelector('a[href="dds.html"]');
+                    if (ddsBtn) {
+                        ddsBtn.innerHTML = "📂 Archivio DDS <span style='color:#f1c40f; font-size:14px;'>● Nuovo</span>";
+                        ddsBtn.style.border = "2px solid #f1c40f";
+                    }
+                }
+            } catch (e) { console.log("Check DDS fallito"); }
+        }
     </script>
 </body>
 </html>

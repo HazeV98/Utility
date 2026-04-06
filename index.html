@@ -212,7 +212,7 @@
         <div class="dds-reminder-content">
             <h3 style="margin-top: 0; color: #333;">🔔 Promemoria DDS</h3>
             <div id="ddsReminderList" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;"></div>
-            <button onclick="document.getElementById('ddsReminderModal').style.display='none'" style="background: #0056b3; color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; font-size: 16px; cursor: pointer;">Ho capito, chiudi</button>
+            <button id="chiudi-dds-btn" style="background: #0056b3; color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; font-size: 16px; cursor: pointer;">Ho capito, chiudi</button>
         </div>
     </div>
 
@@ -301,7 +301,7 @@
         titleTrigger.addEventListener('mouseleave', handleEnd);
 
         // ==========================================
-        // LOGICA DDS: PROMEMORIA LOCALI (Modal al caricamento)
+        // LOGICA DDS: PROMEMORIA PER OGNI DDS
         // ==========================================
         function checkLocalDDSReminders() {
             const d = new Date();
@@ -310,8 +310,14 @@
             const day = String(d.getDate()).padStart(2, '0');
             const todayStr = `${year}-${month}-${day}`;
 
-            const lastReminderDate = localStorage.getItem('last_dds_reminder_date');
-            if (lastReminderDate === todayStr) return;
+            // Pulisce i promemoria salvati se è iniziato un giorno nuovo
+            if (localStorage.getItem('dismissed_dds_date') !== todayStr) {
+                localStorage.setItem('dismissed_dds_date', todayStr);
+                localStorage.setItem('dismissed_dds_list', JSON.stringify([]));
+            }
+
+            // Recupera la lista delle DDS di oggi che hai GIÀ letto e chiuso
+            let dismissedList = JSON.parse(localStorage.getItem('dismissed_dds_list') || '[]');
 
             const request = indexedDB.open("ddsDatabase");
             request.onsuccess = function(event) {
@@ -323,20 +329,37 @@
 
                 requestGetAll.onsuccess = function() {
                     const allDDS = requestGetAll.result;
-                    const todayReminders = allDDS.filter(item => item.data === todayStr && item.avviso === true);
+                    
+                    // Filtra le DDS di oggi che hanno l'avviso e che NON sono nella lista di quelle già chiuse
+                    const todayReminders = allDDS.filter(item => {
+                        const uniqueId = item.id ? item.id.toString() : item.titolo; // Usa l'ID del db o il titolo come identificatore
+                        return item.data === todayStr && item.avviso === true && !dismissedList.includes(uniqueId);
+                    });
 
                     if (todayReminders.length > 0) {
                         const list = document.getElementById('ddsReminderList');
                         if (list) {
                             list.innerHTML = '';
+                            let idsToDismiss = [];
+                            
                             todayReminders.forEach(item => {
+                                const uniqueId = item.id ? item.id.toString() : item.titolo;
+                                idsToDismiss.push(uniqueId);
+                                
                                 const div = document.createElement('div');
                                 div.className = 'dds-reminder-item';
                                 div.innerHTML = `<strong>${item.titolo}</strong><br><small>${item.descrizione || ''}</small>`;
                                 list.appendChild(div);
                             });
+                            
                             document.getElementById('ddsReminderModal').style.display = 'flex';
-                            localStorage.setItem('last_dds_reminder_date', todayStr);
+                            
+                            // Quando clicchi "Ho capito", aggiunge QUESTE specifiche DDS alla lista di quelle lette
+                            document.getElementById('chiudi-dds-btn').onclick = function() {
+                                document.getElementById('ddsReminderModal').style.display = 'none';
+                                dismissedList.push(...idsToDismiss);
+                                localStorage.setItem('dismissed_dds_list', JSON.stringify(dismissedList));
+                            };
                         }
                     }
                 };

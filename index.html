@@ -157,13 +157,14 @@
         }
         .dds-reminder-content { 
             background: white; padding: 25px; border-radius: 15px; 
-            width: 100%; max-width: 350px; text-align: center; 
+            width: 100%; max-width: 350px; text-align: left; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-top: 6px solid #ffc107; 
         }
         .dds-reminder-item { 
             background: #f8f9fa; padding: 15px; border-radius: 10px; 
-            margin-bottom: 10px; text-align: left; border-left: 4px solid #0056b3; 
+            margin-bottom: 10px; border-left: 4px solid #0056b3; 
         }
+        .promemoria-item { border-left: 4px solid #ffc107; }
 
         /* --- STILI TASTI NASCOSTI --- */
         #secret-btn { display: none; background-color: var(--danger); }
@@ -210,8 +211,8 @@
 
     <div id="ddsReminderModal">
         <div class="dds-reminder-content">
-            <h3 style="margin-top: 0; color: #333;">🔔 Promemoria DDS</h3>
-            <div id="ddsReminderList" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;"></div>
+            <h3 style="margin-top: 0; color: #333; text-align: center;">🔔 Avvisi del Giorno</h3>
+            <div id="ddsReminderList" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;"></div>
             <button id="chiudi-dds-btn" style="background: #0056b3; color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; font-size: 16px; cursor: pointer;">Ho capito, chiudi</button>
         </div>
     </div>
@@ -301,22 +302,23 @@
         titleTrigger.addEventListener('mouseleave', handleEnd);
 
         // ==========================================
-        // LOGICA DDS: PROMEMORIA (A prova di errore date/checkbox)
+        // LOGICA DDS: COLLEGATA AL DATABASE CORRETTO (UtilityDB / archivio_dds)
         // ==========================================
         function checkLocalDDSReminders() {
             const d = new Date();
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
             
-            // Generiamo tutti i formati possibili in cui la data potrebbe essere stata salvata
-            const dateIso = `${year}-${month}-${day}`;       
-            const dateItSlash = `${day}/${month}/${year}`;   
-            const dateItDash = `${day}-${month}-${year}`;    
+            // Calcolo del giorno successivo (per avviso "il giorno prima")
+            const tomorrow = new Date(d);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
 
-            const todayKey = dateIso; 
+            const todayKey = todayStr;
 
-            // Se cambia il giorno, resetta la memoria delle notifiche chiuse
+            // Resetta le notifiche lette al cambio di giornata
             if (localStorage.getItem('dismissed_dds_date') !== todayKey) {
                 localStorage.setItem('dismissed_dds_date', todayKey);
                 localStorage.setItem('dismissed_dds_list', JSON.stringify([]));
@@ -324,27 +326,47 @@
 
             let dismissedList = JSON.parse(localStorage.getItem('dismissed_dds_list') || '[]');
 
-            const request = indexedDB.open("ddsDatabase");
+            // APRIAMO IL DATABASE CON I NOMI ESATTI DEL FILE DDS.HTML
+            const request = indexedDB.open("UtilityDB");
+            
             request.onsuccess = function(event) {
                 const db = event.target.result;
-                if (!db.objectStoreNames.contains("disposizioni")) return;
-                const tx = db.transaction("disposizioni", "readonly");
-                const store = tx.objectStore("disposizioni");
+                
+                // Se la tabella non c'è, l'utente non ha mai aperto DDS.html
+                if (!db.objectStoreNames.contains("archivio_dds")) return;
+                
+                const tx = db.transaction("archivio_dds", "readonly");
+                const store = tx.objectStore("archivio_dds");
                 const requestGetAll = store.getAll();
 
                 requestGetAll.onsuccess = function() {
                     const allDDS = requestGetAll.result;
                     
                     const todayReminders = allDDS.filter(item => {
-                        const uniqueId = item.id ? item.id.toString() : item.titolo;
+                        const uniqueId = item.id.toString();
+                        if (dismissedList.includes(uniqueId)) return false; // Già letto oggi
                         
-                        // Controlla la data indipendentemente dal formato di salvataggio
-                        const isToday = (item.data === dateIso || item.data === dateItSlash || item.data === dateItDash);
+                        if (!item.dateValidita || !Array.isArray(item.dateValidita)) return false;
+                        if (!item.reminder || !Array.isArray(item.reminder)) return false;
+
+                        let mustShow = false;
+
+                        // 1. Spunta "Tutti i giorni": Mostra se OGGI è nell'array delle date
+                        if (item.reminder.includes("all_days") && item.dateValidita.includes(todayStr)) {
+                            mustShow = true;
+                        }
                         
-                        // Controlla la checkbox "avviso" intercettando ogni possibile valore "vero"
-                        const hasAvviso = (item.avviso === true || item.avviso === "true" || item.avviso === "on" || item.avviso == 1);
-                        
-                        return isToday && hasAvviso && !dismissedList.includes(uniqueId);
+                        // 2. Spunta "Il primo giorno": Mostra se OGGI è esattamente la prima data della validità
+                        if (item.reminder.includes("first_day") && item.dateValidita.length > 0 && item.dateValidita[0] === todayStr) {
+                            mustShow = true;
+                        }
+
+                        // 3. Spunta "Il giorno prima": Mostra se DOMANI è esattamente la prima data della validità
+                        if (item.reminder.includes("day_before") && item.dateValidita.length > 0 && item.dateValidita[0] === tomorrowStr) {
+                            mustShow = true;
+                        }
+
+                        return mustShow;
                     });
 
                     if (todayReminders.length > 0) {
@@ -354,18 +376,27 @@
                             let idsToDismiss = [];
                             
                             todayReminders.forEach(item => {
-                                const uniqueId = item.id ? item.id.toString() : item.titolo;
-                                idsToDismiss.push(uniqueId);
+                                idsToDismiss.push(item.id.toString());
                                 
                                 const div = document.createElement('div');
-                                div.className = 'dds-reminder-item';
-                                div.innerHTML = `<strong>${item.titolo}</strong><br><small>${item.descrizione || ''}</small>`;
+                                // Distingue visivamente tra Promemoria (Giallo) e DDS (Blu)
+                                div.className = item.isPromemoria ? 'dds-reminder-item promemoria-item' : 'dds-reminder-item';
+                                
+                                let labelTitle = item.isPromemoria ? `🔔 ${item.titolo}` : `📄 ${item.titolo}`;
+                                let htmlContent = `<strong style="font-size:15px;">${labelTitle}</strong>`;
+                                
+                                if (item.note) {
+                                    htmlContent += `<br><small style="color:#555;">${item.note}</small>`;
+                                } else if (!item.isPromemoria) {
+                                    htmlContent += `<br><small style="color:#555;">Vai in Archivio DDS per leggere il PDF allegato.</small>`;
+                                }
+
+                                div.innerHTML = htmlContent;
                                 list.appendChild(div);
                             });
                             
                             document.getElementById('ddsReminderModal').style.display = 'flex';
                             
-                            // Registra la chiusura così non riappare per le stesse DDS oggi
                             document.getElementById('chiudi-dds-btn').onclick = function() {
                                 document.getElementById('ddsReminderModal').style.display = 'none';
                                 dismissedList.push(...idsToDismiss);

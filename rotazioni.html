@@ -9,6 +9,7 @@
     <meta name="theme-color" content="#0056b3">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.0/dist/panzoom.min.js"></script>
     
     <style>
         /* --- STILI BASE E AUTENTICAZIONE --- */
@@ -147,7 +148,10 @@
         .modulo-ricerca { background: #fafafa; border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-top: 15px; }
         .modulo-ricerca h4 { margin-top: 0; color: var(--primary); margin-bottom: 5px;}
         .risultato-box { background: #e9ecef; border-left: 4px solid var(--primary); padding: 10px; margin-top: 10px; min-height: 30px; font-size: 14px; }
-        .risultato-box ul { padding-left: 20px; margin: 5px 0 0 0; }
+        .risultato-box ul { padding-left: 20px; margin: 10px 0 0 0; }
+        
+        /* Box dettaglio turno */
+        .turn-details-box { margin-top: 6px; font-size: 13px; color: #555; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #ddd; }
 
         /* --- STILI TABELLA HTML (JSON) --- */
         .table-responsive { 
@@ -163,42 +167,11 @@
         .rotazioni-table { border-collapse: separate; border-spacing: 0; width: max-content; background: white; font-size: 14px; text-align: center; }
         .rotazioni-table th, .rotazioni-table td { border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; padding: 10px; white-space: nowrap; }
         
-        /* Blocca la riga in alto (Giorni) */
-        .rotazioni-table th { 
-            background-color: var(--primary); 
-            color: white; 
-            position: sticky; 
-            top: 0; 
-            z-index: 2; 
-            border-top: 1px solid var(--primary); 
-        }
-        
-        /* Blocca la prima colonna a sinistra e impila i nomi */
-        .rotazioni-table td:first-child, .rotazioni-table th:first-child { 
-            position: sticky; 
-            left: 0; 
-            min-width: 100px; 
-            max-width: 140px; 
-            white-space: normal; 
-            line-height: 1.3;
-        }
-        .rotazioni-table td:first-child { 
-            background-color: #f9f9f9; 
-            font-weight: bold; 
-            text-align: left; 
-            border-right: 2px solid #aaa; 
-            color: var(--primary); 
-            font-size: 13px; 
-            z-index: 3; 
-        }
-        
-        /* L'intestazione in alto a sinistra deve stare sopra a tutto (Z-index 4) */
-        .rotazioni-table th:first-child { 
-            z-index: 4; 
-            border-right: 2px solid #003d82; 
-        }
+        .rotazioni-table th { background-color: var(--primary); color: white; position: sticky; top: 0; z-index: 2; border-top: 1px solid var(--primary); }
+        .rotazioni-table td:first-child, .rotazioni-table th:first-child { position: sticky; left: 0; min-width: 100px; max-width: 140px; white-space: normal; line-height: 1.3; }
+        .rotazioni-table td:first-child { background-color: #f9f9f9; font-weight: bold; text-align: left; border-right: 2px solid #aaa; color: var(--primary); font-size: 13px; z-index: 3; }
+        .rotazioni-table th:first-child { z-index: 4; border-right: 2px solid #003d82; }
 
-        /* Colori dinamici per le celle */
         .cell-al { background-color: #28a745; color: white; font-weight: bold; }
         .cell-ri { background-color: #5cb85c; color: white; }
         .cell-disp { background-color: #ffc107; color: black; font-weight: bold;}
@@ -260,7 +233,7 @@
             <div id="modal-search-sections" style="display:none;">
                 <div class="modulo-ricerca">
                     <h4>Cerca chi fa un turno</h4>
-                    <input type="number" id="input-giorno-turno" min="1" max="31" placeholder="Giorno del mese (1-31)">
+                    <input type="number" id="input-giorno-turno" min="1" max="31" placeholder="Giorno (Es. 15)">
                     <input type="text" id="input-codice-turno" placeholder="Turno (es. 1C01, 4P01...)">
                     <button class="btn" style="padding: 12px; margin-top:5px;" onclick="cercaTurno()">Cerca</button>
                     <div id="risultato-turno" class="risultato-box"></div>
@@ -290,6 +263,17 @@
         </div>
     </div>
 
+    <div id="imageModal" style="display: none; position: fixed; z-index: 20000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); overflow: hidden;" onclick="chiudiSeSfondoModalImg(event)">
+        <div style="position: absolute; top: calc(20px + env(safe-area-inset-top)); right: 20px; font-size: 35px; color: white; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 20001;" onclick="chiudiImageModal()">&times;</div>
+        <div id="imageFlexContainer" style="display:flex; flex-direction: column; justify-content:center; align-items:center; height:100%; padding:20px; padding-bottom: 80px; position: relative;">
+            <img id="turnoImage" src="" style="max-width: 100%; max-height: 70vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
+            <div id="imageBanner" style="position: relative; z-index: 20001; margin-top: 15px; background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px; border-radius: 12px; font-size: 13px; text-align: center; max-width: 90%; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                ⚠️ Controllare sempre la presenza di eventuali varianti ai turni.
+            </div>
+        </div>
+        <button onclick="scaricaImmagineTurno()" style="position: absolute; bottom: calc(30px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: #11cdef; color: white; border: none; padding: 12px 24px; border-radius: 20px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 20001;">📥 Scarica</button>
+    </div>
+
     <script>
         // --- FUNZIONI MENU LATERALE ---
         function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
@@ -301,6 +285,13 @@
         const CARTELLA_BASE = "rotazioni";
 
         let databaseTurni = []; 
+        
+        // --- VARIABILI DATI TURNI SILENZIOSI (Orari e Immagini) ---
+        let globalShiftData = {};
+        let globalImgList = [];
+        let globalImgDir = "";
+        let pzInstance = null;
+        let currentImagePath = "";
 
         // ==========================================
         // LOGICA DI AUTENTICAZIONE
@@ -339,6 +330,9 @@
                     document.getElementById('content-section').style.display = 'flex';
                     localStorage.setItem('auth_rotazioni', codice);
                     errorMsg.innerText = "";
+                    
+                    initPanzoom();
+                    caricaDatiTurniSilenzioso(); // Avvia lo scaricamento in background degli orari
                     caricaRotazioni();
                 } else {
                     if (isAutoLogin) {
@@ -353,6 +347,49 @@
             } catch (error) {
                 errorMsg.innerText = "⚠️ Errore di connessione. Riprova.";
                 errorMsg.style.color = "var(--danger)";
+            }
+        }
+
+        // ==========================================
+        // DOWNLOAD SILENZIOSO ORARI E IMMAGINI TURNI
+        // ==========================================
+        async function caricaDatiTurniSilenzioso() {
+            try {
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`);
+                if (!res.ok) return;
+                const files = await res.json();
+                
+                // Trova la cartella turni_pdf_ più recente
+                let dirs = files.filter(f => f.type === "dir" && f.name.startsWith("turni_pdf_"));
+                if (dirs.length === 0) return;
+                
+                dirs.sort((a,b) => b.name.localeCompare(a.name));
+                let latestTurniDir = dirs[0].name;
+                globalImgDir = latestTurniDir.replace("turni_pdf_", "turni_");
+                
+                // 1. Carica lista immagini in parallelo
+                fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${globalImgDir}`)
+                    .then(r => r.json())
+                    .then(imgFiles => {
+                        if (Array.isArray(imgFiles)) {
+                            globalImgList = imgFiles.filter(f => f.name.toLowerCase().endsWith(".jpg") || f.name.toLowerCase().endsWith(".png"));
+                        }
+                    }).catch(e => console.log("Immagini turni non trovate", e));
+                
+                // 2. Carica dati orari JSON
+                const tRes = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${latestTurniDir}`);
+                const tFiles = await tRes.json();
+                let jsonFiles = tFiles.filter(f => f.name.toLowerCase().endsWith(".json"));
+                
+                for (let jf of jsonFiles) {
+                    fetch(jf.download_url + `?t=${new Date().getTime()}`)
+                        .then(r => r.json())
+                        .then(jData => {
+                            globalShiftData = { ...globalShiftData, ...jData };
+                        }).catch(e => console.error("Errore json", jf.name));
+                }
+            } catch (e) {
+                console.error("Errore caricamento dati turni silenzioso", e);
             }
         }
 
@@ -376,7 +413,6 @@
                 const files = await res.json();
                 let groups = {};
 
-                // Raggruppa i file per nome base (es. "rotazioni_aprile_2026")
                 files.forEach(f => {
                     if(f.type !== "file") return;
                     let ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase();
@@ -397,7 +433,6 @@
                     return;
                 }
 
-                // Genera una Card per ogni gruppo di file
                 for (let base in groups) {
                     let g = groups[base];
                     let monthCard = document.createElement('div');
@@ -407,13 +442,11 @@
                     let btnGrid = document.createElement('div');
                     btnGrid.className = "btn-grid";
 
-                    // 1. GESTIONE JSON
                     if (g.json) {
                         try {
                             let dataRes = await fetch(g.json.download_url + `?t=${timestamp}`);
                             let jsonData = await dataRes.json();
 
-                            // Crea un riquadro separato PER OGNI rotazione nel JSON
                             Object.keys(jsonData).forEach(rotName => {
                                 let rotContainer = document.createElement('div');
                                 rotContainer.style.background = "#fafafa";
@@ -444,11 +477,8 @@
 
                                 btnGrid.appendChild(rotContainer);
                             });
-
                         } catch(e) { console.error("Errore lettura JSON", e); }
-                    } 
-                    // 2. GESTIONE VECCHI EXCEL
-                    else if (g.excel) {
+                    } else if (g.excel) {
                         let btnSearch = document.createElement('button');
                         btnSearch.className = "file-btn btn-search";
                         btnSearch.innerHTML = `🔍 Cerca (Modalità Lenta)`;
@@ -456,7 +486,6 @@
                         btnGrid.appendChild(btnSearch);
                     }
 
-                    // 3. TASTO PDF
                     if (g.pdf) {
                         let btnPdf = document.createElement('a');
                         btnPdf.className = "file-btn btn-pdf";
@@ -476,7 +505,7 @@
         }
 
         // ==========================================
-        // GESTIONE TABELLA VISUALE (JSON)
+        // GESTIONE TABELLA VISUALE E RICERCA BASE
         // ==========================================
         function chiudiModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
@@ -494,7 +523,6 @@
             return '';
         }
 
-        // Lista di parole chiave per identificare le righe di intestazione da saltare
         const paroleDaSaltare = ["GENNAIO", "FEBBRAIO", "MARZO", "APRILE", "MAGGIO", "GIUGNO", "LUGLIO", "AGOSTO", "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE", "MESE", "AGENTI"];
 
         function apriTabella(rotName, data) {
@@ -512,8 +540,6 @@
             const dipendenti = data[rotName];
             for (let nome in dipendenti) {
                 let nomeUpper = nome.toUpperCase();
-                
-                // Filtro intelligente e universale
                 if (paroleDaSaltare.some(parola => nomeUpper.includes(parola)) || nome.trim() === "") continue;
 
                 let nomeFormattato = nome.split(" - ").join("<br>");
@@ -532,19 +558,11 @@
             modal.style.display = 'flex';
         }
 
-        // ==========================================
-        // LOGICA RICERCA (SIA JSON CHE EXCEL)
-        // ==========================================
-
-        // --- Mappatura super veloce tramite JSON ---
         function apriRicercaJson(rotName, jsonData) {
             databaseTurni = []; 
-            
             let dipendenti = jsonData[rotName];
             for (let nome in dipendenti) {
                 let nomeUpper = nome.toUpperCase();
-                
-                // Stesso filtro usato per la tabella
                 if (paroleDaSaltare.some(parola => nomeUpper.includes(parola)) || nome.trim() === "") continue;
 
                 let turniArr = [];
@@ -559,31 +577,242 @@
                 });
             }
 
-            const modal = document.getElementById('search-modal');
-            const statusEl = document.getElementById('modal-status');
-            const sezioniRicerca = document.getElementById('modal-search-sections');
-            const title = document.getElementById('modal-title');
-
-            title.innerText = "Ricerca: " + rotName;
-
-            modal.style.display = 'flex';
-            statusEl.style.display = 'none';
-            sezioniRicerca.style.display = 'block';
-
+            document.getElementById('modal-title').innerText = "Ricerca: " + rotName;
+            document.getElementById('search-modal').style.display = 'flex';
+            document.getElementById('modal-status').style.display = 'none';
+            document.getElementById('modal-search-sections').style.display = 'block';
             document.getElementById('risultato-turno').innerHTML = "";
             document.getElementById('risultato-cambi').innerHTML = "";
         }
 
-        // --- Vecchia Mappatura Lenta tramite EXCEL (Se JSON non disponibile) ---
-        function isTurno(txt) {
-            if (txt === undefined || txt === null) return false;
-            txt = String(txt).replace(/[\s]+/g, '').toUpperCase();
-            if (txt === "AL" || txt === "RI" || txt === "DISP" || txt === "ESPE" || txt === "DI") return true;
-            if (txt.length === 4 && /[0-9]/.test(txt)) return true;
-            if (/^[0-9]{4}$/.test(txt)) return true; 
-            return false;
+        // ==========================================
+        // MOTORE 1 E 2: INTEGRAZIONE DATI TURNI
+        // ==========================================
+        function cercaTurno() {
+            const giorno = parseInt(document.getElementById('input-giorno-turno').value);
+            const codice = document.getElementById('input-codice-turno').value.trim().toUpperCase();
+            const boxRisultato = document.getElementById('risultato-turno');
+
+            if (!giorno || !codice) {
+                boxRisultato.innerHTML = "Compila tutti i campi prima di cercare.";
+                return;
+            }
+
+            const indiceGiorno = giorno - 1;
+            let trovati = [];
+
+            databaseTurni.forEach(dipendente => {
+                if (dipendente.turni[indiceGiorno] === codice) trovati.push(dipendente.nome);
+            });
+
+            if (trovati.length > 0) {
+                let detailsHtml = "";
+                if (globalShiftData && globalShiftData[codice] && globalShiftData[codice].length > 0) {
+                    let legs = globalShiftData[codice];
+                    let start = legs[0];
+                    let end = legs[legs.length - 1];
+                    detailsHtml = `
+                        <div class="turn-details-box">
+                            📍 Inizio: <strong>${start.partenza_luogo} (${start.partenza_ora})</strong><br>
+                            🏁 Fine: <strong>${end.arrivo_luogo} (${end.arrivo_ora})</strong>
+                            <br><button class="file-btn" style="padding: 8px 12px; margin-top: 8px; font-size: 14px; width: 100%; box-sizing:border-box; background-color: var(--info);" onclick="apriImmagineDaRotazioni('${codice}')">🖼️ Mostra Immagine Turno</button>
+                        </div>
+                    `;
+                } else {
+                    detailsHtml = `
+                        <div style="margin-top: 10px;">
+                            <button class="file-btn" style="padding: 8px 12px; font-size: 14px; width: 100%; box-sizing:border-box; background-color: var(--info);" onclick="apriImmagineDaRotazioni('${codice}')">🖼️ Mostra Immagine Turno</button>
+                        </div>
+                    `;
+                }
+
+                boxRisultato.innerHTML = `<strong>Trovati il giorno ${giorno} a fare ${codice}:</strong><ul style="margin-bottom:10px;"><li>` + trovati.join("</li><li>") + "</li></ul>" + detailsHtml;
+            } else {
+                boxRisultato.innerHTML = "Nessuno trovato con questo turno in questa data.";
+            }
         }
 
+        function analizzaCicloLavorativo(turniMese, indiceGiorno) {
+            const turnoAttuale = turniMese[indiceGiorno];
+            
+            if (turnoAttuale === "AL" || turnoAttuale === "RI" || turnoAttuale === "") {
+                let tipoRiposo = "Vuoto";
+                if (turnoAttuale === "AL") {
+                    let domani = (indiceGiorno + 1 < turniMese.length) ? turniMese[indiceGiorno + 1] : "";
+                    tipoRiposo = (domani === "RI" || domani === "AL") ? "Doppio (Oggi AL)" : "Singolo (AL)";
+                } else if (turnoAttuale === "RI") {
+                    let ieri = (indiceGiorno - 1 >= 0) ? turniMese[indiceGiorno - 1] : "";
+                    let domani = (indiceGiorno + 1 < turniMese.length) ? turniMese[indiceGiorno + 1] : "";
+                    tipoRiposo = (ieri === "AL" || ieri === "RI" || domani === "AL" || domani === "RI") ? "Doppio (Oggi RI)" : "Singolo (RI)";
+                }
+                return { fase: "Riposo", giornoEsatto: 0, tipoRiposo: tipoRiposo };
+            }
+
+            let giorniLavorati = 1; 
+            let trovatoRiposoPassato = false;
+            for (let i = indiceGiorno - 1; i >= 0; i--) {
+                if (turniMese[i] === "AL" || turniMese[i] === "RI" || turniMese[i] === "") {
+                    trovatoRiposoPassato = true; break;
+                }
+                giorniLavorati++;
+            }
+
+            if (trovatoRiposoPassato) return determinaFaseDaGiorno(giorniLavorati);
+
+            let giorniAlProssimoRiposo = 0;
+            for (let i = indiceGiorno + 1; i < turniMese.length; i++) {
+                if (turniMese[i] === "AL" || turniMese[i] === "RI" || turniMese[i] === "") break;
+                giorniAlProssimoRiposo++;
+            }
+
+            const giornoStimato = 6 - giorniAlProssimoRiposo;
+            return determinaFaseDaGiorno(giornoStimato > 0 ? giornoStimato : giorniLavorati);
+        }
+
+        function determinaFaseDaGiorno(n) {
+            if (n === 1 || n === 2) return { fase: "Terzo", giornoEsatto: n };
+            if (n === 3 || n === 4) return { fase: "Mezzo", giornoEsatto: n };
+            if (n === 5 || n === 6) return { fase: "Primo", giornoEsatto: n };
+            return { fase: "Oltre 6 giorni", giornoEsatto: n };
+        }
+
+        function cercaCambi() {
+            const giorno = parseInt(document.getElementById('input-giorno-cambio').value);
+            const faseDesiderata = document.getElementById('select-fase-cambio').value;
+            const boxRisultato = document.getElementById('risultato-cambi');
+
+            if (!giorno) {
+                boxRisultato.innerHTML = "Inserisci il giorno del mese.";
+                return;
+            }
+
+            const indiceGiorno = giorno - 1;
+            let risultatiHtml = [];
+
+            databaseTurni.forEach(dipendente => {
+                const analisi = analizzaCicloLavorativo(dipendente.turni, indiceGiorno);
+                if (analisi.fase === faseDesiderata) {
+                    if (faseDesiderata === "Riposo") {
+                        if (analisi.tipoRiposo !== "Vuoto") {
+                            risultatiHtml.push(`<strong>${dipendente.nome}</strong> - <span style="color:var(--danger);">[Riposo ${analisi.tipoRiposo}]</span>`);
+                        }
+                    } else {
+                        let turnoCod = dipendente.turni[indiceGiorno];
+                        let isRiposoOrDisp = ["AL", "RI", "DISP", "ESPE", "DI", ""].includes(turnoCod);
+                        
+                        if (!isRiposoOrDisp) {
+                            let infoExtra = "";
+                            if (globalShiftData && globalShiftData[turnoCod] && globalShiftData[turnoCod].length > 0) {
+                                let legs = globalShiftData[turnoCod];
+                                let start = legs[0];
+                                let end = legs[legs.length - 1];
+                                infoExtra = `<br>📍 Inizio: <strong>${start.partenza_luogo} (${start.partenza_ora})</strong><br>🏁 Fine: <strong>${end.arrivo_luogo} (${end.arrivo_ora})</strong>`;
+                            }
+                            
+                            let detailsHtml = `
+                                <div class="turn-details-box">
+                                    <strong style="color:var(--primary); font-size:14px;">Turno: ${turnoCod}</strong>${infoExtra}
+                                    <br><button class="file-btn" style="padding: 8px 12px; margin-top: 8px; font-size: 14px; width: 100%; box-sizing:border-box; background-color: var(--info);" onclick="apriImmagineDaRotazioni('${turnoCod}')">🖼️ Mostra Immagine Turno</button>
+                                </div>
+                            `;
+                            risultatiHtml.push(`<strong>${dipendente.nome}</strong> (Giorno lav. ${analisi.giornoEsatto}) ${detailsHtml}`);
+                        } else {
+                            risultatiHtml.push(`<strong>${dipendente.nome}</strong> (Giorno lav. ${analisi.giornoEsatto}) - [Turno: ${turnoCod}]`);
+                        }
+                    }
+                }
+            });
+
+            if (risultatiHtml.length > 0) {
+                boxRisultato.innerHTML = `<div style="margin-bottom:10px;"><strong>Colleghi di ${faseDesiderata} il giorno ${giorno}:</strong></div><ul><li style='margin-bottom:15px;'>` + risultatiHtml.join("</li><li style='margin-bottom:15px;'>") + "</li></ul>";
+            } else {
+                boxRisultato.innerHTML = "Nessun collega trovato in questa fase per il giorno indicato.";
+            }
+        }
+
+        // ==========================================
+        // GESTIONE PANZOOM E MODALE IMMAGINI
+        // ==========================================
+        function initPanzoom() {
+            const imgElem = document.getElementById('turnoImage');
+            if (typeof Panzoom !== 'undefined' && !pzInstance) {
+                pzInstance = Panzoom(imgElem, { maxScale: 5, minScale: 1 });
+                document.getElementById('imageFlexContainer').addEventListener('wheel', pzInstance.zoomWithWheel);
+                
+                function eseguiZoomToggle(e) {
+                    if (!pzInstance) return;
+                    let currentScale = pzInstance.getScale();
+                    if (currentScale < 1.1) pzInstance.zoom(1.75, { animate: true });
+                    else pzInstance.reset({ animate: true });
+                }
+
+                let lastTap = 0;
+                let isPinching = false;
+                imgElem.addEventListener('touchstart', function(e) { if (e.touches.length > 1) { isPinching = true; } });
+                imgElem.addEventListener('touchend', function(e) {
+                    if (isPinching) {
+                        if (e.touches.length === 0) { setTimeout(() => isPinching = false, 300); }
+                        return;
+                    }
+                    let currentTime = new Date().getTime();
+                    let tapLength = currentTime - lastTap;
+                    if (tapLength < 300 && tapLength > 0) {
+                        eseguiZoomToggle(e);
+                        if (e.cancelable) e.preventDefault();
+                    }
+                    lastTap = currentTime;
+                });
+                imgElem.addEventListener('dblclick', function(e) { eseguiZoomToggle(e); });
+            }
+        }
+
+        function apriImmagineDaRotazioni(turnoPilota) {
+            if (!globalImgList || globalImgList.length === 0) {
+                alert("Nessuna immagine disponibile o caricamento in corso. Riprova tra pochi istanti.");
+                return;
+            }
+
+            const match = globalImgList.find(f => {
+                const nomeSenzaExt = f.name.replace(/\.[^/.]+$/, "").toUpperCase();
+                return nomeSenzaExt.includes(turnoPilota.toUpperCase());
+            });
+
+            if (match) {
+                currentImagePath = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${globalImgDir}/${match.name}`;
+                let imgElement = document.getElementById('turnoImage');
+                imgElement.onerror = function() {
+                    alert("L'immagine del turno non è stata trovata.");
+                    chiudiImageModal();
+                }; 
+                imgElement.src = currentImagePath;
+                if (pzInstance) { pzInstance.reset(); }
+                document.getElementById('imageModal').style.display = 'block';
+            } else {
+                alert("L'immagine per il turno " + turnoPilota + " non è presente nell'archivio attuale.");
+            }
+        }
+
+        function chiudiSeSfondoModalImg(event) { 
+            if (event.target.id === 'imageModal' || event.target.id === 'imageFlexContainer') chiudiImageModal(); 
+        }
+        
+        function chiudiImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+            document.getElementById('turnoImage').removeAttribute('src');
+            if (pzInstance) { pzInstance.reset(); }
+        }
+
+        function scaricaImmagineTurno() {
+            if (!currentImagePath) return;
+            const a = document.createElement('a');
+            a.href = currentImagePath;
+            a.download = currentImagePath.split('/').pop();
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // --- VECCHIA RICERCA CON EXCEL (SEMPRE UTILE TENERLA) ---
         async function apriFinestraRicerca(pdfName, tuttiIFile) {
             const modal = document.getElementById('search-modal');
             const statusEl = document.getElementById('modal-status');
@@ -638,10 +867,8 @@
                     for (let r = 0; r < rows.length; r++) {
                         let row = rows[r];
                         if (!row) continue;
-                        
                         for (let c = 0; c < row.length - 2; c++) {
                             let cell1 = String(row[c]).trim(); let cell2 = String(row[c+1]).trim(); let cell3 = String(row[c+2]).trim();
-                            
                             if (cell1 === "1" && cell2 === "2" && cell3 === "3") {
                                 headerRowIndex = r;
                                 for (let d = 1; d <= 31; d++) {
@@ -687,7 +914,7 @@
                                 for (let c = 0; c < firstDayCol; c++) {
                                     if (row[c]) {
                                         let txt = String(row[c]).replace(/[0-9]/g, '').trim();
-                                        if (txt.length >= 2 && !["AL", "RI","MARZO","APRILE","MAGGIO","GIUGNO","LUGLIO","AGOSTO","SETTEMBRE","OTTOBRE","NOVEMBRE","DICEMBRE","GENNAIO","FEBBRAIO","MESE","AGENTI","DO","LU","MA","ME","GI","VE","SA"].includes(txt.toUpperCase())) {
+                                        if (txt.length >= 2 && !paroleDaSaltare.includes(txt.toUpperCase())) {
                                             nameParts1.push(txt);
                                         }
                                     }
@@ -711,7 +938,7 @@
                                             for (let c = 0; c < firstDayCol; c++) {
                                                 if (nextRow[c]) {
                                                     let txt = String(nextRow[c]).replace(/[0-9]/g, '').trim();
-                                                    if (txt.length >= 2 && !["AL", "RI","MARZO","APRILE","MAGGIO","GIUGNO","LUGLIO","AGOSTO","SETTEMBRE","OTTOBRE","NOVEMBRE","DICEMBRE","GENNAIO","FEBBRAIO","MESE","AGENTI","DO","LU","MA","ME","GI","VE","SA"].includes(txt.toUpperCase())) {
+                                                    if (txt.length >= 2 && !paroleDaSaltare.includes(txt.toUpperCase())) {
                                                         nameParts2.push(txt);
                                                     }
                                                 }
@@ -741,117 +968,6 @@
 
             } catch (error) {
                 statusEl.innerHTML = `<span style='color:var(--danger);'>Errore:</span> ${error.message}`;
-            }
-        }
-
-        // --- MOTORE 1: CERCA TURNO ---
-        function cercaTurno() {
-            const giorno = parseInt(document.getElementById('input-giorno-turno').value);
-            const codice = document.getElementById('input-codice-turno').value.trim().toUpperCase();
-            const boxRisultato = document.getElementById('risultato-turno');
-
-            if (!giorno || !codice) {
-                boxRisultato.innerHTML = "Compila tutti i campi prima di cercare.";
-                return;
-            }
-
-            const indiceGiorno = giorno - 1;
-            let trovati = [];
-
-            databaseTurni.forEach(dipendente => {
-                if (dipendente.turni[indiceGiorno] === codice) {
-                    trovati.push(dipendente.nome);
-                }
-            });
-
-            if (trovati.length > 0) {
-                boxRisultato.innerHTML = `<strong>Trovati il giorno ${giorno} a fare ${codice}:</strong><ul><li>` + trovati.join("</li><li>") + "</li></ul>";
-            } else {
-                boxRisultato.innerHTML = "Nessuno trovato con questo turno in questa data.";
-            }
-        }
-
-        // --- MOTORE 2: CERCA CAMBI ---
-        function analizzaCicloLavorativo(turniMese, indiceGiorno) {
-            const turnoAttuale = turniMese[indiceGiorno];
-            
-            if (turnoAttuale === "AL" || turnoAttuale === "RI" || turnoAttuale === "") {
-                let tipoRiposo = "Vuoto";
-                if (turnoAttuale === "AL") {
-                    let domani = (indiceGiorno + 1 < turniMese.length) ? turniMese[indiceGiorno + 1] : "";
-                    if (domani === "RI" || domani === "AL") tipoRiposo = "Doppio (Oggi AL)";
-                    else tipoRiposo = "Singolo (AL)";
-                } else if (turnoAttuale === "RI") {
-                    let ieri = (indiceGiorno - 1 >= 0) ? turniMese[indiceGiorno - 1] : "";
-                    let domani = (indiceGiorno + 1 < turniMese.length) ? turniMese[indiceGiorno + 1] : "";
-                    if (ieri === "AL" || ieri === "RI" || domani === "AL" || domani === "RI") tipoRiposo = "Doppio (Oggi RI)";
-                    else tipoRiposo = "Singolo (RI)";
-                }
-                return { fase: "Riposo", giornoEsatto: 0, tipoRiposo: tipoRiposo };
-            }
-
-            let giorniLavorati = 1; 
-            let trovatoRiposoPassato = false;
-
-            for (let i = indiceGiorno - 1; i >= 0; i--) {
-                if (turniMese[i] === "AL" || turniMese[i] === "RI" || turniMese[i] === "") {
-                    trovatoRiposoPassato = true;
-                    break;
-                }
-                giorniLavorati++;
-            }
-
-            if (trovatoRiposoPassato) {
-                return determinaFaseDaGiorno(giorniLavorati);
-            }
-
-            let giorniAlProssimoRiposo = 0;
-            for (let i = indiceGiorno + 1; i < turniMese.length; i++) {
-                if (turniMese[i] === "AL" || turniMese[i] === "RI" || turniMese[i] === "") break;
-                giorniAlProssimoRiposo++;
-            }
-
-            const giornoStimato = 6 - giorniAlProssimoRiposo;
-            return determinaFaseDaGiorno(giornoStimato > 0 ? giornoStimato : giorniLavorati);
-        }
-
-        function determinaFaseDaGiorno(n) {
-            if (n === 1 || n === 2) return { fase: "Terzo", giornoEsatto: n };
-            if (n === 3 || n === 4) return { fase: "Mezzo", giornoEsatto: n };
-            if (n === 5 || n === 6) return { fase: "Primo", giornoEsatto: n };
-            return { fase: "Oltre 6 giorni", giornoEsatto: n };
-        }
-
-        function cercaCambi() {
-            const giorno = parseInt(document.getElementById('input-giorno-cambio').value);
-            const faseDesiderata = document.getElementById('select-fase-cambio').value;
-            const boxRisultato = document.getElementById('risultato-cambi');
-
-            if (!giorno) {
-                boxRisultato.innerHTML = "Inserisci il giorno del mese.";
-                return;
-            }
-
-            const indiceGiorno = giorno - 1;
-            let risultatiHtml = [];
-
-            databaseTurni.forEach(dipendente => {
-                const analisi = analizzaCicloLavorativo(dipendente.turni, indiceGiorno);
-                if (analisi.fase === faseDesiderata) {
-                    if (faseDesiderata === "Riposo") {
-                        if (analisi.tipoRiposo !== "Vuoto") {
-                            risultatiHtml.push(`<strong>${dipendente.nome}</strong> - [Riposo ${analisi.tipoRiposo}]`);
-                        }
-                    } else {
-                        risultatiHtml.push(`<strong>${dipendente.nome}</strong> (Giorno lav. ${analisi.giornoEsatto}) - [Turno: ${dipendente.turni[indiceGiorno]}]`);
-                    }
-                }
-            });
-
-            if (risultatiHtml.length > 0) {
-                boxRisultato.innerHTML = `<strong>Colleghi di ${faseDesiderata} il giorno ${giorno}:</strong><ul><li>` + risultatiHtml.join("</li><li style='margin-top:10px;'>") + "</li></ul>";
-            } else {
-                boxRisultato.innerHTML = "Nessun collega trovato in questa fase per il giorno indicato.";
             }
         }
     </script>

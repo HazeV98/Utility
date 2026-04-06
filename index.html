@@ -301,22 +301,27 @@
         titleTrigger.addEventListener('mouseleave', handleEnd);
 
         // ==========================================
-        // LOGICA DDS: PROMEMORIA PER OGNI DDS
+        // LOGICA DDS: PROMEMORIA (A prova di errore date/checkbox)
         // ==========================================
         function checkLocalDDSReminders() {
             const d = new Date();
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
-            const todayStr = `${year}-${month}-${day}`;
+            
+            // Generiamo tutti i formati possibili in cui la data potrebbe essere stata salvata
+            const dateIso = `${year}-${month}-${day}`;       
+            const dateItSlash = `${day}/${month}/${year}`;   
+            const dateItDash = `${day}-${month}-${year}`;    
 
-            // Pulisce i promemoria salvati se è iniziato un giorno nuovo
-            if (localStorage.getItem('dismissed_dds_date') !== todayStr) {
-                localStorage.setItem('dismissed_dds_date', todayStr);
+            const todayKey = dateIso; 
+
+            // Se cambia il giorno, resetta la memoria delle notifiche chiuse
+            if (localStorage.getItem('dismissed_dds_date') !== todayKey) {
+                localStorage.setItem('dismissed_dds_date', todayKey);
                 localStorage.setItem('dismissed_dds_list', JSON.stringify([]));
             }
 
-            // Recupera la lista delle DDS di oggi che hai GIÀ letto e chiuso
             let dismissedList = JSON.parse(localStorage.getItem('dismissed_dds_list') || '[]');
 
             const request = indexedDB.open("ddsDatabase");
@@ -330,10 +335,16 @@
                 requestGetAll.onsuccess = function() {
                     const allDDS = requestGetAll.result;
                     
-                    // Filtra le DDS di oggi che hanno l'avviso e che NON sono nella lista di quelle già chiuse
                     const todayReminders = allDDS.filter(item => {
-                        const uniqueId = item.id ? item.id.toString() : item.titolo; // Usa l'ID del db o il titolo come identificatore
-                        return item.data === todayStr && item.avviso === true && !dismissedList.includes(uniqueId);
+                        const uniqueId = item.id ? item.id.toString() : item.titolo;
+                        
+                        // Controlla la data indipendentemente dal formato di salvataggio
+                        const isToday = (item.data === dateIso || item.data === dateItSlash || item.data === dateItDash);
+                        
+                        // Controlla la checkbox "avviso" intercettando ogni possibile valore "vero"
+                        const hasAvviso = (item.avviso === true || item.avviso === "true" || item.avviso === "on" || item.avviso == 1);
+                        
+                        return isToday && hasAvviso && !dismissedList.includes(uniqueId);
                     });
 
                     if (todayReminders.length > 0) {
@@ -354,7 +365,7 @@
                             
                             document.getElementById('ddsReminderModal').style.display = 'flex';
                             
-                            // Quando clicchi "Ho capito", aggiunge QUESTE specifiche DDS alla lista di quelle lette
+                            // Registra la chiusura così non riappare per le stesse DDS oggi
                             document.getElementById('chiudi-dds-btn').onclick = function() {
                                 document.getElementById('ddsReminderModal').style.display = 'none';
                                 dismissedList.push(...idsToDismiss);

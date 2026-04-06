@@ -19,6 +19,7 @@
             --bg-color: #f4f7f6;
             --text-color: #333;
             --success: #28a745;
+            --danger: #dc3545; /* Aggiunto colore per il generatore */
         }
 
         body {
@@ -167,11 +168,16 @@
         /* --- STILI TASTI NASCOSTI --- */
         #secret-btn {
             display: none;
-            background-color: #dc3545; 
+            background-color: #343a40; /* Rimesso al colore scuro per l'admin */
         }
 
         #rotazioni-btn {
             display: none; 
+        }
+
+        /* Nuova classe per il generatore */
+        .btn-generatore {
+            background-color: var(--danger); 
         }
     </style>
 </head>
@@ -208,6 +214,8 @@
         
         <a href="guida.html" class="menu-btn" style="background-color: #6c757d;">📖 Guida</a>
         
+        <a href="generatore.html" id="generatore-btn" class="menu-btn btn-generatore" style="display: none;">🔑 Generatore Codici</a>
+
         <a href="admin.html" id="secret-btn" class="menu-btn">🔒 Admin</a>
     </div>
 
@@ -233,7 +241,7 @@
             navigator.serviceWorker.register('sw.js').then(() => console.log("SW OK"));
         }
 
-                // ==========================================
+        // ==========================================
         // GESTIONE INSTALLAZIONE PWA (TASTO VERDE)
         // ==========================================
         let deferredPrompt;
@@ -267,18 +275,19 @@
 
 
         // ==========================================
-        // GESTIONE TASTI NASCOSTI (Admin e Rotazioni)
+        // GESTIONE TASTI NASCOSTI (Admin, Rotazioni, Generatore)
         // ==========================================
         const titleTrigger = document.getElementById('main-title');
         const secretBtn = document.getElementById('secret-btn');
         const rotazioniBtn = document.getElementById('rotazioni-btn');
+        const generatoreBtn = document.getElementById('generatore-btn');
         
         let tapCount = 0;
         let tapTimer;
         let holdTimer;
         
         const ADMIN_TAPS = 5;
-        const ROTAZIONI_TAPS = 3;
+        const GENERATORE_TAPS = 3; // Modificato per il Generatore Codici
         const HOLD_DURATION = 3000;
 
         // Controlla all'avvio
@@ -286,9 +295,17 @@
             if (localStorage.getItem('dev_mode_active') === 'true') {
                 secretBtn.style.display = 'block';
             }
-            if (localStorage.getItem('rotazioni_visibili') === 'true') {
-                rotazioniBtn.style.display = 'block';
+            if (localStorage.getItem('generatore_sbloccato') === 'true') {
+                generatoreBtn.style.display = 'block';
             }
+            
+            // Logica Rotazioni automatica (in base a "nove" nel calendario)
+            try {
+                const appDataStr = localStorage.getItem('myTurniApp');
+                if (appDataStr && appDataStr.toLowerCase().includes('nove')) {
+                    rotazioniBtn.style.display = 'block';
+                }
+            } catch(e) { console.error("Errore lettura dati calendario", e); }
         });
 
         function resetSequence() {
@@ -307,17 +324,17 @@
             clearTimeout(holdTimer); // Resetta il timer della pressione lunga se c'è un nuovo tocco
             tapCount++;
 
-            if (tapCount === ROTAZIONI_TAPS || tapCount === ADMIN_TAPS) {
+            if (tapCount === GENERATORE_TAPS || tapCount === ADMIN_TAPS) {
                 holdTimer = setTimeout(() => {
                     if (tapCount === ADMIN_TAPS) {
                         secretBtn.style.display = 'block';
                         localStorage.setItem('dev_mode_active', 'true');
                         alert("🛠️ Area Amministratore Sbloccata");
-                    } else if (tapCount === ROTAZIONI_TAPS) {
-                        rotazioniBtn.style.display = 'block';
-                        localStorage.setItem('rotazioni_visibili', 'true');
-                        rotazioniBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        alert("👥 Tasto Rotazioni Sbloccato");
+                    } else if (tapCount === GENERATORE_TAPS) {
+                        generatoreBtn.style.display = 'block';
+                        localStorage.setItem('generatore_sbloccato', 'true');
+                        generatoreBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        alert("🔑 Generatore Codici Sbloccato");
                     }
                     resetSequence();
                 }, HOLD_DURATION);

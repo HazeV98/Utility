@@ -94,5 +94,11 @@
     "nome": "Ballarin Cristian",
     "data_creazione": "2026-04-04",
     "attivo": true
+  },
+  {
+    "codice": "5U239W",
+    "nome": "Missaglia Barbara",
+    "data_creazione": "2026-04-06",
+    "attivo": true
   }
 ]

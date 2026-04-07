@@ -112,5 +112,11 @@
     "nome": "Scarpa Prisca",
     "data_creazione": "2026-04-07",
     "attivo": true
+  },
+  {
+    "codice": "J34LLK",
+    "nome": "Comin Paolo",
+    "data_creazione": "2026-04-07",
+    "attivo": true
   }
 ]

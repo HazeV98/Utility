@@ -8,6 +8,10 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/it.js"></script>
+    
     <style>
         :root {
             --primary: #0056b3;
@@ -215,6 +219,32 @@
     </div>
 
     <div class="admin-card">
+        <h3>⚠️ Varianti Servizio</h3>
+        <p style="font-size: 12px; color: #adb5bd; margin-top: 0; line-height: 1.4; margin-bottom: 15px;">
+            Aggiungi o rimuovi comunicazioni sulle varianti di servizio aggiornando il file <b>presenza_varianti.json</b>
+        </p>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="btn-action" id="btn-mode-singola" style="background-color: var(--primary); padding: 10px; font-size: 14px;" onclick="setVariantiMode('multiple')">Singola/Multiple</button>
+            <button class="btn-action" id="btn-mode-multipla" style="background-color: #6c757d; padding: 10px; font-size: 14px;" onclick="setVariantiMode('range')">Periodo (Range)</button>
+        </div>
+        
+        <label class="editor-label">Date interessate:</label>
+        <input type="text" id="var-date" placeholder="Clicca per selezionare..." readonly style="background: white; color: black; cursor: pointer;">
+        
+        <label class="editor-label">Linee (separa con virgola):</label>
+        <input type="text" id="var-linee" placeholder="Es. Linea 1, Linea 12">
+        <p style="font-size: 11px; color: #adb5bd; margin-top: -10px; margin-bottom: 15px;">Lascia vuoto per creare una nota generica.</p>
+        
+        <label class="checkbox-container">
+            <input type="checkbox" id="var-pulisci" checked> Pulisci le date precedenti ad oggi
+        </label>
+        
+        <button class="btn-action" style="background-color: var(--success);" onclick="salvaVarianti()">⬆️ Invia Varianti</button>
+        <div id="status-log-var" class="status-log">In attesa...</div>
+    </div>
+
+    <div class="admin-card">
         <h3>🧰 Strumenti Esterni</h3>
         <button class="btn-action" style="background-color: #FF4B4B;" onclick="window.open('http://100.80.221.32:8501/', '_blank')">Apri Toolbox Turni</button>
     </div>
@@ -240,6 +270,8 @@
                 document.getElementById('gh-token').value = savedToken;
                 document.getElementById('remember-token').checked = true;
             }
+            // Inizializza flatpickr per le varianti
+            initVarianti('multiple');
         });
 
         function gestisciMemoriaToken(token, remember) {
@@ -590,6 +622,135 @@
                 else { statusLog.innerText = `⚠️ ${successCount} ok, ${errorCount} errori.`; statusLog.style.color = "#ffc107"; }
 
             } catch (error) { statusLog.innerText = "❌ Errore elaborazione ZIP."; statusLog.style.color = "var(--danger)"; }
+        }
+
+        // ==========================================
+        // NUOVO MODULO: GESTIONE VARIANTI
+        // ==========================================
+        let variantiFp = null;
+
+        function initVarianti(mode = 'multiple') {
+            if(variantiFp) variantiFp.destroy();
+            variantiFp = flatpickr("#var-date", {
+                mode: mode,
+                dateFormat: "Y-m-d",
+                locale: "it"
+            });
+        }
+
+        function setVariantiMode(mode) {
+            document.getElementById('btn-mode-singola').style.backgroundColor = mode === 'multiple' ? 'var(--primary)' : '#6c757d';
+            document.getElementById('btn-mode-multipla').style.backgroundColor = mode === 'range' ? 'var(--primary)' : '#6c757d';
+            initVarianti(mode);
+            document.getElementById('var-date').value = "";
+        }
+
+        async function salvaVarianti() {
+            const owner = document.getElementById('gh-owner').value.trim();
+            const repo = document.getElementById('gh-repo').value.trim();
+            const token = document.getElementById('gh-token').value.trim();
+            const statusLog = document.getElementById('status-log-var');
+
+            if (!owner || !repo || !token) {
+                statusLog.innerText = "❌ Compila Username, Repo e Token in alto.";
+                statusLog.style.color = "var(--danger)";
+                return;
+            }
+
+            if (!variantiFp || variantiFp.selectedDates.length === 0) {
+                statusLog.innerText = "❌ Seleziona almeno una data dal calendario.";
+                statusLog.style.color = "var(--danger)";
+                return;
+            }
+
+            gestisciMemoriaToken(token, document.getElementById('remember-token').checked);
+            statusLog.innerText = "⏳ Recupero file varianti attuale...";
+            statusLog.style.color = "white";
+
+            const url = `https://api.github.com/repos/${owner}/${repo}/contents/presenza_varianti.json`;
+            let sha = "";
+            let jsonAttuale = {};
+
+            try {
+                let response = await fetch(url + `?t=${new Date().getTime()}`, { headers: { 'Authorization': `token ${token}` } });
+                if (response.ok) {
+                    const data = await response.json();
+                    sha = data.sha;
+                    jsonAttuale = JSON.parse(decodeURIComponent(escape(atob(data.content))));
+                } else if (response.status !== 404) {
+                    throw new Error("Errore nel recupero del file su GitHub.");
+                }
+
+                // Generazione array di date selezionate in base alla modalità
+                let dates = [];
+                if (variantiFp.config.mode === 'multiple') {
+                    dates = variantiFp.selectedDates;
+                } else if (variantiFp.config.mode === 'range') {
+                    let start = variantiFp.selectedDates[0];
+                    let end = variantiFp.selectedDates[1] || start;
+                    if (start) {
+                        let curr = new Date(start);
+                        curr.setHours(12, 0, 0, 0); 
+                        let endG = new Date(end);
+                        endG.setHours(12, 0, 0, 0);
+                        while (curr <= endG) {
+                            dates.push(new Date(curr));
+                            curr.setDate(curr.getDate() + 1);
+                        }
+                    }
+                }
+
+                let dateStrs = dates.map(d => {
+                    let t = new Date(d);
+                    return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, '0') + "-" + String(t.getDate()).padStart(2, '0');
+                });
+
+                // Estrazione array delle linee
+                let lineeInput = document.getElementById('var-linee').value.trim();
+                let lineeArr = lineeInput ? lineeInput.split(',').map(s => s.trim()).filter(s => s) : [];
+
+                // Pulisci le date vecchie se spuntato
+                if (document.getElementById('var-pulisci').checked) {
+                    let dOggi = new Date();
+                    let oggiStr = dOggi.getFullYear() + "-" + String(dOggi.getMonth() + 1).padStart(2, '0') + "-" + String(dOggi.getDate()).padStart(2, '0');
+                    for (let key in jsonAttuale) {
+                        if (key < oggiStr) {
+                            delete jsonAttuale[key];
+                        }
+                    }
+                }
+
+                // Applica le modifiche unendo o sovrascrivendo le chiavi
+                dateStrs.forEach(dStr => {
+                    jsonAttuale[dStr] = lineeArr;
+                });
+
+                statusLog.innerText = "⏳ Salvataggio in corso...";
+                const nuovoContenuto = btoa(unescape(encodeURIComponent(JSON.stringify(jsonAttuale, null, 2))));
+
+                const putResponse = await fetch(url, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: `Aggiornate varianti di servizio via Admin Panel`,
+                        content: nuovoContenuto,
+                        sha: sha || undefined
+                    })
+                });
+
+                if (putResponse.ok) {
+                    statusLog.innerText = "✅ Modifiche salvate con successo!";
+                    statusLog.style.color = "var(--success)";
+                    variantiFp.clear();
+                    document.getElementById('var-linee').value = "";
+                } else {
+                    throw new Error("Impossibile salvare il file su GitHub.");
+                }
+
+            } catch (error) {
+                statusLog.innerText = "❌ " + error.message;
+                statusLog.style.color = "var(--danger)";
+            }
         }
     </script>
 </body>

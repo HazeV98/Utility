@@ -791,7 +791,7 @@
     }
     
     function chiudiCambioBibbia() {
-        document.getElementById('cambioBibbiaModal').style.display = 'none';
+        document.getElementById('cambioBibbiaModal').style.none = 'none';
     }
     
     function confermaCambioBibbia() {
@@ -1157,7 +1157,7 @@
         document.getElementById('btnSalvaCambio').disabled = false;
     }
 
-    function gestisciInterazione(date) {
+    async function gestisciInterazione(date) {
         selectedDate = date;
 
         if (state.setupStep === 1) {
@@ -1200,6 +1200,40 @@
             document.getElementById('singleTurnoSelect').style.display = 'block';
             
             let htmlInfo = `<strong>Turno attuale:</strong> ${nomeTurnoPulito} ${state.variazioni[date] ? '(Modificato)' : ''}`;
+
+            // --- INIZIO NUOVO BLOCCO RICERCA DDS/PROMEMORIA ---
+            try {
+                const ddsList = await new Promise((resolve) => {
+                    const reqDB = indexedDB.open("UtilityDB");
+                    reqDB.onsuccess = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains("archivio_dds")) { 
+                            db.close();
+                            resolve([]); 
+                            return; 
+                        }
+                        const tx = db.transaction("archivio_dds", "readonly");
+                        const store = tx.objectStore("archivio_dds");
+                        const reqAll = store.getAll();
+                        reqAll.onsuccess = () => {
+                            const res = reqAll.result;
+                            db.close();
+                            resolve(res);
+                        };
+                        reqAll.onerror = () => {
+                            db.close();
+                            resolve([]);
+                        };
+                    };
+                    reqDB.onerror = () => resolve([]);
+                });
+
+                const validDDS = ddsList.filter(item => item.dateValidita && item.dateValidita.includes(date));
+                validDDS.forEach(item => {
+                    htmlInfo += `<br><span style="color: #d63384; font-weight: bold;">DDS: "${item.titolo}"</span>`;
+                });
+            } catch (e) { console.error("Errore lettura DDS per modal", e); }
+            // --- FINE NUOVO BLOCCO DDS ---
             
             if (state.variazioni[date]) {
                 let tempVar = state.variazioni[date];
@@ -2067,3 +2101,4 @@
 </script>
 </body>
 </html>
+ 

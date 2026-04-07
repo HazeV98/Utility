@@ -118,5 +118,11 @@
     "nome": "Comin Paolo",
     "data_creazione": "2026-04-07",
     "attivo": true
+  },
+  {
+    "codice": "QEAPYG",
+    "nome": "Signoretto Nicola",
+    "data_creazione": "2026-04-07",
+    "attivo": true
   }
 ]

@@ -34,7 +34,7 @@
         .count-display { font-size: 60px; font-weight: bold; color: var(--primary); min-width: 80px; text-align: center; }
 
         /* PULSANTI SCALATA VELOCE (TONDINI) */
-        .quick-actions { display: flex; gap: 20px; width: 100%; justify-content: center; margin-bottom: 15px; }
+        .quick-actions { display: flex; gap: 15px; width: 100%; justify-content: center; align-items: center; margin-bottom: 15px; }
         .btn-quick { 
             background-color: white; color: var(--danger); border: 2px solid var(--danger); 
             width: 55px; height: 55px; border-radius: 50%; 
@@ -44,6 +44,9 @@
         }
         .btn-quick:active { background-color: var(--danger); color: white; transform: scale(0.90); }
 
+        .settings-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #888; transition: transform 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; }
+        .settings-btn:active { transform: rotate(45deg); }
+
         /* --- STILE INTERRUTTORE --- */
         .integration-box { background: white; padding: 15px 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box; margin-bottom: 5px; }
         .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
@@ -52,8 +55,6 @@
         .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--success); }
         input:checked + .slider:before { transform: translateX(22px); }
-        .settings-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: #666; margin-left: 10px; transition: transform 0.2s; }
-        .settings-btn:active { transform: rotate(45deg); }
 
         /* BANNER INFORMATIVO E DISCLAIMER */
         .info-banner { padding: 12px 15px; background-color: #e9ecef; border-left: 4px solid var(--primary); border-radius: 8px; color: #495057; font-size: 13px; line-height: 1.4; width: 100%; box-sizing: border-box; }
@@ -119,6 +120,7 @@
             <button class="btn-quick" id="btn-quick-1" onclick="modificaBuoni(-2)">-2</button>
             <button class="btn-quick" id="btn-quick-2" onclick="modificaBuoni(-5)">-5</button>
             <button class="btn-quick" id="btn-quick-3" onclick="modificaBuoni(-10)">-10</button>
+            <button class="settings-btn" onclick="apriImpostazioni()">⚙️</button>
         </div>
 
         <div class="integration-box">
@@ -130,7 +132,6 @@
                 <input type="checkbox" id="toggleInt" onchange="gestisciToggleIntegrazione()">
                 <span class="slider"></span>
             </label>
-            <button class="settings-btn" onclick="apriImpostazioni()">⚙️</button>
         </div>
 
         <div class="info-banner">

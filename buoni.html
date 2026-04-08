@@ -34,7 +34,13 @@
         .count-display { font-size: 60px; font-weight: bold; color: var(--primary); min-width: 80px; text-align: center; }
 
         /* PULSANTI SCALATA VELOCE (TONDINI) */
-        .quick-actions { display: flex; gap: 15px; width: 100%; justify-content: center; align-items: center; margin-bottom: 15px; }
+        .quick-actions { 
+            display: flex; gap: 15px; width: 100%; 
+            justify-content: center; align-items: center; 
+            margin-bottom: 15px; 
+            position: relative; /* Permette all'icona di essere posizionata a destra in modo indipendente */
+        }
+        
         .btn-quick { 
             background-color: white; color: var(--danger); border: 2px solid var(--danger); 
             width: 55px; height: 55px; border-radius: 50%; 
@@ -44,7 +50,11 @@
         }
         .btn-quick:active { background-color: var(--danger); color: white; transform: scale(0.90); }
 
-        .settings-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #888; transition: transform 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; }
+        .settings-btn { 
+            background: none; border: none; font-size: 24px; cursor: pointer; color: #888; 
+            transition: transform 0.2s; display: flex; align-items: center; justify-content: center; 
+            padding: 0; position: absolute; right: 10px; /* Svincola l'icona e la posiziona a destra */
+        }
         .settings-btn:active { transform: rotate(45deg); }
 
         /* --- STILE INTERRUTTORE --- */

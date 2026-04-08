@@ -253,8 +253,66 @@
             return (pos === 6 || pos === 13 || pos === 14);
         }
 
+        // --- SISTEMA FERIE PROGRAMMATE (Integrato dal calendario) ---
+        let ROT_FERIE_INV = [];
+        let ROT_FERIE_EST = [];
+
+        async function caricaFerie() {
+            try {
+                const resFerie = await fetch("rotazione_ferie.json?v=" + new Date().getTime());
+                if (resFerie.ok) {
+                    const datiFerie = await resFerie.json();
+                    if (datiFerie.invernali) ROT_FERIE_INV = datiFerie.invernali;
+                    if (datiFerie.estive) ROT_FERIE_EST = datiFerie.estive;
+                }
+            } catch (e) {
+                console.error("Errore caricamento file ferie programmate", e);
+            }
+        }
+
+        function isDateInRange(dStr, startStr, endStr, year) {
+            let d = new Date(year, parseInt(dStr.split('-')[1])-1, parseInt(dStr.split('-')[2]));
+            let s = new Date(year, parseInt(startStr.split('-')[0])-1, parseInt(startStr.split('-')[1]));
+            let e = new Date(year, parseInt(endStr.split('-')[0])-1, parseInt(endStr.split('-')[1]));
+            return d >= s && d <= e;
+        }
+
+        function getFerieGiorno(dStr, state) {
+            if(!state.ferie || !state.ferie.baseAnno) return null;
+            let year = parseInt(dStr.split('-')[0]);
+            let r = [];
+
+            // Check Estiva
+            let iEst = state.ferie.baseEstiva;
+            if (iEst !== -1 && iEst !== null && iEst !== undefined && ROT_FERIE_EST.length > 0) {
+                let idxEst = (iEst + (year - state.ferie.baseAnno)) % ROT_FERIE_EST.length;
+                if(idxEst < 0) idxEst += ROT_FERIE_EST.length; 
+                
+                if(state.ferie.scambi && state.ferie.scambi[year] && state.ferie.scambi[year].estiva !== undefined) {
+                    idxEst = state.ferie.scambi[year].estiva;
+                }
+                let pEst = ROT_FERIE_EST[idxEst];
+                if(pEst && isDateInRange(dStr, pEst.s, pEst.e, year)) r.push("FEP");
+            }
+
+            // Check Invernale
+            let iInv = state.ferie.baseInvernale;
+            if (iInv !== -1 && iInv !== null && iInv !== undefined && ROT_FERIE_INV.length > 0) {
+                let idxInv = (iInv + (year - state.ferie.baseAnno)) % ROT_FERIE_INV.length;
+                if(idxInv < 0) idxInv += ROT_FERIE_INV.length;
+                
+                if(state.ferie.scambi && state.ferie.scambi[year] && state.ferie.scambi[year].invernale !== undefined) {
+                    idxInv = state.ferie.scambi[year].invernale;
+                }
+                let pInv = ROT_FERIE_INV[idxInv];
+                if(pInv && isDateInRange(dStr, pInv.s, pInv.e, year)) r.push("FEP");
+            }
+
+            return r.length > 0 ? "FEP" : null;
+        }
+
+
         // --- FUNZIONE CENTRALE CHE DETERMINA SE SPETTA IL BUONO ---
-        // Aggiunto parametro "ignoraUso" per il calcolatore delle presenze
         function isBuonoMaturato(dStr, state, esclusiArray, ignoraUso = false) {
             let isSospeso = state.sospesoRiposo && state.sospesoRiposo[dStr];
             let isBuonoUsato = state.buonoPasto && state.buonoPasto[dStr]; 
@@ -264,9 +322,17 @@
             
             let turnoVal = (state.variazioni && state.variazioni[dStr]) ? state.variazioni[dStr].toUpperCase() : "";
 
+            // Verifica ferie programmate generate automaticamente (se non ci sono variazioni manuali per quel giorno)
+            if (!turnoVal) {
+                let ferieProg = getFerieGiorno(dStr, state);
+                if (ferieProg) {
+                    turnoVal = ferieProg; // Assegna "FEP" per bloccare il buono
+                }
+            }
+
             if (turnoVal) {
                 if (esclusiArray.includes(turnoVal)) {
-                    if (isSospeso && (turnoVal === "RI" || turnoVal === "RIPOSO" || turnoVal === "AL" || turnoVal === "FER")) return true;
+                    if (isSospeso && (turnoVal === "RI" || turnoVal === "RIPOSO" || turnoVal === "AL" || turnoVal === "FER" || turnoVal === "FEP")) return true;
                     return false;
                 }
                 return true;
@@ -292,7 +358,9 @@
         
         const TURNI_ESCLUSI_FISSI = ["RI", "RIPOSO", "AL", "FER", "FEP", "FES", "FERIE", "PRT", "MAL", "MALATTIA", "KMAL", "KNOP", "AVIS", "KINF"];
 
-        window.addEventListener('DOMContentLoaded', () => {
+        // Trasformato in async per aspettare il file json delle ferie
+        window.addEventListener('DOMContentLoaded', async () => {
+            await caricaFerie(); // Carica prima le ferie!
             inizializzaTondini();
             if (integrazioneAttiva) {
                 sincronizzaBuoni();

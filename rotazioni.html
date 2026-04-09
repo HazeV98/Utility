@@ -92,7 +92,7 @@
         
         p { color: #555; font-size: 15px; line-height: 1.4; }
 
-        input[type="text"], input[type="number"], select {
+        input[type="text"], input[type="number"], input[type="date"], select {
             width: 100%;
             padding: 15px;
             margin: 10px 0;
@@ -101,6 +101,7 @@
             box-sizing: border-box;
             font-size: 16px;
             text-align: center;
+            font-family: inherit;
         }
 
         input[type="text"] { font-size: 20px; text-transform: uppercase; letter-spacing: 2px; }
@@ -176,6 +177,7 @@
         .cell-ri { background-color: #5cb85c; color: white; }
         .cell-disp { background-color: #ffc107; color: black; font-weight: bold;}
         .cell-espe { background-color: #6f42c1; color: white; }
+        .cell-fer { background-color: #20c997; color: white; font-size: 12px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -255,6 +257,29 @@
         </div>
     </div>
 
+    <div id="future-search-modal" class="modal-overlay" onclick="chiudiSeSfondo(event, 'future-search-modal')">
+        <div class="modal-content">
+            <span class="close-modal" onclick="chiudiModal('future-search-modal')">&times;</span>
+            <h3 id="future-modal-title" style="margin-top:0; color:var(--primary);">Ricerca Mesi Successivi</h3>
+
+            <div class="modulo-ricerca" style="margin-top: 0;">
+                <label style="font-size: 14px; font-weight: bold; color: #555; display:block; margin-bottom:5px;">Data:</label>
+                <input type="date" id="input-date-futura" style="margin-bottom: 15px;">
+                
+                <label style="font-size: 14px; font-weight: bold; color: #555; display:block; margin-bottom:5px;">Trova:</label>
+                <select id="select-fase-futura">
+                    <option value="Terzo">Di Terzo (1° o 2° Giorno)</option>
+                    <option value="Mezzo">Di Mezzo (3° o 4° Giorno)</option>
+                    <option value="Primo">Di Primo (5° o 6° Giorno)</option>
+                    <option value="Riposo">Di Riposo (Singolo o Doppio)</option>
+                </select>
+                
+                <button class="btn" style="background-color: var(--success); padding: 12px; margin-top:10px;" onclick="eseguiRicercaFutura()">Cerca</button>
+                <div id="risultato-futuro" class="risultato-box"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="table-modal" class="modal-overlay" onclick="chiudiSeSfondo(event, 'table-modal')">
         <div class="modal-content modal-table-content">
             <span class="close-modal" onclick="chiudiModal('table-modal')">&times;</span>
@@ -285,8 +310,8 @@
         const CARTELLA_BASE = "rotazioni";
 
         let databaseTurni = []; 
+        let activePredictors = []; 
         
-        // --- VARIABILI DATI TURNI SILENZIOSI (Orari e Immagini) ---
         let globalShiftData = {};
         let globalImgList = [];
         let globalImgDir = "";
@@ -332,7 +357,7 @@
                     errorMsg.innerText = "";
                     
                     initPanzoom();
-                    caricaDatiTurniSilenzioso(); // Avvia lo scaricamento in background degli orari
+                    caricaDatiTurniSilenzioso(); 
                     caricaRotazioni();
                 } else {
                     if (isAutoLogin) {
@@ -350,16 +375,12 @@
             }
         }
 
-        // ==========================================
-        // DOWNLOAD SILENZIOSO ORARI E IMMAGINI TURNI
-        // ==========================================
         async function caricaDatiTurniSilenzioso() {
             try {
                 const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`);
                 if (!res.ok) return;
                 const files = await res.json();
                 
-                // Trova la cartella turni_pdf_ più recente
                 let dirs = files.filter(f => f.type === "dir" && f.name.startsWith("turni_pdf_"));
                 if (dirs.length === 0) return;
                 
@@ -367,7 +388,6 @@
                 let latestTurniDir = dirs[0].name;
                 globalImgDir = latestTurniDir.replace("turni_pdf_", "turni_");
                 
-                // 1. Carica lista immagini in parallelo
                 fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${globalImgDir}`)
                     .then(r => r.json())
                     .then(imgFiles => {
@@ -376,7 +396,6 @@
                         }
                     }).catch(e => console.log("Immagini turni non trovate", e));
                 
-                // 2. Carica dati orari JSON
                 const tRes = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${latestTurniDir}`);
                 const tFiles = await tRes.json();
                 let jsonFiles = tFiles.filter(f => f.name.toLowerCase().endsWith(".json"));
@@ -389,7 +408,7 @@
                         }).catch(e => console.error("Errore json", jf.name));
                 }
             } catch (e) {
-                console.error("Errore caricamento dati turni silenzioso", e);
+                console.error("Errore caricamento dati turni", e);
             }
         }
 
@@ -475,6 +494,13 @@
                                 btnSearch.onclick = () => apriRicercaJson(rotName, jsonData);
                                 rotContainer.appendChild(btnSearch);
 
+                                let btnFuturo = document.createElement('button');
+                                btnFuturo.className = "file-btn btn-search";
+                                btnFuturo.style.marginTop = "8px";
+                                btnFuturo.innerHTML = `🔮 Ricerca mesi successivi`;
+                                btnFuturo.onclick = () => apriRicercaFutura(g.base, rotName, jsonData);
+                                rotContainer.appendChild(btnFuturo);
+
                                 btnGrid.appendChild(rotContainer);
                             });
                         } catch(e) { console.error("Errore lettura JSON", e); }
@@ -507,12 +533,8 @@
         // ==========================================
         // GESTIONE TABELLA VISUALE E RICERCA BASE
         // ==========================================
-        function chiudiModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-        function chiudiSeSfondo(event, modalId) {
-            if (event.target.id === modalId) chiudiModal(modalId);
-        }
+        function chiudiModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
+        function chiudiSeSfondo(event, modalId) { if (event.target.id === modalId) chiudiModal(modalId); }
 
         function getClassForTurno(turno) {
             let t = turno.toUpperCase().replace(/\s+/g, '');
@@ -520,6 +542,7 @@
             if (t === 'RI') return 'cell-ri';
             if (t === 'DISP' || t === 'DI') return 'cell-disp';
             if (t === 'ESPE') return 'cell-espe';
+            if (t === 'FER' || t === 'FEP' || t === 'FES') return 'cell-fer';
             return '';
         }
 
@@ -586,7 +609,7 @@
         }
 
         // ==========================================
-        // MOTORE 1 E 2: INTEGRAZIONE DATI TURNI
+        // MOTORE RICERCA CORRENTE (Del Mese)
         // ==========================================
         function cercaTurno() {
             const giorno = parseInt(document.getElementById('input-giorno-turno').value);
@@ -625,7 +648,6 @@
                         </div>
                     `;
                 }
-
                 boxRisultato.innerHTML = `<strong>Trovati il giorno ${giorno} a fare ${codice}:</strong><ul style="margin-bottom:10px;"><li>` + trovati.join("</li><li>") + "</li></ul>" + detailsHtml;
             } else {
                 boxRisultato.innerHTML = "Nessuno trovato con questo turno in questa data.";
@@ -731,6 +753,129 @@
         }
 
         // ==========================================
+        // MOTORE RICERCA FUTURA (LOGICA FASI 15 GIORNI)
+        // ==========================================
+        function stringToNum(s) { 
+            if(!s) return 0; 
+            let p = s.split('-'); 
+            return Math.floor(new Date(p[0], p[1]-1, p[2], 12, 0, 0).getTime() / 86400000); 
+        }
+
+        function formattaData(dStr) {
+            let p = dStr.split('-');
+            return `${p[2]}/${p[1]}/${p[0]}`;
+        }
+
+        function buildColleaguePredictor(nome, turniMese, m, y) {
+            let refNum = null;
+            
+            let alIndex = turniMese.findIndex(t => t === "AL");
+            if (alIndex !== -1) {
+                refNum = stringToNum(`${y}-${m}-${alIndex + 1}`) - 7;
+            } else {
+                for (let i = 0; i < turniMese.length; i++) {
+                    if (turniMese[i] === "RI") {
+                        let prevAL = (i - 1 >= 0 && turniMese[i-1] === "AL");
+                        let prevRI = (i - 1 >= 0 && turniMese[i-1] === "RI");
+                        let nextRI = (i + 1 < turniMese.length && turniMese[i+1] === "RI");
+                        
+                        let dNum = stringToNum(`${y}-${m}-${i + 1}`);
+                        if (prevAL || prevRI) {
+                            refNum = dNum - 8; 
+                        } else if (nextRI) {
+                            refNum = dNum - 7; 
+                        } else {
+                            refNum = dNum; 
+                        }
+                        break;
+                    }
+                }
+            }
+
+            if (refNum === null) return null; 
+            return { nome, refNum };
+        }
+
+        function apriRicercaFutura(baseName, rotName, jsonData) {
+            document.getElementById('future-modal-title').innerText = "Mesi Successivi: " + rotName;
+            
+            let parts = baseName.split('_'); 
+            let meseStr = parts[1];
+            let annoStr = parts[2];
+            const mesiMap = { "gennaio": 1, "febbraio": 2, "marzo": 3, "aprile": 4, "maggio": 5, "giugno": 6, "luglio": 7, "agosto": 8, "settembre": 9, "ottobre": 10, "novembre": 11, "dicembre": 12 };
+            let m = mesiMap[meseStr.toLowerCase()];
+            let y = parseInt(annoStr);
+
+            activePredictors = [];
+            
+            let dipendenti = jsonData[rotName];
+            for (let nome in dipendenti) {
+                if (paroleDaSaltare.some(p => nome.toUpperCase().includes(p)) || nome.trim() === "") continue;
+
+                let turniMese = [];
+                for (let i = 1; i <= 31; i++) {
+                    let t = dipendenti[nome][i.toString()] || "";
+                    turniMese.push(t.toUpperCase().replace(/\s+/g, ''));
+                }
+
+                let p = buildColleaguePredictor(nome.split(" - ").join(" e "), turniMese, m, y);
+                if (p) activePredictors.push(p);
+            }
+
+            document.getElementById('future-search-modal').style.display = 'flex';
+            document.getElementById('risultato-futuro').innerHTML = "";
+        }
+
+        function eseguiRicercaFutura() {
+            const dateStr = document.getElementById('input-date-futura').value;
+            const faseDesiderata = document.getElementById('select-fase-futura').value;
+            const boxRisultato = document.getElementById('risultato-futuro');
+
+            if (!dateStr) {
+                boxRisultato.innerHTML = "Seleziona la data futura prima di cercare.";
+                return;
+            }
+
+            let targetNum = stringToNum(dateStr);
+            let trovati = [];
+
+            activePredictors.forEach(p => {
+                let pos = ((targetNum - p.refNum + 6) % 15 + 15) % 15;
+                
+                let faseCalcolata = "";
+                let infoExtra = "";
+                let giornoLav = 0;
+
+                if (pos === 6) { faseCalcolata = "Riposo"; infoExtra = "Singolo (RI)"; }
+                else if (pos === 13) { faseCalcolata = "Riposo"; infoExtra = "Doppio (1° g. AL)"; }
+                else if (pos === 14) { faseCalcolata = "Riposo"; infoExtra = "Doppio (2° g. RI)"; }
+                else {
+                    if (pos >= 0 && pos <= 5) giornoLav = pos + 1; 
+                    else if (pos >= 7 && pos <= 12) giornoLav = pos - 6; 
+                    
+                    if (giornoLav === 1 || giornoLav === 2) faseCalcolata = "Terzo";
+                    else if (giornoLav === 3 || giornoLav === 4) faseCalcolata = "Mezzo";
+                    else if (giornoLav === 5 || giornoLav === 6) faseCalcolata = "Primo";
+                }
+
+                if (faseCalcolata === faseDesiderata) {
+                    if (faseCalcolata === "Riposo") {
+                        trovati.push(`<strong>${p.nome}</strong> - <span style="color:var(--danger);">[Riposo ${infoExtra}]</span>`);
+                    } else {
+                        trovati.push(`<strong>${p.nome}</strong> (Giorno lav. ${giornoLav})`);
+                    }
+                }
+            });
+
+            if (trovati.length > 0) {
+                let msg = `Colleghi in fase di <strong>${faseDesiderata}</strong> il ${formattaData(dateStr)}:`;
+                boxRisultato.innerHTML = `<div style="margin-bottom:10px;">${msg}</div><ul style="padding-left:20px; margin:0;"><li>` + trovati.join("</li><li style='margin-top:8px;'>") + "</li></ul>";
+            } else {
+                boxRisultato.innerHTML = "Nessun collega trovato in questa fase per la data indicata.";
+            }
+        }
+
+        // ==========================================
         // GESTIONE PANZOOM E MODALE IMMAGINI
         // ==========================================
         function initPanzoom() {
@@ -812,7 +957,7 @@
             document.body.removeChild(a);
         }
 
-        // --- VECCHIA RICERCA CON EXCEL (SEMPRE UTILE TENERLA) ---
+        // --- VECCHIA RICERCA CON EXCEL ---
         async function apriFinestraRicerca(pdfName, tuttiIFile) {
             const modal = document.getElementById('search-modal');
             const statusEl = document.getElementById('modal-status');
@@ -930,7 +1075,7 @@
                                             let colIdx = dayColIndices[d];
                                             if (colIdx !== -1 && colIdx < nextRow.length) {
                                                 let cella = nextRow[colIdx];
-                                                if (cella && isTurno(String(cella).replace(/[\s]+/g, '').toUpperCase())) validiNext++;
+                                                if (cella && typeof isTurno === 'function' && isTurno(String(cella).replace(/[\s]+/g, '').toUpperCase())) validiNext++;
                                             }
                                         }
                                         if (validiNext < 5) {
@@ -970,6 +1115,12 @@
                 statusEl.innerHTML = `<span style='color:var(--danger);'>Errore:</span> ${error.message}`;
             }
         }
+
+        function isTurno(val) {
+            let arr = ["AL", "RI", "DISP", "DI", "FER", "MAL", "PRT", "ESPE"];
+            return arr.includes(val) || val.match(/^[0-9]+[A-Z]+[0-9]*$/) || val.match(/^[A-Z]+[0-9]+$/);
+        }
     </script>
 </body>
 </html>
+  

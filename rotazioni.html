@@ -147,8 +147,8 @@
         
         .close-modal { position: absolute; right: 15px; top: 15px; font-size: 24px; cursor: pointer; color: #666; background: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10; }
         
-        .modulo-ricerca { background: #fafafa; border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-top: 15px; }
-        .modulo-ricerca h4 { margin-top: 0; color: var(--primary); margin-bottom: 5px;}
+        .modulo-ricerca { background: #fafafa; border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: left; }
+        .modulo-ricerca h4 { margin-top: 0; color: var(--primary); margin-bottom: 5px; text-align: center;}
         .risultato-box { background: #e9ecef; border-left: 4px solid var(--primary); padding: 10px; margin-top: 10px; min-height: 30px; font-size: 14px; }
         .risultato-box ul { padding-left: 20px; margin: 10px 0 0 0; }
         
@@ -181,7 +181,7 @@
         .cell-ri { background-color: #5cb85c; color: white; }
         .cell-disp { background-color: #ffc107; color: black; font-weight: bold;}
         .cell-espe { background-color: #6f42c1; color: white; }
-        .cell-fer { background-color: #20c997; color: white; font-size: 12px; font-weight: bold; } /* Nuova regola per le ferie */
+        .cell-fer { background-color: #20c997; color: white; font-size: 12px; font-weight: bold; } 
     </style>
 </head>
 <body>
@@ -233,29 +233,27 @@
     <div id="search-modal" class="modal-overlay" onclick="chiudiSeSfondo(event, 'search-modal')">
         <div class="modal-content">
             <span class="close-modal" onclick="chiudiModal('search-modal')">&times;</span>
-            <h3 id="modal-title" style="margin-top:0; color:var(--primary);">Ricerca Turni</h3>
+            <h3 id="modal-title" style="margin-top:0; color:var(--primary); text-align:center;">Ricerca Turni</h3>
 
-            <div id="modal-search-sections">
-                <div class="modulo-ricerca">
-                    <h4>Cerca chi fa un turno</h4>
-                    <input type="number" id="input-giorno-turno" min="1" max="31" placeholder="Giorno (Es. 15)">
-                    <input type="text" id="input-codice-turno" placeholder="Turno (es. 1C01, 4P01...)">
-                    <button class="btn" style="padding: 12px; margin-top:5px;" onclick="cercaTurno()">Cerca</button>
-                    <div id="risultato-turno" class="risultato-box"></div>
-                </div>
+            <div class="modulo-ricerca">
+                <h4>Cerca chi fa un turno</h4>
+                <input type="number" id="input-giorno-turno" min="1" max="31" placeholder="Giorno (Es. 15)">
+                <input type="text" id="input-codice-turno" placeholder="Turno (es. 1C01, 4P01...)">
+                <button class="btn" style="padding: 12px; margin-top:5px;" onclick="cercaTurno()">Cerca</button>
+                <div id="risultato-turno" class="risultato-box"></div>
+            </div>
 
-                <div class="modulo-ricerca">
-                    <h4>Trova cambi turno</h4>
-                    <input type="number" id="input-giorno-cambio" min="1" max="31" placeholder="Giorno del mese (1-31)">
-                    <select id="select-fase-cambio">
-                        <option value="Terzo">Di Terzo</option>
-                        <option value="Mezzo">Di Mezzo</option>
-                        <option value="Primo">Di Primo</option>
-                        <option value="Riposo">Di Riposo</option>
-                    </select>
-                    <button class="btn" style="padding: 12px; margin-top:5px;" onclick="cercaCambi()">Cerca</button>
-                    <div id="risultato-cambi" class="risultato-box"></div>
-                </div>
+            <div class="modulo-ricerca">
+                <h4>Trova cambi turno</h4>
+                <input type="number" id="input-giorno-cambio" min="1" max="31" placeholder="Giorno del mese (1-31)">
+                <select id="select-fase-cambio">
+                    <option value="Terzo">Di Terzo</option>
+                    <option value="Mezzo">Di Mezzo</option>
+                    <option value="Primo">Di Primo</option>
+                    <option value="Riposo">Di Riposo</option>
+                </select>
+                <button class="btn" style="padding: 12px; margin-top:5px;" onclick="cercaCambi()">Cerca</button>
+                <div id="risultato-cambi" class="risultato-box"></div>
             </div>
         </div>
     </div>
@@ -263,21 +261,31 @@
     <div id="future-search-modal" class="modal-overlay" onclick="chiudiSeSfondo(event, 'future-search-modal')">
         <div class="modal-content">
             <span class="close-modal" onclick="chiudiModal('future-search-modal')">&times;</span>
-            <h3 id="future-modal-title" style="margin-top:0; color:var(--primary);">Ricerca Mesi Successivi</h3>
+            <h3 id="future-modal-title" style="margin-top:0; color:var(--primary); text-align:center;">Ricerca Futura</h3>
             
             <div class="info-banner" style="margin-bottom: 15px;">
-                ⚠️ <strong>Attenzione:</strong> Questa ricerca usa il motore del calendario per calcolare i turni futuri partendo dal mese selezionato. Per i <strong>Riposi</strong> la ricerca è sicura, mentre per i <strong>Turni</strong> si deve tener conto di possibili variazioni future, cambi di rotazione o ferie del collega.
+                ⚠️ <strong>Attenzione:</strong> Questa ricerca usa il motore del calendario. Per i <strong>Riposi</strong> la ricerca è sicura, per i <strong>Turni</strong> tieni conto di possibili cambi futuri o ferie.
             </div>
 
             <div class="modulo-ricerca" style="margin-top: 0;">
-                <label style="font-size: 14px; font-weight: bold; color: #555; display:block; margin-bottom:5px;">Data Futura:</label>
-                <input type="date" id="input-date-futura" style="margin-bottom: 15px;">
-                
-                <label style="font-size: 14px; font-weight: bold; color: #555; display:block; margin-bottom:5px;">Turno o Riposo da cercare:</label>
+                <h4>Cerca chi fa un turno</h4>
+                <input type="date" id="input-date-futura-turno">
                 <input type="text" id="input-turno-futuro" placeholder="Es. RI, AL, 1C01...">
-                
-                <button class="btn btn-futuro" style="padding: 12px; margin-top:10px;" onclick="eseguiRicercaFutura()">Cerca nel Futuro</button>
-                <div id="risultato-futuro" class="risultato-box"></div>
+                <button class="btn btn-futuro" style="padding: 12px; margin-top:10px;" onclick="eseguiRicercaFuturaTurno()">Cerca</button>
+                <div id="risultato-futuro-turno" class="risultato-box"></div>
+            </div>
+
+            <div class="modulo-ricerca">
+                <h4>Trova cambi turno futuri</h4>
+                <input type="date" id="input-date-futura-cambio">
+                <select id="select-fase-futura">
+                    <option value="Terzo">Di Terzo</option>
+                    <option value="Mezzo">Di Mezzo</option>
+                    <option value="Primo">Di Primo</option>
+                    <option value="Riposo">Di Riposo</option>
+                </select>
+                <button class="btn btn-futuro" style="padding: 12px; margin-top:10px;" onclick="eseguiRicercaFuturaCambi()">Cerca</button>
+                <div id="risultato-futuro-cambi" class="risultato-box"></div>
             </div>
         </div>
     </div>
@@ -416,7 +424,8 @@
         }
 
         function caricaRotazioniCalendarioBase() {
-            fetch(`https://${GITHUB_USER}.github.io/${GITHUB_REPO}/rotazioni_2026-03-28.json`)
+            // Carica la struttura matrice dal file JSON relativo per evitare problemi di CORS o Cache
+            fetch('rotazioni_2026-03-28.json?t=' + new Date().getTime())
                 .then(r => r.json())
                 .then(d => { calendarRotations = d; })
                 .catch(e => console.log("Errore caricamento matrice calendario", e));
@@ -475,14 +484,6 @@
                             let dataRes = await fetch(g.json.download_url + `?t=${timestamp}`);
                             let jsonData = await dataRes.json();
 
-                            // Tasto Ricerca Futura
-                            let btnFuturo = document.createElement('button');
-                            btnFuturo.className = "file-btn btn-futuro";
-                            btnFuturo.style.marginBottom = "10px";
-                            btnFuturo.innerHTML = `🚀 Calcola Mesi Successivi`;
-                            btnFuturo.onclick = () => apriRicercaFutura(g.base, jsonData);
-                            btnGrid.appendChild(btnFuturo);
-
                             Object.keys(jsonData).forEach(rotName => {
                                 let rotContainer = document.createElement('div');
                                 rotContainer.style.background = "#fafafa";
@@ -496,6 +497,7 @@
                                 rotTitle.style.margin = "0 0 10px 0";
                                 rotTitle.style.color = "var(--primary)";
                                 rotTitle.style.fontSize = "16px";
+                                rotTitle.style.textAlign = "center";
                                 rotContainer.appendChild(rotTitle);
 
                                 let btnTab = document.createElement('button');
@@ -507,9 +509,17 @@
                                 let btnSearch = document.createElement('button');
                                 btnSearch.className = "file-btn btn-search";
                                 btnSearch.style.marginTop = "8px";
-                                btnSearch.innerHTML = `🔍 Cerca Colleghi e Cambi`;
+                                btnSearch.innerHTML = `🔍 Ricerca Corrente`;
                                 btnSearch.onclick = () => apriRicercaJson(rotName, jsonData);
                                 rotContainer.appendChild(btnSearch);
+
+                                // --- TASTO RICERCA FUTURA SPOSTATO QUI DENTRO ---
+                                let btnFuturo = document.createElement('button');
+                                btnFuturo.className = "file-btn btn-futuro";
+                                btnFuturo.style.marginTop = "8px";
+                                btnFuturo.innerHTML = `🚀 Mesi Successivi`;
+                                btnFuturo.onclick = () => apriRicercaFutura(g.base, rotName, jsonData);
+                                rotContainer.appendChild(btnFuturo);
 
                                 btnGrid.appendChild(rotContainer);
                             });
@@ -651,7 +661,7 @@
             }
         }
 
-        // --- Logica Calcolo Fasi ---
+        // --- Logica Calcolo Fasi Correnti ---
         function analizzaCicloLavorativo(turniMese, indiceGiorno) {
             const turnoAttuale = turniMese[indiceGiorno];
             
@@ -779,7 +789,7 @@
         function buildColleaguePredictor(nome, turniMese, rotName, m, y) {
             let riposoStartNum = null;
             
-            // Trova AL o RI per ancorare il ciclo
+            // Trova AL o RI per ancorare il ciclo in modo matematico
             let alIndex = turniMese.findIndex(t => t === "AL");
             if (alIndex !== -1) {
                 riposoStartNum = stringToNum(`${y}-${m}-${alIndex + 1}`) - 7;
@@ -811,8 +821,8 @@
             let baseIdx = null;
             let firstWorkDateNum = null;
 
+            // Algoritmo di Best-Fit per ignorare FEP e MAL e agganciare perfettamente la rotazione
             if (rotList && !isDisp && !isTC) {
-                // Espande array base (es. doppi turni)
                 for (let j = 0; j < rotList.length; j++) { 
                     let currentTurn = rotList[j].toUpperCase(); 
                     if (currentTurn.includes('+')) { 
@@ -825,30 +835,48 @@
                     } 
                 }
 
-                // Cerca la prima sequenza di lavoro pulita
-                let workSequence = [];
-                let sequenceStartDay = -1;
+                // Trova il primo giorno di lavoro assoluto
                 for (let i = 0; i < turniMese.length; i++) {
                     let t = turniMese[i];
-                    if (t !== "RI" && t !== "AL" && t !== "FER" && t !== "FEP" && t !== "FES" && t !== "MAL" && t !== "PERM" && t !== "") {
-                        if (sequenceStartDay === -1) sequenceStartDay = i + 1;
-                        workSequence.push(t);
-                    } else if (sequenceStartDay !== -1) {
-                        break; // Sequenza interrotta
+                    if (t && !["RI","AL","FER","FEP","FES","MAL","PERM"].includes(t)) {
+                        firstWorkDateNum = stringToNum(`${y}-${m}-${i + 1}`);
+                        break;
                     }
-                    if (workSequence.length >= 3) break;
                 }
 
-                if (workSequence.length > 0) {
-                    firstWorkDateNum = stringToNum(`${y}-${m}-${sequenceStartDay}`);
-                    for (let i = 0; i < expandedRotList.length; i++) {
-                        let match = true;
-                        for (let k = 0; k < workSequence.length; k++) {
-                            if (expandedRotList[(i + k) % expandedRotList.length] !== workSequence[k]) {
-                                match = false; break;
+                if (firstWorkDateNum !== null) {
+                    let bestScore = -1;
+                    
+                    for (let tryIdx = 0; tryIdx < expandedRotList.length; tryIdx++) {
+                        let score = 0;
+                        for (let i = 0; i < turniMese.length; i++) {
+                            let actualShift = turniMese[i];
+                            if (actualShift && !["RI","AL","FER","FEP","FES","MAL","PERM"].includes(actualShift)) {
+                                let currNum = stringToNum(`${y}-${m}-${i + 1}`);
+                                let w = 0;
+                                
+                                if (currNum >= firstWorkDateNum) {
+                                    for (let j = firstWorkDateNum; j < currNum; j++) {
+                                        let p = ((j - riposoStartNum + 6) % 15 + 15) % 15;
+                                        if (p !== 6 && p !== 13 && p !== 14) w++;
+                                    }
+                                } else {
+                                    for (let j = firstWorkDateNum - 1; j >= currNum; j--) {
+                                        let p = ((j - riposoStartNum + 6) % 15 + 15) % 15;
+                                        if (p !== 6 && p !== 13 && p !== 14) w--;
+                                    }
+                                }
+                                
+                                let targetIdx = (tryIdx + w) % expandedRotList.length;
+                                if (targetIdx < 0) targetIdx += expandedRotList.length;
+                                
+                                if (expandedRotList[targetIdx] === actualShift) score++;
                             }
                         }
-                        if (match) { baseIdx = i; break; }
+                        if (score > bestScore) {
+                            bestScore = score;
+                            baseIdx = tryIdx;
+                        }
                     }
                 }
             }
@@ -856,8 +884,9 @@
             return { nome, riposoStartNum, expandedRotList, baseIdx, firstWorkDateNum, isDisp, isTC };
         }
 
-        function apriRicercaFutura(baseName, jsonData) {
-            document.getElementById('future-modal-title').innerText = "Ricerca Futura: " + pulisciNome(baseName);
+        // Apre la modale predittiva solo per la rotazione scelta
+        function apriRicercaFutura(baseName, rotName, jsonData) {
+            document.getElementById('future-modal-title').innerText = "Futuro: " + rotName;
             
             let parts = baseName.split('_'); 
             let meseStr = parts[1];
@@ -867,36 +896,37 @@
             let y = parseInt(annoStr);
 
             activePredictors = [];
-            for (let rotName in jsonData) {
-                let dipendenti = jsonData[rotName];
-                for (let nome in dipendenti) {
-                    if (paroleDaSaltare.some(p => nome.toUpperCase().includes(p)) || nome.trim() === "") continue;
+            let dipendenti = jsonData[rotName];
+            
+            for (let nome in dipendenti) {
+                if (paroleDaSaltare.some(p => nome.toUpperCase().includes(p)) || nome.trim() === "") continue;
 
-                    let turniMese = [];
-                    for (let i = 1; i <= 31; i++) {
-                        let t = dipendenti[nome][i.toString()] || "";
-                        if (t.toUpperCase().replace(/\s+/g, '') === "DI") t = "DISP";
-                        turniMese.push(t.toUpperCase().replace(/\s+/g, ''));
-                    }
-
-                    let p = buildColleaguePredictor(nome.split(" - ").join(" e "), turniMese, rotName, m, y);
-                    if (p) activePredictors.push(p);
+                let turniMese = [];
+                for (let i = 1; i <= 31; i++) {
+                    let t = dipendenti[nome][i.toString()] || "";
+                    if (t.toUpperCase().replace(/\s+/g, '') === "DI") t = "DISP";
+                    turniMese.push(t.toUpperCase().replace(/\s+/g, ''));
                 }
+
+                let p = buildColleaguePredictor(nome.split(" - ").join(" e "), turniMese, rotName, m, y);
+                if (p) activePredictors.push(p);
             }
 
+            // Pulisci i box
+            document.getElementById('risultato-futuro-turno').innerHTML = "";
+            document.getElementById('risultato-futuro-cambi').innerHTML = "";
             document.getElementById('future-search-modal').style.display = 'flex';
-            document.getElementById('risultato-futuro').innerHTML = "";
         }
 
         function predictTurno(predictor, targetDateStr) {
             let targetNum = stringToNum(targetDateStr);
-            
             let pos = ((targetNum - predictor.riposoStartNum + 6) % 15 + 15) % 15;
+            
             if (pos === 6 || pos === 14) return "RI";
             if (pos === 13) return "AL";
 
             if (predictor.isDisp) return "DISP";
-            if (predictor.isTC) return "TC_ALT"; // Logica TC difficile da isolare da 3 giorni
+            if (predictor.isTC) return "TC_ALT"; 
 
             if (predictor.baseIdx === null || predictor.expandedRotList.length === 0) return "Sconosciuto";
 
@@ -919,10 +949,32 @@
             return predictor.expandedRotList[targetIdx];
         }
 
-        function eseguiRicercaFutura() {
-            const dateStr = document.getElementById('input-date-futura').value;
+        function predictPhase(predictor, targetDateStr) {
+            let targetNum = stringToNum(targetDateStr);
+            let pos = ((targetNum - predictor.riposoStartNum + 6) % 15 + 15) % 15;
+            
+            if (pos === 6 || pos === 13 || pos === 14) {
+                if (pos === 6) return { fase: "Riposo", tipo: "Singolo (RI)" };
+                if (pos === 13) return { fase: "Riposo", tipo: "Doppio (Oggi AL)" };
+                if (pos === 14) return { fase: "Riposo", tipo: "Doppio (Oggi RI)" };
+            }
+            
+            // Mappa matematica pura posizioni lavorative 0-5
+            let mod = pos;
+            if (pos > 6) mod = pos - 7; 
+            
+            if (mod === 0 || mod === 1) return { fase: "Terzo", giornoLav: mod + 1 };
+            if (mod === 2 || mod === 3) return { fase: "Mezzo", giornoLav: mod + 1 };
+            if (mod === 4 || mod === 5) return { fase: "Primo", giornoLav: mod + 1 };
+            
+            return { fase: "Sconosciuta", giornoLav: 0 };
+        }
+
+        // RICERCA FUTURA 1: PER TURNO
+        function eseguiRicercaFuturaTurno() {
+            const dateStr = document.getElementById('input-date-futura-turno').value;
             const targetShift = document.getElementById('input-turno-futuro').value.trim().toUpperCase();
-            const boxRisultato = document.getElementById('risultato-futuro');
+            const boxRisultato = document.getElementById('risultato-futuro-turno');
 
             if (!dateStr || !targetShift) {
                 boxRisultato.innerHTML = "Seleziona la data e digita il turno (es. RI, 1C01).";
@@ -938,7 +990,7 @@
                     if (predicted === "RI" || predicted === "AL") trovati.push(`${p.nome} <span style="color:var(--danger); font-weight:bold;">[${predicted}]</span>`);
                 } else {
                     if (predicted === targetShift) trovati.push(`<strong>${p.nome}</strong>`);
-                    else if (predicted === "TC_ALT" && targetShift === "DISP") trovati.push(`${p.nome} (Forse DISP / TC Alternato)`);
+                    else if (predicted === "TC_ALT" && targetShift === "DISP") trovati.push(`${p.nome} (Forse DISP)`);
                 }
             });
 
@@ -947,6 +999,51 @@
                 boxRisultato.innerHTML = `<strong>${msg}</strong><ul style="margin-top:10px;"><li>` + trovati.join("</li><li>") + "</li></ul>";
             } else {
                 boxRisultato.innerHTML = "Nessuno trovato per questa ricerca.";
+            }
+        }
+
+        // RICERCA FUTURA 2: PER CAMBIO/FASE
+        function eseguiRicercaFuturaCambi() {
+            const dateStr = document.getElementById('input-date-futura-cambio').value;
+            const targetPhase = document.getElementById('select-fase-futura').value;
+            const boxRisultato = document.getElementById('risultato-futuro-cambi');
+
+            if (!dateStr) {
+                boxRisultato.innerHTML = "Seleziona la data.";
+                return;
+            }
+
+            let risultatiHtml = [];
+
+            activePredictors.forEach(p => {
+                let phaseInfo = predictPhase(p, dateStr);
+                
+                if (phaseInfo.fase === targetPhase) {
+                    if (targetPhase === "Riposo") {
+                        risultatiHtml.push(`<strong>${p.nome}</strong> - <span style="color:var(--danger);">[Riposo ${phaseInfo.tipo}]</span>`);
+                    } else {
+                        let predTurno = predictTurno(p, dateStr);
+                        let isRiposoOrDisp = ["AL", "RI", "DISP", "TC_ALT", "Sconosciuto"].includes(predTurno);
+                        
+                        if (!isRiposoOrDisp) {
+                            let infoExtra = "";
+                            if (globalShiftData && globalShiftData[predTurno] && globalShiftData[predTurno].length > 0) {
+                                let legs = globalShiftData[predTurno];
+                                infoExtra = `<br>Inizio: <strong>${legs[0].partenza_luogo} (${legs[0].partenza_ora})</strong><br>Fine: <strong>${legs[legs.length - 1].arrivo_luogo} (${legs[legs.length - 1].arrivo_ora})</strong>`;
+                            }
+                            let detailsHtml = `<div class="turn-details-box"><strong style="color:var(--primary); font-size:14px;">Turno: ${predTurno}</strong>${infoExtra}<br><button class="file-btn" style="padding: 8px 12px; margin-top: 8px; font-size: 14px; width: 100%; box-sizing:border-box; background-color: var(--info);" onclick="apriImmagineDaRotazioni('${predTurno}')">🖼️ Immagine</button></div>`;
+                            risultatiHtml.push(`<strong>${p.nome}</strong> (G. lav. ${phaseInfo.giornoLav}) ${detailsHtml}`);
+                        } else {
+                            risultatiHtml.push(`<strong>${p.nome}</strong> (G. lav. ${phaseInfo.giornoLav}) - [Turno: ${predTurno}]`);
+                        }
+                    }
+                }
+            });
+
+            if (risultatiHtml.length > 0) {
+                boxRisultato.innerHTML = `<div style="margin-bottom:10px;"><strong>Colleghi di ${targetPhase} il ${formattaData(dateStr)}:</strong></div><ul><li style='margin-bottom:15px;'>` + risultatiHtml.join("</li><li style='margin-bottom:15px;'>") + "</li></ul>";
+            } else {
+                boxRisultato.innerHTML = "Nessun collega trovato in questa fase.";
             }
         }
 
@@ -979,29 +1076,5 @@
 
         function apriImmagineDaRotazioni(turnoPilota) {
             if (!globalImgList || globalImgList.length === 0) { alert("Nessuna immagine disponibile o caricamento in corso. Riprova tra pochi istanti."); return; }
-            const match = globalImgList.find(f => f.name.replace(/\.[^/.]+$/, "").toUpperCase().includes(turnoPilota.toUpperCase()));
-
-            if (match) {
-                currentImagePath = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${globalImgDir}/${match.name}`;
-                let imgElement = document.getElementById('turnoImage');
-                imgElement.onerror = function() { alert("L'immagine del turno non è stata trovata."); chiudiImageModal(); }; 
-                imgElement.src = currentImagePath;
-                if (pzInstance) pzInstance.reset();
-                document.getElementById('imageModal').style.display = 'block';
-            } else alert("L'immagine per il turno " + turnoPilota + " non è presente nell'archivio attuale.");
-        }
-
-        function chiudiImageModal() {
-            document.getElementById('imageModal').style.display = 'none';
-            document.getElementById('turnoImage').removeAttribute('src');
-            if (pzInstance) pzInstance.reset();
-        }
-        function scaricaImmagineTurno() {
-            if (!currentImagePath) return;
-            const a = document.createElement('a'); a.href = currentImagePath; a.download = currentImagePath.split('/').pop();
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        }
-    </script>
-</body>
-</html>
+            const match = globalImgList.find(f => f.name.replace(/\.
  

@@ -166,5 +166,11 @@
     "nome": "Vio Michele",
     "data_creazione": "2026-04-10",
     "attivo": true
+  },
+  {
+    "codice": "2MPJ0I",
+    "nome": "Caforio Cosimo",
+    "data_creazione": "2026-04-10",
+    "attivo": true
   }
 ]

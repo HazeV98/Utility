@@ -142,5 +142,11 @@
     "nome": "David Giacomo",
     "data_creazione": "2026-04-08",
     "attivo": true
+  },
+  {
+    "codice": "ZFDQY0",
+    "nome": "Zennaro Matteo",
+    "data_creazione": "2026-04-10",
+    "attivo": true
   }
 ]

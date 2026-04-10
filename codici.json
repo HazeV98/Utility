@@ -172,5 +172,11 @@
     "nome": "Caforio Cosimo",
     "data_creazione": "2026-04-10",
     "attivo": true
+  },
+  {
+    "codice": "ILO8FS",
+    "nome": "Ricca Nicola",
+    "data_creazione": "2026-04-10",
+    "attivo": true
   }
 ]

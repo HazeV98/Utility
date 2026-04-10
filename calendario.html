@@ -1276,41 +1276,83 @@
         return new Date(p[0], p[1] - 1, p[2], 12, 0, 0); 
     }
 
-    function trovaChiaveEsatta(db, codiceBase, dateStr) {
+        function trovaChiaveEsatta(db, codiceBase, dateStr) {
         if (!db || !codiceBase) return codiceBase;
+        
+        let codiciDaCercare = [codiceBase];
+        
+        // Regola 1: Linee da 1 a 9 con B (es. 1B01, 4B01)
+        let matchB = codiceBase.match(/^([1-9])B(\d{2})$/);
+        if (matchB) {
+            let linea = matchB[1];
+            let finale = matchB[2];
+            let letteraPilota = (linea === '1' || linea === '2') ? 'C' : 'P';
+            
+            // Cerca prima nel DB se esiste la versione con la lettera corretta 
+            let regex = new RegExp(`^${linea}[A-Z]${finale}$`);
+            let trovati = Object.keys(db).filter(k => regex.test(k));
+            if (trovati.length > 0) {
+                codiciDaCercare.push(...trovati);
+            } else {
+                // Fallback usando la regola esplicita C o P
+                codiciDaCercare.push(`${linea}${letteraPilota}${finale}`);
+            }
+        } else {
+            // Regola 2: Per TUTTO IL RESTO vale la regola del +50 (es. 1251 -> 1201, M254 -> M204)
+            let match50 = codiceBase.match(/^([A-Z0-9]+?)(\d{2})$/);
+            if (match50) {
+                let pref = match50[1];
+                let num = parseInt(match50[2], 10);
+                if (num >= 50) {
+                    let numPilota = String(num - 50).padStart(2, '0');
+                    codiciDaCercare.push(pref + numPilota);
+                }
+            }
+        }
+
         let giornoIdx = creaDataSicura(dateStr).getDay(); 
         let targetDay = giornoIdx === 0 ? 7 : giornoIdx; 
         const dayMap = { "LUN": 1, "MAR": 2, "MER": 3, "GIO": 4, "VEN": 5, "SAB": 6, "DOM": 7 };
-        let keys = Object.keys(db).filter(k => k === codiceBase || k.startsWith(codiceBase + "_"));
-        
-        let exactMatch = null; 
-        let genericMatch = null;
-        
-        for (let k of keys) {
-            if (k === codiceBase) { 
-                genericMatch = k; 
-                continue; 
-            }
-            let suffix = k.substring(codiceBase.length + 1); 
-            if (suffix.includes("-")) {
-                let parts = suffix.split("-");
-                if (parts.length === 2 && dayMap[parts[0]] && dayMap[parts[1]]) {
-                    let start = dayMap[parts[0]]; 
-                    let end = dayMap[parts[1]];
-                    if (start <= end) { 
-                        if (targetDay >= start && targetDay <= end) exactMatch = k; 
-                    } else { 
-                        if (targetDay >= start || targetDay <= end) exactMatch = k; 
+
+        for (let codCercato of codiciDaCercare) {
+            let keys = Object.keys(db).filter(k => k === codCercato || k.startsWith(codCercato + "_"));
+            
+            let exactMatch = null;
+            let genericMatch = null;
+
+            for (let k of keys) {
+                if (k === codCercato) {
+                    genericMatch = k;
+                    continue;
+                }
+                
+                let suffix = k.substring(codCercato.length + 1); 
+                
+                if (suffix.includes("-")) {
+                    let parts = suffix.split("-");
+                    if (parts.length === 2 && dayMap[parts[0]] && dayMap[parts[1]]) {
+                        let start = dayMap[parts[0]];
+                        let end = dayMap[parts[1]];
+                        
+                        if (start <= end) { 
+                            if (targetDay >= start && targetDay <= end) exactMatch = k;
+                        } else { 
+                            if (targetDay >= start || targetDay <= end) exactMatch = k;
+                        }
+                    }
+                } else {
+                    if (dayMap[suffix] && dayMap[suffix] === targetDay) {
+                        exactMatch = k;
                     }
                 }
-            } else { 
-                if (dayMap[suffix] && dayMap[suffix] === targetDay) { 
-                    exactMatch = k; 
-                } 
             }
+            if (exactMatch) return exactMatch;
+            if (genericMatch) return genericMatch;
         }
-        return exactMatch || genericMatch || codiceBase;
+        
+        return codiceBase; 
     }
+ 
 
     function getRotazionePerData(dateStr) {
         const dSelezionata = stringToNum(dateStr);
@@ -1688,29 +1730,54 @@
                         if (!res.ok) throw new Error("File non trovato"); 
                         return res.json(); 
                     }).then(rotData => {
-                        let trovati = [];
-                        for (let rotName in rotData) {
-                            let dipendenti = rotData[rotName];
-                            for (let nome in dipendenti) {
-                                let tAssegnato = dipendenti[nome][giornoNum];
-                                if (tAssegnato) {
-                                    let tClean = tAssegnato.toUpperCase().replace(/\s+/g, ''); 
-                                    let tCercatoClean = turnoAttualePulito.replace(/\s+/g, '');
-                                    if (tClean === tCercatoClean) { 
-                                        trovati.push(nome.split(" - ").join(" e ")); 
+                            let trovati = [];
+                            
+                            // Traduzione codici marinaio per cercare nelle rotazioni
+                            let tCercatoClean = turnoAttualePulito.replace(/\s+/g, '');
+                            let codiciDaCercareArray = [tCercatoClean];
+                            
+                            // Applica la nuova regola esclusiva a prova di bomba
+                            let matchB_rot = tCercatoClean.match(/^([1-9])B(\d{2})$/);
+                            if (matchB_rot) {
+                                let l = matchB_rot[1]; let f = matchB_rot[2];
+                                let letteraPilota = (l === '1' || l === '2') ? 'C' : 'P';
+                                
+                                let regex = new RegExp(`^${l}[A-Z]${f}$`);
+                                let dbMatches = Object.keys(dbCorrente).filter(k => regex.test(k));
+                                if(dbMatches.length > 0) codiciDaCercareArray.push(...dbMatches);
+                                else codiciDaCercareArray.push(`${l}${letteraPilota}${f}`, `${l}C${f}`, `${l}P${f}`);
+                            } else {
+                                let match50_rot = tCercatoClean.match(/^([A-Z0-9]+?)(\d{2})$/);
+                                if (match50_rot) {
+                                    let p = match50_rot[1]; let n = parseInt(match50_rot[2], 10);
+                                    if (n >= 50) codiciDaCercareArray.push(p + String(n - 50).padStart(2, '0'));
+                                }
+                            }
+                            
+                            // Utilizza la ricerca ampliata
+                            for (let rotName in rotData) {
+                                let dipendenti = rotData[rotName];
+                                for (let nome in dipendenti) {
+                                    let tAssegnato = dipendenti[nome][giornoNum];
+                                    if (tAssegnato) {
+                                        let tClean = tAssegnato.toUpperCase().replace(/\s+/g, '');
+                                        // Cerca nell'array dei codici validi
+                                        if (codiciDaCercareArray.includes(tClean)) {
+                                            trovati.push(nome.split(" - ").join(" e "));
+                                        }
                                     }
                                 }
                             }
-                        }
-                        let container = document.getElementById('proprietario-turno-container');
-                        if (container) { 
-                            if (trovati.length > 0) { 
-                                container.innerHTML = `<b>👥:</b> ${trovati.join(", ")}`; 
-                            } else { 
-                                container.innerHTML = ``; 
-                            } 
-                        }
-                    }).catch(e => { 
+                            
+                            let container = document.getElementById('proprietario-turno-container');
+                            if (container) {
+                                if (trovati.length > 0) {
+                                    container.innerHTML = `<b>👥:</b> ${trovati.join(", ")}`;
+                                } else {
+                                    container.innerHTML = ``; // Lascia vuoto se non trova nessuno
+                                }
+                            }
+                        }).catch(e => { 
                         let container = document.getElementById('proprietario-turno-container'); 
                         if (container) container.innerHTML = ``; 
                     });

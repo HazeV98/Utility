@@ -691,6 +691,16 @@
                             integrazioneAttiva = datiCloud.buoni_integrazione === true;
                             document.getElementById('buoni-count').innerText = buoniAttuali;
                             document.getElementById('toggleInt').checked = integrazioneAttiva;
+                        } else {
+                            // MIGRAZIONE: Se il cloud non ha ancora i buoni ma il telefono li ha, caricali!
+                            if (localStorage.getItem('buoni_salvati') !== null) {
+                                if (typeof window.syncBuoniToCloud === 'function') window.syncBuoniToCloud();
+                            }
+                        }
+                    } else {
+                        // MIGRAZIONE: Se il documento cloud non esiste, carica i dati del telefono
+                        if (localStorage.getItem('buoni_salvati') !== null) {
+                            if (typeof window.syncBuoniToCloud === 'function') window.syncBuoniToCloud();
                         }
                     }
                 } catch(e) { console.error("Errore Cloud Buoni:", e); }

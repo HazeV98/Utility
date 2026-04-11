@@ -266,7 +266,11 @@
             <p style="font-size: 13px; color: #525f7f; margin-bottom: 20px;">Mantieni i tuoi turni al sicuro.</p>
 
             <input type="email" id="emailInput" placeholder="La tua email" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #e9ecef; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
-            <input type="password" id="passwordInput" placeholder="Password" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #e9ecef; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
+            <input type="password" id="passwordInput" placeholder="Password" style="width: 100%; padding: 12px; margin-bottom: 5px; border: 2px solid #e9ecef; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
+            
+            <div style="text-align: right; margin-bottom: 15px;">
+                <a href="#" onclick="recuperaPassword(); return false;" style="font-size: 12px; color: #0056b3; text-decoration: underline; font-weight: bold;">Password dimenticata?</a>
+            </div>
             
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button style="background: #32325d; color: white; border: none; border-radius: 8px; margin: 0; flex: 1; padding: 12px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="loginEmail()">Accedi</button>
@@ -472,7 +476,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
         import { 
             getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, 
-            signInWithEmailAndPassword, createUserWithEmailAndPassword 
+            signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail 
         } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
 
         const firebaseConfig = {
@@ -503,6 +507,21 @@
             if(!email || !pass) return alert("Inserisci email e password.");
             if(pass.length < 6) return alert("La password deve avere almeno 6 caratteri.");
             createUserWithEmailAndPassword(auth, email, pass).catch(e => alert("Errore registrazione: " + e.message));
+        };
+
+        // --- NUOVA FUNZIONE: RECUPERO PASSWORD ---
+        window.recuperaPassword = () => {
+            const email = document.getElementById('emailInput').value;
+            if(!email) {
+                return alert("Per favore, inserisci la tua email nel campo apposito prima di cliccare su 'Password dimenticata?'.");
+            }
+            sendPasswordResetEmail(auth, email)
+                .then(() => {
+                    alert("Ti abbiamo inviato un'email con il link per resettare la password. Controlla la tua casella di posta (e la cartella Spam).");
+                })
+                .catch(e => {
+                    alert("Errore durante l'invio dell'email: " + e.message);
+                });
         };
 
         window.logout = () => signOut(auth).catch(e => console.error(e));

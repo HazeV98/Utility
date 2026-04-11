@@ -117,7 +117,7 @@
         <button style="background:none; border:none; color:white; font-size:24px; cursor:pointer;" onclick="chiudiMenuLaterale()">✕</button>
     </div>
     <a href="index.html" class="sidebar-link">🏠 Home Page</a>
-    <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
+    <a href="calendario.html" class="sidebar-link" style="background-color: #f4f7f6; color: var(--primary); font-weight: bold;">📅 Calendario</a>
     <a href="dati_calendario.html" class="sidebar-link">📊 Statistiche Calendario</a>
     <a href="turni.html" class="sidebar-link">🔄 Turni</a>
     <a href="orari.html" class="sidebar-link">🕒 Orari</a>
@@ -750,15 +750,13 @@
             }
         }
         
-        salvaLocal();
-        location.reload();
+        salvaERicarica();
     }
 
     function resetFerie() {
         if(confirm("Vuoi cancellare tutte le tue configurazioni delle Ferie Programmate (incluse quelle di scambio)?")) {
             state.ferie = { version: VERSIONE_FERIE, scambi: {} };
-            salvaLocal();
-            location.reload();
+            salvaERicarica();
         }
     }
 
@@ -946,9 +944,8 @@
         }
         
         chiudiPdfSyncModal();
-        salvaLocal();
         alert(`Sincronizzazione applicata!\nModifiche registrate: ${applicate}`);
-        location.reload();
+        salvaERicarica();
     }
 
     // --- FUNZIONI COLORI ROTAZIONE ---
@@ -1003,8 +1000,7 @@
                 delete state.coloriRotazione[i];
             }
         }
-        salvaLocal();
-        location.reload();
+        salvaERicarica();
     }
 
     function salvaModificaMultipla() {
@@ -1047,8 +1043,7 @@
             currentDate.setDate(currentDate.getDate() + 1);
         }
 
-        salvaLocal();
-        location.reload();
+        salvaERicarica();
     }
 
     // --- FUNZIONI PDF TIPO 2 ---
@@ -1184,8 +1179,7 @@
         delete state.tcPattern;
         state.setupStep = 0;
         
-        salvaLocal();
-        location.reload();
+        salvaERicarica();
     }
 
     // --- CORE ---
@@ -1253,8 +1247,11 @@
         return dataObj.getDate() + ' ' + mese.charAt(0).toUpperCase() + mese.slice(1); 
     }
     
-     function salvaLocal() { 
-        // Creiamo una copia per non sporcare l'originale con le eliminazioni delle cache
+    // ----------------------------------------------------
+    // MOTORE DI SALVATAGGIO CLOUD AGGIORNATO (ANTI-RACE CONDITION)
+    // ----------------------------------------------------
+    function salvaLocal() { 
+        state.lastUpdate = new Date().getTime(); // Marca temporale!
         let copiaDati = JSON.parse(JSON.stringify(state)); 
         delete copiaDati.dbCache; 
         delete copiaDati.rotCache; 
@@ -1268,7 +1265,31 @@
             window.syncToCloud(copiaDati); 
         }
     }
- 
+
+    // Nuova funzione per fermare il bug della ricarica
+    function salvaERicarica() {
+        state.lastUpdate = new Date().getTime(); // Marca temporale!
+        let copiaDati = JSON.parse(JSON.stringify(state));
+        delete copiaDati.dbCache;
+        delete copiaDati.rotCache;
+        delete copiaDati.dispCache;
+
+        localStorage.setItem('myTurniApp', JSON.stringify(copiaDati));
+        document.body.style.opacity = '0.6'; // Feedback visivo
+
+        if (typeof window.syncToCloud === 'function' && window.utenteLoggato) {
+            // Aspetta che il Cloud riceva il dato (o scade dopo 800ms se offline) per evitare il bounce-back
+            Promise.race([
+                window.syncToCloud(copiaDati),
+                new Promise(resolve => setTimeout(resolve, 800))
+            ]).then(() => {
+                location.reload();
+            });
+        } else {
+            location.reload();
+        }
+    }
+    // ----------------------------------------------------
 
 
     function estraiDataDaNome(nome) { 
@@ -1623,8 +1644,7 @@
     function tornaAllaRotazione() { 
         state.setupStep = 0; 
         state.depositoAttivo = null; 
-        salvaLocal(); 
-        location.reload(); 
+        salvaERicarica(); 
     }
 
     function checkGuida() {
@@ -1960,8 +1980,7 @@
             delete state.colori[selectedDate]; 
         }
         
-        salvaLocal(); 
-        location.reload();
+        salvaERicarica(); 
     }
 
     function apriImmagineTurno() { 
@@ -2044,8 +2063,7 @@
         
         if (state.depositoAttivo.startsWith('disp_')) { 
             state.setupStep = 3; 
-            salvaLocal(); 
-            location.reload(); 
+            salvaERicarica(); 
         } else if (state.depositoAttivo.startsWith('tc_')) {
             let altText = state.depositoAttivo === 'tc_spez_lido' ? 'Alternati (es. DISP, Turno)' : 'Alternati (es. Turno, DISP)';
             document.getElementById('stepTitle').innerText = "Settimana Successiva"; 
@@ -2081,8 +2099,7 @@
         }
         
         state.setupStep = 3; 
-        salvaLocal(); 
-        location.reload();
+        salvaERicarica(); 
     }
 
     function avviaSelezioneTurnoIniziale() {
@@ -2109,8 +2126,7 @@
                 tcPattern: state.history.tcPattern 
             }; 
             state.setupStep = 4; 
-            salvaLocal(); 
-            location.reload(); 
+            salvaERicarica(); 
             return; 
         }
         
@@ -2217,8 +2233,7 @@
         }
         
         state.setupStep = 3; 
-        salvaLocal(); 
-        location.reload();
+        salvaERicarica(); 
     }
 
     function calcolaTurni() {
@@ -2517,8 +2532,7 @@
     function salvaCambioSingolo() { 
         const val = document.getElementById('singleTurnoSelect').value.trim().toUpperCase(); 
         if(val) { state.variazioni[selectedDate] = val; } 
-        salvaLocal(); 
-        location.reload(); 
+        salvaERicarica(); 
     }
 
     function resetGiornoSingolo() { 
@@ -2530,8 +2544,7 @@
         delete state.note[selectedDate]; 
         delete state.buonoPasto[selectedDate]; 
         delete state.permessoSP[selectedDate]; 
-        salvaLocal(); 
-        location.reload(); 
+        salvaERicarica(); 
     }
 
     function aggiornaUI() { 
@@ -2587,7 +2600,9 @@
         const reader = new FileReader(); 
         reader.onload = function(e) { 
             try { 
-                localStorage.setItem('myTurniApp', e.target.result); 
+                let parsed = JSON.parse(e.target.result);
+                parsed.lastUpdate = new Date().getTime(); // Rende i dati importati più "nuovi" per forzare la sincronizzazione
+                localStorage.setItem('myTurniApp', JSON.stringify(parsed)); 
                 alert("Backup ripristinato!"); 
                 location.reload(); 
             } catch (err) { 
@@ -2694,7 +2709,7 @@
             locale: 'it', 
             firstDay: 1, 
             height: 'auto', 
-            eventOrder: 'myOrder', // <--- AGGIUNTA REGOLA DI ORDINAMENTO
+            eventOrder: 'myOrder', 
             buttonText: { today: 'Oggi' }, 
             customButtons: { btnSalto: { text: '🔍', click: apriJumpModal } }, 
             headerToolbar: { left: 'prev,next', center: 'title', right: 'btnSalto today' }, 
@@ -2726,7 +2741,7 @@
 
     window.utenteLoggato = null;
 
-        onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
             window.utenteLoggato = user.uid;
             console.log("Sincronizzazione Cloud attiva per:", user.email);
@@ -2737,12 +2752,24 @@
 
                 if (docSnap.exists()) {
                     let datiCloud = docSnap.data();
-                    
-                    // AGGIORNAMENTO INTELLIGENTE
-                    Object.assign(state, datiCloud);
-                    
-                    // Salviamo subito nel telefono per coerenza
-                    localStorage.setItem('myTurniApp', JSON.stringify(state)); 
+                    let datiLocali = JSON.parse(localStorage.getItem('myTurniApp')) || state;
+
+                    // CONTROLLO TIMESTAMP
+                    let cloudTime = datiCloud.lastUpdate || 0;
+                    let localTime = datiLocali.lastUpdate || 0;
+
+                    if (cloudTime >= localTime) {
+                        // Il Cloud ha i dati più aggiornati: li sovrascriviamo al telefono
+                        Object.assign(state, datiCloud);
+                        localStorage.setItem('myTurniApp', JSON.stringify(state));
+                    } else {
+                        // Il telefono ha dati più nuovi (es. si era disconnesso). Forziamo l'aggiornamento verso il Cloud
+                        console.log("Dati locali più recenti, sincronizzo verso il cloud...");
+                        Object.assign(state, datiLocali);
+                        if (typeof window.syncToCloud === 'function') {
+                            window.syncToCloud(state);
+                        }
+                    }
                     
                     // Ricarichiamo gli eventi del calendario
                     if (typeof calendar !== 'undefined') {
@@ -2761,7 +2788,6 @@
         }
     });
 
-
     window.syncToCloud = async (stateDaSalvare) => {
         if (window.utenteLoggato) {
             try {
@@ -2772,5 +2798,3 @@
 </script>
 </body>
 </html>
-
- 

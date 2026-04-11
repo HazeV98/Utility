@@ -65,7 +65,7 @@
         </div>
         <a href="index.html" class="sidebar-link">🏠 Home Page</a>
         <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
-        <a href="dati_calendario.html" class="sidebar-link">📊 Statistiche Calendario</a>
+        <a href="dati_calendario.html" class="sidebar-link" style="background-color: #f4f7f6; color: var(--primary); font-weight: bold;">📊 Statistiche Calendario</a>
         <a href="turni.html" class="sidebar-link">🔄 Turni</a>
         <a href="orari.html" class="sidebar-link">🕒 Orari</a>
         <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
@@ -249,9 +249,50 @@
             document.getElementById('results').style.display = 'block';
         }
 
-        // Calcola automaticamente al caricamento della pagina
+        // Calcola automaticamente al caricamento della pagina in locale
         window.addEventListener('DOMContentLoaded', () => {
             calcolaStatistiche(true);
+        });
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4",
+          authDomain: "utility-haze.firebaseapp.com",
+          projectId: "utility-haze",
+          storageBucket: "utility-haze.firebasestorage.app",
+          messagingSenderId: "686237947418",
+          appId: "1:686237947418:web:f03ba19ab8fff43110a3a3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                try {
+                    const docRef = doc(db, "utenti", user.uid);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        // Scarica i dati e aggiorna il telefono in background
+                        let datiCloud = docSnap.data();
+                        let datiLocali = JSON.parse(localStorage.getItem('myTurniApp')) || {};
+                        
+                        // Fonde i dati
+                        let stateAggiornato = { ...datiLocali, ...datiCloud }; 
+                        localStorage.setItem('myTurniApp', JSON.stringify(stateAggiornato)); 
+                        
+                        // Ricalcola istantaneamente le statistiche con i nuovi dati
+                        calcolaStatistiche(true);
+                    }
+                } catch(e) { console.error("Errore Sync Cloud Statistiche:", e); }
+            }
         });
     </script>
 </body>

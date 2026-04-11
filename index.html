@@ -39,18 +39,27 @@
             max-width: 400px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             margin-top: 10px;
             margin-bottom: 30px;
+            position: relative;
         }
 
         .header-side {
             flex: 1;
             display: flex;
+            align-items: center;
         }
 
         .header-side.right {
             justify-content: flex-end;
+        }
+        
+        .header-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 2;
         }
 
         h2 { 
@@ -59,13 +68,12 @@
             font-size: 30px; 
             font-weight: bold; 
             text-align: center;
-            flex: 2;
             user-select: none; 
             -webkit-user-select: none;
             cursor: pointer; 
         }
 
-        /* TASTO INSTALLA VERDE */
+        /* TASTO INSTALLA VERDE E TASTI CLOUD */
         #install-btn {
             display: none;
             background-color: var(--success);
@@ -79,6 +87,32 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             white-space: nowrap;
             animation: pulse 2s infinite;
+        }
+
+        .btn-login {
+            background-color: #ea4335;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: none; /* Gestito via JS */
+        }
+
+        .btn-logout {
+            background-color: #525f7f;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: none; /* Gestito via JS */
         }
 
         @keyframes pulse {
@@ -117,7 +151,6 @@
             opacity: 0.9; 
         }
 
-        /* Tasto Speciale Oggi */
         .btn-oggi {
             background-color: var(--success);
             font-size: 20px;
@@ -145,8 +178,8 @@
 
         .telegram-icon:active { transform: scale(0.9); }
 
-        /* --- STILI MODALE PROMEMORIA DDS --- */
-        #ddsReminderModal { 
+        /* --- STILI MODALE PROMEMORIA E LOGIN --- */
+        #ddsReminderModal, #authModal { 
             display: none; 
             position: fixed; 
             top: 0; left: 0; width: 100%; height: 100%; 
@@ -155,11 +188,13 @@
             z-index: 5000; padding: 20px; box-sizing: border-box; 
             backdrop-filter: blur(3px); 
         }
-        .dds-reminder-content { 
+        .modal-content { 
             background: white; padding: 25px; border-radius: 15px; 
             width: 100%; max-width: 350px; text-align: left; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-top: 6px solid #ffc107; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative;
         }
+        .dds-reminder-content { border-top: 6px solid #ffc107; }
+        
         .dds-reminder-item { 
             background: #f8f9fa; padding: 15px; border-radius: 10px; 
             margin-bottom: 10px; border-left: 4px solid #0056b3; 
@@ -175,8 +210,14 @@
 <body>
 
     <div class="header">
-        <div class="header-side"></div>
-        <h2 id="main-title">Utility</h2>
+        <div class="header-side">
+            <button id="btnOpenLogin" class="btn-login" onclick="document.getElementById('authModal').style.display='flex'">☁️ Login</button>
+            <button id="btnLogoutCloud" class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+        <div class="header-center">
+            <h2 id="main-title">Utility</h2>
+            <div id="user-status" style="font-size: 11px; color: var(--success); font-weight: bold; display: none; margin-top: 4px; text-align: center;"></div>
+        </div>
         <div class="header-side right">
             <button id="install-btn">Installa</button>
         </div>
@@ -210,10 +251,30 @@
     </div>
 
     <div id="ddsReminderModal">
-        <div class="dds-reminder-content">
+        <div class="modal-content dds-reminder-content">
             <h3 style="margin-top: 0; color: #333; text-align: center;">🔔 Avvisi del Giorno</h3>
             <div id="ddsReminderList" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;"></div>
             <button id="chiudi-dds-btn" style="background: #0056b3; color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; font-size: 16px; cursor: pointer;">Ho capito, chiudi</button>
+        </div>
+    </div>
+
+    <div id="authModal">
+        <div class="modal-content" style="text-align: center;">
+            <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f; font-weight: bold;" onclick="document.getElementById('authModal').style.display='none'">&times;</span>
+            
+            <h3 style="margin-top: 5px; color: #32325d;">Backup Cloud</h3>
+            <p style="font-size: 13px; color: #525f7f; margin-bottom: 20px;">Mantieni i tuoi turni al sicuro.</p>
+
+            <input type="email" id="emailInput" placeholder="La tua email" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #e9ecef; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
+            <input type="password" id="passwordInput" placeholder="Password" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #e9ecef; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button style="background: #32325d; color: white; border: none; border-radius: 8px; margin: 0; flex: 1; padding: 12px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="loginEmail()">Accedi</button>
+                <button style="background: #11cdef; color: white; border: none; border-radius: 8px; margin: 0; flex: 1; padding: 12px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="registraEmail()">Registrati</button>
+            </div>
+            
+            <hr style="border: 0; border-top: 1px solid #e9ecef; margin: 15px 0;">
+            <button style="background: #ea4335; color: white; border: none; border-radius: 8px; width: 100%; margin: 0; padding: 12px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="loginGoogle()">☁️ Accedi con Google</button>
         </div>
     </div>
 
@@ -222,9 +283,6 @@
             navigator.serviceWorker.register('sw.js').then(() => console.log("SW OK"));
         }
 
-        // ==========================================
-        // GESTIONE INSTALLAZIONE PWA
-        // ==========================================
         let deferredPrompt;
         const installBtn = document.getElementById('install-btn');
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -241,9 +299,6 @@
             }
         });
 
-        // ==========================================
-        // GESTIONE TASTI NASCOSTI E ROTAZIONI
-        // ==========================================
         const titleTrigger = document.getElementById('main-title');
         const secretBtn = document.getElementById('secret-btn');
         const rotazioniBtn = document.getElementById('rotazioni-btn');
@@ -301,9 +356,6 @@
         titleTrigger.addEventListener('mouseup', handleEnd);
         titleTrigger.addEventListener('mouseleave', handleEnd);
 
-        // ==========================================
-        // LOGICA DDS: COLLEGATA AL DATABASE CORRETTO (UtilityDB / archivio_dds)
-        // ==========================================
         function checkLocalDDSReminders() {
             const d = new Date();
             const year = d.getFullYear();
@@ -311,14 +363,12 @@
             const day = String(d.getDate()).padStart(2, '0');
             const todayStr = `${year}-${month}-${day}`;
             
-            // Calcolo del giorno successivo (per avviso "il giorno prima")
             const tomorrow = new Date(d);
             tomorrow.setDate(tomorrow.getDate() + 1);
             const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
 
             const todayKey = todayStr;
 
-            // Resetta le notifiche lette al cambio di giornata
             if (localStorage.getItem('dismissed_dds_date') !== todayKey) {
                 localStorage.setItem('dismissed_dds_date', todayKey);
                 localStorage.setItem('dismissed_dds_list', JSON.stringify([]));
@@ -326,13 +376,10 @@
 
             let dismissedList = JSON.parse(localStorage.getItem('dismissed_dds_list') || '[]');
 
-            // APRIAMO IL DATABASE CON I NOMI ESATTI DEL FILE DDS.HTML
             const request = indexedDB.open("UtilityDB");
             
             request.onsuccess = function(event) {
                 const db = event.target.result;
-                
-                // Se la tabella non c'è, l'utente non ha mai aperto DDS.html
                 if (!db.objectStoreNames.contains("archivio_dds")) return;
                 
                 const tx = db.transaction("archivio_dds", "readonly");
@@ -344,24 +391,19 @@
                     
                     const todayReminders = allDDS.filter(item => {
                         const uniqueId = item.id.toString();
-                        if (dismissedList.includes(uniqueId)) return false; // Già letto oggi
+                        if (dismissedList.includes(uniqueId)) return false; 
                         
                         if (!item.dateValidita || !Array.isArray(item.dateValidita)) return false;
                         if (!item.reminder || !Array.isArray(item.reminder)) return false;
 
                         let mustShow = false;
 
-                        // 1. Spunta "Tutti i giorni": Mostra se OGGI è nell'array delle date
                         if (item.reminder.includes("all_days") && item.dateValidita.includes(todayStr)) {
                             mustShow = true;
                         }
-                        
-                        // 2. Spunta "Il primo giorno": Mostra se OGGI è esattamente la prima data della validità
                         if (item.reminder.includes("first_day") && item.dateValidita.length > 0 && item.dateValidita[0] === todayStr) {
                             mustShow = true;
                         }
-
-                        // 3. Spunta "Il giorno prima": Mostra se DOMANI è esattamente la prima data della validità
                         if (item.reminder.includes("day_before") && item.dateValidita.length > 0 && item.dateValidita[0] === tomorrowStr) {
                             mustShow = true;
                         }
@@ -379,7 +421,6 @@
                                 idsToDismiss.push(item.id.toString());
                                 
                                 const div = document.createElement('div');
-                                // Distingue visivamente tra Promemoria (Giallo) e DDS (Blu)
                                 div.className = item.isPromemoria ? 'dds-reminder-item promemoria-item' : 'dds-reminder-item';
                                 
                                 let labelTitle = item.isPromemoria ? `🔔 ${item.titolo}` : `📄 ${item.titolo}`;
@@ -408,9 +449,6 @@
             };
         }
 
-        // ==========================================
-        // LOGICA DDS: AGGIORNAMENTI REMOTI (Badge Giallo)
-        // ==========================================
         async function checkDDSUpdates() {
             try {
                 const res = await fetch('last_dds.json?v=' + new Date().getTime());
@@ -428,6 +466,71 @@
                 }
             } catch (e) { console.log("Check DDS fallito"); }
         }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+        import { 
+            getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, 
+            signInWithEmailAndPassword, createUserWithEmailAndPassword 
+        } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4",
+          authDomain: "utility-haze.firebaseapp.com",
+          projectId: "utility-haze",
+          storageBucket: "utility-haze.firebasestorage.app",
+          messagingSenderId: "686237947418",
+          appId: "1:686237947418:web:f03ba19ab8fff43110a3a3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        window.loginGoogle = () => signInWithPopup(auth, provider).catch(e => alert("Errore Google: " + e.message));
+        
+        window.loginEmail = () => {
+            const email = document.getElementById('emailInput').value;
+            const pass = document.getElementById('passwordInput').value;
+            if(!email || !pass) return alert("Inserisci email e password.");
+            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Errore accesso: " + e.message));
+        };
+
+        window.registraEmail = () => {
+            const email = document.getElementById('emailInput').value;
+            const pass = document.getElementById('passwordInput').value;
+            if(!email || !pass) return alert("Inserisci email e password.");
+            if(pass.length < 6) return alert("La password deve avere almeno 6 caratteri.");
+            createUserWithEmailAndPassword(auth, email, pass).catch(e => alert("Errore registrazione: " + e.message));
+        };
+
+        window.logout = () => signOut(auth).catch(e => console.error(e));
+
+        onAuthStateChanged(auth, (user) => {
+            const btnLogin = document.getElementById('btnOpenLogin');
+            const btnLogout = document.getElementById('btnLogoutCloud');
+            const statusText = document.getElementById('user-status');
+            const modal = document.getElementById('authModal');
+
+            if (user) {
+                // UTENTE LOGGATO
+                if(modal) modal.style.display = 'none';
+                btnLogin.style.display = 'none'; // Nasconde Login
+                btnLogout.style.display = 'block'; // Mostra Logout al suo posto
+                
+                statusText.style.display = 'block';
+                statusText.innerHTML = `☁️ ${user.email}`;
+                
+                document.getElementById('emailInput').value = '';
+                document.getElementById('passwordInput').value = '';
+            } else {
+                // UTENTE SCOLLEGATO
+                btnLogin.style.display = 'block'; // Mostra Login
+                btnLogout.style.display = 'none'; // Nasconde Logout
+                statusText.style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>

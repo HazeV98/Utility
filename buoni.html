@@ -38,7 +38,7 @@
             display: flex; gap: 15px; width: 100%; 
             justify-content: center; align-items: center; 
             margin-bottom: 15px; 
-            position: relative; /* Permette all'icona di essere posizionata a destra in modo indipendente */
+            position: relative; 
         }
         
         .btn-quick { 
@@ -53,7 +53,7 @@
         .settings-btn { 
             background: none; border: none; font-size: 24px; cursor: pointer; color: #888; 
             transition: transform 0.2s; display: flex; align-items: center; justify-content: center; 
-            padding: 0; position: absolute; right: 10px; /* Svincola l'icona e la posiziona a destra */
+            padding: 0; position: absolute; right: 10px; 
         }
         .settings-btn:active { transform: rotate(45deg); }
 
@@ -444,6 +444,7 @@
             
             document.getElementById('buoni-count').innerText = buoniAttuali;
             localStorage.setItem('buoni_salvati', buoniAttuali);
+            if (typeof window.syncBuoniToCloud === 'function') window.syncBuoniToCloud();
         }
 
         // --- SISTEMA DI ANCORAGGIO SALDO ---
@@ -488,6 +489,7 @@
             if (integrazioneAttiva) {
                 impostaSaldoDaInput(buoniAttuali);
             }
+            if (typeof window.syncBuoniToCloud === 'function') window.syncBuoniToCloud();
         }
 
         // --- IMPOSTAZIONI TONDINI ---
@@ -526,6 +528,7 @@
             } else {
                 integrazioneAttiva = false;
                 localStorage.setItem('buoni_integrazione_attiva', 'false');
+                if (typeof window.syncBuoniToCloud === 'function') window.syncBuoniToCloud();
             }
         }
 
@@ -554,6 +557,7 @@
                 impostaSaldoDaInput(val);
                 attivaIntegrazioneFinale();
                 chiudiWizard();
+                if (typeof window.syncBuoniToCloud === 'function') window.syncBuoniToCloud();
             } else {
                 alert("Inserisci un numero valido.");
             }
@@ -568,6 +572,7 @@
             integrazioneAttiva = true;
             localStorage.setItem('buoni_integrazione_attiva', 'true');
             document.getElementById('toggleInt').checked = true;
+            if (typeof window.syncBuoniToCloud === 'function') window.syncBuoniToCloud();
         }
 
         // --- CALCOLATORE MODALE ---
@@ -644,6 +649,67 @@
             }
             return conteggio;
         }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4",
+          authDomain: "utility-haze.firebaseapp.com",
+          projectId: "utility-haze",
+          storageBucket: "utility-haze.firebasestorage.app",
+          messagingSenderId: "686237947418",
+          appId: "1:686237947418:web:f03ba19ab8fff43110a3a3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        window.utenteLoggato = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                window.utenteLoggato = user.uid;
+                try {
+                    const docRef = doc(db, "utenti", window.utenteLoggato);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        let datiCloud = docSnap.data();
+                        
+                        // Se ci sono dati sui buoni nel cloud, aggiorna il telefono
+                        if (datiCloud.buoni_pasto_totali !== undefined) {
+                            localStorage.setItem('buoni_salvati', datiCloud.buoni_pasto_totali);
+                            localStorage.setItem('buoni_integrazione_attiva', datiCloud.buoni_integrazione === true ? 'true' : 'false');
+                            
+                            // Aggiorna l'interfaccia senza ricaricare la pagina
+                            buoniAttuali = parseInt(datiCloud.buoni_pasto_totali);
+                            integrazioneAttiva = datiCloud.buoni_integrazione === true;
+                            document.getElementById('buoni-count').innerText = buoniAttuali;
+                            document.getElementById('toggleInt').checked = integrazioneAttiva;
+                        }
+                    }
+                } catch(e) { console.error("Errore Cloud Buoni:", e); }
+            }
+        });
+
+        // Funzione per sparare i dati al cloud
+        window.syncBuoniToCloud = async () => {
+            if (window.utenteLoggato) {
+                try {
+                    const docRef = doc(db, "utenti", window.utenteLoggato);
+                    // Usiamo merge: true per non cancellare i turni del calendario!
+                    await setDoc(docRef, {
+                        buoni_pasto_totali: buoniAttuali,
+                        buoni_integrazione: integrazioneAttiva
+                    }, { merge: true });
+                } catch(e) { console.error("Errore Sync Cloud Buoni:", e); }
+            }
+        };
     </script>
 </body>
 </html>

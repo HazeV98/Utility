@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Utility</title>
+
     <script data-goatcounter="https://hazev.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
     
     <link rel="manifest" href="manifest.json">
@@ -11,6 +12,7 @@
     <meta name="theme-color" content="#0056b3">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <style>
         :root {
             --primary: #0056b3;
@@ -19,6 +21,7 @@
             --success: #28a745;
             --danger: #dc3545;
         }
+
         body {
             font-family: Arial, sans-serif;
             background-color: var(--bg-color);
@@ -29,6 +32,7 @@
             flex-direction: column;
             align-items: center;
         }
+
         /* Header bilanciato */
         .header {
             width: 100%;
@@ -40,11 +44,13 @@
             margin-bottom: 30px;
             position: relative;
         }
+
         .header-side {
             flex: 1;
             display: flex;
             align-items: center;
         }
+
         .header-side.right {
             justify-content: flex-end;
         }
@@ -55,6 +61,7 @@
             align-items: center;
             flex: 2;
         }
+
         h2 { 
             margin: 0; 
             color: var(--primary); 
@@ -65,6 +72,7 @@
             -webkit-user-select: none;
             cursor: pointer; 
         }
+
         /* TASTO INSTALLA VERDE E TASTI CLOUD */
         #install-btn {
             display: none;
@@ -80,6 +88,7 @@
             white-space: nowrap;
             animation: pulse 2s infinite;
         }
+
         .btn-login {
             background-color: #ea4335;
             color: white;
@@ -92,6 +101,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             display: none; /* Gestito via JS */
         }
+
         .btn-logout {
             background-color: #525f7f;
             color: white;
@@ -104,11 +114,13 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             display: none; /* Gestito via JS */
         }
+
         @keyframes pulse {
             0% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
             50% { transform: scale(1.05); box-shadow: 0 4px 10px rgba(40, 167, 69, 0.4); }
             100% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         }
+
         /* Griglia Bottoni */
         .menu-grid {
             display: grid;
@@ -117,6 +129,7 @@
             width: 100%;
             max-width: 400px;
         }
+
         .menu-btn {
             background-color: var(--primary);
             color: white;
@@ -132,15 +145,18 @@
             display: block;
             font-weight: 500;
         }
+
         .menu-btn:active { 
             transform: translateY(2px); 
             opacity: 0.9; 
         }
+
         .btn-oggi {
             background-color: var(--success);
             font-size: 20px;
             box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
         }
+
         /* Feedback e Telegram */
         .feedback-section {
             margin-top: 40px;
@@ -148,16 +164,20 @@
             text-align: center;
             max-width: 350px;
         }
+
         .feedback-section p {
             color: #666;
             font-size: 14px;
             margin-bottom: 15px;
         }
+
         .telegram-icon {
             display: inline-block;
             transition: transform 0.2s ease;
         }
+
         .telegram-icon:active { transform: scale(0.9); }
+
         /* --- STILI MODALE PROMEMORIA E LOGIN --- */
         #ddsReminderModal, #authModal { 
             display: none; 
@@ -180,6 +200,7 @@
             margin-bottom: 10px; border-left: 4px solid #0056b3; 
         }
         .promemoria-item { border-left: 4px solid #ffc107; }
+
         /* --- STILI TASTI NASCOSTI --- */
         #secret-btn { display: none; background-color: var(--danger); }
         #generatore-btn { display: none; background-color: var(--danger); }
@@ -187,6 +208,7 @@
     </style>
 </head>
 <body>
+
     <div class="header">
         <div class="header-side">
             <button id="btnOpenLogin" class="btn-login" onclick="document.getElementById('authModal').style.display='flex'">☁️ Login</button>
@@ -200,6 +222,7 @@
             <button id="install-btn">Installa</button>
         </div>
     </div>
+
     <div class="menu-grid">
         <a href="calendario.html?oggi=true" class="menu-btn btn-oggi">Turno di Oggi</a>
         <a href="calendario.html" class="menu-btn">📅 Calendario</a>
@@ -217,6 +240,7 @@
         <a href="generatore.html" id="generatore-btn" class="menu-btn">🔑 Generatore Codici</a>
         <a href="admin.html" id="secret-btn" class="menu-btn">🔒 Admin</a>
     </div>
+
     <div class="feedback-section">
         <p>Se vuoi contattarmi per feedback o altro clicca l'icona qui sotto</p>
         <a href="http://t.me/MattiaB1058" target="_blank" class="telegram-icon">
@@ -225,6 +249,7 @@
             </svg>
         </a>
     </div>
+
     <div id="ddsReminderModal">
         <div class="modal-content dds-reminder-content">
             <h3 style="margin-top: 0; color: #333; text-align: center;">🔔 Avvisi del Giorno</h3>
@@ -232,12 +257,14 @@
             <button id="chiudi-dds-btn" style="background: #0056b3; color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; font-size: 16px; cursor: pointer;">Ho capito, chiudi</button>
         </div>
     </div>
+
     <div id="authModal">
         <div class="modal-content" style="text-align: center;">
             <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f; font-weight: bold;" onclick="document.getElementById('authModal').style.display='none'">&times;</span>
             
             <h3 style="margin-top: 5px; color: #32325d;">Backup Cloud</h3>
             <p style="font-size: 13px; color: #525f7f; margin-bottom: 20px;">Mantieni i tuoi turni al sicuro.</p>
+
             <input type="email" id="emailInput" placeholder="La tua email" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #e9ecef; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
             <input type="password" id="passwordInput" placeholder="Password" style="width: 100%; padding: 12px; margin-bottom: 5px; border: 2px solid #e9ecef; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
             
@@ -254,10 +281,12 @@
             <button style="background: #ea4335; color: white; border: none; border-radius: 8px; width: 100%; margin: 0; padding: 12px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="loginGoogle()">☁️ Accedi con Google</button>
         </div>
     </div>
+
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').then(() => console.log("SW OK"));
         }
+
         let deferredPrompt;
         const installBtn = document.getElementById('install-btn');
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -273,6 +302,7 @@
                 deferredPrompt = null;
             }
         });
+
         const titleTrigger = document.getElementById('main-title');
         const secretBtn = document.getElementById('secret-btn');
         const rotazioniBtn = document.getElementById('rotazioni-btn');
@@ -282,6 +312,7 @@
         const ADMIN_TAPS = 5;
         const GENERATORE_TAPS = 3;
         const HOLD_DURATION = 3000;
+
         document.addEventListener('DOMContentLoaded', () => {
             if (localStorage.getItem('dev_mode_active') === 'true') { if(secretBtn) secretBtn.style.display = 'block'; }
             if (localStorage.getItem('generatore_sbloccato') === 'true') { if(generatoreBtn) generatoreBtn.style.display = 'block'; }
@@ -293,10 +324,13 @@
             checkLocalDDSReminders();
             checkDDSUpdates();
         });
+
         function resetSequence() { tapCount = 0; clearTimeout(tapTimer); clearTimeout(holdTimer); }
+
         function handleStart(e) {
             if (e.type === 'touchstart') e.preventDefault();
             clearTimeout(tapTimer); clearTimeout(holdTimer); tapCount++;
+
             if (tapCount === GENERATORE_TAPS || tapCount === ADMIN_TAPS) {
                 holdTimer = setTimeout(() => {
                     if (tapCount === ADMIN_TAPS) {
@@ -316,13 +350,16 @@
             } else if (tapCount > ADMIN_TAPS) { resetSequence(); } 
             else { tapTimer = setTimeout(resetSequence, 500); }
         }
+
         function handleEnd() { clearTimeout(holdTimer); }
+
         titleTrigger.addEventListener('touchstart', handleStart, { passive: false });
         titleTrigger.addEventListener('touchend', handleEnd);
         titleTrigger.addEventListener('touchcancel', handleEnd);
         titleTrigger.addEventListener('mousedown', handleStart);
         titleTrigger.addEventListener('mouseup', handleEnd);
         titleTrigger.addEventListener('mouseleave', handleEnd);
+
         function checkLocalDDSReminders() {
             const d = new Date();
             const year = d.getFullYear();
@@ -333,12 +370,16 @@
             const tomorrow = new Date(d);
             tomorrow.setDate(tomorrow.getDate() + 1);
             const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
             const todayKey = todayStr;
+
             if (localStorage.getItem('dismissed_dds_date') !== todayKey) {
                 localStorage.setItem('dismissed_dds_date', todayKey);
                 localStorage.setItem('dismissed_dds_list', JSON.stringify([]));
             }
+
             let dismissedList = JSON.parse(localStorage.getItem('dismissed_dds_list') || '[]');
+
             const request = indexedDB.open("UtilityDB");
             
             request.onsuccess = function(event) {
@@ -348,6 +389,7 @@
                 const tx = db.transaction("archivio_dds", "readonly");
                 const store = tx.objectStore("archivio_dds");
                 const requestGetAll = store.getAll();
+
                 requestGetAll.onsuccess = function() {
                     const allDDS = requestGetAll.result;
                     
@@ -357,7 +399,9 @@
                         
                         if (!item.dateValidita || !Array.isArray(item.dateValidita)) return false;
                         if (!item.reminder || !Array.isArray(item.reminder)) return false;
+
                         let mustShow = false;
+
                         if (item.reminder.includes("all_days") && item.dateValidita.includes(todayStr)) {
                             mustShow = true;
                         }
@@ -367,8 +411,10 @@
                         if (item.reminder.includes("day_before") && item.dateValidita.length > 0 && item.dateValidita[0] === tomorrowStr) {
                             mustShow = true;
                         }
+
                         return mustShow;
                     });
+
                     if (todayReminders.length > 0) {
                         const list = document.getElementById('ddsReminderList');
                         if (list) {
@@ -389,6 +435,7 @@
                                 } else if (!item.isPromemoria) {
                                     htmlContent += `<br><small style="color:#555;">Vai in Archivio DDS per leggere il PDF allegato.</small>`;
                                 }
+
                                 div.innerHTML = htmlContent;
                                 list.appendChild(div);
                             });
@@ -405,6 +452,7 @@
                 };
             };
         }
+
         async function checkDDSUpdates() {
             try {
                 const res = await fetch('last_dds.json?v=' + new Date().getTime());
@@ -412,6 +460,7 @@
                 const data = await res.json();
                 const lastSeen = localStorage.getItem('last_dds_seen');
                 const lastUpdateDate = data.last_update;
+
                 if (lastUpdateDate !== lastSeen) {
                     const ddsBtn = document.querySelector('a[href="dds.html"]');
                     if (ddsBtn) {
@@ -422,12 +471,14 @@
             } catch (e) { console.log("Check DDS fallito"); }
         }
     </script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
         import { 
             getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, 
             signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail 
         } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+
         const firebaseConfig = {
           apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4",
           authDomain: "utility-haze.firebaseapp.com",
@@ -436,9 +487,11 @@
           messagingSenderId: "686237947418",
           appId: "1:686237947418:web:f03ba19ab8fff43110a3a3"
         };
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
+
         window.loginGoogle = () => signInWithPopup(auth, provider).catch(e => alert("Errore Google: " + e.message));
         
         window.loginEmail = () => {
@@ -447,6 +500,7 @@
             if(!email || !pass) return alert("Inserisci email e password.");
             signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Errore accesso: " + e.message));
         };
+
         window.registraEmail = () => {
             const email = document.getElementById('emailInput').value;
             const pass = document.getElementById('passwordInput').value;
@@ -454,6 +508,7 @@
             if(pass.length < 6) return alert("La password deve avere almeno 6 caratteri.");
             createUserWithEmailAndPassword(auth, email, pass).catch(e => alert("Errore registrazione: " + e.message));
         };
+
         // --- NUOVA FUNZIONE: RECUPERO PASSWORD ---
         window.recuperaPassword = () => {
             const email = document.getElementById('emailInput').value;
@@ -468,1030 +523,15 @@
                     alert("Errore durante l'invio dell'email: " + e.message);
                 });
         };
+
         window.logout = () => signOut(auth).catch(e => console.error(e));
+
         onAuthStateChanged(auth, (user) => {
             const btnLogin = document.getElementById('btnOpenLogin');
             const btnLogout = document.getElementById('btnLogoutCloud');
             const statusText = document.getElementById('user-status');
             const modal = document.getElementById('authModal');
-            if (user) {
-                // UTENTE LOGGATO
-                if(modal) modal.style.display = 'none';
-                btnLogin.style.display = 'none'; // Nasconde Login
-                btnLogout.style.display = 'block'; // Mostra Logout al suo posto
-                
-                statusText.style.display = 'block';
-                statusText.innerHTML = `☁️ ${user.email}`;
-                
-                document.getElementById('emailInput').value = '';
-                document.getElementById('passwordInput').value = '';
-            } else {
-                // UTENTE SCOLLEGATO
-                btnLogin.style.display = 'block'; // Mostra Login
-                btnLogout.style.display = 'none'; // Nasconde Logout
-                statusText.style.display = 'none';
-            }
-        });
-    </script>
-</body>
-</html>index.html
-1 file changed
-+215
--556
-lines changed
-Search within code
- 
-‎index.html‎
-+215
--556
-Lines changed: 215 additions & 556 deletions
-Original file line number	Diff line number	Diff line change
-@@ -1,556 +1,215 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Utility</title>
-    <script data-goatcounter="https://hazev.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
-    
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-512.png">
-    <meta name="theme-color" content="#0056b3">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <style>
-        :root {
-            --primary: #0056b3;
-            --bg-color: #f4f7f6;
-            --text-color: #333;
-            --success: #28a745;
-            --danger: #dc3545;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        /* Header bilanciato */
-        .header {
-            width: 100%;
-            max-width: 400px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-top: 10px;
-            margin-bottom: 30px;
-            position: relative;
-        }
-        .header-side {
-            flex: 1;
-            display: flex;
-            align-items: center;
-        }
-        .header-side.right {
-            justify-content: flex-end;
-        }
-        
-        .header-center {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex: 2;
-        }
-        h2 { 
-            margin: 0; 
-            color: var(--primary); 
-            font-size: 30px; 
-            font-weight: bold; 
-            text-align: center;
-            user-select: none; 
-            -webkit-user-select: none;
-            cursor: pointer; 
-        }
-        /* TASTO INSTALLA VERDE E TASTI CLOUD */
-        #install-btn {
-            display: none;
-            background-color: var(--success);
-            color: white;
-            border: none;
-            padding: 8px 14px;
-            font-size: 13px;
-            font-weight: bold;
-            border-radius: 20px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            white-space: nowrap;
-            animation: pulse 2s infinite;
-        }
-        .btn-login {
-            background-color: #ea4335;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            font-size: 12px;
-            font-weight: bold;
-            border-radius: 20px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            display: none; /* Gestito via JS */
-        }
-        .btn-logout {
-            background-color: #525f7f;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            font-size: 12px;
-            font-weight: bold;
-            border-radius: 20px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            display: none; /* Gestito via JS */
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-            50% { transform: scale(1.05); box-shadow: 0 4px 10px rgba(40, 167, 69, 0.4); }
-            100% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        }
-        /* Griglia Bottoni */
-        .menu-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-            width: 100%;
-            max-width: 400px;
-        }
-        .menu-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 18px;
-            font-size: 18px;
-            border-radius: 12px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: all 0.2s ease;
-            text-align: center;
-            text-decoration: none;
-            display: block;
-            font-weight: 500;
-        }
-        .menu-btn:active { 
-            transform: translateY(2px); 
-            opacity: 0.9; 
-        }
-        .btn-oggi {
-            background-color: var(--success);
-            font-size: 20px;
-            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
-        }
-        /* Feedback e Telegram */
-        .feedback-section {
-            margin-top: 40px;
-            margin-bottom: 20px;
-            text-align: center;
-            max-width: 350px;
-        }
-        .feedback-section p {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 15px;
-        }
-        .telegram-icon {
-            display: inline-block;
-            transition: transform 0.2s ease;
-        }
-        .telegram-icon:active { transform: scale(0.9); }
-        /* --- STILI MODALE PROMEMORIA E LOGIN --- */
-        #ddsReminderModal, #authModal { 
-            display: none; 
-            position: fixed; 
-            top: 0; left: 0; width: 100%; height: 100%; 
-            background-color: rgba(0,0,0,0.6); 
-            justify-content: center; align-items: center; 
-            z-index: 5000; padding: 20px; box-sizing: border-box; 
-            backdrop-filter: blur(3px); 
-        }
-        .modal-content { 
-            background: white; padding: 25px; border-radius: 15px; 
-            width: 100%; max-width: 350px; text-align: left; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative;
-        }
-        .dds-reminder-content { border-top: 6px solid #ffc107; }
-        
-        .dds-reminder-item { 
-            background: #f8f9fa; padding: 15px; border-radius: 10px; 
-            margin-bottom: 10px; border-left: 4px solid #0056b3; 
-        }
-        .promemoria-item { border-left: 4px solid #ffc107; }
-        /* --- STILI TASTI NASCOSTI --- */
-        #secret-btn { display: none; background-color: var(--danger); }
-        #generatore-btn { display: none; background-color: var(--danger); }
-        #rotazioni-btn { display: none; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="header-side">
-            <button id="btnOpenLogin" class="btn-login" onclick="document.getElementById('authModal').style.display='flex'">☁️ Login</button>
-            <button id="btnLogoutCloud" class="btn-logout" onclick="logout()">Logout</button>
-        </div>
-        <div class="header-center">
-            <h2 id="main-title">Utility</h2>
-            <div id="user-status" style="font-size: 11px; color: var(--success); font-weight: bold; display: none; margin-top: 4px; text-align: center;"></div>
-        </div>
-        <div class="header-side right">
-            <button id="install-btn">Installa</button>
-        </div>
-    </div>
-    <div class="menu-grid">
-        <a href="calendario.html?oggi=true" class="menu-btn btn-oggi">Turno di Oggi</a>
-        <a href="calendario.html" class="menu-btn">📅 Calendario</a>
-        <a href="dati_calendario.html" class="menu-btn">📊 Statistiche Calendario</a>
-        <a href="turni.html" class="menu-btn">🔄 Turni</a>
-        <a href="orari.html" class="menu-btn">🕒 Orari</a>
-        <a href="rotazioni.html" id="rotazioni-btn" class="menu-btn">👥 Rotazioni</a>
-        <a href="documenti.html" class="menu-btn">📄 Documenti</a>
-        <a href="link.html" class="menu-btn">🔗 Link</a>
-        <a href="contatti.html" class="menu-btn">📞 Contatti</a>
-        <a href="buoni.html" class="menu-btn">🍝 Buoni Pasto</a>
-        <a href="dds.html" class="menu-btn">📂 Archivio DDS</a>
-        <a href="guida.html" class="menu-btn" style="background-color: #6c757d;">📖 Guida</a>
-        
-        <a href="generatore.html" id="generatore-btn" class="menu-btn">🔑 Generatore Codici</a>
-        <a href="admin.html" id="secret-btn" class="menu-btn">🔒 Admin</a>
-    </div>
-    <div class="feedback-section">
-        <p>Se vuoi contattarmi per feedback o altro clicca l'icona qui sotto</p>
-        <a href="http://t.me/MattiaB1058" target="_blank" class="telegram-icon">
-            <svg viewBox="0 0 24 24" width="48" height="48" fill="#0088cc">
-                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.45c.538-.196 1.006.128.832.941z"/>
-            </svg>
-        </a>
-    </div>
-    <div id="ddsReminderModal">
-        <div class="modal-content dds-reminder-content">
-            <h3 style="margin-top: 0; color: #333; text-align: center;">🔔 Avvisi del Giorno</h3>
-            <div id="ddsReminderList" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;"></div>
-            <button id="chiudi-dds-btn" style="background: #0056b3; color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; font-size: 16px; cursor: pointer;">Ho capito, chiudi</button>
-        </div>
-    </div>
-    <div id="authModal">
-        <div class="modal-content" style="text-align: center;">
-            <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f; font-weight: bold;" onclick="document.getElementById('authModal').style.display='none'">&times;</span>
-            
-            <h3 style="margin-top: 5px; color: #32325d;">Backup Cloud</h3>
-            <p style="font-size: 13px; color: #525f7f; margin-bottom: 20px;">Mantieni i tuoi turni al sicuro.</p>
-            <input type="email" id="emailInput" placeholder="La tua email" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #e9ecef; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
-            <input type="password" id="passwordInput" placeholder="Password" style="width: 100%; padding: 12px; margin-bottom: 5px; border: 2px solid #e9ecef; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
-            
-            <div style="text-align: right; margin-bottom: 15px;">
-                <a href="#" onclick="recuperaPassword(); return false;" style="font-size: 12px; color: #0056b3; text-decoration: underline; font-weight: bold;">Password dimenticata?</a>
-            </div>
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button style="background: #32325d; color: white; border: none; border-radius: 8px; margin: 0; flex: 1; padding: 12px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="loginEmail()">Accedi</button>
-                <button style="background: #11cdef; color: white; border: none; border-radius: 8px; margin: 0; flex: 1; padding: 12px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="registraEmail()">Registrati</button>
-            </div>
-            
-            <hr style="border: 0; border-top: 1px solid #e9ecef; margin: 15px 0;">
-            <button style="background: #ea4335; color: white; border: none; border-radius: 8px; width: 100%; margin: 0; padding: 12px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="loginGoogle()">☁️ Accedi con Google</button>
-        </div>
-    </div>
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(() => console.log("SW OK"));
-        }
-        let deferredPrompt;
-        const installBtn = document.getElementById('install-btn');
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.style.display = 'block';
-        });
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') installBtn.style.display = 'none';
-                deferredPrompt = null;
-            }
-        });
-        const titleTrigger = document.getElementById('main-title');
-        const secretBtn = document.getElementById('secret-btn');
-        const rotazioniBtn = document.getElementById('rotazioni-btn');
-        const generatoreBtn = document.getElementById('generatore-btn');
-        
-        let tapCount = 0; let tapTimer; let holdTimer;
-        const ADMIN_TAPS = 5;
-        const GENERATORE_TAPS = 3;
-        const HOLD_DURATION = 3000;
-        document.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('dev_mode_active') === 'true') { if(secretBtn) secretBtn.style.display = 'block'; }
-            if (localStorage.getItem('generatore_sbloccato') === 'true') { if(generatoreBtn) generatoreBtn.style.display = 'block'; }
-            try {
-                const appDataStr = localStorage.getItem('myTurniApp');
-                if (appDataStr && appDataStr.toLowerCase().includes('nove')) { if(rotazioniBtn) rotazioniBtn.style.display = 'block'; }
-            } catch(e) {}
-            
-            checkLocalDDSReminders();
-            checkDDSUpdates();
-        });
-        function resetSequence() { tapCount = 0; clearTimeout(tapTimer); clearTimeout(holdTimer); }
-        function handleStart(e) {
-            if (e.type === 'touchstart') e.preventDefault();
-            clearTimeout(tapTimer); clearTimeout(holdTimer); tapCount++;
-            if (tapCount === GENERATORE_TAPS || tapCount === ADMIN_TAPS) {
-                holdTimer = setTimeout(() => {
-                    if (tapCount === ADMIN_TAPS) {
-                        if(secretBtn) secretBtn.style.display = 'block';
-                        localStorage.setItem('dev_mode_active', 'true');
-                        alert("🛠️ Area Amministratore Sbloccata");
-                    } else if (tapCount === GENERATORE_TAPS) {
-                        if(generatoreBtn) {
-                            generatoreBtn.style.display = 'block';
-                            generatoreBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }
-                        localStorage.setItem('generatore_sbloccato', 'true');
-                        alert("🔑 Generatore Codici Sbloccato");
-                    }
-                    resetSequence();
-                }, HOLD_DURATION);
-            } else if (tapCount > ADMIN_TAPS) { resetSequence(); } 
-            else { tapTimer = setTimeout(resetSequence, 500); }
-        }
-        function handleEnd() { clearTimeout(holdTimer); }
-        titleTrigger.addEventListener('touchstart', handleStart, { passive: false });
-        titleTrigger.addEventListener('touchend', handleEnd);
-        titleTrigger.addEventListener('touchcancel', handleEnd);
-        titleTrigger.addEventListener('mousedown', handleStart);
-        titleTrigger.addEventListener('mouseup', handleEnd);
-        titleTrigger.addEventListener('mouseleave', handleEnd);
-        function checkLocalDDSReminders() {
-            const d = new Date();
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            const todayStr = `${year}-${month}-${day}`;
-            
-            const tomorrow = new Date(d);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-            const todayKey = todayStr;
-            if (localStorage.getItem('dismissed_dds_date') !== todayKey) {
-                localStorage.setItem('dismissed_dds_date', todayKey);
-                localStorage.setItem('dismissed_dds_list', JSON.stringify([]));
-            }
-            let dismissedList = JSON.parse(localStorage.getItem('dismissed_dds_list') || '[]');
-            const request = indexedDB.open("UtilityDB");
-            
-            request.onsuccess = function(event) {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains("archivio_dds")) return;
-                
-                const tx = db.transaction("archivio_dds", "readonly");
-                const store = tx.objectStore("archivio_dds");
-                const requestGetAll = store.getAll();
-                requestGetAll.onsuccess = function() {
-                    const allDDS = requestGetAll.result;
-                    
-                    const todayReminders = allDDS.filter(item => {
-                        const uniqueId = item.id.toString();
-                        if (dismissedList.includes(uniqueId)) return false; 
-                        
-                        if (!item.dateValidita || !Array.isArray(item.dateValidita)) return false;
-                        if (!item.reminder || !Array.isArray(item.reminder)) return false;
-                        let mustShow = false;
-                        if (item.reminder.includes("all_days") && item.dateValidita.includes(todayStr)) {
-                            mustShow = true;
-                        }
-                        if (item.reminder.includes("first_day") && item.dateValidita.length > 0 && item.dateValidita[0] === todayStr) {
-                            mustShow = true;
-                        }
-                        if (item.reminder.includes("day_before") && item.dateValidita.length > 0 && item.dateValidita[0] === tomorrowStr) {
-                            mustShow = true;
-                        }
-                        return mustShow;
-                    });
-                    if (todayReminders.length > 0) {
-                        const list = document.getElementById('ddsReminderList');
-                        if (list) {
-                            list.innerHTML = '';
-                            let idsToDismiss = [];
-                            
-                            todayReminders.forEach(item => {
-                                idsToDismiss.push(item.id.toString());
-                                
-                                const div = document.createElement('div');
-                                div.className = item.isPromemoria ? 'dds-reminder-item promemoria-item' : 'dds-reminder-item';
-                                
-                                let labelTitle = item.isPromemoria ? `🔔 ${item.titolo}` : `📄 ${item.titolo}`;
-                                let htmlContent = `<strong style="font-size:15px;">${labelTitle}</strong>`;
-                                
-                                if (item.note) {
-                                    htmlContent += `<br><small style="color:#555;">${item.note}</small>`;
-                                } else if (!item.isPromemoria) {
-                                    htmlContent += `<br><small style="color:#555;">Vai in Archivio DDS per leggere il PDF allegato.</small>`;
-                                }
-                                div.innerHTML = htmlContent;
-                                list.appendChild(div);
-                            });
-                            
-                            document.getElementById('ddsReminderModal').style.display = 'flex';
-                            
-                            document.getElementById('chiudi-dds-btn').onclick = function() {
-                                document.getElementById('ddsReminderModal').style.display = 'none';
-                                dismissedList.push(...idsToDismiss);
-                                localStorage.setItem('dismissed_dds_list', JSON.stringify(dismissedList));
-                            };
-                        }
-                    }
-                };
-            };
-        }
-        async function checkDDSUpdates() {
-            try {
-                const res = await fetch('last_dds.json?v=' + new Date().getTime());
-                if (!res.ok) return;
-                const data = await res.json();
-                const lastSeen = localStorage.getItem('last_dds_seen');
-                const lastUpdateDate = data.last_update;
-                if (lastUpdateDate !== lastSeen) {
-                    const ddsBtn = document.querySelector('a[href="dds.html"]');
-                    if (ddsBtn) {
-                        ddsBtn.innerHTML = "📂 Archivio DDS <span style='color:#f1c40f; font-size:14px;'>● Nuovo</span>";
-                        ddsBtn.style.border = "2px solid #f1c40f";
-                    }
-                }
-            } catch (e) { console.log("Check DDS fallito"); }
-        }
-    </script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-        import { 
-            getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, 
-            signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail 
-        } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-        const firebaseConfig = {
-          apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4",
-          authDomain: "utility-haze.firebaseapp.com",
-          projectId: "utility-haze",
-          storageBucket: "utility-haze.firebasestorage.app",
-          messagingSenderId: "686237947418",
-          appId: "1:686237947418:web:f03ba19ab8fff43110a3a3"
-        };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
-        window.loginGoogle = () => signInWithPopup(auth, provider).catch(e => alert("Errore Google: " + e.message));
-        
-        window.loginEmail = () => {
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passwordInput').value;
-            if(!email || !pass) return alert("Inserisci email e password.");
-            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Errore accesso: " + e.message));
-        };
-        window.registraEmail = () => {
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passwordInput').value;
-            if(!email || !pass) return alert("Inserisci email e password.");
-            if(pass.length < 6) return alert("La password deve avere almeno 6 caratteri.");
-            createUserWithEmailAndPassword(auth, email, pass).catch(e => alert("Errore registrazione: " + e.message));
-        };
-        // --- NUOVA FUNZIONE: RECUPERO PASSWORD ---
-        window.recuperaPassword = () => {
-            const email = document.getElementById('emailInput').value;
-            if(!email) {
-                return alert("Per favore, inserisci la tua email nel campo apposito prima di cliccare su 'Password dimenticata?'.");
-            }
-            sendPasswordResetEmail(auth, email)
-                .then(() => {
-                    alert("Ti abbiamo inviato un'email con il link per resettare la password. Controlla la tua casella di posta (e la cartella Spam).");
-                })
-                .catch(e => {
-                    alert("Errore durante l'invio dell'email: " + e.message);
-                });
-        };
-        window.logout = () => signOut(auth).catch(e => console.error(e));
-        onAuthStateChanged(auth, (user) => {
-            const btnLogin = document.getElementById('btnOpenLogin');
-            const btnLogout = document.getElementById('btnLogoutCloud');
-            const statusText = document.getElementById('user-status');
-            const modal = document.getElementById('authModal');
-            if (user) {
-                // UTENTE LOGGATO
-                if(modal) modal.style.display = 'none';
-                btnLogin.style.display = 'none'; // Nasconde Login
-                btnLogout.style.display = 'block'; // Mostra Logout al suo posto
-                
-                statusText.style.display = 'block';
-                statusText.innerHTML = `☁️ ${user.email}`;
-                
-                document.getElementById('emailInput').value = '';
-                document.getElementById('passwordInput').value = '';
-            } else {
-                // UTENTE SCOLLEGATO
-                btnLogin.style.display = 'block'; // Mostra Login
-                btnLogout.style.display = 'none'; // Nasconde Logout
-                statusText.style.display = 'none';
-            }
-        });
-    </script>
-</body>
-</html>index.html
-1 file changed
-+215
--556
-lines changed
-Search within code
- 
-‎index.html‎
-+215
--556
-Lines changed: 215 additions & 556 deletions
-Original file line number	Diff line number	Diff line change
-@@ -1,556 +1,215 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Utility</title>
-    <script data-goatcounter="https://hazev.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
-    
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-512.png">
-    <meta name="theme-color" content="#0056b3">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <style>
-        :root {
-            --primary: #0056b3;
-            --bg-color: #f4f7f6;
-            --text-color: #333;
-            --success: #28a745;
-            --danger: #dc3545;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        /* Header bilanciato */
-        .header {
-            width: 100%;
-            max-width: 400px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-top: 10px;
-            margin-bottom: 30px;
-            position: relative;
-        }
-        .header-side {
-            flex: 1;
-            display: flex;
-            align-items: center;
-        }
-        .header-side.right {
-            justify-content: flex-end;
-        }
-        
-        .header-center {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex: 2;
-        }
-        h2 { 
-            margin: 0; 
-            color: var(--primary); 
-            font-size: 30px; 
-            font-weight: bold; 
-            text-align: center;
-            user-select: none; 
-            -webkit-user-select: none;
-            cursor: pointer; 
-        }
-        /* TASTO INSTALLA VERDE E TASTI CLOUD */
-        #install-btn {
-            display: none;
-            background-color: var(--success);
-            color: white;
-            border: none;
-            padding: 8px 14px;
-            font-size: 13px;
-            font-weight: bold;
-            border-radius: 20px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            white-space: nowrap;
-            animation: pulse 2s infinite;
-        }
-        .btn-login {
-            background-color: #ea4335;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            font-size: 12px;
-            font-weight: bold;
-            border-radius: 20px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            display: none; /* Gestito via JS */
-        }
-        .btn-logout {
-            background-color: #525f7f;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            font-size: 12px;
-            font-weight: bold;
-            border-radius: 20px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            display: none; /* Gestito via JS */
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-            50% { transform: scale(1.05); box-shadow: 0 4px 10px rgba(40, 167, 69, 0.4); }
-            100% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        }
-        /* Griglia Bottoni */
-        .menu-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-            width: 100%;
-            max-width: 400px;
-        }
-        .menu-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 18px;
-            font-size: 18px;
-            border-radius: 12px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: all 0.2s ease;
-            text-align: center;
-            text-decoration: none;
-            display: block;
-            font-weight: 500;
-        }
-        .menu-btn:active { 
-            transform: translateY(2px); 
-            opacity: 0.9; 
-        }
-        .btn-oggi {
-            background-color: var(--success);
-            font-size: 20px;
-            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
-        }
-        /* Feedback e Telegram */
-        .feedback-section {
-            margin-top: 40px;
-            margin-bottom: 20px;
-            text-align: center;
-            max-width: 350px;
-        }
-        .feedback-section p {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 15px;
-        }
-        .telegram-icon {
-            display: inline-block;
-            transition: transform 0.2s ease;
-        }
-        .telegram-icon:active { transform: scale(0.9); }
-        /* --- STILI MODALE PROMEMORIA E LOGIN --- */
-        #ddsReminderModal, #authModal { 
-            display: none; 
-            position: fixed; 
-            top: 0; left: 0; width: 100%; height: 100%; 
-            background-color: rgba(0,0,0,0.6); 
-            justify-content: center; align-items: center; 
-            z-index: 5000; padding: 20px; box-sizing: border-box; 
-            backdrop-filter: blur(3px); 
-        }
-        .modal-content { 
-            background: white; padding: 25px; border-radius: 15px; 
-            width: 100%; max-width: 350px; text-align: left; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative;
-        }
-        .dds-reminder-content { border-top: 6px solid #ffc107; }
-        
-        .dds-reminder-item { 
-            background: #f8f9fa; padding: 15px; border-radius: 10px; 
-            margin-bottom: 10px; border-left: 4px solid #0056b3; 
-        }
-        .promemoria-item { border-left: 4px solid #ffc107; }
-        /* --- STILI TASTI NASCOSTI --- */
-        #secret-btn { display: none; background-color: var(--danger); }
-        #generatore-btn { display: none; background-color: var(--danger); }
-        #rotazioni-btn { display: none; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="header-side">
-            <button id="btnOpenLogin" class="btn-login" onclick="document.getElementById('authModal').style.display='flex'">☁️ Login</button>
-            <button id="btnLogoutCloud" class="btn-logout" onclick="logout()">Logout</button>
-        </div>
-        <div class="header-center">
-            <h2 id="main-title">Utility</h2>
-            <div id="user-status" style="font-size: 11px; color: var(--success); font-weight: bold; display: none; margin-top: 4px; text-align: center;"></div>
-        </div>
-        <div class="header-side right">
-            <button id="install-btn">Installa</button>
-        </div>
-    </div>
-    <div class="menu-grid">
-        <a href="calendario.html?oggi=true" class="menu-btn btn-oggi">Turno di Oggi</a>
-        <a href="calendario.html" class="menu-btn">📅 Calendario</a>
-        <a href="dati_calendario.html" class="menu-btn">📊 Statistiche Calendario</a>
-        <a href="turni.html" class="menu-btn">🔄 Turni</a>
-        <a href="orari.html" class="menu-btn">🕒 Orari</a>
-        <a href="rotazioni.html" id="rotazioni-btn" class="menu-btn">👥 Rotazioni</a>
-        <a href="documenti.html" class="menu-btn">📄 Documenti</a>
-        <a href="link.html" class="menu-btn">🔗 Link</a>
-        <a href="contatti.html" class="menu-btn">📞 Contatti</a>
-        <a href="buoni.html" class="menu-btn">🍝 Buoni Pasto</a>
-        <a href="dds.html" class="menu-btn">📂 Archivio DDS</a>
-        <a href="guida.html" class="menu-btn" style="background-color: #6c757d;">📖 Guida</a>
-        
-        <a href="generatore.html" id="generatore-btn" class="menu-btn">🔑 Generatore Codici</a>
-        <a href="admin.html" id="secret-btn" class="menu-btn">🔒 Admin</a>
-    </div>
-    <div class="feedback-section">
-        <p>Se vuoi contattarmi per feedback o altro clicca l'icona qui sotto</p>
-        <a href="http://t.me/MattiaB1058" target="_blank" class="telegram-icon">
-            <svg viewBox="0 0 24 24" width="48" height="48" fill="#0088cc">
-                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.45c.538-.196 1.006.128.832.941z"/>
-            </svg>
-        </a>
-    </div>
-    <div id="ddsReminderModal">
-        <div class="modal-content dds-reminder-content">
-            <h3 style="margin-top: 0; color: #333; text-align: center;">🔔 Avvisi del Giorno</h3>
-            <div id="ddsReminderList" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;"></div>
-            <button id="chiudi-dds-btn" style="background: #0056b3; color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; font-size: 16px; cursor: pointer;">Ho capito, chiudi</button>
-        </div>
-    </div>
-    <div id="authModal">
-        <div class="modal-content" style="text-align: center;">
-            <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f; font-weight: bold;" onclick="document.getElementById('authModal').style.display='none'">&times;</span>
-            
-            <h3 style="margin-top: 5px; color: #32325d;">Backup Cloud</h3>
-            <p style="font-size: 13px; color: #525f7f; margin-bottom: 20px;">Mantieni i tuoi turni al sicuro.</p>
-            <input type="email" id="emailInput" placeholder="La tua email" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #e9ecef; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
-            <input type="password" id="passwordInput" placeholder="Password" style="width: 100%; padding: 12px; margin-bottom: 5px; border: 2px solid #e9ecef; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
-            
-            <div style="text-align: right; margin-bottom: 15px;">
-                <a href="#" onclick="recuperaPassword(); return false;" style="font-size: 12px; color: #0056b3; text-decoration: underline; font-weight: bold;">Password dimenticata?</a>
-            </div>
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button style="background: #32325d; color: white; border: none; border-radius: 8px; margin: 0; flex: 1; padding: 12px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="loginEmail()">Accedi</button>
-                <button style="background: #11cdef; color: white; border: none; border-radius: 8px; margin: 0; flex: 1; padding: 12px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="registraEmail()">Registrati</button>
-            </div>
-            
-            <hr style="border: 0; border-top: 1px solid #e9ecef; margin: 15px 0;">
-            <button style="background: #ea4335; color: white; border: none; border-radius: 8px; width: 100%; margin: 0; padding: 12px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="loginGoogle()">☁️ Accedi con Google</button>
-        </div>
-    </div>
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(() => console.log("SW OK"));
-        }
-        let deferredPrompt;
-        const installBtn = document.getElementById('install-btn');
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.style.display = 'block';
-        });
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') installBtn.style.display = 'none';
-                deferredPrompt = null;
-            }
-        });
-        const titleTrigger = document.getElementById('main-title');
-        const secretBtn = document.getElementById('secret-btn');
-        const rotazioniBtn = document.getElementById('rotazioni-btn');
-        const generatoreBtn = document.getElementById('generatore-btn');
-        
-        let tapCount = 0; let tapTimer; let holdTimer;
-        const ADMIN_TAPS = 5;
-        const GENERATORE_TAPS = 3;
-        const HOLD_DURATION = 3000;
-        document.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('dev_mode_active') === 'true') { if(secretBtn) secretBtn.style.display = 'block'; }
-            if (localStorage.getItem('generatore_sbloccato') === 'true') { if(generatoreBtn) generatoreBtn.style.display = 'block'; }
-            try {
-                const appDataStr = localStorage.getItem('myTurniApp');
-                if (appDataStr && appDataStr.toLowerCase().includes('nove')) { if(rotazioniBtn) rotazioniBtn.style.display = 'block'; }
-            } catch(e) {}
-            
-            checkLocalDDSReminders();
-            checkDDSUpdates();
-        });
-        function resetSequence() { tapCount = 0; clearTimeout(tapTimer); clearTimeout(holdTimer); }
-        function handleStart(e) {
-            if (e.type === 'touchstart') e.preventDefault();
-            clearTimeout(tapTimer); clearTimeout(holdTimer); tapCount++;
-            if (tapCount === GENERATORE_TAPS || tapCount === ADMIN_TAPS) {
-                holdTimer = setTimeout(() => {
-                    if (tapCount === ADMIN_TAPS) {
-                        if(secretBtn) secretBtn.style.display = 'block';
-                        localStorage.setItem('dev_mode_active', 'true');
-                        alert("🛠️ Area Amministratore Sbloccata");
-                    } else if (tapCount === GENERATORE_TAPS) {
-                        if(generatoreBtn) {
-                            generatoreBtn.style.display = 'block';
-                            generatoreBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }
-                        localStorage.setItem('generatore_sbloccato', 'true');
-                        alert("🔑 Generatore Codici Sbloccato");
-                    }
-                    resetSequence();
-                }, HOLD_DURATION);
-            } else if (tapCount > ADMIN_TAPS) { resetSequence(); } 
-            else { tapTimer = setTimeout(resetSequence, 500); }
-        }
-        function handleEnd() { clearTimeout(holdTimer); }
-        titleTrigger.addEventListener('touchstart', handleStart, { passive: false });
-        titleTrigger.addEventListener('touchend', handleEnd);
-        titleTrigger.addEventListener('touchcancel', handleEnd);
-        titleTrigger.addEventListener('mousedown', handleStart);
-        titleTrigger.addEventListener('mouseup', handleEnd);
-        titleTrigger.addEventListener('mouseleave', handleEnd);
-        function checkLocalDDSReminders() {
-            const d = new Date();
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            const todayStr = `${year}-${month}-${day}`;
-            
-            const tomorrow = new Date(d);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-            const todayKey = todayStr;
-            if (localStorage.getItem('dismissed_dds_date') !== todayKey) {
-                localStorage.setItem('dismissed_dds_date', todayKey);
-                localStorage.setItem('dismissed_dds_list', JSON.stringify([]));
-            }
-            let dismissedList = JSON.parse(localStorage.getItem('dismissed_dds_list') || '[]');
-            const request = indexedDB.open("UtilityDB");
-            
-            request.onsuccess = function(event) {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains("archivio_dds")) return;
-                
-                const tx = db.transaction("archivio_dds", "readonly");
-                const store = tx.objectStore("archivio_dds");
-                const requestGetAll = store.getAll();
-                requestGetAll.onsuccess = function() {
-                    const allDDS = requestGetAll.result;
-                    
-                    const todayReminders = allDDS.filter(item => {
-                        const uniqueId = item.id.toString();
-                        if (dismissedList.includes(uniqueId)) return false; 
-                        
-                        if (!item.dateValidita || !Array.isArray(item.dateValidita)) return false;
-                        if (!item.reminder || !Array.isArray(item.reminder)) return false;
-                        let mustShow = false;
-                        if (item.reminder.includes("all_days") && item.dateValidita.includes(todayStr)) {
-                            mustShow = true;
-                        }
-                        if (item.reminder.includes("first_day") && item.dateValidita.length > 0 && item.dateValidita[0] === todayStr) {
-                            mustShow = true;
-                        }
-                        if (item.reminder.includes("day_before") && item.dateValidita.length > 0 && item.dateValidita[0] === tomorrowStr) {
-                            mustShow = true;
-                        }
-                        return mustShow;
-                    });
-                    if (todayReminders.length > 0) {
-                        const list = document.getElementById('ddsReminderList');
-                        if (list) {
-                            list.innerHTML = '';
-                            let idsToDismiss = [];
-                            
-                            todayReminders.forEach(item => {
-                                idsToDismiss.push(item.id.toString());
-                                
-                                const div = document.createElement('div');
-                                div.className = item.isPromemoria ? 'dds-reminder-item promemoria-item' : 'dds-reminder-item';
-                                
-                                let labelTitle = item.isPromemoria ? `🔔 ${item.titolo}` : `📄 ${item.titolo}`;
-                                let htmlContent = `<strong style="font-size:15px;">${labelTitle}</strong>`;
-                                
-                                if (item.note) {
-                                    htmlContent += `<br><small style="color:#555;">${item.note}</small>`;
-                                } else if (!item.isPromemoria) {
-                                    htmlContent += `<br><small style="color:#555;">Vai in Archivio DDS per leggere il PDF allegato.</small>`;
-                                }
-                                div.innerHTML = htmlContent;
-                                list.appendChild(div);
-                            });
-                            
-                            document.getElementById('ddsReminderModal').style.display = 'flex';
-                            
-                            document.getElementById('chiudi-dds-btn').onclick = function() {
-                                document.getElementById('ddsReminderModal').style.display = 'none';
-                                dismissedList.push(...idsToDismiss);
-                                localStorage.setItem('dismissed_dds_list', JSON.stringify(dismissedList));
-                            };
-                        }
-                    }
-                };
-            };
-        }
-        async function checkDDSUpdates() {
-            try {
-                const res = await fetch('last_dds.json?v=' + new Date().getTime());
-                if (!res.ok) return;
-                const data = await res.json();
-                const lastSeen = localStorage.getItem('last_dds_seen');
-                const lastUpdateDate = data.last_update;
-                if (lastUpdateDate !== lastSeen) {
-                    const ddsBtn = document.querySelector('a[href="dds.html"]');
-                    if (ddsBtn) {
-                        ddsBtn.innerHTML = "📂 Archivio DDS <span style='color:#f1c40f; font-size:14px;'>● Nuovo</span>";
-                        ddsBtn.style.border = "2px solid #f1c40f";
-                    }
-                }
-            } catch (e) { console.log("Check DDS fallito"); }
-        }
-    </script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-        import { 
-            getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, 
-            signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail 
-        } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-        const firebaseConfig = {
-          apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4",
-          authDomain: "utility-haze.firebaseapp.com",
-          projectId: "utility-haze",
-          storageBucket: "utility-haze.firebasestorage.app",
-          messagingSenderId: "686237947418",
-          appId: "1:686237947418:web:f03ba19ab8fff43110a3a3"
-        };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
-        window.loginGoogle = () => signInWithPopup(auth, provider).catch(e => alert("Errore Google: " + e.message));
-        
-        window.loginEmail = () => {
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passwordInput').value;
-            if(!email || !pass) return alert("Inserisci email e password.");
-            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Errore accesso: " + e.message));
-        };
-        window.registraEmail = () => {
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passwordInput').value;
-            if(!email || !pass) return alert("Inserisci email e password.");
-            if(pass.length < 6) return alert("La password deve avere almeno 6 caratteri.");
-            createUserWithEmailAndPassword(auth, email, pass).catch(e => alert("Errore registrazione: " + e.message));
-        };
-        // --- NUOVA FUNZIONE: RECUPERO PASSWORD ---
-        window.recuperaPassword = () => {
-            const email = document.getElementById('emailInput').value;
-            if(!email) {
-                return alert("Per favore, inserisci la tua email nel campo apposito prima di cliccare su 'Password dimenticata?'.");
-            }
-            sendPasswordResetEmail(auth, email)
-                .then(() => {
-                    alert("Ti abbiamo inviato un'email con il link per resettare la password. Controlla la tua casella di posta (e la cartella Spam).");
-                })
-                .catch(e => {
-                    alert("Errore durante l'invio dell'email: " + e.message);
-                });
-        };
-        window.logout = () => signOut(auth).catch(e => console.error(e));
-        onAuthStateChanged(auth, (user) => {
-            const btnLogin = document.getElementById('btnOpenLogin');
-            const btnLogout = document.getElementById('btnLogoutCloud');
-            const statusText = document.getElementById('user-status');
-            const modal = document.getElementById('authModal');
+
             if (user) {
                 // UTENTE LOGGATO
                 if(modal) modal.style.display = 'none';
@@ -1513,3 +553,4 @@ Original file line number	Diff line number	Diff line change
     </script>
 </body>
 </html>
+ 

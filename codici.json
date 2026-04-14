@@ -178,5 +178,11 @@
     "nome": "Ricca Nicola",
     "data_creazione": "2026-04-10",
     "attivo": true
+  },
+  {
+    "codice": "CJS9AM",
+    "nome": "Passarella Mattia",
+    "data_creazione": "2026-04-14",
+    "attivo": true
   }
 ]

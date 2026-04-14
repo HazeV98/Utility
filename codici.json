@@ -184,5 +184,11 @@
     "nome": "Passarella Mattia",
     "data_creazione": "2026-04-14",
     "attivo": true
+  },
+  {
+    "codice": "25MIZP",
+    "nome": "Secco Matteo",
+    "data_creazione": "2026-04-14",
+    "attivo": true
   }
 ]

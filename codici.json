@@ -202,5 +202,11 @@
     "nome": "Quaresima Eleonora",
     "data_creazione": "2026-04-16",
     "attivo": true
+  },
+  {
+    "codice": "LROYGU",
+    "nome": "Ferro Jacopo",
+    "data_creazione": "2026-04-16",
+    "attivo": true
   }
 ]

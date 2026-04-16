@@ -198,12 +198,17 @@
         <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
         <a href="dati_calendario.html" class="sidebar-link">📊 Statistiche Calendario</a>
         <a href="turni.html" class="sidebar-link">🔄 Turni</a>
+        <a href="bacheca_turni.html" class="sidebar-link">🔄 Bacheca Turni</a>
+        <a href="rubrica.html" class="sidebar-link">📞 Rubrica Colleghi</a>
+        <a href="rotazione_ferie.html" class="sidebar-link">🌴 Rotazione Ferie</a>
         <a href="orari.html" class="sidebar-link">🕒 Orari</a>
         <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
         <a href="rotazioni.html" class="sidebar-link" style="background-color: #f4f7f6; color: var(--primary); font-weight: bold;">👥 Rotazioni</a>
         <a href="link.html" class="sidebar-link">🔗 Link</a>
-        <a href="contatti.html" class="sidebar-link">📞 Contatti</a>
+        <a href="contatti.html" class="sidebar-link">📇 Contatti</a>
         <a href="buoni.html" class="sidebar-link">🍝 Buoni Pasto</a>
+        <a href="dds.html" class="sidebar-link">📂 Archivio DDS</a>
+        <a href="guida.html" class="sidebar-link">📖 Guida</a>
     </div>
 
     <div id="auth-section">
@@ -304,16 +309,11 @@
         function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
         function chiudiMenuLaterale() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; }
 
-        // Impostazioni Repository 
-        const GITHUB_USER = "HazeV98"; 
-        const GITHUB_REPO = "Utility"; 
+        // Variabili Globali
         const CARTELLA_BASE = "rotazioni";
-
         let databaseTurni = []; 
         let activePredictors = []; 
-        
         let globalShiftData = {};
-        let globalImgList = [];
         let globalImgDir = "";
         let pzInstance = null;
         let currentImagePath = "";
@@ -355,11 +355,6 @@
                     document.getElementById('content-section').style.display = 'flex';
                     localStorage.setItem('auth_rotazioni', codice);
                     errorMsg.innerText = "";
-
-                    // NUOVO: Sincronizza il codice con Firebase se disponibile
-                    if (typeof window.syncRotazioniAuthToCloud === 'function') {
-                        window.syncRotazioniAuthToCloud(codice);
-                    }
                     
                     initPanzoom();
                     caricaDatiTurniSilenzioso(); 
@@ -380,37 +375,31 @@
             }
         }
 
+        // --- LETTURA SILENZIOSA DATI (100% FIREBASE) ---
         async function caricaDatiTurniSilenzioso() {
             try {
-                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`);
-                if (!res.ok) return;
-                const files = await res.json();
+                const resMappa = await fetch('mappa_file.json?t=' + new Date().getTime());
+                if (!resMappa.ok) return;
                 
-                let dirs = files.filter(f => f.type === "dir" && f.name.startsWith("turni_pdf_"));
-                if (dirs.length === 0) return;
+                const mappa = await resMappa.json();
+                const rootFiles = mappa.root || [];
                 
-                dirs.sort((a,b) => b.name.localeCompare(a.name));
-                let latestTurniDir = dirs[0].name;
-                globalImgDir = latestTurniDir.replace("turni_pdf_", "turni_");
+                // Cerca l'ultima cartella dei turni disponibile
+                let dirs = rootFiles.filter(f => f.startsWith("turni_pdf_"));
+                if (dirs.length > 0) {
+                    dirs.sort((a,b) => b.localeCompare(a));
+                    let latestTurniDir = dirs[0];
+                    globalImgDir = latestTurniDir.replace("turni_pdf_", "turni_");
+                }
                 
-                fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${globalImgDir}`)
-                    .then(r => r.json())
-                    .then(imgFiles => {
-                        if (Array.isArray(imgFiles)) {
-                            globalImgList = imgFiles.filter(f => f.name.toLowerCase().endsWith(".jpg") || f.name.toLowerCase().endsWith(".png"));
-                        }
-                    }).catch(e => console.log("Immagini turni non trovate", e));
-                
-                const tRes = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${latestTurniDir}`);
-                const tFiles = await tRes.json();
-                let jsonFiles = tFiles.filter(f => f.name.toLowerCase().endsWith(".json"));
-                
+                // Cerca e unisci tutti i file info_turni_.json presenti nella root
+                let jsonFiles = rootFiles.filter(f => f.startsWith("info_turni_") && f.endsWith(".json"));
                 for (let jf of jsonFiles) {
-                    fetch(jf.download_url + `?t=${new Date().getTime()}`)
+                    fetch(jf + `?t=${new Date().getTime()}`)
                         .then(r => r.json())
                         .then(jData => {
                             globalShiftData = { ...globalShiftData, ...jData };
-                        }).catch(e => console.error("Errore json", jf.name));
+                        }).catch(e => console.error("Errore json info turni", jf));
                 }
             } catch (e) {
                 console.error("Errore caricamento dati turni", e);
@@ -431,22 +420,25 @@
 
             try {
                 const timestamp = new Date().getTime();
-                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${CARTELLA_BASE}?t=${timestamp}`);
-                if (!res.ok) throw new Error();
+                
+                // Leggiamo la Mappa File invece di interrogare GitHub
+                const resMappa = await fetch('mappa_file.json?t=' + timestamp);
+                if (!resMappa.ok) throw new Error("Mappa non trovata");
+                
+                const datiMappa = await resMappa.json();
+                const files = datiMappa.rotazioni || []; 
 
-                const files = await res.json();
                 let groups = {};
 
-                files.forEach(f => {
-                    if(f.type !== "file") return;
-                    let ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase();
-                    let baseName = f.name.substring(0, f.name.lastIndexOf('.'));
+                files.forEach(nomeFile => {
+                    let ext = nomeFile.substring(nomeFile.lastIndexOf('.')).toLowerCase();
+                    let baseName = nomeFile.substring(0, nomeFile.lastIndexOf('.'));
                     
                     if(['.pdf', '.xlsx', '.xls', '.json'].includes(ext)) {
                         if(!groups[baseName]) groups[baseName] = { pdf: null, excel: null, json: null, base: baseName };
-                        if(ext === '.pdf') groups[baseName].pdf = f;
-                        if(ext === '.xlsx' || ext === '.xls') groups[baseName].excel = f;
-                        if(ext === '.json') groups[baseName].json = f;
+                        if(ext === '.pdf') groups[baseName].pdf = nomeFile;
+                        if(ext === '.xlsx' || ext === '.xls') groups[baseName].excel = nomeFile;
+                        if(ext === '.json') groups[baseName].json = nomeFile;
                     }
                 });
 
@@ -468,7 +460,8 @@
 
                     if (g.json) {
                         try {
-                            let dataRes = await fetch(g.json.download_url + `?t=${timestamp}`);
+                            // Carica il JSON usando il percorso relativo (da Firebase)
+                            let dataRes = await fetch(`${CARTELLA_BASE}/${g.json}?t=${timestamp}`);
                             let jsonData = await dataRes.json();
 
                             Object.keys(jsonData).forEach(rotName => {
@@ -513,7 +506,7 @@
                         let btnSearch = document.createElement('button');
                         btnSearch.className = "file-btn btn-search";
                         btnSearch.innerHTML = `🔍 Cerca (Modalità Lenta)`;
-                        btnSearch.onclick = () => apriFinestraRicerca(g.pdf ? g.pdf.name : g.excel.name, files);
+                        btnSearch.onclick = () => apriFinestraRicerca(g.pdf ? g.pdf : g.excel, files);
                         btnGrid.appendChild(btnSearch);
                     }
 
@@ -521,7 +514,7 @@
                         let btnPdf = document.createElement('a');
                         btnPdf.className = "file-btn btn-pdf";
                         btnPdf.innerHTML = `📄 Apri PDF Originale`;
-                        btnPdf.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${g.pdf.name}?t=${timestamp}`;
+                        btnPdf.href = `${CARTELLA_BASE}/${g.pdf}?t=${timestamp}`; // Percorso Relativo Firebase!
                         btnPdf.target = "_blank";
                         btnGrid.appendChild(btnPdf);
                     }
@@ -531,7 +524,7 @@
                 }
 
             } catch (e) { 
-                area.innerHTML = `<div class="status-message">Errore di connessione. Riprova più tardi.</div>`; 
+                area.innerHTML = `<div class="status-message">Errore: Indice Mappa non trovato. Attendi l'aggiornamento del server.</div>`; 
             }
         }
 
@@ -881,7 +874,7 @@
         }
 
         // ==========================================
-        // GESTIONE PANZOOM E MODALE IMMAGINI
+        // GESTIONE PANZOOM E MODALE IMMAGINI (100% FIREBASE)
         // ==========================================
         function initPanzoom() {
             const imgElem = document.getElementById('turnoImage');
@@ -917,29 +910,46 @@
         }
 
         function apriImmagineDaRotazioni(turnoPilota) {
-            if (!globalImgList || globalImgList.length === 0) {
-                alert("Nessuna immagine disponibile o caricamento in corso. Riprova tra pochi istanti.");
+            if (!globalImgDir) {
+                alert("Cartella immagini non trovata. Attendi l'aggiornamento o verifica la connessione.");
                 return;
             }
 
-            const match = globalImgList.find(f => {
-                const nomeSenzaExt = f.name.replace(/\.[^/.]+$/, "").toUpperCase();
-                return nomeSenzaExt.includes(turnoPilota.toUpperCase());
-            });
-
-            if (match) {
-                currentImagePath = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${globalImgDir}/${match.name}`;
-                let imgElement = document.getElementById('turnoImage');
-                imgElement.onerror = function() {
-                    alert("L'immagine del turno non è stata trovata.");
-                    chiudiImageModal();
-                }; 
-                imgElement.src = currentImagePath;
+            let imgElement = document.getElementById('turnoImage');
+            
+            // Tenta prima con estensione .jpg
+            currentImagePath = `${globalImgDir}/${turnoPilota}.jpg`;
+            
+            imgElement.onload = function() {
                 if (pzInstance) { pzInstance.reset(); }
                 document.getElementById('imageModal').style.display = 'block';
-            } else {
-                alert("L'immagine per il turno " + turnoPilota + " non è presente nell'archivio attuale.");
-            }
+                // Rimuove gli handler una volta caricato per evitare loop
+                imgElement.onload = null;
+                imgElement.onerror = null;
+            };
+
+            imgElement.onerror = function() {
+                // Se fallisce .jpg, tenta con .png
+                currentImagePath = `${globalImgDir}/${turnoPilota}.png`;
+                
+                imgElement.onload = function() {
+                    if (pzInstance) { pzInstance.reset(); }
+                    document.getElementById('imageModal').style.display = 'block';
+                    imgElement.onload = null;
+                    imgElement.onerror = null;
+                };
+                
+                imgElement.onerror = function() {
+                    alert("L'immagine per il turno " + turnoPilota + " non è presente nell'archivio.");
+                    chiudiImageModal();
+                    imgElement.onload = null;
+                    imgElement.onerror = null;
+                };
+                
+                imgElement.src = currentImagePath; // Innesca il secondo tentativo
+            };
+
+            imgElement.src = currentImagePath; // Innesca il primo tentativo
         }
 
         function chiudiSeSfondoModalImg(event) { 
@@ -962,8 +972,8 @@
             document.body.removeChild(a);
         }
 
-        // --- VECCHIA RICERCA CON EXCEL ---
-        async function apriFinestraRicerca(pdfName, tuttiIFile) {
+        // --- RICERCA CON EXCEL (Ora usa percorsi Firebase) ---
+        async function apriFinestraRicerca(pdfName, tuttiIFileNomi) {
             const modal = document.getElementById('search-modal');
             const statusEl = document.getElementById('modal-status');
             const sezioniRicerca = document.getElementById('modal-search-sections');
@@ -982,21 +992,21 @@
             const timestamp = new Date().getTime();
             const baseName = pdfName.substring(0, pdfName.lastIndexOf('.'));
             
-            let targetUrl = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${CARTELLA_BASE}/${encodeURIComponent(baseName)}.xlsx?t=${timestamp}`;
+            // Usiamo il percorso locale Firebase
+            let targetUrl = `${CARTELLA_BASE}/${encodeURIComponent(baseName)}.xlsx?t=${timestamp}`;
             let res;
 
             try {
                 res = await fetch(targetUrl);
                 
-                if (!res.ok && tuttiIFile) {
+                if (!res.ok && tuttiIFileNomi) {
                     const baseNameLower = baseName.toLowerCase().trim();
-                    const excelFile = tuttiIFile.find(item => {
-                        if (item.type !== "file") return false;
-                        const itemNameLower = item.name.toLowerCase();
+                    const excelFileName = tuttiIFileNomi.find(nome => {
+                        const itemNameLower = nome.toLowerCase();
                         return itemNameLower === baseNameLower + ".xlsx" || itemNameLower === baseNameLower + ".xls";
                     });
 
-                    if (excelFile) res = await fetch(excelFile.download_url + `?t=${timestamp}`);
+                    if (excelFileName) res = await fetch(`${CARTELLA_BASE}/${excelFileName}?t=${timestamp}`);
                 }
 
                 if (!res || !res.ok) throw new Error("File Excel non trovato.");
@@ -1126,67 +1136,6 @@
             return arr.includes(val) || val.match(/^[0-9]+[A-Z]+[0-9]*$/) || val.match(/^[A-Z]+[0-9]+$/);
         }
     </script>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-
-        const firebaseConfig = {
-          apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4",
-          authDomain: "utility-haze.firebaseapp.com",
-          projectId: "utility-haze",
-          storageBucket: "utility-haze.firebasestorage.app",
-          messagingSenderId: "686237947418",
-          appId: "1:686237947418:web:f03ba19ab8fff43110a3a3"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        window.utenteLoggato = null;
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                window.utenteLoggato = user.uid;
-                try {
-                    const docRef = doc(db, "utenti", window.utenteLoggato);
-                    const docSnap = await getDoc(docRef);
-
-                    if (docSnap.exists()) {
-                        let datiCloud = docSnap.data();
-                        
-                        // Controllo incrociato del codice di accesso
-                        if (datiCloud.auth_rotazioni) {
-                            let localCode = localStorage.getItem('auth_rotazioni');
-                            // Se il codice nel cloud è diverso o mancante sul telefono, scaricalo e avvia l'app
-                            if (localCode !== datiCloud.auth_rotazioni) {
-                                localStorage.setItem('auth_rotazioni', datiCloud.auth_rotazioni);
-                                eseguiVerifica(datiCloud.auth_rotazioni, true);
-                            }
-                        } else {
-                            // Se nel cloud non c'è, ma sul telefono sì, lo spara al cloud
-                            let localCode = localStorage.getItem('auth_rotazioni');
-                            if (localCode) {
-                                window.syncRotazioniAuthToCloud(localCode);
-                            }
-                        }
-                    }
-                } catch(e) { console.error("Errore Sync Cloud Rotazioni:", e); }
-            }
-        });
-
-        // Funzione per salvare il codice nel profilo Cloud
-        window.syncRotazioniAuthToCloud = async (codice) => {
-            if (window.utenteLoggato) {
-                try {
-                    const docRef = doc(db, "utenti", window.utenteLoggato);
-                    await setDoc(docRef, { auth_rotazioni: codice }, { merge: true });
-                } catch(e) { console.error("Errore Salvataggio Codice Cloud:", e); }
-            }
-        };
-    </script>
 </body>
 </html>
- 
+

@@ -120,10 +120,13 @@
     <a href="calendario.html" class="sidebar-link" style="background-color: #f4f7f6; color: var(--primary); font-weight: bold;">📅 Calendario</a>
     <a href="dati_calendario.html" class="sidebar-link">📊 Statistiche Calendario</a>
     <a href="turni.html" class="sidebar-link">🔄 Turni</a>
+    <a href="bacheca_turni.html" class="sidebar-link">🔄 Bacheca Turni</a>
+    <a href="rubrica.html" class="sidebar-link">📞 Rubrica Colleghi</a>
+    <a href="rotazione_ferie.html" class="sidebar-link">🌴 Rotazione Ferie</a>
     <a href="orari.html" class="sidebar-link">🕒 Orari</a>
     <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
     <a href="link.html" class="sidebar-link">🔗 Link</a>
-    <a href="contatti.html" class="sidebar-link">📞 Contatti</a>
+    <a href="contatti.html" class="sidebar-link">📇 Contatti</a>
     <a href="buoni.html" class="sidebar-link">🍝 Buoni Pasto</a>
     <a href="dds.html" class="sidebar-link">📂 Archivio DDS</a>
     <a href="guida.html" class="sidebar-link">📖 Guida</a>
@@ -756,7 +759,8 @@
     function resetFerie() {
         if(confirm("Vuoi cancellare tutte le tue configurazioni delle Ferie Programmate (incluse quelle di scambio)?")) {
             state.ferie = { version: VERSIONE_FERIE, scambi: {} };
-            salvaERicarica();
+            let boost = new Date().getTime() + 5000;
+            salvaERicarica(boost);
         }
     }
 
@@ -1165,7 +1169,7 @@
     }
     
     function chiudiCambioBibbia() {
-        document.getElementById('cambioBibbiaModal').style.none = 'none';
+        document.getElementById('cambioBibbiaModal').style.display = 'none';
     }
     
     function confermaCambioBibbia() {
@@ -1179,7 +1183,8 @@
         delete state.tcPattern;
         state.setupStep = 0;
         
-        salvaERicarica();
+        let boost = new Date().getTime() + 5000;
+        salvaERicarica(boost);
     }
 
     // --- CORE ---
@@ -1250,8 +1255,8 @@
     // ----------------------------------------------------
     // MOTORE DI SALVATAGGIO CLOUD AGGIORNATO (ANTI-RACE CONDITION)
     // ----------------------------------------------------
-    function salvaLocal() { 
-        state.lastUpdate = new Date().getTime(); // Marca temporale!
+    function salvaLocal(timestampManuale = null) { 
+        state.lastUpdate = timestampManuale || new Date().getTime(); // Marca temporale!
         let copiaDati = JSON.parse(JSON.stringify(state)); 
         delete copiaDati.dbCache; 
         delete copiaDati.rotCache; 
@@ -1267,8 +1272,8 @@
     }
 
     // Nuova funzione per fermare il bug della ricarica
-    function salvaERicarica() {
-        state.lastUpdate = new Date().getTime(); // Marca temporale!
+    function salvaERicarica(timestampManuale = null) {
+        state.lastUpdate = timestampManuale || new Date().getTime(); // Marca temporale!
         let copiaDati = JSON.parse(JSON.stringify(state));
         delete copiaDati.dbCache;
         delete copiaDati.rotCache;
@@ -1307,7 +1312,7 @@
         return new Date(p[0], p[1] - 1, p[2], 12, 0, 0); 
     }
 
-        function trovaChiaveEsatta(db, codiceBase, dateStr) {
+    function trovaChiaveEsatta(db, codiceBase, dateStr) {
         if (!db || !codiceBase) return codiceBase;
         
         let codiciDaCercare = [codiceBase];
@@ -1528,7 +1533,8 @@
             // Controlla se l'utente aveva effettivamente configurato le ferie
             let avevaConfigurato = state.ferie.baseAnno !== undefined;
             state.ferie = { version: VERSIONE_FERIE, scambi: {} };
-            salvaLocal();
+            let boost = new Date().getTime() + 5000;
+            salvaLocal(boost);
             // Mostra l'avviso SOLO se aveva già dei dati inseriti da resettare
             if (avevaConfigurato) {
                 alert("⚠️ Aggiornamento Rotazione Ferie: Le sequenze delle ferie programmate sono state modificate in una nuova versione. È necessario reinserire il gruppo base e gli eventuali scambi.");
@@ -1577,7 +1583,8 @@
             const deveResettare = RESET_DOPO_AGGIORNAMENTO[state.depositoAttivo] !== false;
             if (state.depositoAttivo.startsWith('disp_') || !deveResettare) {
                 state.version = VERSIONE_TURNI; 
-                salvaLocal(); 
+                let boost = new Date().getTime() + 5000;
+                salvaLocal(boost); 
                 aggiornaUI(); 
                 inizializzaCalendario();
             } else {
@@ -1635,7 +1642,8 @@
             aggiornaUI(); 
             inizializzaCalendario(); 
             checkGuida(); 
-            salvaLocal(); 
+            let boost = new Date().getTime() + 5000;
+            salvaLocal(boost); 
         } else { 
             avviaRiconfigurazioneAggiornamento(); 
         }
@@ -2560,9 +2568,13 @@
         document.getElementById('resetModal').style.display = 'none'; 
     }
 
-    function confermaReset() { 
+    async function confermaReset() { 
+        document.body.style.opacity = "0.5";
+        if(typeof window.deleteCloudData === 'function') {
+            await window.deleteCloudData();
+        }
         localStorage.removeItem('myTurniApp'); 
-        location.reload(); 
+        location.href = "index.html"; 
     }
 
     function apriBackup() { 
@@ -2723,7 +2735,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -2740,6 +2752,14 @@
     const auth = getAuth(app);
 
     window.utenteLoggato = null;
+
+    window.deleteCloudData = async () => {
+        if (window.utenteLoggato) {
+            try {
+                await deleteDoc(doc(db, "utenti", window.utenteLoggato));
+            } catch(e) { console.error("Errore eliminazione Cloud:", e); }
+        }
+    };
 
     onAuthStateChanged(auth, async (user) => {
         if (user) {

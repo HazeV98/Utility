@@ -157,7 +157,7 @@
     <div class="admin-card">
         <h3>⚙️ Credenziali GitHub</h3>
         <input type="text" id="gh-owner" placeholder="Username GitHub" value="HazeV98">
-        <input type="text" id="gh-repo" placeholder="Nome Repository" value="Utility">
+        <input type="text" id="gh-repo" placeholder="Nome Repository" value="Utility-Firebase">
         <input type="password" id="gh-token" placeholder="Token GitHub (PAT)">
         <label class="checkbox-container">
             <input type="checkbox" id="remember-token"> Ricorda Token su questo dispositivo
@@ -216,6 +216,15 @@
         <input type="file" id="zip-file" accept=".zip">
         <button class="btn-action btn-upload" onclick="caricaZip()">Estrai e Sincronizza</button>
         <div id="status-log-zip" class="status-log">In attesa...</div>
+    </div>
+    
+    <div class="admin-card">
+        <h3>🔄 Sincronizzazione Forzata</h3>
+        <p style="font-size: 12px; color: #adb5bd; margin-top: 0; line-height: 1.4;">
+            Usa questo tasto se l'app non vede i file che hai appena caricato. Ricrea l'indice per Firebase leggendo tutto il database.
+        </p>
+        <button class="btn-action" style="background-color: #fd7e14; color: white;" onclick="forzaMappa()">Forza Creazione Mappa</button>
+        <div id="status-log-map" class="status-log">In attesa...</div>
     </div>
 
     <div class="admin-card">
@@ -281,6 +290,84 @@
 
         function copiaTesto(testo) {
             navigator.clipboard.writeText(testo).then(() => { alert("Codice copiato negli appunti: " + testo); });
+        }
+
+        // ==========================================
+        // FUNZIONE CRUCIALE CI/CD: LA SUPER MAPPA
+        // ==========================================
+        async function aggiornaMappaFiles(owner, repo, token) {
+            try {
+                let listaRotazioni = [];
+                try {
+                    const urlRot = `https://api.github.com/repos/${owner}/${repo}/contents/rotazioni`;
+                    const resRot = await fetch(urlRot, { headers: { "Authorization": `token ${token}` } });
+                    if (resRot.ok) {
+                        const filesRot = await resRot.json();
+                        listaRotazioni = filesRot.filter(f => f.type === "file").map(f => f.name);
+                    }
+                } catch(e) {}
+
+                let alberoCompleto = [];
+                try {
+                    const resRepo = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers: { "Authorization": `token ${token}` } });
+                    if (resRepo.ok) {
+                        const repoData = await resRepo.json();
+                        const urlTree = `https://api.github.com/repos/${owner}/${repo}/git/trees/${repoData.default_branch}?recursive=1`;
+                        const resTree = await fetch(urlTree, { headers: { "Authorization": `token ${token}` } });
+                        if (resTree.ok) {
+                            const treeData = await resTree.json();
+                            alberoCompleto = treeData.tree.map(f => f.path);
+                        }
+                    }
+                } catch(e) {}
+
+                const mappaGlobale = { rotazioni: listaRotazioni, albero: alberoCompleto };
+                const urlMappa = `https://api.github.com/repos/${owner}/${repo}/contents/mappa_file.json`;
+                
+                let shaMappa = null;
+                try {
+                    const rM = await fetch(urlMappa, { headers: { "Authorization": `token ${token}` } });
+                    if (rM.ok) { const dM = await rM.json(); shaMappa = dM.sha; }
+                } catch(e) {}
+
+                await fetch(urlMappa, {
+                    method: "PUT",
+                    headers: { "Authorization": `token ${token}` },
+                    body: JSON.stringify({
+                        message: "Update mappa globale per indicizzazione Firebase",
+                        content: btoa(unescape(encodeURIComponent(JSON.stringify(mappaGlobale)))),
+                        sha: shaMappa
+                    })
+                });
+            } catch (e) { console.error("Errore creazione mappa globale:", e); }
+        }
+
+        // ==========================================
+        // FUNZIONE: FORZA CREAZIONE MAPPA
+        // ==========================================
+        async function forzaMappa() {
+            const owner = document.getElementById('gh-owner').value.trim();
+            const repo = document.getElementById('gh-repo').value.trim();
+            const token = document.getElementById('gh-token').value.trim();
+            const statusLog = document.getElementById('status-log-map');
+
+            if (!owner || !repo || !token) {
+                statusLog.innerText = "❌ Compila Username, Repo e Token in alto.";
+                statusLog.style.color = "var(--danger)";
+                return;
+            }
+
+            statusLog.innerText = "⏳ Creazione super-mappa in corso... attendi.";
+            statusLog.style.color = "white";
+            
+            try {
+                await aggiornaMappaFiles(owner, repo, token);
+                statusLog.innerText = "✅ Mappa rigenerata e sincronizzata con successo!";
+                statusLog.style.color = "var(--success)";
+            } catch (e) {
+                statusLog.innerText = "❌ Errore durante la creazione della mappa.";
+                statusLog.style.color = "var(--danger)";
+            }
         }
 
         // ==========================================
@@ -412,7 +499,6 @@
 
             const url = `https://api.github.com/repos/${owner}/${repo}/contents/calendario.html`;
             try {
-                // Per supportare correttamente accenti ed emoji durante la codifica base64
                 const b64Content = btoa(unescape(encodeURIComponent(newContent)));
                 
                 const putRes = await fetch(url, {
@@ -429,7 +515,11 @@
                     const updatedData = await putRes.json();
                     calendarioSha = updatedData.content.sha; 
                     calendarioContent = newContent;
-                    statusLog.innerText = "✅ Calendario aggiornato con successo su GitHub!";
+                    
+                    statusLog.innerText = "⏳ Sincronizzazione indice Firebase in corso...";
+                    await aggiornaMappaFiles(owner, repo, token);
+                    
+                    statusLog.innerText = "✅ Calendario aggiornato con successo!";
                     statusLog.style.color = "var(--success)";
                 } else {
                     throw new Error("Impossibile caricare il file modificato.");
@@ -489,7 +579,7 @@
 
                 codiciAttuali.push({ codice: nuovoCodice, nome: nomeCollega, data_creazione: new Date().toISOString().split('T')[0], attivo: true });
 
-                statusLog.innerText = "⏳ Salvataggio...";
+                statusLog.innerText = "⏳ Salvataggio in corso...";
                 const nuovoContenuto = btoa(unescape(encodeURIComponent(JSON.stringify(codiciAttuali, null, 2))));
 
                 const putResponse = await fetch(url, {
@@ -498,13 +588,14 @@
                 });
 
                 if (putResponse.ok) {
+                    statusLog.innerText = "⏳ Sincronizzazione indice Firebase in corso...";
+                    await aggiornaMappaFiles(owner, repo, token);
                     statusLog.innerText = "✅ Salvato con successo!"; statusLog.style.color = "var(--success)"; document.getElementById('nome-collega').value = ""; 
                 } else throw new Error("Errore durante il salvataggio.");
 
             } catch (error) { statusLog.innerText = "❌ " + error.message; statusLog.style.color = "var(--danger)"; }
         }
 
-        // GESTIONE LISTA CODICI
         function chiudiModal() { document.getElementById('manage-modal').style.display = 'none'; }
         async function apriGestioneCodici() { document.getElementById('manage-modal').style.display = 'flex'; await caricaListaCodici(); }
 
@@ -570,7 +661,12 @@
                 const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(codici, null, 2))));
                 const putResponse = await fetch(url, { method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: `Revocato ${codiceRevoca}`, content: b64, sha: data.sha }) });
 
-                if (putResponse.ok) await caricaListaCodici(); else throw new Error("Errore durante l'aggiornamento.");
+                if (putResponse.ok) {
+                    await aggiornaMappaFiles(owner, repo, token);
+                    await caricaListaCodici(); 
+                } else {
+                    throw new Error("Errore durante l'aggiornamento.");
+                }
             } catch (error) { listContainer.innerHTML = `<div style='color:var(--danger); text-align:center; padding: 20px;'>Errore: ${error.message}</div>`; }
         }
 
@@ -618,14 +714,24 @@
                     if (putRes.ok) successCount++; else errorCount++;
                 }
 
-                if (errorCount === 0) { statusLog.innerText = `✅ ${successCount} file caricati.`; statusLog.style.color = "var(--success)"; fileInput.value = ""; } 
-                else { statusLog.innerText = `⚠️ ${successCount} ok, ${errorCount} errori.`; statusLog.style.color = "#ffc107"; }
+                if (errorCount === 0) { 
+                    statusLog.innerText = `⏳ Sincronizzazione indice Firebase in corso...`;
+                    await aggiornaMappaFiles(owner, repo, token);
+                    statusLog.innerText = `✅ ${successCount} file caricati. Mappa aggiornata!`; 
+                    statusLog.style.color = "var(--success)"; 
+                    fileInput.value = ""; 
+                } else { 
+                    statusLog.innerText = `⏳ Sincronizzazione indice Firebase in corso...`;
+                    await aggiornaMappaFiles(owner, repo, token);
+                    statusLog.innerText = `⚠️ ${successCount} ok, ${errorCount} errori. Mappa aggiornata.`; 
+                    statusLog.style.color = "#ffc107"; 
+                }
 
             } catch (error) { statusLog.innerText = "❌ Errore elaborazione ZIP."; statusLog.style.color = "var(--danger)"; }
         }
 
         // ==========================================
-        // NUOVO MODULO: GESTIONE VARIANTI
+        // MODULO: GESTIONE VARIANTI
         // ==========================================
         let variantiFp = null;
 
@@ -681,7 +787,6 @@
                     throw new Error("Errore nel recupero del file su GitHub.");
                 }
 
-                // Generazione array di date selezionate in base alla modalità
                 let dates = [];
                 if (variantiFp.config.mode === 'multiple') {
                     dates = variantiFp.selectedDates;
@@ -705,11 +810,9 @@
                     return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, '0') + "-" + String(t.getDate()).padStart(2, '0');
                 });
 
-                // Estrazione array delle linee
                 let lineeInput = document.getElementById('var-linee').value.trim();
                 let lineeArr = lineeInput ? lineeInput.split(',').map(s => s.trim()).filter(s => s) : [];
 
-                // Pulisci le date vecchie se spuntato
                 if (document.getElementById('var-pulisci').checked) {
                     let dOggi = new Date();
                     let oggiStr = dOggi.getFullYear() + "-" + String(dOggi.getMonth() + 1).padStart(2, '0') + "-" + String(dOggi.getDate()).padStart(2, '0');
@@ -720,7 +823,6 @@
                     }
                 }
 
-                // Applica le modifiche unendo o sovrascrivendo le chiavi
                 dateStrs.forEach(dStr => {
                     jsonAttuale[dStr] = lineeArr;
                 });
@@ -739,6 +841,8 @@
                 });
 
                 if (putResponse.ok) {
+                    statusLog.innerText = "⏳ Sincronizzazione indice Firebase in corso...";
+                    await aggiornaMappaFiles(owner, repo, token);
                     statusLog.innerText = "✅ Modifiche salvate con successo!";
                     statusLog.style.color = "var(--success)";
                     variantiFp.clear();
@@ -755,4 +859,3 @@
     </script>
 </body>
 </html>
- 

@@ -6,7 +6,6 @@
     <title>Utility - Turni</title>
 
     <script data-goatcounter="https://hazev.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.0/dist/panzoom.min.js"></script>
 
     <style>
@@ -105,6 +104,9 @@
         <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
         <a href="dati_calendario.html" class="sidebar-link">📊 Statistiche Calendario</a>
         <a href="turni.html" class="sidebar-link" style="background-color: #f4f7f6; color: var(--primary); font-weight: bold;">🔄 Turni</a>
+        <a href="bacheca_turni.html" class="sidebar-link">🔄 Bacheca Turni</a>
+        <a href="rubrica.html" class="sidebar-link">📞 Rubrica Colleghi</a>
+        <a href="rotazione_ferie.html" class="sidebar-link">🌴 Rotazione Ferie</a>
         <a href="orari.html" class="sidebar-link">🕒 Orari</a>
         <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
         <a href="link.html" class="sidebar-link">🔗 Link</a>
@@ -170,22 +172,19 @@
     </div>
 
     <script>
-        // --- FUNZIONI MENU LATERALE ---
         function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
         function chiudiMenuLaterale() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; }
 
-        // --- LOGICA SPECIFICA TURNI E RICERCA JSON ---
-        const GITHUB_USER = "HazeV98"; 
-        const GITHUB_REPO = "Utility";
+        // --- VARIABILI DI STATO (Niente più GitHub API!) ---
         let numCartelle = 0;
-        
         let currentImgList = [];
         let currentImgDir = "";
         let currentCorseData = null; 
-        
-        // --- VARIABILI VISUALIZZATORE IMMAGINE ---
         let pzInstance = null;
         let currentImagePath = "";
+        
+        // Mappa Globale del sistema Firebase
+        let mappaAlbero = [];
 
         async function downloadForzato(url, filename) {
             try {
@@ -205,7 +204,6 @@
         }
 
         async function init() {
-            // Inizializza Panzoom per il visualizzatore immagini
             const imgElem = document.getElementById('turnoImage');
             if (typeof Panzoom !== 'undefined') {
                 pzInstance = Panzoom(imgElem, { maxScale: 5, minScale: 1 });
@@ -214,18 +212,13 @@
                 function eseguiZoomToggle(e) {
                     if (!pzInstance) return;
                     let currentScale = pzInstance.getScale();
-                    if (currentScale < 1.1) {
-                        pzInstance.zoom(1.75, { animate: true });
-                    } else {
-                        pzInstance.reset({ animate: true });
-                    }
+                    if (currentScale < 1.1) pzInstance.zoom(1.75, { animate: true });
+                    else pzInstance.reset({ animate: true });
                 }
 
                 let lastTap = 0;
                 let isPinching = false;
-
                 imgElem.addEventListener('touchstart', function(e) { if (e.touches.length > 1) { isPinching = true; } });
-
                 imgElem.addEventListener('touchend', function(e) {
                     if (isPinching) {
                         if (e.touches.length === 0) { setTimeout(() => isPinching = false, 300); }
@@ -239,50 +232,59 @@
                     }
                     lastTap = currentTime;
                 });
-
                 imgElem.addEventListener('dblclick', function(e) { eseguiZoomToggle(e); });
             }
 
-            // Inizializza le cartelle Github
             const area = document.getElementById('content-area');
             try {
-                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`);
-                const files = await res.json();
-                const dirs = files.filter(f => f.type === "dir" && (f.name.startsWith("turni_pdf_") || f.name.startsWith("turni_varianti_")));
+                // 1. CARICAMENTO DELLA NUOVA MAPPA GLOBALE (Locale/Firebase)
+                const resMappa = await fetch('mappa_file.json?t=' + new Date().getTime());
+                if (!resMappa.ok) throw new Error("Mappa file non trovata");
+                
+                const datiMappa = await resMappa.json();
+                mappaAlbero = datiMappa.albero || [];
+
+                // 2. FILTRA LE CARTELLE TURNI
+                const dirs = [...new Set(mappaAlbero
+                    .filter(p => p.startsWith("turni_pdf_") || p.startsWith("turni_varianti_"))
+                    .map(p => p.split('/')[0])
+                )];
+
                 numCartelle = dirs.length;
                 
                 if (numCartelle === 1) { 
-                    caricaFiles(dirs[0].name); 
+                    caricaFiles(dirs[0]); 
                 } else {
                     area.innerHTML = ""; 
-                    dirs.sort((a,b) => b.name.localeCompare(a.name));
+                    dirs.sort((a,b) => b.localeCompare(a));
                     
                     dirs.forEach(d => {
                         const btn = document.createElement('button'); 
                         btn.className = "folder-btn";
-                        btn.onclick = () => caricaFiles(d.name); 
+                        btn.onclick = () => caricaFiles(d); 
                         area.appendChild(btn);
                         
-                        if (d.name.includes("varianti")) {
+                        if (d.includes("varianti")) {
                             btn.innerText = "Caricamento...";
-                            fetch(`https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${d.name}/nome.txt?v=${new Date().getTime()}`)
+                            // Legge il file di testo internamente senza usare API
+                            fetch(`${d}/nome.txt?t=${new Date().getTime()}`)
                                 .then(response => {
                                     if (response.ok) return response.text();
                                     throw new Error("File txt assente");
                                 })
                                 .then(testo => {
-                                    btn.innerText = testo.trim() || d.name.replace("turni_varianti_", "").replace(/_/g, " ");
+                                    btn.innerText = testo.trim() || d.replace("turni_varianti_", "").replace(/_/g, " ");
                                 })
                                 .catch(() => {
-                                    btn.innerText = d.name.replace("turni_varianti_", "").replace(/_/g, " ");
+                                    btn.innerText = d.replace("turni_varianti_", "").replace(/_/g, " ");
                                 });
                         } else {
-                            let label = d.name.replace("turni_pdf_", "").split("-").reverse().join("-");
+                            let label = d.replace("turni_pdf_", "").split("-").reverse().join("-");
                             btn.innerText = "Turni dal " + label;
                         }
                     });
                 }
-            } catch (e) { area.innerHTML = "<div class='status-message'>Errore di connessione.</div>"; }
+            } catch (e) { area.innerHTML = "<div class='status-message'>In attesa di primo caricamento dati...</div>"; }
         }
 
         async function caricaFiles(dir) {
@@ -297,22 +299,20 @@
             }
             
             currentImgDir = imgDir;
-            currentImgList = [];
+            
+            // Popolamento lista immagini senza server (esclusivo tramite la mappa)
+            currentImgList = mappaAlbero
+                .filter(p => p.startsWith(imgDir + "/") && (p.toLowerCase().endsWith(".jpg") || p.toLowerCase().endsWith(".png")))
+                .map(p => ({ name: p.split('/')[1] }));
             
             try {
-                const imgRes = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${imgDir}`);
-                if (imgRes.ok) {
-                    const imgFiles = await imgRes.json();
-                    currentImgList = imgFiles.filter(f => f.name.toLowerCase().endsWith(".jpg") || f.name.toLowerCase().endsWith(".png"));
-                }
-            } catch(e) { console.log("Cartella immagini per ricerca non trovata", e); }
-            
-            try {
-                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${dir}`);
-                const files = await res.json();
-                
-                let pdfs = files.filter(f => f.name.toLowerCase().endsWith(".pdf"));
-                let jsons = files.filter(f => f.name.toLowerCase().endsWith(".json")); 
+                // Leggiamo PDF e JSON usando la mappa
+                let filesInDir = mappaAlbero
+                    .filter(p => p.startsWith(dir + "/") && p.split('/').length === 2)
+                    .map(p => p.split('/')[1]);
+
+                let pdfs = filesInDir.filter(f => f.toLowerCase().endsWith(".pdf")).map(name => ({ name }));
+                let jsons = filesInDir.filter(f => f.toLowerCase().endsWith(".json")).map(name => ({ name }));
                 
                 pdfs.sort((a, b) => {
                     if (a.name.includes("libro_turni_completo")) return -1;
@@ -360,24 +360,21 @@
 
                     const aOpen = document.createElement('a');
                     aOpen.className = "file-btn"; aOpen.innerText = nomeVis;
-                    aOpen.href = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${dir}/${nomeOrig}`;
+                    // Percorso relativo per Firebase
+                    aOpen.href = `${dir}/${nomeOrig}`;
                     aOpen.target = "_blank";
 
                     const aDown = document.createElement('div');
                     aDown.className = "download-btn"; aDown.innerHTML = "⬇️";
-                    aDown.onclick = () => downloadForzato(f.download_url, nomeOrig);
+                    aDown.onclick = () => downloadForzato(`${dir}/${nomeOrig}`, nomeOrig);
 
                     row.appendChild(aOpen); row.appendChild(aDown);
 
-                    // ==========================================
-                    // INIEZIONE TASTO CERCA CORSE (JSON)
-                    // ==========================================
                     const baseName = nomeOrig.substring(0, nomeOrig.lastIndexOf('.'));
                     const hasJson = jsons.some(j => j.name.substring(0, j.name.lastIndexOf('.')) === baseName);
 
                     if (hasJson) {
                         aDown.style.width = "50px"; 
-                        
                         const btnSearch = document.createElement('button');
                         btnSearch.className = "file-btn";
                         btnSearch.style.backgroundColor = "var(--success)";
@@ -388,7 +385,6 @@
                         btnSearch.style.marginLeft = "8px";
                         btnSearch.innerText = "🔍";
                         btnSearch.onclick = () => apriRicercaCorse(nomeOrig, dir);
-                        
                         row.appendChild(btnSearch);
                     }
 
@@ -465,7 +461,8 @@
         }
 
         function apriImmagineTurno(nomeFile) {
-            currentImagePath = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${currentImgDir}/${nomeFile}`;
+            // Percorso Firebase locale
+            currentImagePath = `${currentImgDir}/${nomeFile}`;
             let imgElement = document.getElementById('turnoImage');
             imgElement.onerror = erroreImmagine; 
             imgElement.src = currentImagePath;
@@ -491,7 +488,6 @@
             }
         }
 
-
         // ==========================================
         // LOGICA RICERCA CORSE (MODALE JSON)
         // ==========================================
@@ -511,7 +507,6 @@
             document.getElementById('sc-risultato').style.display = 'none';
             const statusEl = document.getElementById('sc-status');
             
-            // Resetta lo stato del form
             document.getElementById('sc-tipo').value = "";
             document.getElementById('btn-partenza').classList.remove('active');
             document.getElementById('btn-arrivo').classList.remove('active');
@@ -529,7 +524,8 @@
             const jsonName = baseName + ".json";
             
             try {
-                const url = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${dirName}/${encodeURIComponent(jsonName)}?t=${new Date().getTime()}`;
+                // Percorso Firebase locale
+                const url = `${dirName}/${encodeURIComponent(jsonName)}?t=${new Date().getTime()}`;
                 const res = await fetch(url);
                 if (!res.ok) throw new Error("File dati (JSON) non trovato per questa linea.");
                 
@@ -653,9 +649,6 @@
             }
         }
 
-        // ==========================================
-        // RICERCA CORSE (E INTEGRAZIONE SEGRETA ROTAZIONI)
-        // ==========================================
         async function eseguiRicercaCorsa() {
             const tipo = document.getElementById('sc-tipo').value;
             const luogo = document.getElementById('sc-luogo').value;
@@ -705,11 +698,7 @@
             if (turniTrovati.length > 0) {
                 let dataFormattata = giorno ? giorno.split('-').reverse().join('/') : "Oggi";
                 
-                // -----------------------------------------------------------
-                // INTEGRAZIONE ROTAZIONI (Visibile SOLO se autenticati)
-                // -----------------------------------------------------------
                 let rotazioniHtml = "";
-                
                 if (localStorage.getItem('auth_rotazioni')) {
                     try {
                         let dateObj;
@@ -725,7 +714,8 @@
                         let monthName = mNames[dateObj.getMonth()];
                         let yearNum = dateObj.getFullYear();
                         
-                        let rotUrl = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/rotazioni/rotazioni_${monthName}_${yearNum}.json?t=${new Date().getTime()}`;
+                        // Percorso Firebase
+                        let rotUrl = `rotazioni/rotazioni_${monthName}_${yearNum}.json?t=${new Date().getTime()}`;
                         
                         let resRot = await fetch(rotUrl);
                         if (resRot.ok) {
@@ -756,11 +746,8 @@
                                     </div>`;
                             }
                         }
-                    } catch(e) {
-                        // Errore silenzioso: l'utente normale non vedrà mai nulla di strano se fallisce
-                    }
+                    } catch(e) {}
                 }
-                // -----------------------------------------------------------
 
                 let tastiniHtml = turniTrovati.map(t => {
                     return `<button class="file-btn" style="display:inline-flex; width:auto; margin: 5px 5px 0 0; padding: 10px 15px; font-size: 14px;" onclick="apriImmagineTurnoDallaRicerca('${t}')">🖼️ ${t}</button>`;
@@ -778,9 +765,6 @@
             }
         }
 
-        // ==========================================
-        // GESTIONE CHIUSURA TENDINE CLICCANDO FUORI E CHIUSURA MODALI
-        // ==========================================
         document.addEventListener('click', function(e) {
             const boxImg = document.getElementById('suggestionsBox');
             const inputImg = document.getElementById('shiftSearch');
@@ -799,4 +783,4 @@
     </script>
 </body>
 </html>
- 
+

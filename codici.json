@@ -190,5 +190,11 @@
     "nome": "Secco Matteo",
     "data_creazione": "2026-04-14",
     "attivo": true
+  },
+  {
+    "codice": "8JC19I",
+    "nome": "Ferro Alvise",
+    "data_creazione": "2026-04-15",
+    "attivo": true
   }
 ]

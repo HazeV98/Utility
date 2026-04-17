@@ -242,11 +242,13 @@
         // Variabili Globali Ricerca e Immagini
         window.databaseTurni = []; 
         window.activePredictors = []; 
-        window.globalShiftData = {};
-        window.globalImgDir = "";
+        window.currentSearchDocId = ""; // Salva il mese/anno in cui stiamo cercando (es. "2026_04")
+        
+        window.availableImgDirs = []; // Conterrà es: ["2026-03-01", "2026-04-15"]
+        window.availableInfoFiles = []; 
+        window.loadedInfoData = {}; // Cache dei json caricati { "2026-04-15": {...dati} }
         let pzInstance = null;
 
-        // Inizializza Panzoom e dati silenti (Mappa File) per le immagini
         document.addEventListener('DOMContentLoaded', () => {
             initPanzoom();
             caricaDatiTurniSilenzioso();
@@ -258,16 +260,34 @@
                 if (!resMappa.ok) return;
                 const mappa = await resMappa.json();
                 const rootFiles = mappa.root || [];
-                let dirs = rootFiles.filter(f => f.startsWith("turni_pdf_"));
-                if (dirs.length > 0) {
-                    dirs.sort((a,b) => b.localeCompare(a));
-                    window.globalImgDir = dirs[0].replace("turni_pdf_", "turni_");
+
+                // Estrai date dalle cartelle turni_YYYY-MM-DD
+                let imgDirs = rootFiles.filter(f => f.match(/^turni_\d{4}-\d{2}-\d{2}$/));
+                window.availableImgDirs = imgDirs.map(d => d.replace("turni_", "")).sort(); 
+
+                // Estrai date dai file info_turni_YYYY-MM-DD.json
+                let jsonFiles = rootFiles.filter(f => f.match(/^info_turni_\d{4}-\d{2}-\d{2}\.json$/));
+                window.availableInfoFiles = jsonFiles.map(f => f.replace("info_turni_", "").replace(".json", "")).sort();
+
+                // Pre-carica tutti i file JSON in memoria
+                for (let dateStr of window.availableInfoFiles) {
+                    let res = await fetch(`info_turni_${dateStr}.json?t=${new Date().getTime()}`);
+                    if (res.ok) {
+                        window.loadedInfoData[dateStr] = await res.json();
+                    }
                 }
-                let jsonFiles = rootFiles.filter(f => f.startsWith("info_turni_") && f.endsWith(".json"));
-                for (let jf of jsonFiles) {
-                    fetch(jf + `?t=${new Date().getTime()}`).then(r => r.json()).then(jData => { window.globalShiftData = { ...window.globalShiftData, ...jData }; });
-                }
-            } catch (e) { console.error("Errore immagini", e); }
+            } catch (e) { console.error("Errore lettura mappa_file", e); }
+        }
+
+        // Trova la data in vigore corretta (la più recente prima o uguale alla data cercata)
+        function getEffectiveDate(targetYear, targetMonth, targetDay, availableDatesArray) {
+            let target = `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
+            let effective = null;
+            for (let d of availableDatesArray) {
+                if (d <= target) effective = d;
+                else break;
+            }
+            return effective;
         }
 
         // ==========================================
@@ -345,17 +365,14 @@
                     rotContainer.style.background = "#fafafa"; rotContainer.style.border = "1px solid #ddd"; rotContainer.style.padding = "12px"; rotContainer.style.borderRadius = "10px"; rotContainer.style.marginBottom = "10px";
                     rotContainer.innerHTML = `<h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 16px;">${rotName}</h4>`;
 
-                    // Tasto Tabella Cascata
                     let btnTab = document.createElement('button'); btnTab.className = "file-btn btn-table"; btnTab.innerHTML = `📅 Visualizza Tabella`;
                     btnTab.onclick = () => apriTabellaCascata(rotName, docObj.data[rotName]);
                     rotContainer.appendChild(btnTab);
 
-                    // Tasto Ricerca Attuale
                     let btnSearch = document.createElement('button'); btnSearch.className = "file-btn btn-search"; btnSearch.style.marginTop = "8px"; btnSearch.innerHTML = `🔍 Cerca Colleghi e Cambi`;
-                    btnSearch.onclick = () => apriRicercaCorrente(rotName, docObj.data[rotName]);
+                    btnSearch.onclick = () => apriRicercaCorrente(docObj.id, rotName, docObj.data[rotName]);
                     rotContainer.appendChild(btnSearch);
 
-                    // Tasto Ricerca Futura
                     let btnFuturo = document.createElement('button'); btnFuturo.className = "file-btn btn-search"; btnFuturo.style.marginTop = "8px"; btnFuturo.innerHTML = `🔮 Ricerca mesi successivi`;
                     btnFuturo.onclick = () => apriRicercaFuturaFb(docObj.id, rotName, docObj.data[rotName]);
                     rotContainer.appendChild(btnFuturo);
@@ -383,7 +400,8 @@
             window.apriModal('table-modal');
         }
 
-        function apriRicercaCorrente(rotName, data) {
+        function apriRicercaCorrente(docId, rotName, data) {
+            window.currentSearchDocId = docId; 
             window.databaseTurni = [];
             for (let nome in data) {
                 let turniArr = [];
@@ -503,37 +521,61 @@
         };
 
         // ==========================================
-        // LOGICA DI RICERCA (Globale)
+        // LOGICA DI RICERCA (Con Data in Vigore)
         // ==========================================
         window.cercaTurno = () => {
-            const giorno = parseInt(document.getElementById('input-giorno-turno').value); const codice = document.getElementById('input-codice-turno').value.trim().toUpperCase();
+            const giorno = parseInt(document.getElementById('input-giorno-turno').value); 
+            const codice = document.getElementById('input-codice-turno').value.trim().toUpperCase();
             const box = document.getElementById('risultato-turno');
             if (!giorno || !codice) return box.innerHTML = "Compila tutti i campi.";
-            let trovati = []; window.databaseTurni.forEach(d => { if (d.turni[giorno - 1] === codice) trovati.push(d.nome); });
+            
+            let trovati = []; 
+            window.databaseTurni.forEach(d => { if (d.turni[giorno - 1] === codice) trovati.push(d.nome); });
+            
             if (trovati.length > 0) {
-                let detailsHtml = `<div style="margin-top: 10px;"><button class="file-btn btn-table" style="font-size: 14px; padding: 10px;" onclick="apriImmagineDaRotazioni('${codice}')">🖼️ Mostra Immagine Turno</button></div>`;
-                if (window.globalShiftData[codice]) {
-                    let legs = window.globalShiftData[codice];
-                    detailsHtml = `<div class="turn-details-box">Inizio: <strong>${legs[0].partenza_luogo} (${legs[0].partenza_ora})</strong><br>Fine: <strong>${legs[legs.length - 1].arrivo_luogo} (${legs[legs.length - 1].arrivo_ora})</strong><br><button class="file-btn btn-table" style="padding: 8px 12px; margin-top: 8px;" onclick="apriImmagineDaRotazioni('${codice}')">🖼️ Mostra Immagine Turno</button></div>`;
+                let [y, m] = window.currentSearchDocId.split('_');
+                
+                let effInfoDate = getEffectiveDate(y, m, giorno, window.availableInfoFiles);
+                let currentShiftData = effInfoDate ? window.loadedInfoData[effInfoDate] : {};
+                
+                let effImgDate = getEffectiveDate(y, m, giorno, window.availableImgDirs);
+                let currentImgDir = effImgDate ? `turni_${effImgDate}` : "";
+
+                let detailsHtml = `<div style="margin-top: 10px;"><button class="file-btn btn-table" style="font-size: 14px; padding: 10px;" onclick="apriImmagineDaRotazioni('${codice}', '${currentImgDir}')">🖼️ Mostra Immagine Turno</button></div>`;
+                
+                if (currentShiftData && currentShiftData[codice]) {
+                    let legs = currentShiftData[codice];
+                    detailsHtml = `<div class="turn-details-box">Inizio: <strong>${legs[0].partenza_luogo} (${legs[0].partenza_ora})</strong><br>Fine: <strong>${legs[legs.length - 1].arrivo_luogo} (${legs[legs.length - 1].arrivo_ora})</strong><br><button class="file-btn btn-table" style="padding: 8px 12px; margin-top: 8px;" onclick="apriImmagineDaRotazioni('${codice}', '${currentImgDir}')">🖼️ Mostra Immagine Turno</button></div>`;
                 }
                 box.innerHTML = `<strong>Trovati il giorno ${giorno}:</strong><ul><li>` + trovati.join("</li><li>") + "</li></ul>" + detailsHtml;
             } else box.innerHTML = "Nessuno trovato.";
         };
 
         window.cercaCambi = () => {
-            const giorno = parseInt(document.getElementById('input-giorno-cambio').value); const faseDesiderata = document.getElementById('select-fase-cambio').value;
+            const giorno = parseInt(document.getElementById('input-giorno-cambio').value); 
+            const faseDesiderata = document.getElementById('select-fase-cambio').value;
             const box = document.getElementById('risultato-cambi');
             if (!giorno) return box.innerHTML = "Inserisci il giorno.";
+
+            let [y, m] = window.currentSearchDocId.split('_');
+            
+            let effInfoDate = getEffectiveDate(y, m, giorno, window.availableInfoFiles);
+            let currentShiftData = effInfoDate ? window.loadedInfoData[effInfoDate] : {};
+            
+            let effImgDate = getEffectiveDate(y, m, giorno, window.availableImgDirs);
+            let currentImgDir = effImgDate ? `turni_${effImgDate}` : "";
+
             let risHtml = [];
             window.databaseTurni.forEach(d => {
                 const analisi = analizzaCicloLavorativo(d.turni, giorno - 1);
                 if (analisi.fase === faseDesiderata) {
-                    if (faseDesiderata === "Riposo" && analisi.tipoRiposo !== "Vuoto") risHtml.push(`<strong>${d.nome}</strong> - <span style="color:var(--danger);">[Riposo ${analisi.tipoRiposo}]</span>`);
-                    else if (faseDesiderata !== "Riposo") {
+                    if (faseDesiderata === "Riposo" && analisi.tipoRiposo !== "Vuoto") {
+                        risHtml.push(`<strong>${d.nome}</strong> - <span style="color:var(--danger);">[Riposo ${analisi.tipoRiposo}]</span>`);
+                    } else if (faseDesiderata !== "Riposo") {
                         let tCod = d.turni[giorno - 1]; let isR = ["AL", "RI", "DISP", "ESPE", "DI", ""].includes(tCod);
                         if (!isR) {
-                            let info = window.globalShiftData[tCod] ? `<br>Inizio: <strong>${window.globalShiftData[tCod][0].partenza_luogo}</strong><br>Fine: <strong>${window.globalShiftData[tCod][window.globalShiftData[tCod].length - 1].arrivo_luogo}</strong>` : "";
-                            risHtml.push(`<strong>${d.nome}</strong> (Giorno lav. ${analisi.giornoEsatto}) <div class="turn-details-box"><strong style="color:var(--primary);">Turno: ${tCod}</strong>${info}<br><button class="file-btn btn-table" style="padding: 8px 12px; margin-top: 8px;" onclick="apriImmagineDaRotazioni('${tCod}')">🖼️ Immagine</button></div>`);
+                            let info = (currentShiftData && currentShiftData[tCod]) ? `<br>Inizio: <strong>${currentShiftData[tCod][0].partenza_luogo}</strong><br>Fine: <strong>${currentShiftData[tCod][currentShiftData[tCod].length - 1].arrivo_luogo}</strong>` : "";
+                            risHtml.push(`<strong>${d.nome}</strong> (Giorno lav. ${analisi.giornoEsatto}) <div class="turn-details-box"><strong style="color:var(--primary);">Turno: ${tCod}</strong>${info}<br><button class="file-btn btn-table" style="padding: 8px 12px; margin-top: 8px;" onclick="apriImmagineDaRotazioni('${tCod}', '${currentImgDir}')">🖼️ Immagine</button></div>`);
                         } else risHtml.push(`<strong>${d.nome}</strong> (Giorno lav. ${analisi.giornoEsatto}) - [Turno: ${tCod}]`);
                     }
                 }
@@ -602,16 +644,16 @@
             }
         }
 
-        window.apriImmagineDaRotazioni = (turno) => {
-            if (!window.globalImgDir) return alert("Attendi il caricamento delle immagini in background.");
+        window.apriImmagineDaRotazioni = (turno, imgDir) => {
+            if (!imgDir) return alert("Nessuna cartella immagini valida trovata per questa data.");
             let img = document.getElementById('turnoImage');
             img.onload = () => { if (pzInstance) pzInstance.reset(); document.getElementById('imageModal').style.display = 'block'; img.onload=null; img.onerror=null; };
             img.onerror = () => {
                 img.onload = () => { if (pzInstance) pzInstance.reset(); document.getElementById('imageModal').style.display = 'block'; img.onload=null; img.onerror=null; };
                 img.onerror = () => { alert("Immagine non trovata per " + turno); window.chiudiImageModal(); img.onload=null; img.onerror=null; };
-                img.src = `${window.globalImgDir}/${turno}.png`;
+                img.src = `${imgDir}/${turno}.png`;
             };
-            img.src = `${window.globalImgDir}/${turno}.jpg`;
+            img.src = `${imgDir}/${turno}.jpg`;
         };
         
         window.chiudiSeSfondoModalImg = (e) => { if (e.target.id === 'imageModal' || e.target.id === 'imageFlexContainer') window.chiudiImageModal(); };

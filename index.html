@@ -140,6 +140,9 @@
             <label style="font-size: 12px; color: #666; font-weight: bold;">Cognome:</label>
             <input type="text" id="profileCognome" class="input-field" placeholder="Inserisci cognome">
             
+            <label style="font-size: 12px; color: #666; font-weight: bold;">Numero Progressivo (Facoltativo):</label>
+            <input type="text" id="profileProgressivo" class="input-field" placeholder="es. Mario Rossi 02 -> 02">
+            
             <label style="font-size: 12px; color: #666; font-weight: bold;">Soprannome:</label>
             <input type="text" id="profileSoprannome" class="input-field" placeholder="Soprannome (Facoltativo)">
             
@@ -318,12 +321,13 @@
 
             const nome = document.getElementById('profileNome').value.trim();
             const cognome = document.getElementById('profileCognome').value.trim();
+            const progressivo = document.getElementById('profileProgressivo').value.trim();
             const soprannome = document.getElementById('profileSoprannome').value.trim();
             const mansione = document.getElementById('profileMansione').value;
             const matricola = document.getElementById('profileMatricola').value.trim();
             const telefono = document.getElementById('profileTelefono').value.trim();
 
-            const profileData = { nome: nome, cognome: cognome, soprannome: soprannome, mansione: mansione, matricola: matricola, telefono: telefono };
+            const profileData = { nome: nome, cognome: cognome, progressivo: progressivo, soprannome: soprannome, mansione: mansione, matricola: matricola, telefono: telefono };
 
             try {
                 const docRef = doc(db, "utenti", user.uid);
@@ -394,6 +398,7 @@
                         const data = docSnap.data();
                         document.getElementById('profileNome').value = data.nome || '';
                         document.getElementById('profileCognome').value = data.cognome || '';
+                        document.getElementById('profileProgressivo').value = data.progressivo || '';
                         document.getElementById('profileSoprannome').value = data.soprannome || '';
                         document.getElementById('profileMansione').value = data.mansione || '';
                         document.getElementById('profileMatricola').value = data.matricola || '';
@@ -426,4 +431,3 @@
     </script>
 </body>
 </html>
- 

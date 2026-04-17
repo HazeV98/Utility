@@ -382,7 +382,7 @@
                 if (!resMappa.ok) return;
                 
                 const mappa = await resMappa.json();
-                const rootFiles = mappa.root || [];
+                const rootFiles = mappa.albero || mappa.root || [];
                 
                 // Cerca l'ultima cartella dei turni disponibile
                 let dirs = rootFiles.filter(f => f.startsWith("turni_pdf_"));
@@ -628,14 +628,12 @@
 
             if (trovati.length > 0) {
                 let detailsHtml = "";
-                if (globalShiftData && globalShiftData[codice] && globalShiftData[codice].length > 0) {
-                    let legs = globalShiftData[codice];
-                    let start = legs[0];
-                    let end = legs[legs.length - 1];
+                if (globalShiftData && globalShiftData[codice]) {
+                    let info = globalShiftData[codice];
                     detailsHtml = `
                         <div class="turn-details-box">
-                            Inizio: <strong>${start.partenza_luogo} (${start.partenza_ora})</strong><br>
-                            Fine: <strong>${end.arrivo_luogo} (${end.arrivo_ora})</strong>
+                            Inizio: <strong>${info.luogoInizio} (${info.inizio})</strong><br>
+                            Fine: <strong>${info.luogoFine} (${info.fine})</strong>
                             <br><button class="file-btn" style="padding: 8px 12px; margin-top: 8px; font-size: 14px; width: 100%; box-sizing:border-box; background-color: var(--info);" onclick="apriImmagineDaRotazioni('${codice}')">🖼️ Mostra Immagine Turno</button>
                         </div>
                     `;
@@ -722,11 +720,9 @@
                         
                         if (!isRiposoOrDisp) {
                             let infoExtra = "";
-                            if (globalShiftData && globalShiftData[turnoCod] && globalShiftData[turnoCod].length > 0) {
-                                let legs = globalShiftData[turnoCod];
-                                let start = legs[0];
-                                let end = legs[legs.length - 1];
-                                infoExtra = `<br>Inizio: <strong>${start.partenza_luogo} (${start.partenza_ora})</strong><br>Fine: <strong>${end.arrivo_luogo} (${end.arrivo_ora})</strong>`;
+                            if (globalShiftData && globalShiftData[turnoCod]) {
+                                let info = globalShiftData[turnoCod];
+                                infoExtra = `<br>Inizio: <strong>${info.luogoInizio} (${info.inizio})</strong><br>Fine: <strong>${info.luogoFine} (${info.fine})</strong>`;
                             }
                             
                             let detailsHtml = `
@@ -1138,4 +1134,3 @@
     </script>
 </body>
 </html>
-

@@ -208,5 +208,11 @@
     "nome": "Ferro Jacopo",
     "data_creazione": "2026-04-16",
     "attivo": true
+  },
+  {
+    "codice": "QLR61J",
+    "nome": "Vio Roberto",
+    "data_creazione": "2026-04-17",
+    "attivo": true
   }
 ]

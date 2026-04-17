@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Utility - Database Rotazioni</title>
+    <meta name="theme-color" content="#0056b3">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+
+    <style>
+        :root { --primary: #0056b3; --bg-color: #f4f7f6; --text-color: #333; --success: #28a745; --danger: #dc3545; --info: #17a2b8;}
+        body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
+        .header { width: 100%; max-width: 500px; display: flex; justify-content: space-between; align-items: center; padding: 20px; box-sizing: border-box; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
+        .hamburger-btn { background: none; border: none; font-size: 30px; color: var(--primary); cursor: pointer; padding: 0; width: 50px; text-align: left; }
+        h2 { margin: 0; color: var(--primary); font-size: 20px; text-align: center; flex-grow: 1; font-weight: bold; }
+        
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 5999; }
+        .sidebar { position: fixed; top: 0; left: -280px; width: 250px; height: 100%; background-color: white; box-shadow: 2px 0 5px rgba(0,0,0,0.2); z-index: 6000; transition: left 0.3s ease; display: flex; flex-direction: column; }
+        .sidebar.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: var(--primary); color: white; }
+        .sidebar-link { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 18px; border-bottom: 1px solid #eee; display: block; }
+        
+        #lock-screen { display: none; width: 100%; max-width: 420px; padding: 40px 20px; text-align: center; flex-direction: column; align-items: center; box-sizing: border-box; }
+        .lock-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; }
+
+        #dashboard { display: none; width: 100%; max-width: 1200px; padding: 20px; box-sizing: border-box; }
+        .month-card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .month-card h3 { margin-top: 0; color: var(--primary); border-bottom: 2px solid #f4f7f6; padding-bottom: 10px; text-transform: capitalize; }
+
+        .table-wrapper { width: 100%; overflow-x: auto; margin-top: 15px; border-radius: 10px; border: 1px solid #eee; }
+        table { border-collapse: collapse; width: max-content; background: white; font-size: 13px; }
+        th, td { border: 1px solid #eee; padding: 10px; text-align: center; min-width: 40px; }
+        th { background: var(--primary); color: white; position: sticky; top: 0; }
+        td:first-child { position: sticky; left: 0; background: #f9f9f9; font-weight: bold; text-align: left; min-width: 160px; z-index: 2; border-right: 2px solid #ddd; color: var(--primary); }
+        
+        .cell-ri { background-color: #5cb85c; color: white; }
+        .cell-al { background-color: #28a745; color: white; font-weight: bold; }
+        .cell-disp { background-color: #ffc107; color: black; }
+        .cell-fer { background-color: #20c997; color: white; }
+        .cell-npl { background-color: #e9ecef; color: #6c757d; font-style: italic; }
+        .row-missing { color: #aaa; font-style: italic; background-color: #fafafa !important; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; backdrop-filter: blur(5px); }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; position: relative; }
+        
+        .input-field { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #e9ecef; border-radius: 10px; box-sizing: border-box; font-size: 15px; }
+        .btn { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 16px; }
+        .btn-secondary { background: #6c757d; margin-top: 10px; }
+        
+        #btn-float-add { position: fixed; bottom: 30px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--success); color: white; font-size: 30px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 5000; display: none; }
+        .status-box { padding: 15px; border-radius: 10px; font-size: 14px; margin-top: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleMenu(false)"></div>
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3 style="margin:0; color:white;">Menu</h3>
+            <button style="background:none; border:none; color:white; font-size:24px;" onclick="toggleMenu(false)">✕</button>
+        </div>
+        <a href="index.html" class="sidebar-link">🏠 Home Page</a>
+        <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
+        <a href="rotazioni.html" class="sidebar-link" style="background: #f4f7f6; color: var(--primary); font-weight: bold;">👥 Rotazioni</a>
+    </div>
+
+    <div class="header">
+        <button class="hamburger-btn" onclick="toggleMenu(true)">☰</button>
+        <h2>Database Rotazioni</h2>
+        <div style="width: 50px;"></div>
+    </div>
+
+    <div id="lock-screen">
+        <div class="lock-card">
+            <h3 style="color: var(--primary); margin-top: 0; display: none;" id="lock-greeting"></h3>
+            <p style="font-size: 14px; line-height: 1.6; color: #444; text-align: left; margin-bottom: 20px;">
+                Questa nuova funzione è ancora in fase sperimentale. Per poterla sviluppare ho bisogno che più colleghi possibile condividano la propria bibbia.
+                <br><br>
+                Se vuoi aiutarmi ti chiedo di <b>condividere la tua bibbia</b> (anche se sei nei "Disponibili") e fare passaparola chiedendo ad altri colleghi di fare altrettanto. 
+                L'idea è di creare una versione interattiva, integrata con Utility e con funzioni di ricerca delle rotazioni.
+                <br><br>
+                Non potendo testare senza dati, all'inizio probabilmente funzionerà male ma ci lavorerò. 
+                <br><br>
+                🔒 <b>Solo chi condividerà la propria bibbia potrà vedere le rotazioni.</b>
+                <br><br>
+                Ringrazio tutti quelli che vorranno condividere la propria bibbia.
+            </p>
+            <button class="btn" onclick="apriModalUpload()">📄 Condividi la tua Bibbia</button>
+        </div>
+    </div>
+
+    <div id="dashboard">
+        <div id="container-mesi"></div>
+    </div>
+
+    <button id="btn-float-add" onclick="apriModalUpload()">+</button>
+
+    <div id="modal-upload" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0; color:var(--primary);">Configura e Carica</h3>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="text" id="up-cognome" class="input-field" placeholder="Cognome">
+                <input type="text" id="up-nome" class="input-field" placeholder="Nome">
+            </div>
+            <input type="number" id="up-prog" class="input-field" placeholder="Numero Progressivo (Opzionale)">
+
+            <select id="up-rotazione" class="input-field">
+                <option value="">-- Seleziona Rotazione --</option>
+                <option>Rotazione Fondamente Nove</option>
+                <option>Rotazione Piazzale Roma</option>
+                <option>Rotazione Lido</option>
+                <option>Rotazione San Zaccaria</option>
+                <option>Rotazione spezzati Fondamente Nove</option>
+                <option>Rotazione spezzati San Zaccaria</option>
+                <option>Rotazione spezzati Piazzale Roma</option>
+                <option>Rotazione spezzati Lido</option>
+                <option>Rotazione linea 12</option>
+                <option>Rotazione linea 13</option>
+                <option>Rotazione linea 14 M/B</option>
+                <option>Rotazione linea 14 M/N</option>
+                <option>Rotazione linea 17</option>
+                <option>Disponibili 5-1</option>
+                <option>Disponibili 6-2-6-1</option>
+            </select>
+
+            <div style="background: #f8f9fa; border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 12px; cursor: pointer; margin-bottom: 15px;" onclick="document.getElementById('pdf-file').click()">
+                <span id="file-label" style="font-weight: bold; color: #666;">Seleziona PDF Bibbia</span>
+                <input type="file" id="pdf-file" style="display:none" accept=".pdf" onchange="handleFileSelect(this)">
+            </div>
+
+            <button id="btn-submit" class="btn" onclick="uploadBibbia()">🚀 Carica nel Database</button>
+            <button class="btn btn-secondary" onclick="chiudiModalUpload()">Annulla</button>
+            <div id="up-status" class="status-box"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4",
+            authDomain: "utility-haze.firebaseapp.com",
+            projectId: "utility-haze",
+            storageBucket: "utility-haze.firebasestorage.app",
+            messagingSenderId: "686237947418",
+            appId: "1:686237947418:web:f03ba19ab8fff43110a3a3"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userLoggato = null;
+        let userData = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userLoggato = user;
+                const uDoc = await getDoc(doc(db, "utenti", user.uid));
+                const greetingEl = document.getElementById('lock-greeting');
+                if (uDoc.exists()) {
+                    userData = uDoc.data();
+                    document.getElementById('up-cognome').value = userData.cognome || "";
+                    document.getElementById('up-nome').value = userData.nome || "";
+                    document.getElementById('up-prog').value = userData.progressivo || "";
+                    if (userData.nome) {
+                        greetingEl.innerText = `Ciao ${userData.nome}! 👋`;
+                        greetingEl.style.display = "block";
+                    }
+                }
+                checkAccess();
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        async function checkAccess() {
+            const now = new Date();
+            const docId = `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const myKey = `${userData?.cognome || ""} ${userData?.nome || ""}${userData?.progressivo ? ' ('+userData.progressivo+')' : ''}`.trim();
+            const res = await getDoc(doc(db, "rotazioni_turni", docId));
+            let sbloccato = false;
+            if (res.exists()) {
+                const d = res.data();
+                for (let r in d) { if (d[r][myKey]) { sbloccato = true; break; } }
+            }
+            if (sbloccato) {
+                document.getElementById('lock-screen').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                document.getElementById('btn-float-add').style.display = 'block';
+                caricaTuttiIDati();
+            } else {
+                document.getElementById('lock-screen').style.display = 'flex';
+                document.getElementById('dashboard').style.display = 'none';
+            }
+        }
+
+        window.handleFileSelect = (el) => { if(el.files[0]) document.getElementById('file-label').innerText = "✅ " + el.files[0].name; };
+
+        function standardizzaTurno(turno) {
+            if (!turno) return "";
+            let t = turno.toUpperCase();
+            if (/^(KMAL|KINF|KNOP)$/.test(t)) return "NPL";
+            if (/^(DISP|RI|AL|FER|FES|FEP|MAL|PERM)$/.test(t)) return t === "DISP" ? "Disp" : t;
+            let mS = t.match(/^([1-9])([CPB])(\d{2})$/);
+            if (mS) return `${mS[1]}${(mS[1]<='2'?'C':'P')}${mS[3]}`;
+            let mD = t.match(/^([A-Z0-9]{2})(\d{2})$/);
+            if (mD) { let n = parseInt(mD[2]); if (n >= 50) n -= 50; return `${mD[1]}${String(n).padStart(2, '0')}`; }
+            return t;
+        }
+
+        window.uploadBibbia = async () => {
+            const cognome = document.getElementById('up-cognome').value.trim();
+            const nome = document.getElementById('up-nome').value.trim();
+            const prog = document.getElementById('up-prog').value.trim();
+            const rot = document.getElementById('up-rotazione').value;
+            const file = document.getElementById('pdf-file').files[0];
+            if (!cognome || !nome || !rot || !file) return alert("Dati mancanti!");
+            document.getElementById('btn-submit').disabled = true;
+            try {
+                await setDoc(doc(db, "utenti", userLoggato.uid), { cognome, nome, progressivo: prog }, { merge: true });
+                const buffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(buffer).promise;
+                let fullText = "", righe = [];
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    let rY = {};
+                    content.items.forEach(it => { fullText += it.str + " "; let y = Math.round(it.transform[5]); if (!rY[y]) rY[y] = []; rY[y].push(it.str.trim()); });
+                    Object.keys(rY).sort((a,b)=>b-a).forEach(y => righe.push(rY[y].join(" ")));
+                }
+                const mesi = { "gennaio":"01", "febbraio":"02", "marzo":"03", "aprile":"04", "maggio":"05", "giugno":"06", "luglio":"07", "agosto":"08", "settembre":"09", "ottobre":"10", "novembre":"11", "dicembre":"12" };
+                let mMatch = fullText.match(/mese di ([a-z]+) (\d{4})/i);
+                let turniLetti = {};
+                const regT = /\b([1-9][CPB]\d{2}|[A-Z0-9]{2}\d{2}|Disp|RI|AL|FER|FES|FEP|MAL|PERM|KMAL|KINF|KNOP)\b/i;
+                righe.forEach(r => {
+                    let mG = r.match(/(?:^|\s)(\d{1,2})\s(?:lun|mar|mer|gio|ven|sab|dom)/i);
+                    if (mG) { let tM = r.match(regT); if (tM) turniLetti[parseInt(mG[1])] = standardizzaTurno(tM[1]); }
+                });
+                const docId = `${mMatch[2]}_${mesi[mMatch[1].toLowerCase()]}`;
+                const nomeKey = `${cognome} ${nome}${prog ? ' ('+prog+')' : ''}`;
+                await setDoc(doc(db, "rotazioni_turni", docId), { [rot]: { [nomeKey]: turniLetti } }, { merge: true });
+                alert("✅ Caricato!"); location.reload();
+            } catch (e) { alert("Errore: " + e.message); document.getElementById('btn-submit').disabled = false; }
+        };
+
+        async function caricaTuttiIDati() {
+            const snap = await getDocs(collection(db, "rotazioni_turni"));
+            const container = document.getElementById('container-mesi');
+            container.innerHTML = "";
+            let docs = []; snap.forEach(d => docs.push({id: d.id, data: d.data()}));
+            docs.sort((a,b) => b.id.localeCompare(a.id));
+            docs.forEach(docObj => {
+                let card = document.createElement('div'); card.className = "month-card";
+                let [anno, mese] = docObj.id.split('_');
+                const mN = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+                card.innerHTML = `<h3>${mN[parseInt(mese)-1]} ${anno}</h3>`;
+                for (let rN in docObj.data) {
+                    let sec = document.createElement('div'); sec.innerHTML = `<h4 style="color:#666; margin: 15px 0 5px 0;">${rN}</h4>`;
+                    sec.appendChild(buildCascadeTable(docObj.data[rN])); card.appendChild(sec);
+                }
+                container.appendChild(card);
+            });
+        }
+
+        function buildCascadeTable(utenti) {
+            let nomi = Object.keys(utenti), armi = [], proc = new Set();
+            for (let i = 0; i < nomi.length; i++) {
+                if (proc.has(nomi[i])) continue;
+                let t1 = utenti[nomi[i]], comp = null;
+                for (let j = i+1; j < nomi.length; j++) {
+                    if (proc.has(nomi[j])) continue;
+                    let t2 = utenti[nomi[j]], m = 0, tot = 0;
+                    for (let d = 1; d <= 31; d++) {
+                        if (t1[d] && t2[d] && !/^(RI|AL|FER|FES|MAL|FEP|NPL)$/.test(t1[d]) && !/^(RI|AL|FER|FES|MAL|FEP|NPL)$/.test(t2[d])) {
+                            tot++; if (t1[d] === t2[d]) m++;
+                        }
+                    }
+                    if (tot > 0 && (m / tot) > 0.7) { comp = nomi[j]; break; }
+                }
+                armi.push({ nome: comp ? `${nomi[i]} - ${comp}` : nomi[i], turni: t1 });
+                proc.add(nomi[i]); if (comp) proc.add(comp);
+            }
+            let allT = []; armi.forEach(a => Object.values(a.turni).forEach(t => { if(!/^(RI|AL|FER|FES|MAL|FEP|Disp|NPL)$/.test(t) && t) allT.push(t); }));
+            allT.sort(); let tAncora = allT[0] || "RI";
+            armi.sort((a,b) => (Object.keys(a.turni).find(k => a.turni[k] === tAncora) || 99) - (Object.keys(b.turni).find(k => b.turni[k] === tAncora) || 99));
+            let wrap = document.createElement('div'); wrap.className = "table-wrapper";
+            let table = document.createElement('table'), head = `<tr><th>Colleghi</th>`;
+            for(let i=1; i<=31; i++) head += `<th>${i}</th>`;
+            table.innerHTML = `<thead>${head}</tr></thead>`;
+            let tb = document.createElement('tbody'), lastD = 0;
+            armi.forEach(a => {
+                let firstD = parseInt(Object.keys(a.turni).find(k => a.turni[k] === tAncora) || 0);
+                if (lastD > 0 && firstD > lastD + 2) {
+                    let rM = `<tr class="row-missing"><td>Dati Mancanti</td>`;
+                    for(let i=1; i<=31; i++) rM += `<td>-</td>`;
+                    tb.innerHTML += rM + `</tr>`;
+                }
+                let row = `<tr><td>${a.nome.replace(' - ', '<br>')}</td>`;
+                for (let d = 1; d <= 31; d++) {
+                    let t = a.turni[d] || "", cls = "";
+                    if (t === "RI") cls = "cell-ri"; else if (t === "AL") cls = "cell-al"; else if (t === "Disp") cls = "cell-disp"; else if (/^(FER|FES|FEP)$/.test(t)) cls = "cell-fer"; else if (t === "NPL") cls = "cell-npl";
+                    row += `<td class="${cls}">${t}</td>`;
+                }
+                tb.innerHTML += row + `</tr>`; lastD = firstD;
+            });
+            table.appendChild(tb); wrap.appendChild(table); return wrap;
+        }
+
+        window.toggleMenu = (o) => { document.getElementById('sidebar').classList.toggle('open', o); document.getElementById('sidebar-overlay').style.display = o ? 'block' : 'none'; };
+        window.apriModalUpload = () => document.getElementById('modal-upload').style.display = 'flex';
+        window.chiudiModalUpload = () => document.getElementById('modal-upload').style.display = 'none';
+    </script>
+</body>
+</html>
+

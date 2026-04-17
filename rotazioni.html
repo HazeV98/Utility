@@ -260,7 +260,6 @@
                 if (!resMappa.ok) return;
                 const mappa = await resMappa.json();
                 
-                // Legge sia dal nuovo formato "albero" che dal vecchio "root"
                 const rootFiles = mappa.albero || mappa.root || [];
 
                 // Cerca esattamente le cartelle turni
@@ -281,7 +280,7 @@
             } catch (e) { console.error("Errore lettura mappa_file", e); }
         }
 
-        // Trova la data in vigore corretta (la più recente prima o uguale alla data cercata)
+        // Trova la data in vigore corretta
         function getEffectiveDate(targetYear, targetMonth, targetDay, availableDatesArray) {
             let target = `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
             let effective = null;
@@ -289,12 +288,9 @@
                 if (d <= target) effective = d;
                 else break;
             }
-            
-            // FALLBACK: Se stai cercando un giorno ma hai caricato solo la cartella di un giorno successivo
             if (!effective && availableDatesArray.length > 0) {
                 effective = availableDatesArray[0];
             }
-            
             return effective;
         }
 
@@ -529,7 +525,7 @@
         };
 
         // ==========================================
-        // LOGICA DI RICERCA (Con Data in Vigore)
+        // LOGICA DI RICERCA (Fix JSON Object)
         // ==========================================
         window.cercaTurno = () => {
             const giorno = parseInt(document.getElementById('input-giorno-turno').value); 
@@ -551,9 +547,10 @@
 
                 let detailsHtml = `<div style="margin-top: 10px;"><button class="file-btn btn-table" style="font-size: 14px; padding: 10px;" onclick="apriImmagineDaRotazioni('${codice}', '${currentImgDir}')">🖼️ Mostra Immagine Turno</button></div>`;
                 
+                // FIX: Lettura JSON basato su oggetto diretto (inizio, fine, luogoInizio, luogoFine)
                 if (currentShiftData && currentShiftData[codice]) {
-                    let legs = currentShiftData[codice];
-                    detailsHtml = `<div class="turn-details-box">Inizio: <strong>${legs[0].partenza_luogo} (${legs[0].partenza_ora})</strong><br>Fine: <strong>${legs[legs.length - 1].arrivo_luogo} (${legs[legs.length - 1].arrivo_ora})</strong><br><button class="file-btn btn-table" style="padding: 8px 12px; margin-top: 8px;" onclick="apriImmagineDaRotazioni('${codice}', '${currentImgDir}')">🖼️ Mostra Immagine Turno</button></div>`;
+                    let info = currentShiftData[codice];
+                    detailsHtml = `<div class="turn-details-box">Inizio: <strong>${info.luogoInizio} (${info.inizio})</strong><br>Fine: <strong>${info.luogoFine} (${info.fine})</strong><br><button class="file-btn btn-table" style="padding: 8px 12px; margin-top: 8px;" onclick="apriImmagineDaRotazioni('${codice}', '${currentImgDir}')">🖼️ Mostra Immagine Turno</button></div>`;
                 }
                 box.innerHTML = `<strong>Trovati il giorno ${giorno}:</strong><ul><li>` + trovati.join("</li><li>") + "</li></ul>" + detailsHtml;
             } else box.innerHTML = "Nessuno trovato.";
@@ -582,8 +579,13 @@
                     } else if (faseDesiderata !== "Riposo") {
                         let tCod = d.turni[giorno - 1]; let isR = ["AL", "RI", "DISP", "ESPE", "DI", ""].includes(tCod);
                         if (!isR) {
-                            let info = (currentShiftData && currentShiftData[tCod]) ? `<br>Inizio: <strong>${currentShiftData[tCod][0].partenza_luogo}</strong><br>Fine: <strong>${currentShiftData[tCod][currentShiftData[tCod].length - 1].arrivo_luogo}</strong>` : "";
-                            risHtml.push(`<strong>${d.nome}</strong> (Giorno lav. ${analisi.giornoEsatto}) <div class="turn-details-box"><strong style="color:var(--primary);">Turno: ${tCod}</strong>${info}<br><button class="file-btn btn-table" style="padding: 8px 12px; margin-top: 8px;" onclick="apriImmagineDaRotazioni('${tCod}', '${currentImgDir}')">🖼️ Immagine</button></div>`);
+                            let infoHtml = "";
+                            // FIX: Lettura JSON basato su oggetto diretto
+                            if (currentShiftData && currentShiftData[tCod]) {
+                                let info = currentShiftData[tCod];
+                                infoHtml = `<br>Inizio: <strong>${info.luogoInizio} (${info.inizio})</strong><br>Fine: <strong>${info.luogoFine} (${info.fine})</strong>`;
+                            }
+                            risHtml.push(`<strong>${d.nome}</strong> (Giorno lav. ${analisi.giornoEsatto}) <div class="turn-details-box"><strong style="color:var(--primary);">Turno: ${tCod}</strong>${infoHtml}<br><button class="file-btn btn-table" style="padding: 8px 12px; margin-top: 8px;" onclick="apriImmagineDaRotazioni('${tCod}', '${currentImgDir}')">🖼️ Immagine</button></div>`);
                         } else risHtml.push(`<strong>${d.nome}</strong> (Giorno lav. ${analisi.giornoEsatto}) - [Turno: ${tCod}]`);
                     }
                 }

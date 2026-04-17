@@ -242,11 +242,11 @@
         // Variabili Globali Ricerca e Immagini
         window.databaseTurni = []; 
         window.activePredictors = []; 
-        window.currentSearchDocId = ""; // Salva il mese/anno in cui stiamo cercando (es. "2026_04")
+        window.currentSearchDocId = ""; 
         
-        window.availableImgDirs = []; // Conterrà es: ["2026-03-01", "2026-04-15"]
+        window.availableImgDirs = []; 
         window.availableInfoFiles = []; 
-        window.loadedInfoData = {}; // Cache dei json caricati { "2026-04-15": {...dati} }
+        window.loadedInfoData = {}; 
         let pzInstance = null;
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -259,13 +259,15 @@
                 const resMappa = await fetch('mappa_file.json?t=' + new Date().getTime());
                 if (!resMappa.ok) return;
                 const mappa = await resMappa.json();
-                const rootFiles = mappa.root || [];
+                
+                // Legge sia dal nuovo formato "albero" che dal vecchio "root"
+                const rootFiles = mappa.albero || mappa.root || [];
 
-                // Estrai date dalle cartelle turni_YYYY-MM-DD
-                let imgDirs = rootFiles.filter(f => f.match(/^turni_\d{4}-\d{2}-\d{2}$/));
-                window.availableImgDirs = imgDirs.map(d => d.replace("turni_", "")).sort(); 
+                // Cerca esattamente le cartelle turni
+                let imgDirs = rootFiles.filter(f => f.match(/^turni_\d{4}-\d{2}-\d{2}\/?$/));
+                window.availableImgDirs = imgDirs.map(d => d.replace("turni_", "").replace("/", "")).sort(); 
 
-                // Estrai date dai file info_turni_YYYY-MM-DD.json
+                // Cerca esattamente i file info_turni json
                 let jsonFiles = rootFiles.filter(f => f.match(/^info_turni_\d{4}-\d{2}-\d{2}\.json$/));
                 window.availableInfoFiles = jsonFiles.map(f => f.replace("info_turni_", "").replace(".json", "")).sort();
 
@@ -287,6 +289,12 @@
                 if (d <= target) effective = d;
                 else break;
             }
+            
+            // FALLBACK: Se stai cercando un giorno ma hai caricato solo la cartella di un giorno successivo
+            if (!effective && availableDatesArray.length > 0) {
+                effective = availableDatesArray[0];
+            }
+            
             return effective;
         }
 

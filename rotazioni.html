@@ -27,8 +27,8 @@
         .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: var(--primary); color: white; }
         .sidebar-link { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 18px; border-bottom: 1px solid #eee; display: block; }
         
-        /* SCHERMATA DI ACCESSO (LOCK SCREEN) */
-        #lock-screen { display: none; width: 100%; max-width: 420px; text-align: center; flex-direction: column; align-items: center; box-sizing: border-box; }
+        /* SCHERMATE DI ACCESSO (INTRO E LOCK SCREEN) */
+        #intro-screen, #lock-screen { display: none; width: 100%; max-width: 420px; text-align: center; flex-direction: column; align-items: center; box-sizing: border-box; }
         .lock-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; }
 
         /* DASHBOARD */
@@ -100,6 +100,25 @@
         <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
         <a href="turni.html" class="sidebar-link">🔄 Turni</a>
         <a href="rotazioni.html" class="sidebar-link" style="background: #f4f7f6; color: var(--primary); font-weight: bold;">👥 Rotazioni</a>
+    </div>
+
+    <div id="intro-screen">
+        <div class="lock-card">
+            <h3 style="color: var(--primary); margin-top: 0;">Sperimentale 🚧</h3>
+            <p style="font-size: 14px; line-height: 1.6; color: #444; text-align: left; margin-bottom: 20px;">
+                Questa nuova funzione è ancora in fase sperimentale. Per poterla sviluppare ho bisogno che più colleghi possibile condividano la propria bibbia.
+                <br><br>
+                Se vuoi aiutarmi ti chiedo di <b>condividere la tua bibbia</b> (anche se sei nei "Disponibili") e fare passaparola chiedendo ad altri colleghi di fare altrettanto. 
+                L'idea è di creare una versione interattiva, integrata con Utility e con funzioni di ricerca delle rotazioni.
+                <br><br>
+                Non potendo testare senza dati, all'inizio probabilmente funzionerà male ma ci lavorerò. 
+                <br><br>
+                🔒 <b>Solo chi condividerà la propria bibbia potrà vedere le rotazioni.</b>
+                <br><br>
+                Ringrazio tutti quelli che vorranno condividere la propria bibbia.
+            </p>
+            <button class="btn" onclick="mostraVerificaAccesso()">Avanti ➔</button>
+        </div>
     </div>
 
     <div id="lock-screen">
@@ -352,6 +371,11 @@
         // ==========================================
         // AUTH E GESTIONE ACCESSO
         // ==========================================
+        window.mostraVerificaAccesso = () => {
+            document.getElementById('intro-screen').style.display = 'none';
+            document.getElementById('lock-screen').style.display = 'flex';
+        };
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userLoggato = user;
@@ -362,7 +386,7 @@
                     userData = uDoc.data();
                     eseguiCheckAccesso();
                 } else {
-                    document.getElementById('lock-screen').style.display = 'flex';
+                    document.getElementById('intro-screen').style.display = 'flex';
                 }
             } else { window.location.href = "index.html"; }
         });
@@ -398,6 +422,7 @@
             }
 
             if (sbloccato || userLoggato.uid === ADMIN_UID) {
+                document.getElementById('intro-screen').style.display = 'none';
                 document.getElementById('lock-screen').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
                 caricaTuttiIDati();
@@ -405,7 +430,8 @@
                 if (fromButton) {
                     apriModalUploadProprio();
                 } else {
-                    document.getElementById('lock-screen').style.display = 'flex';
+                    document.getElementById('intro-screen').style.display = 'flex';
+                    document.getElementById('lock-screen').style.display = 'none';
                     document.getElementById('lock-cognome').value = userData.cognome || "";
                     document.getElementById('lock-nome').value = userData.nome || "";
                     document.getElementById('lock-prog').value = userData.progressivo || "";

@@ -63,6 +63,7 @@
         <a href="index.html" class="sidebar-link">🏠 Home Page</a>
         <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
         <a href="dati_calendario.html" class="sidebar-link">📊 Statistiche Calendario</a>
+        <a href="rotazioni.html" class="sidebar-link">👥 Rotazioni (test)</a>
         <a href="turni.html" class="sidebar-link">🔄 Turni</a>
         <a href="bacheca_turni.html" class="sidebar-link">🔄 Bacheca Turni</a>
         <a href="rubrica.html" class="sidebar-link">📞 Rubrica Colleghi</a>
@@ -172,6 +173,7 @@
             <div class="section-title">Dati Profilo</div>
             <input type="text" id="regNome" class="input-field" placeholder="Nome">
             <input type="text" id="regCognome" class="input-field" placeholder="Cognome">
+            <input type="number" id="regProgressivo" class="input-field" placeholder="Numero Progressivo (Facoltativo)">
             <input type="text" id="regMatricola" class="input-field" placeholder="Matricola">
             <input type="tel" id="regTelefono" class="input-field" placeholder="Telefono">
             <select id="regMansione" class="input-field">
@@ -281,6 +283,19 @@
                 
                 if (ferieSnap.exists()) {
                     myFerieData = ferieSnap.data();
+
+                    // AUTO-SYNC PROGRESSIVO
+                    let updateNeeded = false;
+                    let updates = {};
+                    if (userDataPrivate.progressivo !== undefined && myFerieData.progressivo !== userDataPrivate.progressivo) {
+                        updates.progressivo = userDataPrivate.progressivo;
+                        updateNeeded = true;
+                    }
+                    if (updateNeeded) {
+                        await setDoc(ferieRef, updates, { merge: true });
+                        myFerieData.progressivo = userDataPrivate.progressivo;
+                    }
+
                     document.getElementById('searchMansione').value = myFerieData.mansione;
                     document.getElementById('filtroMansioneBacheca').value = myFerieData.mansione;
                     document.getElementById('top-actions-bar').style.display = 'flex';
@@ -332,6 +347,7 @@
         window.apriModaleCondivisione = () => {
             document.getElementById('regNome').value = userDataPrivate.nome || "";
             document.getElementById('regCognome').value = userDataPrivate.cognome || "";
+            document.getElementById('regProgressivo').value = userDataPrivate.progressivo || "";
             document.getElementById('regMatricola').value = userDataPrivate.matricola || "";
             document.getElementById('regTelefono').value = userDataPrivate.telefono || "";
             document.getElementById('regMansione').value = userDataPrivate.mansione || "";
@@ -348,6 +364,7 @@
         window.salvaFerie = async () => {
             const n = document.getElementById('regNome').value.trim();
             const c = document.getElementById('regCognome').value.trim();
+            const p = document.getElementById('regProgressivo').value.trim();
             const mat = document.getElementById('regMatricola').value.trim();
             const tel = document.getElementById('regTelefono').value.trim();
             const man = document.getElementById('regMansione').value;
@@ -357,8 +374,8 @@
 
             if(!n || !c || !mat || !tel || !anno || !man || !est || !inv) return alert("Compila tutti i campi!");
 
-            const payloadFerie = { uid: currentUser.uid, nome: n, cognome: c, matricola: mat, telefono: tel, mansione: man, anno_base: anno, periodo_estivo: est, periodo_invernale: inv, est_attuale: document.getElementById('currEstive').value, inv_attuale: document.getElementById('currInvernali').value };
-            const payloadUtente = { nome: n, cognome: c, matricola: mat, telefono: tel, mansione: man };
+            const payloadFerie = { uid: currentUser.uid, nome: n, cognome: c, progressivo: p, matricola: mat, telefono: tel, mansione: man, anno_base: anno, periodo_estivo: est, periodo_invernale: inv, est_attuale: document.getElementById('currEstive').value, inv_attuale: document.getElementById('currInvernali').value };
+            const payloadUtente = { nome: n, cognome: c, progressivo: p, matricola: mat, telefono: tel, mansione: man };
 
             await setDoc(doc(db, "ferie_condivise", currentUser.uid), payloadFerie);
             await setDoc(doc(db, "utenti", currentUser.uid), payloadUtente, { merge: true });
@@ -403,11 +420,12 @@
                 const match = (p, t) => myAnnunciAttivi.some(a => a.tipo_ferie === t && (a.cerco_tipo === 'periodo' ? a.cerco_valori[0] === p : a.cerco_valori.some(m => p.toLowerCase().includes(m.toLowerCase()))));
                 const isS = u.uid !== currentUser.uid && (match(ec, 'estive') || match(ic, 'invernali'));
                 const hasExchange = ar === new Date().getFullYear() && (u.est_attuale !== u.periodo_estivo || u.inv_attuale !== u.periodo_invernale);
+                const progLabel = u.progressivo ? ` (${u.progressivo})` : "";
 
                 const html = `<div class="${isS?'card-suggested':'card'}" style="padding:15px">
                     <div style="display:flex; justify-content: space-between;">
                         <div>
-                            <div style="font-weight:bold; color:var(--primary)">${u.cognome} ${u.nome}${u.uid===currentUser.uid?' (Tu)':''}</div>
+                            <div style="font-weight:bold; color:var(--primary)">${u.cognome} ${u.nome}${progLabel}${u.uid===currentUser.uid?' (Tu)':''}</div>
                             <div style="font-size:11px; color:#666">${u.mansione} | Mat: ${u.matricola || 'N/D'}</div>
                             <span class="badge-estivo">☀️ ${ec}${hasExchange && ec===u.est_attuale ? '<span class="badge-scambiato">SCAMBIATO</span>' : ''}</span><br>
                             <span class="badge-invernale">❄️ ${ic}${hasExchange && ic===u.inv_attuale ? '<span class="badge-scambiato">SCAMBIATO</span>' : ''}</span>
@@ -462,6 +480,7 @@
                     uid: currentUser.uid, 
                     nome: myFerieData.nome || "", 
                     cognome: myFerieData.cognome || "", 
+                    progressivo: myFerieData.progressivo || userDataPrivate.progressivo || "",
                     telefono: myFerieData.telefono || "", 
                     mansione: myFerieData.mansione || "", 
                     matricola: myFerieData.matricola || userDataPrivate.matricola || "N/D", 
@@ -490,6 +509,7 @@
                 const a = d.data(); 
                 const isMe = a.uid === currentUser.uid;
                 const canDelete = isMe || isAdmin; // CONTROLLO AMMINISTRATORE
+                const progLabel = a.progressivo ? ` (${a.progressivo})` : "";
                 
                 const match = !isMe && myAnnunciAttivi.some(m => m.tipo_ferie === a.tipo_ferie && (m.cerco_tipo === 'periodo' ? m.cerco_valori[0] === a.periodo_offerto : m.cerco_valori.some(mes => a.periodo_offerto.toLowerCase().includes(mes.toLowerCase()))));
                 
@@ -504,7 +524,7 @@
                 const h = `<div class="${match?'card-suggested':'card'}" style="border-left:4px solid ${a.tipo_ferie==='estive'?'#ffc107':'#17a2b8'}">
                     <div style="display:flex; justify-content: space-between;">
                         <div>
-                            <div style="font-weight:bold">${a.cognome} ${a.nome}</div>
+                            <div style="font-weight:bold">${a.cognome} ${a.nome}${progLabel}</div>
                             <div style="font-size:11px; color:#666">${a.mansione} | Mat: ${a.matricola || 'N/D'} | Tel: ${a.telefono}</div>
                             <span class="${a.tipo_ferie==='estive'?'badge-estivo':'badge-invernale'}">CEDE: ${a.periodo_offerto}</span><br>
                             <span class="badge-invernale" style="background:#eee; color:#333">CERCA: ${a.cerco_valori.join(', ')}</span>

@@ -339,6 +339,15 @@
         window.loadedInfoData = {}; 
         let pzInstance = null;
 
+        // --- MOTORE DI NORMALIZZAZIONE ELASTICA ---
+        function normalizeKey(str1, str2 = "", str3 = "") {
+            let s = `${str1} ${str2} ${str3}`.toLowerCase();
+            let parts = s.replace(/[^a-z0-9]/g, ' ').split(/\s+/).filter(Boolean);
+            parts = parts.map(p => /^\d+$/.test(p) ? parseInt(p, 10).toString() : p);
+            parts.sort();
+            return parts.join('');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             initPanzoom();
             popolaSelectRotazioni();
@@ -422,14 +431,31 @@
 
             const docIdCorr = `${annoCorr}_${String(meseCorr).padStart(2, '0')}`;
             const docIdPros = `${annoPros}_${String(mesePros).padStart(2, '0')}`;
-            const myKey = `${userData.cognome} ${userData.nome}${userData.progressivo ? ' ('+userData.progressivo+')' : ''}`.trim().toLowerCase();
             
+            const myNormalizedKey = normalizeKey(userData.cognome, userData.nome, userData.progressivo);
             let sbloccato = false;
+            
             let res = await getDoc(doc(db, "rotazioni_turni", docIdCorr));
-            if (res.exists()) { const d = res.data(); for (let r in d) { let keys = Object.keys(d[r]); for(let k of keys) { if (k.toLowerCase() === myKey) { sbloccato = true; break; } } } }
+            if (res.exists()) { 
+                const d = res.data(); 
+                for (let r in d) { 
+                    let keys = Object.keys(d[r]); 
+                    for(let k of keys) { 
+                        if (normalizeKey(k) === myNormalizedKey) { sbloccato = true; break; } 
+                    } 
+                } 
+            }
             if (!sbloccato) {
                 res = await getDoc(doc(db, "rotazioni_turni", docIdPros));
-                if (res.exists()) { const d = res.data(); for (let r in d) { let keys = Object.keys(d[r]); for(let k of keys) { if (k.toLowerCase() === myKey) { sbloccato = true; break; } } } }
+                if (res.exists()) { 
+                    const d = res.data(); 
+                    for (let r in d) { 
+                        let keys = Object.keys(d[r]); 
+                        for(let k of keys) { 
+                            if (normalizeKey(k) === myNormalizedKey) { sbloccato = true; break; } 
+                        } 
+                    } 
+                }
             }
 
             if (sbloccato || userLoggato.uid === ADMIN_UID) {
@@ -461,7 +487,6 @@
             const shouldDeleteOld = now.getDate() > 5;
 
             snap.forEach(d => {
-                // PULIZIA AUTOMATICA DATABASE VECCHI DOPO IL 5 DEL MESE
                 if (shouldDeleteOld && d.id < currentDocId) {
                     deleteDoc(doc(db, "rotazioni_turni", d.id)).catch(e=>console.log(e));
                     deleteDoc(doc(db, "report_caricamenti", d.id)).catch(e=>console.log(e));
@@ -688,7 +713,6 @@
                 
                 if (!mMatch) throw new Error("Impossibile determinare mese e anno dal PDF.");
                 
-                // VERIFICA CHE IL PDF NON SIA VECCHIO
                 const pdfYear = parseInt(mMatch[2]);
                 const pdfMonth = parseInt(mesi[mMatch[1].toLowerCase()]);
                 const docId = `${pdfYear}_${String(pdfMonth).padStart(2, '0')}`; 
@@ -704,12 +728,29 @@
                 let turniLetti = {}; const regT = /\b([1-9][CPB]\d{2}|[A-Z0-9]{2}\d{2}|Disp|RI|AL|FER|FES|FEP|MAL|PERM|KMAL|KINF|KNOP)\b/i;
                 righe.forEach(r => { let mG = r.match(/(?:^|\s)(\d{1,2})\s(?:lun|mar|mer|gio|ven|sab|dom)/i); if (mG) { let tM = r.match(regT); if (tM) turniLetti[parseInt(mG[1])] = standardizzaTurno(tM[1]); } });
                 
-                const nomeKey = `${cognome} ${nome}${prog ? ' ('+prog+')' : ''}`;
+                // SISTEMA ANTI-DUPLICATI: Cerca se c'è già una voce equivalente e ne adotta la formattazione
+                let finalNomeKey = `${cognome} ${nome}${prog ? ' ('+prog+')' : ''}`;
+                const normalizedNewKey = normalizeKey(cognome, nome, prog);
                 
-                await setDoc(doc(db, "rotazioni_turni", docId), { [rot]: { [nomeKey]: turniLetti } }, { merge: true });
+                try {
+                    let existingDoc = await getDoc(doc(db, "rotazioni_turni", docId));
+                    if (existingDoc.exists()) {
+                        let rotData = existingDoc.data()[rot];
+                        if (rotData) {
+                            for (let existingKey in rotData) {
+                                if (normalizeKey(existingKey) === normalizedNewKey) {
+                                    finalNomeKey = existingKey; // Sovrascrive la chiave esistente
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } catch(e) {}
+                
+                await setDoc(doc(db, "rotazioni_turni", docId), { [rot]: { [finalNomeKey]: turniLetti } }, { merge: true });
 
                 await setDoc(doc(db, "report_caricamenti", docId), {
-                    [nomeKey]: {
+                    [finalNomeKey]: {
                         uploaderUid: userLoggato.uid,
                         uploaderName: `${userData.cognome || ""} ${userData.nome || ""}`.trim() || "Anonimo",
                         isColleague: isUploadingForColleague,

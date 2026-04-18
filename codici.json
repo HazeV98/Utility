@@ -214,5 +214,11 @@
     "nome": "Vio Roberto",
     "data_creazione": "2026-04-17",
     "attivo": true
+  },
+  {
+    "codice": "9FPDZ2",
+    "nome": "Dragone Rosanna",
+    "data_creazione": "2026-04-18",
+    "attivo": true
   }
 ]

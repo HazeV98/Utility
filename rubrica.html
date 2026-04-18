@@ -50,6 +50,7 @@
         <a href="index.html" class="sidebar-link">🏠 Home Page</a>
         <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
         <a href="dati_calendario.html" class="sidebar-link">📊 Statistiche Calendario</a>
+        <a href="rotazioni.html" class="sidebar-link">👥 Rotazioni (test)</a>
         <a href="turni.html" class="sidebar-link">🔄 Turni</a>
         <a href="bacheca_turni.html" class="sidebar-link">🔄 Bacheca Turni</a>
         <a href="rubrica.html" class="sidebar-link" style="background-color: #f4f7f6; color: var(--primary); font-weight: bold;">📞 Rubrica Colleghi</a>
@@ -117,6 +118,7 @@
             
             <input type="text" id="regNome" class="input-field" placeholder="Nome">
             <input type="text" id="regCognome" class="input-field" placeholder="Cognome">
+            <input type="number" id="regProgressivo" class="input-field" placeholder="Numero Progressivo (Facoltativo)">
             <input type="text" id="regSoprannome" class="input-field" placeholder="Soprannome (Facoltativo)">
             
             <select id="regMansione" class="input-field">
@@ -204,8 +206,20 @@
                 if (rubricaSnap.exists()) {
                     // AUTO-SYNC: Allinea istantaneamente i dati se mancano!
                     const datiRub = rubricaSnap.data();
+                    let updateNeeded = false;
+                    let updates = {};
+
                     if (userDataPrivate.soprannome !== undefined && datiRub.soprannome !== userDataPrivate.soprannome) {
-                        await setDoc(rubricaRef, { soprannome: userDataPrivate.soprannome }, { merge: true });
+                        updates.soprannome = userDataPrivate.soprannome;
+                        updateNeeded = true;
+                    }
+                    if (userDataPrivate.progressivo !== undefined && datiRub.progressivo !== userDataPrivate.progressivo) {
+                        updates.progressivo = userDataPrivate.progressivo;
+                        updateNeeded = true;
+                    }
+
+                    if (updateNeeded) {
+                        await setDoc(rubricaRef, updates, { merge: true });
                     }
 
                     nascondiTutto();
@@ -221,10 +235,11 @@
         window.avviaCondivisione = function() {
             const haTuttiIDati = userDataPrivate.nome && userDataPrivate.cognome && userDataPrivate.mansione && userDataPrivate.telefono;
             if (haTuttiIDati) {
-                salvaCondivisione(userDataPrivate.nome, userDataPrivate.cognome, userDataPrivate.mansione, userDataPrivate.matricola, userDataPrivate.telefono, userDataPrivate.soprannome);
+                salvaCondivisione(userDataPrivate.nome, userDataPrivate.cognome, userDataPrivate.mansione, userDataPrivate.matricola, userDataPrivate.telefono, userDataPrivate.soprannome, userDataPrivate.progressivo);
             } else {
                 document.getElementById('regNome').value = userDataPrivate.nome || "";
                 document.getElementById('regCognome').value = userDataPrivate.cognome || "";
+                document.getElementById('regProgressivo').value = userDataPrivate.progressivo || "";
                 document.getElementById('regSoprannome').value = userDataPrivate.soprannome || "";
                 document.getElementById('regMansione').value = userDataPrivate.mansione || "";
                 document.getElementById('regMatricola').value = userDataPrivate.matricola || "";
@@ -237,6 +252,7 @@
             const n = document.getElementById('regNome').value.trim();
             const c = document.getElementById('regCognome').value.trim();
             const s = document.getElementById('regSoprannome').value.trim();
+            const p = document.getElementById('regProgressivo').value.trim();
             const ms = document.getElementById('regMansione').value;
             const m = document.getElementById('regMatricola').value.trim();
             const t = document.getElementById('regTelefono').value.trim();
@@ -244,13 +260,13 @@
             if (!n || !c || !ms || !t) return alert("Dati obbligatori mancanti.");
             
             document.getElementById('btnSalva').innerText = "Salvataggio...";
-            try { await setDoc(doc(db, "utenti", currentUser.uid), { nome: n, cognome: c, soprannome: s, mansione: ms, matricola: m, telefono: t }, { merge: true }); } catch(e){}
-            salvaCondivisione(n, c, ms, m, t, s);
+            try { await setDoc(doc(db, "utenti", currentUser.uid), { nome: n, cognome: c, soprannome: s, progressivo: p, mansione: ms, matricola: m, telefono: t }, { merge: true }); } catch(e){}
+            salvaCondivisione(n, c, ms, m, t, s, p);
         };
 
-        async function salvaCondivisione(n, c, ms, m, t, s) {
+        async function salvaCondivisione(n, c, ms, m, t, s, p) {
             try {
-                await setDoc(doc(db, "rubrica", currentUser.uid), { nome: n, cognome: c, soprannome: s || "", mansione: ms, matricola: m, telefono: t });
+                await setDoc(doc(db, "rubrica", currentUser.uid), { nome: n, cognome: c, soprannome: s || "", progressivo: p || "", mansione: ms, matricola: m, telefono: t });
                 document.getElementById('profileModal').style.display = 'none';
                 nascondiTutto();
                 document.getElementById('view-directory').style.display = 'flex';
@@ -295,6 +311,7 @@
             
             arrayContatti.forEach(c => {
                 const item = document.createElement('div'); item.className = "contact-item";
+                const progLabel = c.progressivo ? ` (${c.progressivo})` : "";
                 const nomeCap = c.nome.charAt(0).toUpperCase() + c.nome.slice(1).toLowerCase();
                 const cognomeCap = c.cognome.charAt(0).toUpperCase() + c.cognome.slice(1).toLowerCase();
                 const soprannomeLabel = c.soprannome ? ` <span style="font-style:italic; font-size:14px; color:#888;">"${c.soprannome}"</span>` : "";
@@ -304,7 +321,7 @@
 
                 item.innerHTML = `
                     <div class="contact-info">
-                        <div class="contact-name">${cognomeCap} ${nomeCap}${soprannomeLabel}</div>
+                        <div class="contact-name">${cognomeCap} ${nomeCap}${progLabel}${soprannomeLabel}</div>
                         <div class="contact-detail">${c.mansione || 'N/D'} | Mat: ${c.matricola || 'N/D'}</div>
                         <div class="contact-phone">${numDisplay}</div>
                     </div>
@@ -321,7 +338,7 @@
             const t = document.getElementById('search-bar').value.toLowerCase().trim();
             if (!t) return disegnaContatti(listaContatti);
             const filtrati = listaContatti.filter(c => {
-                const full = (c.nome + " " + c.cognome + " " + (c.soprannome||"") + " " + (c.matricola||"") + " " + (c.telefono||"") + " " + (c.mansione||"")).toLowerCase();
+                const full = (c.nome + " " + c.cognome + " " + (c.progressivo||"") + " " + (c.soprannome||"") + " " + (c.matricola||"") + " " + (c.telefono||"") + " " + (c.mansione||"")).toLowerCase();
                 return full.includes(t);
             });
             disegnaContatti(filtrati);
@@ -329,4 +346,3 @@
     </script>
 </body>
 </html>
- 

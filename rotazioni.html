@@ -13,19 +13,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.0/dist/panzoom.min.js"></script>
     
     <style>
-        /* --- STILI BASE E AUTENTICAZIONE --- */
+        /* --- STILI BASE --- */
         :root { --primary: #0056b3; --bg-color: #f4f7f6; --text-color: #333; --success: #28a745; --danger: #dc3545; --info: #17a2b8; }
         body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
 
         /* --- HEADER E MENU LATERALE --- */
         .header { width: 100%; max-width: 500px; display: flex; justify-content: space-between; align-items: center; padding: 10px 0 20px 0; box-sizing: border-box; }
         .hamburger-btn { background: none; border: none; font-size: 30px; color: var(--primary); cursor: pointer; padding: 0; width: 50px; text-align: left; }
-        
-        /* Modifica Header per Icona Social */
-        .title-container { display: flex; align-items: center; justify-content: center; gap: 10px; flex-grow: 1; }
-        h2 { margin: 0; color: var(--primary); font-size: 26px; font-weight: bold; text-align: center; }
-        .social-btn-container { position: relative; cursor: pointer; font-size: 24px; display: none; }
-        .badge { display: none; position: absolute; top: -5px; right: -8px; background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; }
+        h2 { margin: 0; color: var(--primary); font-size: 26px; font-weight: bold; text-align: center; flex-grow: 1; }
 
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 5999; }
         .sidebar { position: fixed; top: 0; left: -280px; width: 250px; height: 100%; background-color: white; box-shadow: 2px 0 5px rgba(0,0,0,0.2); z-index: 6000; transition: left 0.3s ease; display: flex; flex-direction: column; }
@@ -33,11 +28,11 @@
         .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: var(--primary); color: white; }
         .sidebar-link { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 18px; border-bottom: 1px solid #eee; display: block; }
         
-        /* SCHERMATA DI BLOCCO (LOCK SCREEN) */
+        /* SCHERMATA DI BLOCCO */
         #lock-screen { display: none; width: 100%; max-width: 420px; text-align: center; flex-direction: column; align-items: center; box-sizing: border-box; }
         .lock-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; }
 
-        /* DASHBOARD (AREA DATI) */
+        /* DASHBOARD */
         #dashboard { display: none; width: 100%; max-width: 500px; box-sizing: border-box; }
         .dashboard-top-actions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; width: 100%; }
         .month-card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 100%; box-sizing: border-box; }
@@ -65,12 +60,12 @@
         .btn { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 16px; margin-top:5px; }
         .btn-secondary { background: #6c757d; margin-top: 10px; }
 
-        /* --- TABELLA CASCATA --- */
+        /* --- TABELLA --- */
         .table-wrapper { width: 100%; overflow-x: auto; margin-top: 10px; border: 1px solid #ddd; border-radius: 8px; position: relative; }
         .rotazioni-table { border-collapse: separate; border-spacing: 0; width: max-content; background: white; font-size: 13px; text-align: center; }
         .rotazioni-table th, .rotazioni-table td { border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; padding: 10px; white-space: nowrap; min-width: 40px; }
         .rotazioni-table th { background-color: var(--primary); color: white; position: sticky; top: 0; z-index: 2; border-top: 1px solid var(--primary); }
-        .rotazioni-table td:first-child, .rotazioni-table th:first-child { position: sticky; left: 0; min-width: 150px; max-width: 180px; white-space: normal; line-height: 1.3; }
+        .rotazioni-table td:first-child, .rotazioni-table th:first-child { position: sticky; left: 0; min-width: 160px; max-width: 200px; white-space: normal; line-height: 1.3; }
         .rotazioni-table td:first-child { background-color: #f9f9f9; font-weight: bold; text-align: left; border-right: 2px solid #aaa; color: var(--primary); font-size: 13px; z-index: 3; }
         .rotazioni-table th:first-child { z-index: 4; border-right: 2px solid #003d82; }
 
@@ -84,27 +79,19 @@
         #btn-float-add { position: fixed; bottom: 30px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--success); color: white; font-size: 30px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 2000; display: none; }
         .status-box { padding: 15px; border-radius: 10px; font-size: 14px; margin-top: 15px; display: none; }
 
-        /* --- STILI EXTRA (ADMIN E SOCIAL) --- */
-        .match-card { background: #fafafa; border: 1px solid #eee; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
-        .match-score { font-size: 12px; color: #666; margin-top: 5px; }
+        /* --- ADMIN --- */
         .admin-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 10px 0; }
         .toggle-switch { position: relative; width: 40px; height: 20px; appearance: none; background: #ccc; outline: none; border-radius: 20px; cursor: pointer; transition: 0.3s; }
         .toggle-switch:checked { background: var(--danger); }
         .toggle-switch::before { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; top: 2px; left: 2px; background: white; transition: 0.3s; }
         .toggle-switch:checked::before { left: 22px; }
-        .answer-btn { padding: 8px; font-size: 14px; border-radius: 6px; border: none; cursor: pointer; margin-top: 5px; color: white; font-weight: bold;}
     </style>
 </head>
 <body>
 
     <div class="header">
         <button class="hamburger-btn" onclick="toggleMenu(true)">☰</button>
-        <div class="title-container">
-            <h2>Rotazioni</h2>
-            <div id="btn-social" class="social-btn-container" onclick="apriSocialModal()">
-                👥<span id="social-badge" class="badge"></span>
-            </div>
-        </div>
+        <h2>Rotazioni</h2>
         <div style="width: 50px;"></div>
     </div>
 
@@ -124,7 +111,7 @@
         <div class="lock-card">
             <h3 style="color: var(--primary); margin-top: 0; display: none;" id="lock-greeting"></h3>
             <p style="font-size: 14px; line-height: 1.6; color: #444; text-align: left; margin-bottom: 20px;">
-                Questa nuova funzione è ancora in fase sperimentale. Per poterla sviluppare ho bisogno che più colleghi possibile condividano la propria bibbia.
+                Questa funzione genera la cascata completa basandosi sull'incastro dei turni.
                 <br><br>
                 Se vuoi aiutarmi ti chiedo di <b>condividere la tua bibbia</b> e fare passaparola chiedendo ad altri colleghi di fare altrettanto. 
                 <br><br>
@@ -139,7 +126,6 @@
             <button class="file-btn btn-search" onclick="apriModal('modal-upload')">➕ Aggiungi Nuova Bibbia</button>
             <button id="btn-admin" class="file-btn" style="background: #343a40; display: none;" onclick="apriAdminModal()">⚙️ Pannello Admin</button>
         </div>
-
         <div id="container-mesi"></div>
     </div>
 
@@ -155,21 +141,6 @@
             <input type="number" id="up-prog" class="input-field" placeholder="Numero Progressivo (Opzionale)">
             <select id="up-rotazione" class="input-field">
                 <option value="">-- Seleziona Rotazione --</option>
-                <option value="rot_fnove">Rotazione Fondamente Nove</option>
-                <option value="rot_proma">Rotazione Piazzale Roma</option>
-                <option value="rot_lido">Rotazione Lido</option>
-                <option value="rot_szaccaria">Rotazione San Zaccaria</option>
-                <option>Rotazione spezzati Fondamente Nove</option>
-                <option>Rotazione spezzati San Zaccaria</option>
-                <option>Rotazione spezzati Piazzale Roma</option>
-                <option>Rotazione spezzati Lido</option>
-                <option>Rotazione linea 12</option>
-                <option>Rotazione linea 13</option>
-                <option>Rotazione linea 14 M/B</option>
-                <option>Rotazione linea 14 M/N</option>
-                <option>Rotazione linea 17</option>
-                <option>Disponibili 5-1</option>
-                <option>Disponibili 6-2-6-1</option>
             </select>
             <div style="background: #f8f9fa; border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 12px; cursor: pointer; margin-bottom: 15px;" onclick="document.getElementById('pdf-file').click()">
                 <span id="file-label" style="font-weight: bold; color: #666;">Seleziona PDF Bibbia</span>
@@ -247,38 +218,12 @@
         </div>
     </div>
 
-    <div id="modal-social" class="modal-overlay" onclick="chiudiSeSfondo(event, 'modal-social')">
-        <div class="modal-content">
-            <span class="close-modal" onclick="chiudiModal('modal-social')">&times;</span>
-            <h3 style="margin-top:0; color:var(--primary);">I tuoi Armi 👥</h3>
-            <p style="font-size: 13px; color: #666;">Verifica chi lavora con te questo mese.</p>
-            <h4 style="margin-bottom: 5px; color: var(--success);">Armi Confermati</h4>
-            <div id="social-confermati">Nessun armo confermato.</div>
-            <h4 style="margin-bottom: 5px; color: var(--primary); margin-top: 20px;">Suggeriti dal Sistema</h4>
-            <div id="social-suggeriti">Nessun suggerimento.</div>
-        </div>
-    </div>
-
-    <div id="modal-armo-prompt" class="modal-overlay">
-        <div class="modal-content" style="text-align: center;">
-            <h3 style="margin-top:0; color:var(--primary);">Trovato un Match! ⚓</h3>
-            <p>Abbiamo rilevato <strong id="prompt-count"></strong> turni in comune con <strong id="prompt-nome" style="color:var(--primary);"></strong>.</p>
-            <p style="font-weight: bold; margin-bottom: 20px;">Siete in armo assieme?</p>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <button class="answer-btn" style="background:var(--success);" onclick="salvaRispostaArmo('Sì')">✅ Sì, siamo in armo</button>
-                <button class="answer-btn" style="background:var(--info);" onclick="salvaRispostaArmo('Ferie')">🌴 No, copertura ferie</button>
-                <button class="answer-btn" style="background:var(--danger);" onclick="salvaRispostaArmo('No')">❌ No, coincidenza</button>
-                <button class="answer-btn" style="background:#6c757d;" onclick="salvaRispostaArmo('Boh')">❓ Non lo so ancora</button>
-            </div>
-        </div>
-    </div>
-
     <div id="modal-admin" class="modal-overlay" onclick="chiudiSeSfondo(event, 'modal-admin')">
         <div class="modal-content">
             <span class="close-modal" onclick="chiudiModal('modal-admin')">&times;</span>
             <h3 style="margin-top:0; color:#343a40;">⚙️ Pannello Admin</h3>
             <p style="font-size: 13px; color: #666;">Blocca la generazione dei turni oltre una certa data.</p>
-            <div id="admin-rotazioni-list"></div>
+            <div id="admin-rotazioni-list" style="margin-top: 15px; max-height: 50vh; overflow-y: auto;"></div>
             <button class="btn" style="background:#343a40; margin-top:20px;" onclick="salvaConfigAdmin()">💾 Salva Modifiche</button>
         </div>
     </div>
@@ -294,23 +239,44 @@
         const db = getFirestore(app);
 
         // ==========================================
-        // CONFIGURAZIONI GLOBALI
+        // CONFIGURAZIONI GLOBALI E DIZIONARI
         // ==========================================
         
-        // ---- INSERISCI QUI IL TUO UID FIREBASE PER SBLOCCARE IL PANNELLO ADMIN ----
-        const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2"; 
+        // ---- INSERISCI QUI IL TUO UID FIREBASE ----
+        const ADMIN_UID = "TUO_UID_FIREBASE_QUI"; 
+
+        const ROTATIONS_MAP = {
+            "rot_fnove": "Rotazione Fondamente Nove",
+            "rot_proma": "Rotazione Piazzale Roma",
+            "rot_lido": "Rotazione Lido",
+            "rot_szaccaria": "Rotazione San Zaccaria",
+            "spez_fnove": "Rotazione spezzati Fondamente Nove",
+            "spez_szaccaria": "Rotazione spezzati San Zaccaria",
+            "spez_proma": "Rotazione spezzati Piazzale Roma",
+            "spez_lido": "Rotazione spezzati Lido",
+            "rot_12": "Rotazione linea 12",
+            "rot_13": "Rotazione linea 13",
+            "rot_14mb": "Rotazione linea 14 M/B",
+            "rot_14mn": "Rotazione linea 14 M/N",
+            "rot_17sn": "Rotazione linea 17 San Nicolò",
+            "rot_17tr": "Rotazione linea 17 Tronchetto",
+            "disp_51": "Disponibili 5-1",
+            "disp_6261": "Disponibili 6-2-6-1"
+        };
+
+        const GHOST_ROWS = {
+            "rot_fnove": 56,
+            "rot_proma": 45,
+            "rot_szaccaria": 24, // Valori provvisori dedotti
+            "rot_lido": 40
+        };
 
         let userLoggato = null;
         let userData = null;
-        let currentUserTurns = {}; 
+        let fullDatabaseData = {}; // Salvo tutto il mese per le coperture ferie
 
-        // Nuove variabili Admin & Social & Ghost
         window.masterSequences = {};
         window.adminConfig = {};
-        window.armoResponses = {};
-        window.pendingMatches = [];
-        window.currentPromptTarget = null;
-        window.currentDocIdForSocial = "";
 
         // Dati Ricerca originali
         window.databaseTurni = []; 
@@ -321,33 +287,33 @@
         window.loadedInfoData = {}; 
         let pzInstance = null;
 
-        const GHOST_ROTATIONS = {
-            "rot_fnove": { righe: 56, label: "Fondamente Nove" },
-            "rot_proma": { righe: 45, label: "Piazzale Roma" },
-            "rot_lido": { righe: 40, label: "Lido" },
-            "rot_szaccaria": { righe: 40, label: "San Zaccaria" }
-        };
-
         document.addEventListener('DOMContentLoaded', () => {
             initPanzoom();
+            popolaSelectRotazioni();
             caricaDatiTurniSilenzioso();
             caricaMasterSequences(); 
         });
 
-        // 1. CARICAMENTO DATI RICERCA E IMMAGINI
+        function popolaSelectRotazioni() {
+            const select = document.getElementById('up-rotazione');
+            for (let key in ROTATIONS_MAP) {
+                let opt = document.createElement('option');
+                opt.value = key;
+                opt.text = ROTATIONS_MAP[key];
+                select.appendChild(opt);
+            }
+        }
+
         async function caricaDatiTurniSilenzioso() {
             try {
                 const resMappa = await fetch('mappa_file.json?t=' + new Date().getTime());
                 if (!resMappa.ok) return;
                 const mappa = await resMappa.json();
                 const rootFiles = mappa.albero || mappa.root || [];
-
                 let imgDirs = rootFiles.filter(f => f.match(/^turni_\d{4}-\d{2}-\d{2}\/?$/));
                 window.availableImgDirs = imgDirs.map(d => d.replace("turni_", "").replace("/", "")).sort(); 
-
                 let jsonFiles = rootFiles.filter(f => f.match(/^info_turni_\d{4}-\d{2}-\d{2}\.json$/));
                 window.availableInfoFiles = jsonFiles.map(f => f.replace("info_turni_", "").replace(".json", "")).sort();
-
                 for (let dateStr of window.availableInfoFiles) {
                     let res = await fetch(`info_turni_${dateStr}.json?t=${new Date().getTime()}`);
                     if (res.ok) window.loadedInfoData[dateStr] = await res.json();
@@ -355,7 +321,6 @@
             } catch (e) { console.error("Errore lettura mappa_file", e); }
         }
 
-        // 2. CARICAMENTO GHOST MASTER E ADMIN
         async function caricaMasterSequences() {
             try {
                 const res = await fetch('rotazioni_2026-03-28.json');
@@ -367,7 +332,7 @@
                             item.split('+').forEach(p => belt.push(p.toLowerCase() === 'di' ? 'disp' : p.toUpperCase()));
                         } else {
                             let val = item.toLowerCase() === 'di' ? 'disp' : item.toUpperCase();
-                            belt.push(val); belt.push(val); // Raddoppio
+                            belt.push(val); belt.push(val);
                         }
                     });
                     window.masterSequences[key] = belt;
@@ -403,22 +368,12 @@
                     document.getElementById('up-cognome').value = userData.cognome || "";
                     document.getElementById('up-nome').value = userData.nome || "";
                     document.getElementById('up-prog').value = userData.progressivo || "";
-                    if (userData.nome) {
-                        greetingEl.innerText = `Ciao ${userData.nome}! 👋`;
-                        greetingEl.style.display = "block";
-                    }
+                    if (userData.nome) { greetingEl.innerText = `Ciao ${userData.nome}! 👋`; greetingEl.style.display = "block"; }
                 }
-
-                // MOSTRA TASTO ADMIN SE UID COMBACIA
-                if(user.uid === ADMIN_UID) {
-                    document.getElementById('btn-admin').style.display = 'flex';
-                }
-
+                if(user.uid === ADMIN_UID) document.getElementById('btn-admin').style.display = 'flex';
                 await caricaConfigAdmin();
                 checkAccess();
-            } else {
-                window.location.href = "index.html";
-            }
+            } else { window.location.href = "index.html"; }
         });
 
         async function checkAccess() {
@@ -432,61 +387,21 @@
             const myKey = `${userData?.cognome || ""} ${userData?.nome || ""}${userData?.progressivo ? ' ('+userData.progressivo+')' : ''}`.trim().toLowerCase();
             
             let sbloccato = false;
-            let docToUse = "";
             let res = await getDoc(doc(db, "rotazioni_turni", docIdCorr));
-            if (res.exists()) { 
-                const d = res.data(); 
-                for (let r in d) { 
-                    let keys = Object.keys(d[r]);
-                    for(let k of keys) {
-                        if (k.toLowerCase() === myKey) { 
-                            sbloccato = true; 
-                            currentUserTurns = d[r][k]; 
-                            docToUse = docIdCorr;
-                            break; 
-                        }
-                    }
-                } 
-            }
+            if (res.exists()) { const d = res.data(); for (let r in d) { let keys = Object.keys(d[r]); for(let k of keys) { if (k.toLowerCase() === myKey) { sbloccato = true; break; } } } }
             if (!sbloccato) {
                 res = await getDoc(doc(db, "rotazioni_turni", docIdPros));
-                if (res.exists()) { 
-                    const d = res.data(); 
-                    for (let r in d) { 
-                        let keys = Object.keys(d[r]);
-                        for(let k of keys) {
-                            if (k.toLowerCase() === myKey) { 
-                                sbloccato = true; 
-                                currentUserTurns = d[r][k]; 
-                                docToUse = docIdPros;
-                                break; 
-                            }
-                        }
-                    } 
-                }
+                if (res.exists()) { const d = res.data(); for (let r in d) { let keys = Object.keys(d[r]); for(let k of keys) { if (k.toLowerCase() === myKey) { sbloccato = true; break; } } } }
             }
 
-            // Permetti accesso ad Admin a prescindere dal caricamento
             if (sbloccato || userLoggato.uid === ADMIN_UID) {
                 document.getElementById('lock-screen').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
                 document.getElementById('btn-float-add').style.display = 'block';
-                document.getElementById('btn-social').style.display = 'block'; // Mostra Icona Social
                 caricaTuttiIDati();
-                
-                // Avvia scansione sociale se l'utente ha turni
-                if (sbloccato && currentUserTurns) {
-                    window.currentDocIdForSocial = docToUse;
-                    eseguiScansioneSocial(res.data());
-                }
-            } else {
-                document.getElementById('lock-screen').style.display = 'flex';
-            }
+            } else { document.getElementById('lock-screen').style.display = 'flex'; }
         }
 
-        // ==========================================
-        // UI & PULSANTI (Dashboard Originale Intatta)
-        // ==========================================
         async function caricaTuttiIDati() {
             const snap = await getDocs(collection(db, "rotazioni_turni"));
             const container = document.getElementById('container-mesi');
@@ -499,27 +414,24 @@
                 let [anno, mese] = docObj.id.split('_');
                 const mN = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
                 card.innerHTML = `<h3>${mN[parseInt(mese)-1]} ${anno}</h3>`;
-                
                 let btnGrid = document.createElement('div'); btnGrid.className = "btn-grid";
                 
-                for (let rotName in docObj.data) {
+                for (let rotKey in docObj.data) {
+                    let rotNameLabel = ROTATIONS_MAP[rotKey] || rotKey;
                     let rotContainer = document.createElement('div');
                     rotContainer.style.background = "#fafafa"; rotContainer.style.border = "1px solid #ddd"; rotContainer.style.padding = "12px"; rotContainer.style.borderRadius = "10px"; rotContainer.style.marginBottom = "10px";
-                    rotContainer.innerHTML = `<h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 16px;">${rotName}</h4>`;
+                    rotContainer.innerHTML = `<h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 16px;">${rotNameLabel}</h4>`;
 
-                    // Tasto Tabella Originale (che ora usa la logica integrata Ghost+Admin)
                     let btnTab = document.createElement('button'); btnTab.className = "file-btn btn-table"; btnTab.innerHTML = `📅 Visualizza Tabella`;
-                    btnTab.onclick = () => apriTabellaCascata(docObj.id, rotName, docObj.data[rotName]);
+                    btnTab.onclick = () => { fullDatabaseData = docObj.data; apriTabellaCascata(docObj.id, rotKey, docObj.data[rotKey]); };
                     rotContainer.appendChild(btnTab);
 
-                    // Tasto Cerca Originale
                     let btnSearch = document.createElement('button'); btnSearch.className = "file-btn btn-search"; btnSearch.style.marginTop = "8px"; btnSearch.innerHTML = `🔍 Cerca Colleghi e Cambi`;
-                    btnSearch.onclick = () => apriRicercaCorrente(docObj.id, rotName, docObj.data[rotName]);
+                    btnSearch.onclick = () => apriRicercaCorrente(docObj.id, rotNameLabel, docObj.data[rotKey]);
                     rotContainer.appendChild(btnSearch);
 
-                    // Tasto Ricerca Futura Originale
                     let btnFuturo = document.createElement('button'); btnFuturo.className = "file-btn btn-search"; btnFuturo.style.marginTop = "8px"; btnFuturo.innerHTML = `🔮 Ricerca mesi successivi`;
-                    btnFuturo.onclick = () => apriRicercaFuturaFb(docObj.id, rotName, docObj.data[rotName]);
+                    btnFuturo.onclick = () => apriRicercaFuturaFb(docObj.id, rotNameLabel, docObj.data[rotKey]);
                     rotContainer.appendChild(btnFuturo);
 
                     btnGrid.appendChild(rotContainer);
@@ -530,7 +442,7 @@
         }
 
         // ==========================================
-        // APERTURA MODALI E GESTIONE ADMIN
+        // ADMIN PANEL
         // ==========================================
         window.toggleMenu = (o) => { document.getElementById('sidebar').classList.toggle('open', o); document.getElementById('sidebar-overlay').style.display = o ? 'block' : 'none'; };
         window.apriModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -540,12 +452,12 @@
         window.apriAdminModal = () => {
             const list = document.getElementById('admin-rotazioni-list');
             list.innerHTML = "";
-            for (let key in GHOST_ROTATIONS) {
+            for (let key in ROTATIONS_MAP) {
                 let conf = window.adminConfig[key] || { active: false, date: "" };
                 list.innerHTML += `
                     <div class="admin-row">
                         <div>
-                            <strong>${GHOST_ROTATIONS[key].label}</strong><br>
+                            <strong>${ROTATIONS_MAP[key]}</strong><br>
                             <input type="date" id="admin-date-${key}" class="input-field" style="margin-top:5px; padding:8px;" value="${conf.date}">
                         </div>
                         <input type="checkbox" id="admin-tog-${key}" class="toggle-switch" ${conf.active ? 'checked' : ''}>
@@ -557,7 +469,7 @@
 
         window.salvaConfigAdmin = async () => {
             let newConf = {};
-            for (let key in GHOST_ROTATIONS) {
+            for (let key in ROTATIONS_MAP) {
                 newConf[key] = {
                     active: document.getElementById(`admin-tog-${key}`).checked,
                     date: document.getElementById(`admin-date-${key}`).value
@@ -571,18 +483,40 @@
         };
 
         // ==========================================
-        // TABELLA BUILDER (Ghost + Original Fallback)
+        // TABELLA BUILDER CON ARMO E COPERTURE AUTO
         // ==========================================
-        function apriTabellaCascata(docId, rotName, data) {
-            document.getElementById('table-modal-title').innerText = rotName;
+        function controllaArmo(turni1, turni2) {
+            let match = 0;
+            for (let d = 1; d <= 31; d++) {
+                let t1 = turni1[d]; let t2 = turni2[d];
+                if (t1 && t2 && t1.toUpperCase() === t2.toUpperCase()) {
+                    if (!/^(RI|AL|FER|FES|MAL|FEP|KNOP|KINF|NPL|DISP)$/i.test(t1)) match++;
+                }
+            }
+            return match >= 5;
+        }
+
+        function cercaCoperturaFerie(turniRigaSequence) {
+            let infoCoperture = [];
+            // Cerca nei disponibili del database completo del mese
+            let disponibili = { ...fullDatabaseData["disp_51"], ...fullDatabaseData["disp_6261"] };
+            for (let dispName in disponibili) {
+                if (controllaArmo(turniRigaSequence, disponibili[dispName])) {
+                    infoCoperture.push(dispName);
+                }
+            }
+            return infoCoperture;
+        }
+
+        function apriTabellaCascata(docId, rotKey, data) {
+            document.getElementById('table-modal-title').innerText = ROTATIONS_MAP[rotKey] || rotKey;
             const container = document.getElementById('table-container');
             container.innerHTML = "";
 
             let [anno, mese] = docId.split('_').map(Number);
             let numGiorni = new Date(anno, mese, 0).getDate();
             
-            // Applica Taglio Admin se configurato
-            let rule = window.adminConfig[rotName];
+            let rule = window.adminConfig[rotKey];
             if (rule && rule.active && rule.date) {
                 let cutoffDate = new Date(rule.date);
                 if (cutoffDate.getFullYear() === anno && (cutoffDate.getMonth() + 1) === mese) {
@@ -594,26 +528,28 @@
                 }
             }
 
-            // Se la rotazione fa parte di quelle Ghost (es. F.Nove) e il Master è carico -> Usa Ghost
-            if (window.masterSequences[rotName]) {
-                container.appendChild(buildGhostTable(rotName, data, anno, mese, numGiorni));
+            if (window.masterSequences[rotKey] && GHOST_ROWS[rotKey]) {
+                container.appendChild(buildGhostTable(rotKey, data, anno, mese, numGiorni));
             } else {
-                // Altrimenti usa il builder originale per i disponibili o altre non mappate
                 container.appendChild(buildOriginalTable(data, numGiorni));
             }
-            
             window.apriModal('table-modal');
         }
 
-        // --- MOTORE GHOST ---
-        function buildGhostTable(rotName, utentiCaricati, anno, mese, numGiorni) {
-            const sequence = window.masterSequences[rotName];
-            const config = GHOST_ROTATIONS[rotName];
-            let globalOffset = 0;
-            let firstUserKey = Object.keys(utentiCaricati)[0];
+        // --- GHOST TABLE BUILDER ---
+        function buildGhostTable(rotKey, utentiCaricati, anno, mese, numGiorni) {
+            const sequence = window.masterSequences[rotKey];
+            const maxRighe = GHOST_ROWS[rotKey];
+            let globalOffset = -1;
             
-            // Trova offset base dal primo utente caricato
-            if(firstUserKey) globalOffset = calcolaOffsetSingolo(utentiCaricati[firstUserKey], sequence);
+            // Trova il primo utente valido per fare da ancora
+            for (let uKey in utentiCaricati) {
+                let off = calcolaOffsetSingolo(utentiCaricati[uKey], sequence);
+                if (off !== -1) { globalOffset = off; break; }
+            }
+            
+            // Se nessuno ha turni validi in questo mese (es. tutte ferie), usa 0
+            if (globalOffset === -1) globalOffset = 0;
 
             let wrap = document.createElement('div'); wrap.className = "table-wrapper";
             let table = document.createElement('table'); table.className = "rotazioni-table";
@@ -621,20 +557,28 @@
             table.innerHTML = `<thead>${head}</tr></thead>`;
             let tb = document.createElement('tbody');
 
-            for (let p = 1; p <= config.righe; p++) {
-                let nomeRif = `Collega (Pos. ${p})`;
+            for (let p = 1; p <= maxRighe; p++) {
+                let pOff = globalOffset; // Per ora mantengo offset base (da evolvere calcolo ritardo posizione esatta se serve)
+                let nomiRiga = [];
+                let rowSeq = {};
                 
-                // Mappatura Utente Reale -> Posizione (Semplificata, se l'offset calcolato corrisponde)
-                for (let uKey in utentiCaricati) {
-                    let uOff = calcolaOffsetSingolo(utentiCaricati[uKey], sequence);
-                    let pOff = calcolaOffsetPerPosizione(p, sequence.length, globalOffset);
-                    if (uOff === pOff) { nomeRif = uKey; break; }
-                }
+                // Genero sequenza della riga per fare controlli
+                for (let d = 1; d <= 31; d++) rowSeq[d] = calcolaTurnoGhost(p, d, anno, mese, pOff, sequence);
 
-                let row = `<tr><td>${nomeRif.replace(' - ', '<br>')}</td>`;
+                // Cerca Armi in questa rotazione
+                for (let uKey in utentiCaricati) {
+                    if (controllaArmo(utentiCaricati[uKey], rowSeq)) nomiRiga.push(uKey);
+                }
+                
+                // Cerca Coperture Ferie
+                let coperture = cercaCoperturaFerie(rowSeq);
+
+                let nomeRif = nomiRiga.length > 0 ? nomiRiga.join(" - ") : `Collega (Pos. ${p})`;
+                if (coperture.length > 0) nomeRif += `<br><span style="color:var(--info); font-size:11px;">Copertura: ${coperture.join(", ")}</span>`;
+
+                let row = `<tr><td>${nomeRif.replace(/ - /g, '<br>')}</td>`;
                 for (let d = 1; d <= numGiorni; d++) {
-                    let t = calcolaTurnoGhost(p, d, anno, mese, globalOffset, sequence);
-                    let cls = "";
+                    let t = rowSeq[d]; let cls = "";
                     if (t === "RI") cls = "cell-ri"; else if (t === "AL") cls = "cell-al"; else if (t.toLowerCase() === "disp") cls = "cell-disp"; else if (/^(FER|FES|FEP)$/.test(t)) cls = "cell-fer";
                     row += `<td class="${cls}">${t}</td>`;
                 }
@@ -646,13 +590,12 @@
         function calcolaTurnoGhost(pos, giorno, anno, mese, anchorOffset, sequence) {
             let data = new Date(anno, mese - 1, giorno, 12, 0, 0);
             let refDate = new Date(2026, 0, 1, 12, 0, 0); 
-            let posDelay = (pos - 1) * 2; // Sfasamento 2 giorni
+            let posDelay = (pos - 1) * 2; 
             let targetDate = new Date(data.getTime() - (posDelay * 86400000));
             let diff = Math.floor((targetDate - refDate) / 86400000);
             
             let ciclo = [1,1,1,1,1,1,0, 1,1,1,1,1,1,0,0]; // 6L-1R-6L-2R
             let idxCiclo = ((diff % 15) + 15) % 15;
-            
             if (ciclo[idxCiclo] === 0) return idxCiclo === 6 ? 'RI' : 'AL';
             
             let workingDays = 0; let step = diff > 0 ? 1 : -1;
@@ -666,39 +609,39 @@
         function calcolaOffsetSingolo(userTurns, sequence) {
             for(let d=1; d<=31; d++) {
                 let t = userTurns[d]?.toUpperCase();
-                if(t && !['RI','AL','FER','MAL','FEP','FES'].includes(t)) {
+                if(t && !/^(RI|AL|FER|FES|MAL|FEP|KNOP|KINF|NPL)$/.test(t)) {
                     let val = t === 'DI' ? 'DISP' : t;
                     let idx = sequence.findIndex(s => s.toUpperCase() === val || (s.toUpperCase() === 'DISP' && val === 'DISP'));
                     if(idx >= 0) return idx;
                 }
             }
-            return 0;
+            return -1;
         }
 
-        function calcolaOffsetPerPosizione(pos, seqLen, globalOffset) {
-            // In attesa di logica matematica precisa, manteniamo l'offset globale come base
-            return globalOffset; 
-        }
-
-        // --- CASCATA BUILDER ORIGINALE ---
+        // --- ORIGINAL BUILDER CON NUOVO MATCHING ARMI ---
         function buildOriginalTable(utenti, numGiorni) {
             let nomi = Object.keys(utenti), armi = [], proc = new Set();
             for (let i = 0; i < nomi.length; i++) {
                 if (proc.has(nomi[i])) continue;
-                let t1 = utenti[nomi[i]], comp = null;
+                let t1 = utenti[nomi[i]];
+                let compNames = [nomi[i]];
+                
+                // Cerca Armi (>= 5 turni uguali)
                 for (let j = i+1; j < nomi.length; j++) {
                     if (proc.has(nomi[j])) continue;
-                    let t2 = utenti[nomi[j]], m = 0, tot = 0;
-                    for (let d = 1; d <= 31; d++) {
-                        if (t1[d] && t2[d] && !/^(RI|AL|FER|FES|MAL|FEP|NPL)$/.test(t1[d]) && !/^(RI|AL|FER|FES|MAL|FEP|NPL)$/.test(t2[d])) {
-                            tot++; if (t1[d] === t2[d]) m++;
-                        }
-                    }
-                    if (tot > 0 && (m / tot) > 0.7) { comp = nomi[j]; break; }
+                    if (controllaArmo(t1, utenti[nomi[j]])) { compNames.push(nomi[j]); proc.add(nomi[j]); }
                 }
-                armi.push({ nome: comp ? `${nomi[i]} - ${comp}` : nomi[i], turni: t1 });
-                proc.add(nomi[i]); if (comp) proc.add(comp);
+                
+                // Cerca Coperture Ferie
+                let coperture = cercaCoperturaFerie(t1);
+                
+                let nomeFinale = compNames.join(" - ");
+                if (coperture.length > 0) nomeFinale += `<br><span style="color:var(--info); font-size:11px;">Copertura: ${coperture.join(", ")}</span>`;
+
+                armi.push({ nome: nomeFinale, turni: t1 });
+                proc.add(nomi[i]);
             }
+
             let allT = []; armi.forEach(a => Object.values(a.turni).forEach(t => { if(!/^(RI|AL|FER|FES|MAL|FEP|Disp|NPL)$/.test(t) && t) allT.push(t); }));
             allT.sort(); let tAncora = allT[0] || "RI";
             armi.sort((a,b) => (Object.keys(a.turni).find(k => a.turni[k] === tAncora) || 99) - (Object.keys(b.turni).find(k => b.turni[k] === tAncora) || 99));
@@ -708,6 +651,7 @@
             let head = `<tr><th>Colleghi</th>`; for(let i=1; i<=numGiorni; i++) head += `<th>${i}</th>`;
             table.innerHTML = `<thead>${head}</tr></thead>`;
             let tb = document.createElement('tbody'), lastD = 0;
+
             armi.forEach(a => {
                 let firstD = parseInt(Object.keys(a.turni).find(k => a.turni[k] === tAncora) || 0);
                 if (lastD > 0 && firstD > lastD + 2) {
@@ -715,7 +659,7 @@
                     for(let i=1; i<=numGiorni; i++) rM += `<td>-</td>`;
                     tb.innerHTML += rM + `</tr>`;
                 }
-                let row = `<tr><td>${a.nome.replace(' - ', '<br>')}</td>`;
+                let row = `<tr><td>${a.nome.replace(/ - /g, '<br>')}</td>`;
                 for (let d = 1; d <= numGiorni; d++) {
                     let t = a.turni[d] || "", cls = "";
                     if (t === "RI") cls = "cell-ri"; else if (t === "AL") cls = "cell-al"; else if (t.toLowerCase() === "disp") cls = "cell-disp"; else if (/^(FER|FES|FEP)$/.test(t)) cls = "cell-fer"; else if (t === "NPL") cls = "cell-npl";
@@ -727,142 +671,10 @@
         }
 
         // ==========================================
-        // SISTEMA SOCIAL (ARMI MATCHING)
+        // MOTORE DI UPLOAD
         // ==========================================
-        async function eseguiScansioneSocial(fullData) {
-            const myKey = `${userData?.cognome || ""} ${userData?.nome || ""}${userData?.progressivo ? ' ('+userData.progressivo+')' : ''}`.trim().toLowerCase();
-            let matches = [];
-
-            try {
-                const res = await getDoc(doc(db, "relazioni_armi", `${userLoggato.uid}_${window.currentDocIdForSocial}`));
-                if(res.exists()) window.armoResponses = res.data();
-            } catch(e) {}
-
-            for (let r in fullData) {
-                for (let k in fullData[r]) {
-                    if (k.toLowerCase() === myKey) continue; 
-
-                    let turniCollega = fullData[r][k];
-                    let turniComuni = 0;
-                    let punteggio = 0;
-
-                    for(let d=1; d<=31; d++) {
-                        let tMio = currentUserTurns[d];
-                        let tSuo = turniCollega[d];
-
-                        if (tMio && tSuo) {
-                            let isRiposoMio = /^(RI|AL|FER|MAL|NPL)$/i.test(tMio);
-                            let isRiposoSuo = /^(RI|AL|FER|MAL|NPL)$/i.test(tSuo);
-
-                            if(!isRiposoMio && !isRiposoSuo && tMio.toUpperCase() === tSuo.toUpperCase()) {
-                                turniComuni++;
-                                punteggio += 10;
-                            } else if (isRiposoMio !== isRiposoSuo) {
-                                punteggio -= 5;
-                            }
-                        }
-                    }
-
-                    if (turniComuni >= 8 || punteggio > 20) {
-                        matches.push({ nome: k, count: turniComuni, score: punteggio });
-                    }
-                }
-            }
-
-            matches.sort((a,b) => b.score - a.score);
-            let hasNew = false;
-            
-            for(let m of matches) {
-                if(!window.armoResponses[m.nome]) {
-                    window.pendingMatches.push(m);
-                    hasNew = true;
-                }
-            }
-
-            popolaFinestraSocial(matches);
-
-            if(hasNew) {
-                document.getElementById('social-badge').style.display = 'block';
-                document.getElementById('social-badge').innerText = window.pendingMatches.length;
-                triggerArmoPrompt(window.pendingMatches[0]);
-            }
-        }
-
-        function triggerArmoPrompt(matchInfo) {
-            window.currentPromptTarget = matchInfo;
-            document.getElementById('prompt-nome').innerText = matchInfo.nome;
-            document.getElementById('prompt-count').innerText = matchInfo.count;
-            apriModal('modal-armo-prompt');
-        }
-
-        window.salvaRispostaArmo = async (risposta) => {
-            if(!window.currentPromptTarget) return;
-            window.armoResponses[window.currentPromptTarget.nome] = risposta;
-            
-            await setDoc(doc(db, "relazioni_armi", `${userLoggato.uid}_${window.currentDocIdForSocial}`), window.armoResponses, {merge: true});
-
-            chiudiModal('modal-armo-prompt');
-            
-            window.pendingMatches.shift();
-            if(window.pendingMatches.length > 0) {
-                document.getElementById('social-badge').innerText = window.pendingMatches.length;
-                setTimeout(() => triggerArmoPrompt(window.pendingMatches[0]), 500);
-            } else {
-                document.getElementById('social-badge').style.display = 'none';
-                location.reload(); // Ricarica liste UI
-            }
-        };
-
-        window.apriSocialModal = () => {
-            document.getElementById('social-badge').style.display = 'none'; 
-            apriModal('modal-social');
-        };
-
-        function popolaFinestraSocial(matches) {
-            let confDiv = document.getElementById('social-confermati');
-            let suggDiv = document.getElementById('social-suggeriti');
-            confDiv.innerHTML = ""; suggDiv.innerHTML = "";
-
-            let hasConf = false, hasSugg = false;
-
-            matches.forEach(m => {
-                let risposta = window.armoResponses[m.nome];
-                let perc = Math.min(100, Math.max(0, (m.score / 150) * 100)).toFixed(0);
-                let htmlCard = `
-                    <div class="match-card">
-                        <strong>${m.nome}</strong>
-                        <div class="match-score">Turni in comune: ${m.count} | Affinità: ${perc}%</div>
-                        ${risposta ? `<div style="margin-top:5px; font-size:12px; font-weight:bold; color:var(--primary);">Stato: ${risposta}</div>` : ''}
-                    </div>
-                `;
-                if(risposta === 'Sì') { confDiv.innerHTML += htmlCard; hasConf = true; } 
-                else if(risposta !== 'No' && risposta !== 'Ferie') { suggDiv.innerHTML += htmlCard; hasSugg = true; }
-            });
-
-            if(!hasConf) confDiv.innerHTML = "<p style='font-size:13px; color:#888;'>Nessun armo confermato.</p>";
-            if(!hasSugg) suggDiv.innerHTML = "<p style='font-size:13px; color:#888;'>Nessun nuovo suggerimento.</p>";
-        }
-
-        // ==========================================
-        // MOTORE DI UPLOAD, RICERCA ORIGINALI
-        // ==========================================
-        window.apriRicercaCorrente = (docId, rotName, data) => {
-            window.currentSearchDocId = docId; window.databaseTurni = [];
-            for (let nome in data) { let turniArr = []; for (let i = 1; i <= 31; i++) turniArr.push(data[nome][i.toString()] || ""); window.databaseTurni.push({ nome: nome, turni: turniArr }); }
-            document.getElementById('modal-title').innerText = "Ricerca: " + rotName;
-            document.getElementById('risultato-turno').innerHTML = ""; document.getElementById('risultato-cambi').innerHTML = "";
-            window.apriModal('search-modal');
-        };
-
-        window.apriRicercaFuturaFb = (docId, rotName, data) => {
-            let [annoStr, meseStr] = docId.split('_'); let m = parseInt(meseStr); let y = parseInt(annoStr);
-            document.getElementById('future-modal-title').innerText = "Mesi Successivi: " + rotName;
-            window.activePredictors = [];
-            for (let nome in data) { let turniMese = []; for (let i = 1; i <= 31; i++) turniMese.push(data[nome][i.toString()] || ""); let p = buildColleaguePredictor(nome, turniMese, m, y); if (p) window.activePredictors.push(p); }
-            document.getElementById('risultato-futuro').innerHTML = ""; window.apriModal('future-search-modal');
-        };
-
         window.handleFileSelect = (el) => { if(el.files[0]) document.getElementById('file-label').innerText = "✅ " + el.files[0].name; };
+        
         function standardizzaTurno(turno) {
             if (!turno) return ""; let t = turno.toUpperCase();
             if (/^(KMAL|KINF|KNOP)$/.test(t)) return "NPL";
@@ -893,6 +705,25 @@
                 await setDoc(doc(db, "rotazioni_turni", docId), { [rot]: { [nomeKey]: turniLetti } }, { merge: true });
                 alert("✅ Caricato!"); location.reload();
             } catch (e) { alert("Errore: " + e.message); document.getElementById('btn-submit').disabled = false; }
+        };
+
+        // ==========================================
+        // FUNZIONI DI RICERCA
+        // ==========================================
+        window.apriRicercaCorrente = (docId, rotName, data) => {
+            window.currentSearchDocId = docId; window.databaseTurni = [];
+            for (let nome in data) { let turniArr = []; for (let i = 1; i <= 31; i++) turniArr.push(data[nome][i.toString()] || ""); window.databaseTurni.push({ nome: nome, turni: turniArr }); }
+            document.getElementById('modal-title').innerText = "Ricerca: " + rotName;
+            document.getElementById('risultato-turno').innerHTML = ""; document.getElementById('risultato-cambi').innerHTML = "";
+            window.apriModal('search-modal');
+        };
+
+        window.apriRicercaFuturaFb = (docId, rotName, data) => {
+            let [annoStr, meseStr] = docId.split('_'); let m = parseInt(meseStr); let y = parseInt(annoStr);
+            document.getElementById('future-modal-title').innerText = "Mesi Successivi: " + rotName;
+            window.activePredictors = [];
+            for (let nome in data) { let turniMese = []; for (let i = 1; i <= 31; i++) turniMese.push(data[nome][i.toString()] || ""); let p = buildColleaguePredictor(nome, turniMese, m, y); if (p) window.activePredictors.push(p); }
+            document.getElementById('risultato-futuro').innerHTML = ""; window.apriModal('future-search-modal');
         };
 
         window.cercaTurno = () => {

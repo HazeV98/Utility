@@ -43,6 +43,7 @@
         .btn-search { background-color: var(--success); } 
         .btn-table { background-color: var(--info); color: white; }
         .btn-collega { background-color: #6f42c1; color: white; }
+        .btn-aiuto { background-color: var(--info); color: white; margin-top: 10px; }
 
         /* --- MODALI --- */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 7000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
@@ -158,7 +159,30 @@
             </div>
             
             <button id="btn-submit" class="btn" onclick="uploadBibbia()">🚀 Carica nel Database</button>
+            <button class="btn btn-aiuto" onclick="apriModal('modal-aiuto')">❓ Serve Aiuto?</button>
             <button class="btn btn-secondary" onclick="chiudiModal('modal-upload')">Annulla</button>
+        </div>
+    </div>
+
+    <div id="modal-aiuto" class="modal-overlay" onclick="chiudiSeSfondo(event, 'modal-aiuto')">
+        <div class="modal-content">
+            <span class="close-modal" onclick="chiudiModal('modal-aiuto')">&times;</span>
+            <h3 style="margin-top:0; color:var(--info);">ℹ️ Guida al Caricamento</h3>
+            <ul style="padding-left: 20px; color: #444; line-height: 1.5; font-size: 14px;">
+                <li style="margin-bottom: 15px;">
+                    <strong>Non hai il PDF della tua bibbia?</strong><br>
+                    Apri MySpriss, vai nella sezione Report e scarica la tua Bibbia.
+                </li>
+                <li style="margin-bottom: 15px;">
+                    <strong>Non sai come caricare il file?</strong><br>
+                    Invialo a un collega (possibilmente su Telegram) indicando il tuo Nome e Cognome e chiedi di caricarlo per tuo conto tramite il tasto "Aggiungi Bibbia Collega".<br>
+                    Una volta caricato, inserendo i tuoi dati all'accesso della pagina il sistema ti riconoscerà e ti farà entrare automaticamente.
+                </li>
+            </ul>
+            <div style="background: #e9ecef; border-left: 4px solid var(--primary); padding: 12px; border-radius: 4px; font-size: 13px; color: #333;">
+                💻 <strong>Nota:</strong> Se per te è più semplice, puoi usare Utility anche sul tuo computer! Basterà aprire lì il link ed accedere con le tue credenziali. Dal PC sarà molto più semplice caricare la bibbia.
+            </div>
+            <button class="btn" style="margin-top: 20px;" onclick="chiudiModal('modal-aiuto')">Ho capito</button>
         </div>
     </div>
 

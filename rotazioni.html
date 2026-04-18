@@ -44,6 +44,7 @@
         .btn-table { background-color: var(--info); color: white; }
         .btn-collega { background-color: #6f42c1; color: white; }
         .btn-aiuto { background-color: var(--info); color: white; margin-top: 10px; }
+        .btn-global { background-color: #fd7e14; color: white; }
 
         /* --- MODALI --- */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 7000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
@@ -117,7 +118,7 @@
         <div class="lock-card">
             <h3 style="color: var(--primary); margin-top: 0;">Rotazioni 🚧</h3>
             <p style="font-size: 14px; line-height: 1.6; color: #444; text-align: left; margin-bottom: 20px;">
-                Questa nuova funzione è ancora in fase sperimentale. L'idea è di creare una versione interattiva, integrata con Utility e con funzioni di ricerca delle rotazioni, per poterla sviluppare ho bisogno che più colleghi possibile condividano la propria bibbia.
+                Questa nuova funzione è ancora in fase sperimentale. L'idea è di creare una versione integrata con Utility e con funzioni di ricerca delle rotazioni, per poterla sviluppare ho bisogno che più colleghi possibile condividano la propria bibbia.
                 <br><br>
                 Se vuoi aiutarmi ti chiedo di <b>condividere la tua bibbia</b> (anche se sei disponibile) e fare passaparola chiedendo ad altri colleghi di fare altrettanto.
                 Una volta caricata la tua bibbia nella pagina c'è anche la possibilità di caricare la bibbia per conto di un collega che ti dà il permesso di farlo. 
@@ -151,6 +152,9 @@
             <button class="file-btn btn-search" onclick="apriModalUploadProprio()">➕ Aggiungi/Aggiorna la tua Bibbia</button>
             <button class="file-btn btn-collega" onclick="apriModal('modal-disclaimer-collega')">🤝 Aggiungi Bibbia Collega</button>
             <button id="btn-admin" class="file-btn" style="background: #343a40; display: none;" onclick="apriAdminModal()">⚙️ Report Caricamenti</button>
+            
+            <button class="file-btn btn-global" onclick="avviaRicercaGlobale(false)">🌍 Ricerca Globale Turni e Cambi</button>
+            <button class="file-btn btn-global" onclick="avviaRicercaGlobale(true)">🔮 Ricerca Globale Mesi Successivi</button>
         </div>
         <div id="container-mesi"></div>
     </div>
@@ -213,6 +217,15 @@
                 💻 <strong>Nota:</strong> Se per te è più semplice, puoi usare Utility anche sul tuo computer! Basterà aprire lì il link ed accedere con le tue credenziali. Dal PC sarà molto più semplice caricare la bibbia.
             </div>
             <button class="btn" style="margin-top: 20px;" onclick="chiudiModal('modal-aiuto')">Ho capito</button>
+        </div>
+    </div>
+
+    <div id="modal-global-month" class="modal-overlay" onclick="chiudiSeSfondo(event, 'modal-global-month')">
+        <div class="modal-content" style="text-align: center;">
+            <span class="close-modal" onclick="chiudiModal('modal-global-month')">&times;</span>
+            <h3 style="margin-top:0; color:var(--primary);">Scegli il mese</h3>
+            <p style="font-size: 13px; color: #666;">In quale mese vuoi effettuare la ricerca globale?</p>
+            <div id="global-month-list" class="btn-grid" style="margin-top: 15px;"></div>
         </div>
     </div>
 
@@ -329,6 +342,9 @@
         let userData = { cognome: "", nome: "", progressivo: "" };
         let fullDatabaseData = {}; 
         let isUploadingForColleague = false;
+        
+        // Salvataggio di tutti i doc caricati per la ricerca globale
+        window.allLoadedDocs = [];
 
         // Dati Ricerca originali
         window.databaseTurni = []; 
@@ -496,6 +512,7 @@
             });
             
             docs.sort((a,b) => b.id.localeCompare(a.id));
+            window.allLoadedDocs = docs; // Salvataggio per ricerca globale
             
             docs.forEach(docObj => {
                 let card = document.createElement('div'); card.className = "month-card";
@@ -763,8 +780,51 @@
         };
 
         // ==========================================
-        // FUNZIONI DI RICERCA
+        // FUNZIONI DI RICERCA GLOBALE E LOCALE
         // ==========================================
+        window.avviaRicercaGlobale = (isFutura) => {
+            if (!window.allLoadedDocs || window.allLoadedDocs.length === 0) return alert("Nessun dato caricato nel database.");
+            
+            // Se c'è un solo mese disponibile aprirà direttamente quello
+            if (window.allLoadedDocs.length === 1) {
+                apriMeseGlobale(window.allLoadedDocs[0], isFutura);
+                return;
+            }
+
+            // Se ci sono più mesi, chiede in quale mese fare la ricerca globale
+            window.isRicercaFuturaDaAprire = isFutura;
+            const list = document.getElementById('global-month-list');
+            list.innerHTML = "";
+            window.allLoadedDocs.forEach(docObj => {
+                let [anno, mese] = docObj.id.split('_');
+                const mN = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+                let btn = document.createElement('button');
+                btn.className = "file-btn btn-table";
+                btn.innerText = `${mN[parseInt(mese)-1]} ${anno}`;
+                btn.onclick = () => {
+                    chiudiModal('modal-global-month');
+                    apriMeseGlobale(docObj, isFutura);
+                };
+                list.appendChild(btn);
+            });
+            apriModal('modal-global-month');
+        };
+
+        window.apriMeseGlobale = (docObj, isFutura) => {
+            // Unisce i dati di TUTTE le rotazioni in un unico oggetto per la ricerca
+            let allData = {};
+            for(let rotKey in docObj.data) {
+                Object.assign(allData, docObj.data[rotKey]);
+            }
+            
+            let [anno, mese] = docObj.id.split('_');
+            const mN = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+            let label = `Globale - Tutte le Rotazioni (${mN[parseInt(mese)-1]} ${anno})`;
+            
+            if (isFutura) apriRicercaFuturaFb(docObj.id, label, allData);
+            else apriRicercaCorrente(docObj.id, label, allData);
+        };
+
         window.apriRicercaCorrente = (docId, rotName, data) => {
             window.currentSearchDocId = docId; window.databaseTurni = [];
             for (let nome in data) { let turniArr = []; for (let i = 1; i <= 31; i++) turniArr.push(data[nome][i.toString()] || ""); window.databaseTurni.push({ nome: nome, turni: turniArr }); }

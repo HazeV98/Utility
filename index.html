@@ -6,21 +6,39 @@
     <title>Utility</title>
 
     <script>
-        // --- SISTEMA DI PULIZIA CACHE E AGGIORNAMENTO FORZATO ---
-        const APP_VERSION = "1.2"; // Cambia questo numero in futuro per forzare nuovi aggiornamenti
-        if (localStorage.getItem('app_version_cache') !== APP_VERSION) {
-            if ('caches' in window) {
-                caches.keys().then((names) => {
-                    names.forEach(name => caches.delete(name));
-                });
-            }
+        // --- SISTEMA DI PULIZIA CACHE E AGGIORNAMENTO FORZATO (Anti-iOS) ---
+        // Il sessionStorage si resetta ogni volta che chiudi l'app o la scheda.
+        if (!sessionStorage.getItem('app_has_reloaded')) {
+            sessionStorage.setItem('app_has_reloaded', 'true');
+            
+            // Forza il Service Worker a cercare aggiornamenti in background
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then((registrations) => {
-                    registrations.forEach(registration => registration.unregister());
+                navigator.serviceWorker.getRegistrations().then(regs => {
+                    regs.forEach(reg => reg.update());
                 });
             }
-            localStorage.setItem('app_version_cache', APP_VERSION);
-            window.location.reload(true);
+
+            // Ricostruisce l'URL aggiungendo un timestamp per bypassare la cache in modo aggressivo
+            const url = new URL(window.location.href);
+            url.searchParams.set('nocache', new Date().getTime());
+            window.location.replace(url.toString());
+        } else {
+            // Mantengo anche il tuo vecchio sistema per le pulizie "profonde" dei dati salvati
+            const APP_VERSION = "1.2"; 
+            if (localStorage.getItem('app_version_cache') !== APP_VERSION) {
+                if ('caches' in window) {
+                    caches.keys().then((names) => {
+                        names.forEach(name => caches.delete(name));
+                    });
+                }
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then((registrations) => {
+                        registrations.forEach(registration => registration.unregister());
+                    });
+                }
+                localStorage.setItem('app_version_cache', APP_VERSION);
+                window.location.reload(true);
+            }
         }
     </script>
 

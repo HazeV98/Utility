@@ -21,6 +21,7 @@
             --danger: #dc3545;
             --dark: #343a40;
             --info: #17a2b8;
+            --warning: #ffc107;
         }
 
         body {
@@ -123,8 +124,8 @@
         .btn-copia { background: none; border: none; font-size: 24px; cursor: pointer; margin-left: 10px; transition: transform 0.1s; }
         .btn-copia:active { transform: scale(0.9); }
 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 20px; border-radius: 12px; max-width: 90%; width: 400px; max-height: 85vh; overflow-y: auto; position: relative; color: var(--text-color); }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; max-width: 90%; width: 380px; max-height: 85vh; overflow-y: auto; position: relative; color: var(--text-color); box-sizing: border-box; }
         .close-modal { position: absolute; right: 15px; top: 15px; font-size: 28px; cursor: pointer; color: #666; font-weight: bold; }
         
         #ricerca-codici { margin-bottom: 15px; border: 1px solid #ccc; color: #333; text-transform: none; letter-spacing: normal; }
@@ -144,6 +145,21 @@
         input:checked + .slider-cal:before { transform: translateX(20px); }
         .reset-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; border-bottom: 1px solid #4a5056; padding-bottom: 8px; color: #e9ecef; }
         .reset-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+        /* Stili FileManager Cartelle */
+        .folder-group { margin-bottom: 8px; background: #2c3136; border-radius: 8px; overflow: hidden; }
+        .folder-header { display: flex; align-items: center; padding: 10px; cursor: pointer; background: #3a4148; font-weight: bold; font-size: 14px; color: white; border-bottom: 1px solid #2c3136; }
+        .folder-header:hover { background: #454d55; }
+        .folder-toggle-icon { width: 24px; text-align: center; margin-right: 5px; user-select: none; }
+        .folder-checkbox { margin-right: 10px; width: 16px; height: 16px; cursor: pointer; }
+        .folder-content { padding: 10px; padding-left: 15px; background: #2c3136; }
+        .file-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 13px; color: #adb5bd; }
+        .file-item:last-child { margin-bottom: 0; }
+        .file-checkbox { margin-right: 10px; width: 15px; height: 15px; cursor: pointer; }
+        
+        #delete-confirm-list { list-style: none; padding: 0; margin: 15px 0; max-height: 200px; overflow-y: auto; background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; color: #555; }
+        #delete-confirm-list li { padding: 8px 10px; border-bottom: 1px solid #eee; word-break: break-all; }
+        #delete-confirm-list li:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -221,22 +237,27 @@
     <div class="admin-card">
         <h3>🗑️ Gestione File (Elimina)</h3>
         <p style="font-size: 12px; color: #adb5bd; margin-top: 0; line-height: 1.4; margin-bottom: 15px;">
-            Carica l'intero albero della repository per eliminare vecchi file o intere cartelle (selezionando tutti i file al loro interno).
+            Carica l'intero albero della repository per eliminare vecchi file o intere cartelle.
         </p>
         <button class="btn-action" style="background-color: var(--primary);" onclick="caricaElencoFile()">⬇️ Carica Elenco File</button>
 
         <div id="file-manager-container" style="display: none; margin-top: 15px; border-top: 1px dashed #6c757d; padding-top: 15px;">
             <input type="text" id="ricerca-file" placeholder="🔍 Cerca per nome (es. turni_2025)..." oninput="filtraElencoFile()" style="margin-bottom: 10px;">
             
-            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <button class="btn-action" style="background-color: #6c757d; padding: 8px; font-size: 13px;" onclick="selezionaTuttiFile(true)">Seleziona Tutti</button>
-                <button class="btn-action" style="background-color: #6c757d; padding: 8px; font-size: 13px;" onclick="selezionaTuttiFile(false)">Deseleziona</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-action" style="background-color: #6c757d; padding: 6px 10px; font-size: 12px; width: auto;" onclick="selezionaTuttiFile(true)">Seleziona Tutti</button>
+                    <button class="btn-action" style="background-color: #6c757d; padding: 6px 10px; font-size: 12px; width: auto;" onclick="selezionaTuttiFile(false)">Deseleziona</button>
+                </div>
+                <div style="font-size: 12px; color: #adb5bd;">
+                    <span id="contatore-selezione" style="font-weight: bold; color: var(--warning); font-size: 14px;">0</span> selezionati
+                </div>
             </div>
 
-            <div id="file-list" style="max-height: 250px; overflow-y: auto; background: #3a4148; padding: 10px; border-radius: 8px; margin-bottom: 15px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+            <div id="file-list" style="max-height: 300px; overflow-y: auto; background: #212529; padding: 10px; border-radius: 8px; margin-bottom: 15px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);">
             </div>
             
-            <button class="btn-action" style="background-color: var(--danger);" onclick="eliminaFileSelezionati()">🗑️ Elimina Selezionati</button>
+            <button class="btn-action" style="background-color: var(--danger);" onclick="preparaEliminazione()">🗑️ Elimina Selezionati</button>
         </div>
         
         <div id="status-log-delete" class="status-log">In attesa...</div>
@@ -284,6 +305,21 @@
         </div>
     </div>
 
+    <div id="modal-delete-confirm" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" onclick="chiudiModalElimina()">&times;</span>
+            <h3 style="margin-top:0; color:var(--danger); border-bottom: 2px solid #eee; padding-bottom: 10px;">⚠️ Conferma Eliminazione</h3>
+            <p style="font-size: 14px; color: #444; margin-bottom: 10px;">Stai per eliminare definitivamente <b id="delete-count-display"></b> file dalla repository. Questa operazione <b>non è reversibile</b>.</p>
+            
+            <ul id="delete-confirm-list"></ul>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-action" style="background-color: var(--danger);" onclick="confermaEliminazione()">Sì, Elimina File</button>
+                <button class="btn-action" style="background-color: #6c757d;" onclick="chiudiModalElimina()">Annulla</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ==========================================
         // GESTIONE MEMORIA TOKEN E COPIA
@@ -294,7 +330,6 @@
                 document.getElementById('gh-token').value = savedToken;
                 document.getElementById('remember-token').checked = true;
             }
-            // Inizializza flatpickr per le varianti
             initVarianti('multiple');
         });
 
@@ -416,9 +451,8 @@
                 
                 const data = await response.json();
                 calendarioSha = data.sha;
-                calendarioContent = decodeURIComponent(escape(atob(data.content))); // Corretto il problema della parentesi in più
+                calendarioContent = decodeURIComponent(escape(atob(data.content))); 
                 
-                // Espressioni Regolari per trovare le variabili nel codice
                 const reVersion = /const VERSIONE_TURNI\s*=\s*"([^"]+)";/;
                 const reDate = /const DATA_INIZIO_NUOVI_TURNI\s*=\s*"([^"]+)";/;
                 const reReset = /const RESET_DOPO_AGGIORNAMENTO\s*=\s*(\{[\s\S]*?\});/;
@@ -426,7 +460,6 @@
                 document.getElementById('cal-versione').value = (calendarioContent.match(reVersion) || [])[1] || "";
                 document.getElementById('cal-data').value = (calendarioContent.match(reDate) || [])[1] || "";
                 
-                // Parsing dell'oggetto RESET_DOPO_AGGIORNAMENTO
                 let resetMatch = calendarioContent.match(reReset);
                 let switchesHtml = "";
                 resetKeysOrder = [];
@@ -482,7 +515,6 @@
             });
             let vReset = `{${resetStrs.join(',')}\n    }`;
 
-            // Sostituzione stringhe nel file HTML
             let newContent = calendarioContent;
             newContent = newContent.replace(/const VERSIONE_TURNI\s*=\s*"([^"]*)";/, `const VERSIONE_TURNI = "${vVersione}";`);
             newContent = newContent.replace(/const DATA_INIZIO_NUOVI_TURNI\s*=\s*"([^"]*)";/, `const DATA_INIZIO_NUOVI_TURNI = "${vData}";`);
@@ -750,6 +782,7 @@
                 if (!resTree.ok) throw new Error("Errore lettura albero file");
                 const treeData = await resTree.json();
 
+                // Escludiamo le cartelle pure dall'array principale, eliminiamo solo i file effettivi (blob)
                 cacheFileAlbero = treeData.tree.filter(f => f.type === 'blob');
                 
                 disegnaElencoFile(cacheFileAlbero);
@@ -761,51 +794,159 @@
             }
         }
 
-        function disegnaElencoFile(lista) {
+        function disegnaElencoFile(lista, isSearch = false) {
             const container = document.getElementById('file-list');
             container.innerHTML = "";
+            
             if (lista.length === 0) {
                 container.innerHTML = "<div style='text-align:center; color:#adb5bd; font-size:13px; padding: 10px;'>Nessun file trovato.</div>";
+                aggiornaContatoreSelezione();
                 return;
             }
 
-            lista.forEach((file, index) => {
-                const row = document.createElement('div');
-                row.className = "checkbox-container";
-                row.style.marginBottom = "8px";
-                row.style.borderBottom = "1px solid #4a5056";
-                row.style.paddingBottom = "8px";
-                
-                let icona = "📄";
-                if (file.path.endsWith('.json')) icona = "🗂️";
-                if (file.path.endsWith('.png') || file.path.endsWith('.jpg')) icona = "🖼️";
-                if (file.path.endsWith('.html')) icona = "🌐";
+            if (isSearch) {
+                // Visualizzazione PIATTA per i risultati di ricerca
+                lista.forEach((file, index) => {
+                    let icona = "📄";
+                    if (file.path.endsWith('.json')) icona = "🗂️";
+                    if (file.path.endsWith('.png') || file.path.endsWith('.jpg')) icona = "🖼️";
+                    if (file.path.endsWith('.html')) icona = "🌐";
 
-                row.innerHTML = `
-                    <input type="checkbox" id="chk_file_${index}" class="chk-file-delete" data-path="${file.path}" data-sha="${file.sha}">
-                    <label for="chk_file_${index}" style="word-break: break-all; cursor:pointer; flex: 1;">${icona} ${file.path}</label>
-                `;
-                container.appendChild(row);
+                    const row = document.createElement('div');
+                    row.className = "file-item";
+                    row.style.borderBottom = "1px solid #4a5056";
+                    row.style.paddingBottom = "8px";
+                    row.style.marginBottom = "8px";
+
+                    row.innerHTML = `
+                        <input type="checkbox" id="chk_s_${index}" class="chk-file-delete" data-path="${file.path}" data-sha="${file.sha}" onchange="aggiornaContatoreSelezione()">
+                        <label for="chk_s_${index}" style="word-break: break-all; cursor:pointer; flex: 1;">${icona} ${file.path}</label>
+                    `;
+                    container.appendChild(row);
+                });
+            } else {
+                // Visualizzazione A CARTELLE
+                let folders = {};
+                lista.forEach(file => {
+                    let parts = file.path.split('/');
+                    let fileName = parts.pop();
+                    let dirName = parts.join('/') || '/ (Root)';
+                    if(!folders[dirName]) folders[dirName] = [];
+                    folders[dirName].push({name: fileName, path: file.path, sha: file.sha});
+                });
+
+                Object.keys(folders).sort().forEach((dir, dirIndex) => {
+                    const group = document.createElement('div');
+                    group.className = "folder-group";
+                    
+                    const header = document.createElement('div');
+                    header.className = "folder-header";
+                    header.innerHTML = `
+                        <span class="folder-toggle-icon" id="icon_folder_${dirIndex}" onclick="toggleFolderVisibility('folder_${dirIndex}')">📁</span>
+                        <input type="checkbox" class="folder-checkbox" onchange="toggleFolderCheck('folder_${dirIndex}', this.checked)">
+                        <span onclick="toggleFolderVisibility('folder_${dirIndex}')" style="flex: 1;">${dir}</span>
+                    `;
+                    
+                    const content = document.createElement('div');
+                    content.className = "folder-content";
+                    content.id = `folder_${dirIndex}`;
+                    content.style.display = "none"; // Chiuse di default
+
+                    folders[dir].forEach((file, fileIndex) => {
+                        let icona = "📄";
+                        if (file.name.endsWith('.json')) icona = "🗂️";
+                        if (file.name.endsWith('.png') || file.name.endsWith('.jpg')) icona = "🖼️";
+                        if (file.name.endsWith('.html')) icona = "🌐";
+
+                        const row = document.createElement('div');
+                        row.className = "file-item";
+                        row.innerHTML = `
+                            <input type="checkbox" id="chk_f_${dirIndex}_${fileIndex}" class="chk-file-delete" data-path="${file.path}" data-sha="${file.sha}" onchange="aggiornaContatoreSelezione()">
+                            <label for="chk_f_${dirIndex}_${fileIndex}" style="word-break: break-all; cursor:pointer; flex: 1;">${icona} ${file.name}</label>
+                        `;
+                        content.appendChild(row);
+                    });
+
+                    group.appendChild(header);
+                    group.appendChild(content);
+                    container.appendChild(group);
+                });
+            }
+            
+            aggiornaContatoreSelezione();
+        }
+
+        function toggleFolderVisibility(folderId) {
+            const el = document.getElementById(folderId);
+            const icon = document.getElementById('icon_' + folderId);
+            if(el.style.display === 'none') {
+                el.style.display = 'block';
+                icon.innerText = '📂';
+            } else {
+                el.style.display = 'none';
+                icon.innerText = '📁';
+            }
+        }
+
+        function toggleFolderCheck(folderId, isChecked) {
+            const content = document.getElementById(folderId);
+            const checkboxes = content.querySelectorAll('.chk-file-delete');
+            checkboxes.forEach(chk => {
+                chk.checked = isChecked;
             });
+            aggiornaContatoreSelezione();
         }
 
         function filtraElencoFile() {
             const query = document.getElementById('ricerca-file').value.toLowerCase().trim();
-            const filtrati = cacheFileAlbero.filter(f => f.path.toLowerCase().includes(query));
-            disegnaElencoFile(filtrati);
+            if (query === "") {
+                disegnaElencoFile(cacheFileAlbero, false); // Vista cartelle
+            } else {
+                const filtrati = cacheFileAlbero.filter(f => f.path.toLowerCase().includes(query));
+                disegnaElencoFile(filtrati, true); // Vista piatta per la ricerca
+            }
         }
 
         function selezionaTuttiFile(seleziona) {
             const checkboxes = document.querySelectorAll('.chk-file-delete');
             checkboxes.forEach(chk => chk.checked = seleziona);
+            
+            const folderCheckboxes = document.querySelectorAll('.folder-checkbox');
+            folderCheckboxes.forEach(chk => chk.checked = seleziona);
+            
+            aggiornaContatoreSelezione();
         }
 
-        async function eliminaFileSelezionati() {
+        function aggiornaContatoreSelezione() {
+            const count = document.querySelectorAll('.chk-file-delete:checked').length;
+            document.getElementById('contatore-selezione').innerText = count;
+        }
+
+        function preparaEliminazione() {
             const checkboxes = document.querySelectorAll('.chk-file-delete:checked');
-            if (checkboxes.length === 0) { alert("Nessun file selezionato!"); return; }
+            if (checkboxes.length === 0) { alert("Nessun file selezionato per l'eliminazione!"); return; }
 
-            if (!confirm(`Sei sicuro di voler ELIMINARE DEFINITIVAMENTE ${checkboxes.length} file dalla repository?\n\nQuesta operazione non è reversibile.`)) return;
+            document.getElementById('delete-count-display').innerText = checkboxes.length;
+            
+            const listC = document.getElementById('delete-confirm-list');
+            listC.innerHTML = "";
+            checkboxes.forEach(chk => {
+                const li = document.createElement('li');
+                li.innerText = chk.getAttribute('data-path');
+                listC.appendChild(li);
+            });
 
+            document.getElementById('modal-delete-confirm').style.display = 'flex';
+        }
+
+        function chiudiModalElimina() {
+            document.getElementById('modal-delete-confirm').style.display = 'none';
+        }
+
+        async function confermaEliminazione() {
+            chiudiModalElimina();
+            const checkboxes = document.querySelectorAll('.chk-file-delete:checked');
+            
             const owner = document.getElementById('gh-owner').value.trim();
             const repo = document.getElementById('gh-repo').value.trim();
             const token = document.getElementById('gh-token').value.trim();
@@ -848,7 +989,7 @@
                 statusLog.style.color = "#ffc107";
             }
 
-            // Ricarica la lista per aggiornarla visivamente senza dover cliccare di nuovo
+            document.getElementById('ricerca-file').value = "";
             await caricaElencoFile();
         }
 

@@ -150,11 +150,11 @@
     <div id="dashboard">
         <div class="dashboard-top-actions">
             <button class="file-btn btn-search" onclick="apriModalUploadProprio()">➕ Aggiungi/Aggiorna la tua Bibbia</button>
-            <button class="file-btn btn-collega" onclick="apriModal('modal-disclaimer-collega')">🤝 Aggiungi Bibbia Collega</button>
+            <button class="file-btn btn-search" onclick="apriModal('modal-disclaimer-collega')">🤝 Aggiungi Bibbia Collega</button>
             <button id="btn-admin" class="file-btn" style="background: #343a40; display: none;" onclick="apriAdminModal()">⚙️ Report Caricamenti</button>
             
-            <button class="file-btn btn-global" onclick="avviaRicercaGlobale(false)">🔍 Ricerca Turni e Cambi</button>
-            <button class="file-btn btn-global" onclick="avviaRicercaGlobale(true)">🔮 Ricerca Mesi Successivi</button>
+            <button class="file-btn btn-search" onclick="avviaRicercaGlobale(false)">🔍 Ricerca Turni e Cambi</button>
+            <button class="file-btn btn-search" onclick="avviaRicercaGlobale(true)">🔮 Ricerca Mesi Successivi</button>
         </div>
         <div id="container-mesi"></div>
     </div>
@@ -167,7 +167,7 @@
                 <br><br>
                 Assicurati di avere il suo <b>consenso esplicito</b> prima di procedere con la condivisione della sua bibbia nel database.
             </p>
-            <button class="btn btn-collega" style="margin-top: 15px;" onclick="procediUploadCollega()">Continua</button>
+            <button class="btn btn-search" style="margin-top: 15px;" onclick="procediUploadCollega()">Continua</button>
             <button class="btn btn-secondary" onclick="chiudiModal('modal-disclaimer-collega')">Annulla</button>
         </div>
     </div>

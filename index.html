@@ -232,8 +232,47 @@
         titleTrigger.addEventListener('mouseup', () => clearTimeout(holdTimer));
         titleTrigger.addEventListener('touchend', () => clearTimeout(holdTimer));
 
-        function checkLocalDDSReminders() {} 
-        function checkDDSUpdates() {}
+        // --- SISTEMA DI AVVISO DDS ---
+        function checkLocalDDSReminders() {
+            const dObj = new Date();
+            const localToday = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
+
+            // Se l'abbiamo già mostrato oggi, esce.
+            if (localStorage.getItem('last_dds_reminder') === localToday) return;
+
+            const reqDB = indexedDB.open("UtilityDB");
+            reqDB.onsuccess = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains("archivio_dds")) return;
+                const tx = db.transaction("archivio_dds", "readonly");
+                const store = tx.objectStore("archivio_dds");
+                const reqAll = store.getAll();
+                reqAll.onsuccess = () => {
+                    const ddsList = reqAll.result || [];
+                    const validToday = ddsList.filter(item => item.dateValidita && item.dateValidita.includes(localToday));
+
+                    if (validToday.length > 0) {
+                        let html = "";
+                        validToday.forEach(item => {
+                            html += `<div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #d63384;">
+                                        <div style="font-weight: bold; color: #32325d;">${item.titolo}</div>
+                                        ${item.note ? `<div style="font-size: 12px; color: #666; margin-top: 4px;">${item.note}</div>` : ''}
+                                     </div>`;
+                        });
+                        document.getElementById('ddsReminderList').innerHTML = html;
+                        document.getElementById('ddsReminderModal').style.display = 'flex';
+                        
+                        document.getElementById('chiudi-dds-btn').onclick = () => {
+                            document.getElementById('ddsReminderModal').style.display = 'none';
+                            localStorage.setItem('last_dds_reminder', localToday); // Registra il popup mostrato
+                        };
+                    }
+                };
+            };
+        }
+        
+        // Esegue il controllo all'avvio della pagina
+        document.addEventListener('DOMContentLoaded', checkLocalDDSReminders);
     </script>
 
     <script type="module">
@@ -254,6 +293,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
+        
+        const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2"; // UID Amministratore Centrale
 
         function mostraErroreAuth(msg, isSuccess = false) {
             const errDiv = document.getElementById('authError');
@@ -382,6 +423,14 @@
             const profileEmail = document.getElementById('profileEmail');
 
             if (user) {
+                
+                // --- Sblocco Admin Automatico ---
+                if (user.uid === ADMIN_UID) {
+                    document.getElementById('secret-btn').style.display = 'block';
+                    document.getElementById('adminBadge').style.display = 'block';
+                    localStorage.setItem('dev_mode_active', 'true');
+                }
+                
                 document.getElementById('authModal').style.display = 'none';
                 document.getElementById('authError').style.display = 'none'; 
                 btnLogin.style.display = 'none';
@@ -405,7 +454,7 @@
                         document.getElementById('profileMatricola').value = data.matricola || '';
                         document.getElementById('profileTelefono').value = data.telefono || '';
                         
-                        const isAdmin = localStorage.getItem('dev_mode_active') === 'true';
+                        const isAdmin = localStorage.getItem('dev_mode_active') === 'true' || user.uid === ADMIN_UID;
                         const strikes = data.revoche_rubrica || 0;
                         
                         if (strikes > 0 && !isAdmin) {

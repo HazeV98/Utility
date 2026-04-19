@@ -392,7 +392,7 @@
                 
                 const data = await response.json();
                 calendarioSha = data.sha;
-                calendarioContent = decodeURIComponent(escape(atob(data.content))));
+                calendarioContent = decodeURIComponent(escape(atob(data.content))); // Corretto il problema della parentesi in più
                 
                 // Espressioni Regolari per trovare le variabili nel codice
                 const reVersion = /const VERSIONE_TURNI\s*=\s*"([^"]+)";/;

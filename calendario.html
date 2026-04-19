@@ -1193,10 +1193,6 @@
     const DATA_INIZIO_NUOVI_TURNI = "2026-03-28"; 
     
     const AVVISO_VARIANTI = true;
-
-    const LISTA_FILE_INFO = ["info_turni_2026-03-02.json", "info_turni_2026-03-28.json", "info_turni_2026-04-22.json"];
-    const LISTA_FILE_ROTAZIONI = ["rotazioni_2026-03-02.json", "rotazioni_2026-03-28.json"];
-    const LISTA_FILE_DISP = ["turni_disp_2026-03-02.json", "turni_disp_2026-03-28"];
     
     const RESET_DOPO_AGGIORNAMENTO = {
         rot_fnove: false,
@@ -1473,72 +1469,65 @@
         }, 300);
     }
 
-    async function caricaDatiEsterni() {
+    async function caricaDatiEsterniDinamici() {
         try {
             const nocache = "?v=" + new Date().getTime();
-            
-            // Caricamento Ferie Programmate
-            try {
-                const resFerie = await fetch("rotazione_ferie.json" + nocache);
-                if (resFerie.ok) {
-                    const datiFerie = await resFerie.json();
-                    if (datiFerie.versione) VERSIONE_FERIE = datiFerie.versione;
-                    if (datiFerie.invernali) ROT_FERIE_INV = datiFerie.invernali;
-                    if (datiFerie.estive) ROT_FERIE_EST = datiFerie.estive;
-                }
-            } catch (e) {
-                console.error("Errore caricamento ferie json", e);
+            const resMappa = await fetch("mappa_file.json" + nocache);
+            if (!resMappa.ok) throw new Error("Mappa file non trovata");
+            const mappa = await resMappa.json();
+            const albero = mappa.albero || [];
+
+            // 1. Ferie
+            if (albero.includes("rotazione_ferie.json")) {
+                try {
+                    const resFerie = await fetch("rotazione_ferie.json" + nocache);
+                    if (resFerie.ok) {
+                        const datiFerie = await resFerie.json();
+                        if (datiFerie.versione) VERSIONE_FERIE = datiFerie.versione;
+                        ROT_FERIE_INV = datiFerie.invernali || [];
+                        ROT_FERIE_EST = datiFerie.estive || [];
+                    }
+                } catch (e) { console.error("Errore ferie", e); }
             }
 
-            if (AVVISO_VARIANTI) {
+            // 2. Varianti
+            if (AVVISO_VARIANTI && albero.includes("presenza_varianti.json")) {
                 try {
                     const resVar = await fetch("presenza_varianti.json" + nocache);
                     if (resVar.ok) variantiData = await resVar.json();
-                } catch(e) {}
+                } catch (e) { console.error("Errore varianti", e); }
             }
-            
-            state.dispCache = {};
-            for (let file of LISTA_FILE_DISP) {
-                const dataInizio = estraiDataDaNome(file);
-                if (dataInizio) {
-                    try { 
-                        const resDisp = await fetch(file + nocache); 
-                        if (resDisp.ok) state.dispCache[dataInizio] = await resDisp.json(); 
-                    } catch(e) {}
-                }
-            }
-            
-            state.rotCache = {};
-            for (let file of LISTA_FILE_ROTAZIONI) {
-                const dataInizio = estraiDataDaNome(file);
-                if (dataInizio) {
-                    try { 
-                        const res = await fetch(file + nocache); 
-                        if (res.ok) state.rotCache[dataInizio] = await res.json(); 
-                    } catch(e) {}
-                }
-            }
-            
+
+            // 3. Cache Dati (Info, Rotazioni, Disponibili)
             state.dbCache = {};
-            for (let file of LISTA_FILE_INFO) {
+            state.rotCache = {};
+            state.dispCache = {};
+
+            for (let file of albero) {
                 const dataInizio = estraiDataDaNome(file);
-                if (dataInizio) {
-                    try { 
-                        const res = await fetch(file + nocache); 
-                        if (res.ok) state.dbCache[dataInizio] = await res.json(); 
-                    } catch(e) {}
-                }
+                if (!dataInizio) continue;
+
+                try {
+                    if (file.startsWith("info_turni_")) {
+                        const res = await fetch(file + nocache);
+                        if (res.ok) state.dbCache[dataInizio] = await res.json();
+                    } else if (file.startsWith("rotazioni_")) {
+                        const res = await fetch(file + nocache);
+                        if (res.ok) state.rotCache[dataInizio] = await res.json();
+                    } else if (file.startsWith("turni_disp_")) {
+                        const res = await fetch(file + nocache);
+                        if (res.ok) state.dispCache[dataInizio] = await res.json();
+                    }
+                } catch(e) { console.error("Errore caricamento " + file, e); }
             }
             salvaLocal();
-        } catch (e) { 
-            console.error("Errore caricamento JSON", e); 
-        }
+        } catch (e) { console.error("Errore caricamento dinamico", e); }
     }
 
     document.addEventListener('DOMContentLoaded', async function() {
         
         // Attendi prima il caricamento dei file, per aggiornare VERSIONE_FERIE
-        await caricaDatiEsterni();
+        await caricaDatiEsterniDinamici();
 
         // --- CONTROLLO AGGIORNAMENTO FERIE ---
         if (!state.ferie) {

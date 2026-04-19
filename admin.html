@@ -167,7 +167,7 @@
     <div class="admin-card">
         <h3>📅 Gestione Calendario</h3>
         <p style="font-size: 12px; color: #adb5bd; margin-top: 0; line-height: 1.4; margin-bottom: 15px;">
-            Carica la configurazione del calendario, modifica le date di validità, aggiorna l'elenco dei file e imposta quali rotazioni dovranno essere resettate.
+            Carica la configurazione base del calendario per aggiornare versione, date di transizione e impostazioni di reset. (L'elenco dei file da scaricare è ora generato automaticamente dalla mappa).
         </p>
 
         <button class="btn-action" style="background-color: var(--primary);" onclick="caricaDatiCalendario()">⬇️ Carica Dati Calendario</button>
@@ -179,15 +179,6 @@
             
             <label class="editor-label">Data Inizio Nuovi Turni:</label>
             <input type="date" id="cal-data">
-            
-            <label class="editor-label">File DB Informazioni (separati da virgola):</label>
-            <input type="text" id="cal-info" placeholder="Es. info_turni_2026.json, info_turni_2027.json">
-            
-            <label class="editor-label">File Turni Rotazioni (separati da virgola):</label>
-            <input type="text" id="cal-rotazioni">
-            
-            <label class="editor-label">File Turni DISP (separati da virgola):</label>
-            <input type="text" id="cal-disp">
             
             <label class="editor-label" style="margin-top: 20px; margin-bottom: 10px;">Interruttori Reset dopo Aggiornamento:</label>
             <div id="cal-reset-switches" style="max-height: 250px; overflow-y: auto; background: #3a4148; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
@@ -401,27 +392,15 @@
                 
                 const data = await response.json();
                 calendarioSha = data.sha;
-                calendarioContent = decodeURIComponent(escape(atob(data.content)));
+                calendarioContent = decodeURIComponent(escape(atob(data.content))));
                 
                 // Espressioni Regolari per trovare le variabili nel codice
                 const reVersion = /const VERSIONE_TURNI\s*=\s*"([^"]+)";/;
                 const reDate = /const DATA_INIZIO_NUOVI_TURNI\s*=\s*"([^"]+)";/;
-                const reInfo = /const LISTA_FILE_INFO\s*=\s*\[(.*?)\];/;
-                const reRot = /const LISTA_FILE_ROTAZIONI\s*=\s*\[(.*?)\];/;
-                const reDisp = /const LISTA_FILE_DISP\s*=\s*\[(.*?)\];/;
                 const reReset = /const RESET_DOPO_AGGIORNAMENTO\s*=\s*(\{[\s\S]*?\});/;
 
                 document.getElementById('cal-versione').value = (calendarioContent.match(reVersion) || [])[1] || "";
                 document.getElementById('cal-data').value = (calendarioContent.match(reDate) || [])[1] || "";
-                
-                let parseArray = (match) => {
-                    if(!match || !match[1]) return "";
-                    return match[1].split(',').map(s => s.trim().replace(/^"|"$/g, '')).filter(s=>s).join(', ');
-                };
-                
-                document.getElementById('cal-info').value = parseArray(calendarioContent.match(reInfo));
-                document.getElementById('cal-rotazioni').value = parseArray(calendarioContent.match(reRot));
-                document.getElementById('cal-disp').value = parseArray(calendarioContent.match(reDisp));
                 
                 // Parsing dell'oggetto RESET_DOPO_AGGIORNAMENTO
                 let resetMatch = calendarioContent.match(reReset);
@@ -472,15 +451,6 @@
             let vVersione = document.getElementById('cal-versione').value.trim();
             let vData = document.getElementById('cal-data').value;
             
-            let stringifyArray = (str) => {
-                if(!str.trim()) return "";
-                return str.split(',').map(s => `"${s.trim()}"`).join(', ');
-            };
-            
-            let vInfo = stringifyArray(document.getElementById('cal-info').value);
-            let vRot = stringifyArray(document.getElementById('cal-rotazioni').value);
-            let vDisp = stringifyArray(document.getElementById('cal-disp').value);
-
             let resetStrs = [];
             resetKeysOrder.forEach(k => {
                 let isChecked = document.getElementById(`reset_${k}`).checked;
@@ -492,9 +462,6 @@
             let newContent = calendarioContent;
             newContent = newContent.replace(/const VERSIONE_TURNI\s*=\s*"([^"]*)";/, `const VERSIONE_TURNI = "${vVersione}";`);
             newContent = newContent.replace(/const DATA_INIZIO_NUOVI_TURNI\s*=\s*"([^"]*)";/, `const DATA_INIZIO_NUOVI_TURNI = "${vData}";`);
-            newContent = newContent.replace(/const LISTA_FILE_INFO\s*=\s*\[(.*?)\];/, `const LISTA_FILE_INFO = [${vInfo}];`);
-            newContent = newContent.replace(/const LISTA_FILE_ROTAZIONI\s*=\s*\[(.*?)\];/, `const LISTA_FILE_ROTAZIONI = [${vRot}];`);
-            newContent = newContent.replace(/const LISTA_FILE_DISP\s*=\s*\[(.*?)\];/, `const LISTA_FILE_DISP = [${vDisp}];`);
             newContent = newContent.replace(/const RESET_DOPO_AGGIORNAMENTO\s*=\s*(\{[\s\S]*?\});/, `const RESET_DOPO_AGGIORNAMENTO = ${vReset};`);
 
             const url = `https://api.github.com/repos/${owner}/${repo}/contents/calendario.html`;

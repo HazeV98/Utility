@@ -7,7 +7,7 @@
 
     <script>
         // --- SISTEMA DI PULIZIA CACHE E AGGIORNAMENTO FORZATO ---
-        const APP_VERSION = "1.1"; // Cambia questo numero in futuro per forzare nuovi aggiornamenti
+        const APP_VERSION = "1.2"; // Cambia questo numero in futuro per forzare nuovi aggiornamenti
         if (localStorage.getItem('app_version_cache') !== APP_VERSION) {
             if ('caches' in window) {
                 caches.keys().then((names) => {

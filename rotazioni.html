@@ -661,12 +661,10 @@
                 proc.add(nomi[i]);
             }
 
-            // --- NUOVO MOTORE DELLA CASCATA (Intelligente e Topologico) ---
-            
-            // 1. Definiamo cosa è un turno valido per la sequenza (escludiamo assenze e DISP)
+            // --- NUOVO MOTORE DELLA CASCATA (Topologico + Calendario Diretto) ---
             const isValid = t => t && !/^(RI|AL|FER|FES|MAL|FEP|PERM|KNOP|KINF|NPL|DISP.*)$/i.test(t);
 
-            // 2. Mappiamo i passaggi reali: dal turno A si passa al turno B
+            // Mappiamo la sequenza master per il fallback
             let nextShiftMap = {};
             armi.forEach(a => {
                 let prevValid = null;
@@ -681,22 +679,17 @@
                 }
             });
 
-            // 3. Costruiamo la Sequenza Master (l'ordine reale di tutti i turni della linea)
             let masterSequence = [];
             let startNodes = Object.keys(nextShiftMap);
             if (startNodes.length > 0) {
                 let current = startNodes[0];
                 let visited = new Set();
-                
-                // Cerca l'inizio assoluto andando a ritroso
                 let prevMap = {};
                 for(let k in nextShiftMap) prevMap[nextShiftMap[k]] = k;
                 while(prevMap[current] && !visited.has(prevMap[current])) {
                     current = prevMap[current];
                     visited.add(current);
                 }
-                
-                // Ora percorre in avanti per creare la lista ordinata
                 visited.clear();
                 while(current && !visited.has(current)) {
                     masterSequence.push(current);
@@ -704,40 +697,58 @@
                     current = nextShiftMap[current];
                 }
             } else {
-                // Fallback (solo in caso di rotazioni anomale con turni mai consecutivi)
                 let allT = new Set();
                 armi.forEach(a => Object.values(a.turni).filter(isValid).forEach(t => allT.add(t)));
                 masterSequence = Array.from(allT).sort();
             }
 
-            // 4. Ordiniamo le righe (armi) per creare la diagonale visiva perfetta
+            let N = masterSequence.length;
+
+            // 4. Ordinamento finale e corretto
             armi.sort((a, b) => {
+                // Metodo 1: Offset Temporale Diretto (infallibile)
+                // Cerca se fanno lo stesso turno e calcola lo scarto dei giorni
+                let directOffsets = [];
+                for(let d = 1; d <= numGiorni; d++) {
+                    let tA = a.turni[d];
+                    if (isValid(tA)) {
+                        for(let db = 1; db <= numGiorni; db++) {
+                            if (b.turni[db] === tA) {
+                                directOffsets.push(db - d);
+                            }
+                        }
+                    }
+                }
+                
+                if (directOffsets.length > 0) {
+                    let avgOffset = directOffsets.reduce((sum, val) => sum + val, 0) / directOffsets.length;
+                    // Se avgOffset > 0 significa che B fa lo stesso turno in un giorno successivo ad A.
+                    // Quindi B deve stare SOTTO A (restituiamo -1 per tenere A in alto)
+                    if (Math.abs(avgOffset) > 0.1) return avgOffset > 0 ? -1 : 1; 
+                }
+
+                // Metodo 2: Correzione Wrap-Around (per chi non si incrocia)
                 let diffs = [];
                 for (let d = 1; d <= numGiorni; d++) {
                     let idxA = masterSequence.indexOf(a.turni[d]);
                     let idxB = masterSequence.indexOf(b.turni[d]);
-                    // Troviamo un giorno dove ENTRAMBI fanno un turno di linea
                     if (idxA !== -1 && idxB !== -1) {
-                        diffs.push(idxA - idxB);
+                        let diff = idxA - idxB;
+                        // Correggiamo l'effetto "Pac-Man" della ruota
+                        if (N > 0) {
+                            if (diff > N / 2) diff -= N;
+                            else if (diff < -N / 2) diff += N;
+                        }
+                        diffs.push(diff);
                     }
                 }
                 
                 if (diffs.length > 0) {
-                    // Se diff > 0, A fa un turno successivo a B lo stesso giorno, quindi A deve stare "sopra" B
                     let sum = diffs.reduce((acc, val) => acc + val, 0);
                     return sum > 0 ? -1 : 1;
                 }
                 
-                // Estrema ratio se due colleghi non lavorano MAI lo stesso giorno
-                let getAvg = (crew) => {
-                    let sum = 0, count = 0;
-                    for(let d = 1; d <= numGiorni; d++) {
-                        let idx = masterSequence.indexOf(crew.turni[d]);
-                        if(idx !== -1) { sum += (idx - d); count++; }
-                    }
-                    return count > 0 ? sum / count : -999;
-                };
-                return getAvg(b) - getAvg(a);
+                return 0;
             });
 
             // --- DISEGNO DELLA TABELLA ---

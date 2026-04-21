@@ -232,5 +232,11 @@
     "nome": "Bonaldo Michele",
     "data_creazione": "2026-04-21",
     "attivo": true
+  },
+  {
+    "codice": "N3KSII",
+    "nome": "Novello Manuel",
+    "data_creazione": "2026-04-21",
+    "attivo": true
   }
 ]

@@ -75,6 +75,11 @@
 
         .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; }
         .checkbox-grid label { background: #f8f9fa; padding: 8px; border-radius: 6px; border: 1px solid #e9ecef; display: flex; align-items: center; gap: 5px; }
+
+        /* Stili per il Multi-Date Picker */
+        .date-tag { display: inline-flex; align-items: center; background-color: #f5365c; color: white; padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 5px; }
+        .date-tag-remove { margin-left: 8px; cursor: pointer; font-weight: bold; color: #ffccd5; }
+        .date-tag-remove:hover { color: white; }
     </style>
 </head>
 <body>
@@ -125,13 +130,15 @@
                 <option value="dds">Avviso DDS</option>
             </select>
 
-            <div id="area-dds" style="display: none; background: #fffafb; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #f5c6cb;">
+            <div id="area-dds" style="display: none; background: #fffafb; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #f5c6cb;">
                 <label style="font-size: 12px; font-weight: bold; color: #f5365c;">Titolo DDS:</label>
-                <input type="text" id="pub-titolo-dds" class="input-field" placeholder="Es. Variante Linea 1" style="margin-bottom: 10px;">
+                <input type="text" id="pub-titolo-dds" class="input-field" placeholder="Es. Variante Linea 1" style="margin-bottom: 15px;">
                 
                 <label style="font-size: 12px; font-weight: bold; color: #f5365c;">Date di Validità:</label>
-                <input type="text" id="pub-date-dds" class="input-field" placeholder="Es. 2026-03-15, 2026-03-16" style="margin-bottom: 5px;">
-                <span style="font-size: 11px; color: #721c24;">Separa le date con la virgola (AAAA-MM-GG)</span>
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                    <input type="text" id="pub-date-dds-display" class="input-field" placeholder="Nessuna data selezionata" readonly style="margin-bottom: 0; cursor: pointer;" onclick="apriDatePicker()">
+                    <button class="btn-action" style="margin-top: 0; width: auto; padding: 12px 15px;" onclick="apriDatePicker()">📅</button>
+                </div>
             </div>
 
             <label style="font-size: 13px; font-weight: bold; color: #555;">Destinatari (Target):</label>
@@ -140,20 +147,28 @@
                 <option value="selezione">Solo Rotazioni Selezionate...</option>
             </select>
 
-            <div id="area-target" style="display: none; margin-bottom: 15px;">
+            <div id="area-target" style="display: none; margin-bottom: 15px; max-height: 200px; overflow-y: auto;">
                 <div class="checkbox-grid">
                     <label><input type="checkbox" class="target-check" value="rot_fnove"> Rot F.Nove</label>
                     <label><input type="checkbox" class="target-check" value="spez_fnove"> Spez F.Nove</label>
                     <label><input type="checkbox" class="target-check" value="rot_proma"> Rot P.Roma</label>
                     <label><input type="checkbox" class="target-check" value="spez_proma"> Spez P.Roma</label>
+                    <label><input type="checkbox" class="target-check" value="ris_proma"> Ris P.Roma</label>
                     <label><input type="checkbox" class="target-check" value="rot_szaccaria"> Rot S.Zac</label>
                     <label><input type="checkbox" class="target-check" value="spez_szaccaria"> Spez S.Zac</label>
                     <label><input type="checkbox" class="target-check" value="rot_lido"> Rot Lido</label>
                     <label><input type="checkbox" class="target-check" value="spez_lido"> Spez Lido</label>
-                    <label><input type="checkbox" class="target-check" value="rot_linea12"> Rot Linea 12</label>
-                    <label><input type="checkbox" class="target-check" value="rot_linea13"> Rot Linea 13</label>
                     <label><input type="checkbox" class="target-check" value="rot_linea14"> Rot Linea 14</label>
                     <label><input type="checkbox" class="target-check" value="rot_linea14_mb"> Rot 14 M/B</label>
+                    <label><input type="checkbox" class="target-check" value="rot_linea12"> Rot Linea 12</label>
+                    <label><input type="checkbox" class="target-check" value="rot_linea13"> Rot Linea 13</label>
+                    <label><input type="checkbox" class="target-check" value="rot_17sn"> Rot 17 SN</label>
+                    <label><input type="checkbox" class="target-check" value="rot_17tr"> Rot 17 TR</label>
+                    <label><input type="checkbox" class="target-check" value="tc_rot_17sn"> TC Rot 17 SN</label>
+                    <label><input type="checkbox" class="target-check" value="tc_rot_17tr"> TC Rot 17 TR</label>
+                    <label><input type="checkbox" class="target-check" value="tc_spez_lido"> TC Spez Lido</label>
+                    <label><input type="checkbox" class="target-check" value="tc_spez_szaccaria"> TC Spez S.Zac</label>
+                    <label><input type="checkbox" class="target-check" value="tc_spez_fnove"> TC Spez F.Nove</label>
                     <label><input type="checkbox" class="target-check" value="disp_indet"> Disponibili</label>
                 </div>
             </div>
@@ -168,6 +183,23 @@
             <input type="url" id="msgLink" class="input-field" placeholder="es. https://www.google.it o link Drive">
             
             <button id="btn-pubblica" class="btn-action" onclick="pubblicaMessaggio()">Pubblica Avviso</button>
+        </div>
+    </div>
+
+    <div id="modal-date-picker" class="modal-overlay" style="z-index: 6000;">
+        <div class="modal-content" style="max-width: 300px; text-align: center;">
+            <h3 style="margin-top: 0; color: var(--primary);">Scegli Date</h3>
+            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Seleziona una data alla volta e clicca il tasto '+'</p>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="date" id="input-date-single" class="input-field" style="margin-bottom: 0;">
+                <button class="btn-action" style="width: 50px; margin-top: 0; padding: 10px;" onclick="aggiungiDataSingola()">+</button>
+            </div>
+
+            <div id="date-tags-container" style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 20px; justify-content: center; min-height: 40px;">
+                </div>
+
+            <button class="btn-action" style="background-color: var(--primary);" onclick="chiudiDatePicker()">Fatto</button>
         </div>
     </div>
 
@@ -187,10 +219,13 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- RUOLI AUTORIZZATI ALLA SCRITTURA ---
+        // --- RUOLI AUTORIZZATI ALLA SCRITTURA ED ELIMINAZIONE ---
         const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2"; 
-        const COLLABORATORE_UIDS = ["INSERISCI_QUI_UID_1", "INSERISCI_QUI_UID_2"]; // <--- UIDs
+        const COLLABORATORE_UIDS = ["INSERISCI_QUI_UID_1", "INSERISCI_QUI_UID_2"]; // <--- Sostituisci con gli UID veri
         let isPrivilegedUser = false;
+
+        // Variabile globale per le date DDS
+        let ddsDatesArray = [];
 
         window.apriMenuLaterale = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; };
         window.chiudiMenuLaterale = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; };
@@ -206,9 +241,60 @@
             document.getElementById('area-target').style.display = isSelezione ? 'block' : 'none';
         };
 
+        // --- FUNZIONI MULTI-DATE PICKER ---
+        window.apriDatePicker = () => {
+            document.getElementById('modal-date-picker').style.display = 'flex';
+            aggiornaUI_DatePicker();
+        };
+
+        window.chiudiDatePicker = () => {
+            document.getElementById('modal-date-picker').style.display = 'none';
+            // Aggiorna l'input testuale visibile all'utente
+            const displayInput = document.getElementById('pub-date-dds-display');
+            if (ddsDatesArray.length === 0) {
+                displayInput.value = "";
+            } else {
+                displayInput.value = ddsDatesArray.join(", ");
+            }
+        };
+
+        window.aggiungiDataSingola = () => {
+            const val = document.getElementById('input-date-single').value;
+            if (!val) return;
+            if (!ddsDatesArray.includes(val)) {
+                ddsDatesArray.push(val);
+                ddsDatesArray.sort(); // Mantiene le date in ordine cronologico
+                aggiornaUI_DatePicker();
+            }
+            document.getElementById('input-date-single').value = ""; // Pulisce
+        };
+
+        window.rimuoviDataSingola = (dateStr) => {
+            ddsDatesArray = ddsDatesArray.filter(d => d !== dateStr);
+            aggiornaUI_DatePicker();
+        };
+
+        function aggiornaUI_DatePicker() {
+            const container = document.getElementById('date-tags-container');
+            container.innerHTML = "";
+            if(ddsDatesArray.length === 0) {
+                container.innerHTML = `<span style="color:#aaa; font-size: 13px;">Nessuna data aggiunta.</span>`;
+            } else {
+                ddsDatesArray.forEach(d => {
+                    container.innerHTML += `
+                        <div class="date-tag">
+                            ${d} <span class="date-tag-remove" onclick="rimuoviDataSingola('${d}')">✖</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // --- INIZIO LOGICA AUTENTICAZIONE E CARICAMENTO ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 isPrivilegedUser = (user.uid === ADMIN_UID) || COLLABORATORE_UIDS.includes(user.uid);
+                // Entrambi i ruoli (Admin e Collaboratori) possono vedere il pulsante "+ Pubblica" ed eliminare messaggi
                 if (isPrivilegedUser) document.getElementById('btn-admin-add').style.display = 'block';
             }
             caricaBacheca();
@@ -219,7 +305,7 @@
             document.getElementById('view-loading').style.display = 'none';
             document.getElementById('view-main').style.display = 'flex';
 
-            // Dati utente per filtering
+            // Dati utente per filtering target
             const stateApp = JSON.parse(localStorage.getItem('myTurniApp')) || {};
             const pid = stateApp.profiloAttivoId || 'default';
             const profileObj = stateApp.profiliSalvati ? stateApp.profiliSalvati[pid] : stateApp;
@@ -240,7 +326,7 @@
                     // 1. Skip scaduti
                     if (m.scadenza && m.scadenza < oggiStr) return; 
 
-                    // 2. Filtro Target (Gli Admin/Collab vedono comunque TUTTO per poterlo gestire)
+                    // 2. Filtro Target (Gli Admin/Collab vedono comunque TUTTO)
                     if (!isPrivilegedUser && m.target && m.target !== "tutti") {
                         if (!rotazioneUtente || !m.target.includes(rotazioneUtente)) return;
                     }
@@ -256,7 +342,7 @@
                         cardClass += " card-dds";
                         extraHTML += `<div class="msg-title-dds">⚠️ DDS: ${m.titolo_dds}</div>`;
                         if (m.date_validita) {
-                            extraHTML += `<div style="font-size: 12px; color: #f5365c; margin-bottom: 5px;">📅 Valida il: <b>${m.date_validita}</b></div>`;
+                            extraHTML += `<div style="font-size: 13px; color: #f5365c; margin-bottom: 5px;">📅 Date valide: <b>${m.date_validita}</b></div>`;
                         }
                     }
 
@@ -266,6 +352,7 @@
 
                     if (m.link) extraHTML += `<a href="${m.link}" target="_blank" class="msg-link">🔗 Apri Link Esterno</a>`;
 
+                    // Il pulsante Elimina appare se l'utente è Admin o Collaboratore
                     let adminBtn = isPrivilegedUser ? `<button class="btn-delete" onclick="eliminaMessaggio('${m.id}')">Elimina</button>` : '';
 
                     container.innerHTML += `
@@ -292,8 +379,9 @@
             document.getElementById('msgTesto').value = "";
             document.getElementById('msgLink').value = "";
             document.getElementById('pub-titolo-dds').value = "";
-            document.getElementById('pub-date-dds').value = "";
+            document.getElementById('pub-date-dds-display').value = "";
             document.getElementById('pub-scadenza').value = "";
+            ddsDatesArray = []; // Resetta array date
             document.getElementById('modal-nuovo').style.display = 'flex';
         };
 
@@ -329,7 +417,8 @@
 
             if (tipo === 'dds') {
                 const titoloDds = document.getElementById('pub-titolo-dds').value.trim();
-                const dateDds = document.getElementById('pub-date-dds').value.trim();
+                const dateDds = ddsDatesArray.join(", "); // Usa l'array dinamico
+                
                 if (!titoloDds) return alert("Inserisci il titolo della DDS.");
                 dataToSave.titolo_dds = titoloDds;
                 dataToSave.date_validita = dateDds;

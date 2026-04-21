@@ -8,26 +8,20 @@
 
     <script>
         // --- SISTEMA DI PULIZIA CACHE E AGGIORNAMENTO FORZATO ---
-        // Usiamo una chiave specifica per questa pagina per non entrare in conflitto con le altre
         const PAGE_RELOAD_KEY = 'reloaded_' + window.location.pathname;
 
         if (!sessionStorage.getItem(PAGE_RELOAD_KEY)) {
             sessionStorage.setItem(PAGE_RELOAD_KEY, 'true');
-            
-            // Forza il Service Worker a cercare aggiornamenti in background
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(regs => {
                     regs.forEach(reg => reg.update());
                 });
             }
-
-            // Ricostruisce l'URL aggiungendo un timestamp per bypassare la cache
             const url = new URL(window.location.href);
             url.searchParams.set('nocache', new Date().getTime());
             window.location.replace(url.toString());
         } else {
-            // Sistema per le pulizie "profonde" dei dati salvati
-            const APP_VERSION = "1.2"; // <-- CAMBIA QUESTO NUMERO SE FAI GROSSI AGGIORNAMENTI
+            const APP_VERSION = "1.2"; 
             if (localStorage.getItem('app_version_cache') !== APP_VERSION) {
                 if ('caches' in window) {
                     caches.keys().then((names) => {
@@ -62,8 +56,10 @@
 
         .view-container { width: 100%; max-width: 400px; display: none; flex-direction: column; gap: 15px; text-align: center; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: left; margin-bottom: 15px; position: relative; border-left: 5px solid var(--primary); }
+        .card.card-dds { border-left-color: #f5365c; background-color: #fffafb; }
         
         .msg-date { font-size: 11px; color: #888; margin-bottom: 8px; font-weight: bold; text-transform: uppercase; }
+        .msg-title-dds { font-size: 16px; color: #f5365c; font-weight: bold; margin-bottom: 8px; }
         .msg-text { font-size: 15px; line-height: 1.5; color: #444; white-space: pre-wrap; margin-bottom: 10px; }
         .msg-link { display: inline-block; background: #e9ecef; color: var(--primary); padding: 10px 15px; border-radius: 8px; font-size: 14px; text-decoration: none; font-weight: bold; margin-top: 5px; word-break: break-all; width: box-sizing: border-box; }
 
@@ -76,6 +72,9 @@
         .modal-content { background: white; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; max-height: 90vh; overflow-y: auto;}
 
         .status-message { color: #666; text-align: center; margin-top: 20px; font-size: 15px; }
+
+        .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; }
+        .checkbox-grid label { background: #f8f9fa; padding: 8px; border-radius: 6px; border: 1px solid #e9ecef; display: flex; align-items: center; gap: 5px; }
     </style>
 </head>
 <body>
@@ -110,7 +109,7 @@
     </div>
 
     <div id="view-main" class="view-container">
-        <button id="btn-admin-add" class="btn-action" style="display: none; margin-top: 0; margin-bottom: 15px;" onclick="apriModaleNuovo()">+ Aggiungi Messaggio</button>
+        <button id="btn-admin-add" class="btn-action" style="display: none; margin-top: 0; margin-bottom: 15px;" onclick="apriModaleNuovo()">+ Pubblica Avviso</button>
         
         <div id="lista-messaggi"></div>
     </div>
@@ -120,10 +119,52 @@
             <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f;" onclick="document.getElementById('modal-nuovo').style.display='none'">&times;</span>
             <h3 style="margin-top: 5px; color: var(--primary);">Nuovo Avviso</h3>
             
-            <label style="font-size: 12px; font-weight: bold; color: #666;">Testo del messaggio:</label>
-            <textarea id="msgTesto" class="input-field" rows="5" placeholder="Scrivi qui la comunicazione..."></textarea>
+            <label style="font-size: 13px; font-weight: bold; color: #555;">Tipo di Annuncio:</label>
+            <select id="pub-tipo" class="input-field" onchange="toggleCampiDDS()">
+                <option value="normale">Messaggio Normale</option>
+                <option value="dds">Avviso DDS</option>
+            </select>
+
+            <div id="area-dds" style="display: none; background: #fffafb; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #f5c6cb;">
+                <label style="font-size: 12px; font-weight: bold; color: #f5365c;">Titolo DDS:</label>
+                <input type="text" id="pub-titolo-dds" class="input-field" placeholder="Es. Variante Linea 1" style="margin-bottom: 10px;">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #f5365c;">Date di Validità:</label>
+                <input type="text" id="pub-date-dds" class="input-field" placeholder="Es. 2026-03-15, 2026-03-16" style="margin-bottom: 5px;">
+                <span style="font-size: 11px; color: #721c24;">Separa le date con la virgola (AAAA-MM-GG)</span>
+            </div>
+
+            <label style="font-size: 13px; font-weight: bold; color: #555;">Destinatari (Target):</label>
+            <select id="pub-target" class="input-field" onchange="toggleAreaTarget()">
+                <option value="tutti">Visibile a Tutti</option>
+                <option value="selezione">Solo Rotazioni Selezionate...</option>
+            </select>
+
+            <div id="area-target" style="display: none; margin-bottom: 15px;">
+                <div class="checkbox-grid">
+                    <label><input type="checkbox" class="target-check" value="rot_fnove"> Rot F.Nove</label>
+                    <label><input type="checkbox" class="target-check" value="spez_fnove"> Spez F.Nove</label>
+                    <label><input type="checkbox" class="target-check" value="rot_proma"> Rot P.Roma</label>
+                    <label><input type="checkbox" class="target-check" value="spez_proma"> Spez P.Roma</label>
+                    <label><input type="checkbox" class="target-check" value="rot_szaccaria"> Rot S.Zac</label>
+                    <label><input type="checkbox" class="target-check" value="spez_szaccaria"> Spez S.Zac</label>
+                    <label><input type="checkbox" class="target-check" value="rot_lido"> Rot Lido</label>
+                    <label><input type="checkbox" class="target-check" value="spez_lido"> Spez Lido</label>
+                    <label><input type="checkbox" class="target-check" value="rot_linea12"> Rot Linea 12</label>
+                    <label><input type="checkbox" class="target-check" value="rot_linea13"> Rot Linea 13</label>
+                    <label><input type="checkbox" class="target-check" value="rot_linea14"> Rot Linea 14</label>
+                    <label><input type="checkbox" class="target-check" value="rot_linea14_mb"> Rot 14 M/B</label>
+                    <label><input type="checkbox" class="target-check" value="disp_indet"> Disponibili</label>
+                </div>
+            </div>
+
+            <label style="font-size: 13px; font-weight: bold; color: #555;">Data di Scadenza (Auto-Elimina):</label>
+            <input type="date" id="pub-scadenza" class="input-field">
+
+            <label style="font-size: 13px; font-weight: bold; color: #555;">Testo del messaggio:</label>
+            <textarea id="msgTesto" class="input-field" rows="4" placeholder="Scrivi qui la comunicazione..."></textarea>
             
-            <label style="font-size: 12px; font-weight: bold; color: #666;">Link Esterno (Opzionale):</label>
+            <label style="font-size: 13px; font-weight: bold; color: #555;">Link Esterno (Opzionale):</label>
             <input type="url" id="msgLink" class="input-field" placeholder="es. https://www.google.it o link Drive">
             
             <button id="btn-pubblica" class="btn-action" onclick="pubblicaMessaggio()">Pubblica Avviso</button>
@@ -133,8 +174,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-        // Rimosso import dello Storage per evitare blocchi
-        import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, setDoc, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", 
@@ -147,14 +187,30 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        const isAdmin = localStorage.getItem('dev_mode_active') === 'true';
+        // --- RUOLI AUTORIZZATI ALLA SCRITTURA ---
+        const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2"; 
+        const COLLABORATORE_UIDS = ["INSERISCI_QUI_UID_1", "INSERISCI_QUI_UID_2"]; // <--- UIDs
+        let isPrivilegedUser = false;
 
         window.apriMenuLaterale = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; };
         window.chiudiMenuLaterale = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; };
         window.chiudiSeSfondo = (event, id) => { if(event.target.id === id) document.getElementById(id).style.display = 'none'; };
 
+        window.toggleCampiDDS = () => {
+            const isDDS = document.getElementById('pub-tipo').value === 'dds';
+            document.getElementById('area-dds').style.display = isDDS ? 'block' : 'none';
+        };
+
+        window.toggleAreaTarget = () => {
+            const isSelezione = document.getElementById('pub-target').value === 'selezione';
+            document.getElementById('area-target').style.display = isSelezione ? 'block' : 'none';
+        };
+
         onAuthStateChanged(auth, (user) => {
-            if (isAdmin) document.getElementById('btn-admin-add').style.display = 'block';
+            if (user) {
+                isPrivilegedUser = (user.uid === ADMIN_UID) || COLLABORATORE_UIDS.includes(user.uid);
+                if (isPrivilegedUser) document.getElementById('btn-admin-add').style.display = 'block';
+            }
             caricaBacheca();
         });
 
@@ -163,39 +219,69 @@
             document.getElementById('view-loading').style.display = 'none';
             document.getElementById('view-main').style.display = 'flex';
 
+            // Dati utente per filtering
+            const stateApp = JSON.parse(localStorage.getItem('myTurniApp')) || {};
+            const pid = stateApp.profiloAttivoId || 'default';
+            const profileObj = stateApp.profiliSalvati ? stateApp.profiliSalvati[pid] : stateApp;
+            const rotazioneUtente = profileObj ? profileObj.depositoAttivo : null;
+            const oggiStr = new Date().toISOString().split('T')[0];
+
             try {
                 const q = query(collection(db, "bacheca_utility"), orderBy("timestamp", "desc"));
                 const snap = await getDocs(q);
                 
                 container.innerHTML = "";
-                let msgs = [];
-                snap.forEach(d => { let m = d.data(); m.id = d.id; msgs.push(m); });
+                let msgsMostrati = 0;
 
-                if (msgs.length === 0) {
+                snap.forEach(d => { 
+                    let m = d.data(); 
+                    m.id = d.id; 
+                    
+                    // 1. Skip scaduti
+                    if (m.scadenza && m.scadenza < oggiStr) return; 
+
+                    // 2. Filtro Target (Gli Admin/Collab vedono comunque TUTTO per poterlo gestire)
+                    if (!isPrivilegedUser && m.target && m.target !== "tutti") {
+                        if (!rotazioneUtente || !m.target.includes(rotazioneUtente)) return;
+                    }
+
+                    msgsMostrati++;
+                    const dataObj = new Date(m.timestamp);
+                    const dataFormattata = dataObj.toLocaleDateString('it-IT') + " alle " + dataObj.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'});
+                    
+                    let extraHTML = "";
+                    let cardClass = "card";
+
+                    if (m.tipo === "dds") {
+                        cardClass += " card-dds";
+                        extraHTML += `<div class="msg-title-dds">⚠️ DDS: ${m.titolo_dds}</div>`;
+                        if (m.date_validita) {
+                            extraHTML += `<div style="font-size: 12px; color: #f5365c; margin-bottom: 5px;">📅 Valida il: <b>${m.date_validita}</b></div>`;
+                        }
+                    }
+
+                    if (m.target && m.target !== "tutti" && isPrivilegedUser) {
+                        extraHTML += `<div style="font-size: 10px; background: #eef2ff; color: var(--primary); display: inline-block; padding: 2px 6px; border-radius: 4px; margin-bottom: 8px;">🎯 Mirato a specifiche rotazioni</div><br>`;
+                    }
+
+                    if (m.link) extraHTML += `<a href="${m.link}" target="_blank" class="msg-link">🔗 Apri Link Esterno</a>`;
+
+                    let adminBtn = isPrivilegedUser ? `<button class="btn-delete" onclick="eliminaMessaggio('${m.id}')">Elimina</button>` : '';
+
+                    container.innerHTML += `
+                        <div class="${cardClass}">
+                            ${adminBtn}
+                            <div class="msg-date">📅 Pubblicato il ${dataFormattata}</div>
+                            ${extraHTML}
+                            <div class="msg-text">${m.testo}</div>
+                        </div>
+                    `;
+                });
+
+                if (msgsMostrati === 0) {
                     container.innerHTML = `<div class="status-message">Nessun avviso in bacheca.</div>`;
                 } else {
                     localStorage.setItem('ultimo_accesso_bacheca', Date.now());
-
-                    msgs.forEach(m => {
-                        const d = new Date(m.timestamp);
-                        const dataFormattata = d.toLocaleDateString('it-IT') + " alle " + d.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'});
-                        
-                        let linkHTML = "";
-                        if (m.link) {
-                            linkHTML = `<a href="${m.link}" target="_blank" class="msg-link">🔗 Apri Link Esterno</a>`;
-                        }
-
-                        let adminBtn = isAdmin ? `<button class="btn-delete" onclick="eliminaMessaggio('${m.id}')">Elimina</button>` : '';
-
-                        container.innerHTML += `
-                            <div class="card">
-                                ${adminBtn}
-                                <div class="msg-date">📅 ${dataFormattata}</div>
-                                <div class="msg-text">${m.testo}</div>
-                                ${linkHTML}
-                            </div>
-                        `;
-                    });
                 }
             } catch (e) {
                 container.innerHTML = `<div class="status-message" style="color:red;">Errore caricamento: ${e.message}</div>`;
@@ -205,35 +291,62 @@
         window.apriModaleNuovo = () => {
             document.getElementById('msgTesto').value = "";
             document.getElementById('msgLink').value = "";
+            document.getElementById('pub-titolo-dds').value = "";
+            document.getElementById('pub-date-dds').value = "";
+            document.getElementById('pub-scadenza').value = "";
             document.getElementById('modal-nuovo').style.display = 'flex';
         };
 
         window.pubblicaMessaggio = async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const tipo = document.getElementById('pub-tipo').value;
             const testo = document.getElementById('msgTesto').value.trim();
             const link = document.getElementById('msgLink').value.trim();
+            const scadenza = document.getElementById('pub-scadenza').value;
             const btn = document.getElementById('btn-pubblica');
 
             if (!testo) return alert("Inserisci il testo del messaggio.");
 
-            btn.innerText = "⏳ Pubblicazione...";
-            btn.disabled = true;
+            let targetVal = "tutti";
+            if (document.getElementById('pub-target').value === 'selezione') {
+                const checkboxes = document.querySelectorAll('.target-check:checked');
+                targetVal = Array.from(checkboxes).map(cb => cb.value);
+                if (targetVal.length === 0) return alert("Seleziona almeno una rotazione dal target.");
+            }
+
+            let dataToSave = {
+                tipo: tipo,
+                testo: testo,
+                link: link,
+                target: targetVal,
+                scadenza: scadenza || null,
+                timestamp: Date.now(),
+                autore: user.email.split('@')[0],
+                uid: user.uid
+            };
+
+            if (tipo === 'dds') {
+                const titoloDds = document.getElementById('pub-titolo-dds').value.trim();
+                const dateDds = document.getElementById('pub-date-dds').value.trim();
+                if (!titoloDds) return alert("Inserisci il titolo della DDS.");
+                dataToSave.titolo_dds = titoloDds;
+                dataToSave.date_validita = dateDds;
+            }
+
+            btn.innerText = "⏳ Pubblicazione..."; btn.disabled = true;
 
             try {
-                await addDoc(collection(db, "bacheca_utility"), {
-                    testo: testo,
-                    link: link,
-                    timestamp: Date.now()
-                });
-
+                const newId = "msg_" + Date.now();
+                await setDoc(doc(db, "bacheca_utility", newId), dataToSave);
                 document.getElementById('modal-nuovo').style.display = 'none';
-                btn.innerText = "Pubblica Avviso";
-                btn.disabled = false;
+                alert("✅ Annuncio pubblicato con successo!");
                 caricaBacheca(); 
-
             } catch (error) {
                 alert("❌ Errore durante la pubblicazione: " + error.message);
-                btn.innerText = "Pubblica Avviso";
-                btn.disabled = false;
+            } finally {
+                btn.innerText = "Pubblica Avviso"; btn.disabled = false;
             }
         };
 
@@ -247,4 +360,3 @@
     </script>
 </body>
 </html>
- 

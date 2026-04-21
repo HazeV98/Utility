@@ -6,24 +6,20 @@
     <title>Utility</title>
 
     <script>
-        // --- SISTEMA DI PULIZIA CACHE E AGGIORNAMENTO FORZATO (Anti-iOS) ---
-        // Il sessionStorage si resetta ogni volta che chiudi l'app o la scheda.
-        if (!sessionStorage.getItem('app_has_reloaded')) {
-            sessionStorage.setItem('app_has_reloaded', 'true');
-            
-            // Forza il Service Worker a cercare aggiornamenti in background
+        // --- SISTEMA DI PULIZIA CACHE E AGGIORNAMENTO FORZATO ---
+        const PAGE_RELOAD_KEY = 'reloaded_' + window.location.pathname;
+
+        if (!sessionStorage.getItem(PAGE_RELOAD_KEY)) {
+            sessionStorage.setItem(PAGE_RELOAD_KEY, 'true');
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(regs => {
                     regs.forEach(reg => reg.update());
                 });
             }
-
-            // Ricostruisce l'URL aggiungendo un timestamp per bypassare la cache in modo aggressivo
             const url = new URL(window.location.href);
             url.searchParams.set('nocache', new Date().getTime());
             window.location.replace(url.toString());
         } else {
-            // Mantengo anche il tuo vecchio sistema per le pulizie "profonde" dei dati salvati
             const APP_VERSION = "1.2"; 
             if (localStorage.getItem('app_version_cache') !== APP_VERSION) {
                 if ('caches' in window) {
@@ -82,7 +78,9 @@
         .feedback-section p { color: #666; font-size: 14px; margin-bottom: 15px; }
         .telegram-icon { display: inline-block; transition: transform 0.2s ease; }
         .telegram-icon:active { transform: scale(0.9); }
-        #ddsReminderModal, #authModal, #profileModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 5000; padding: 20px; box-sizing: border-box; backdrop-filter: blur(3px); }
+        
+        #ddsReminderModal, #authModal, #profileModal, #loginPromptModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 5000; padding: 20px; box-sizing: border-box; backdrop-filter: blur(3px); }
+        
         .modal-content { background: white; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; color: var(--text-color); max-height: 90vh; overflow-y: auto; }
         .input-field { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #e9ecef; border-radius: 8px; box-sizing: border-box; font-size: 14px; font-family: inherit; background-color: white;}
         .btn-modal { border: none; border-radius: 8px; padding: 12px; cursor: pointer; font-weight: bold; font-size: 14px; width: 100%; margin-top: 10px; }
@@ -113,8 +111,12 @@
         </div>
     </div>
 
-    <div id="banner-nuovo-messaggio" style="display: none; background: #ffc107; color: #856404; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 20px; width: 100%; max-width: 400px; cursor: pointer; border: 1px solid #ffeeba; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onclick="window.location.href='bacheca_utility.html'">
+    <div id="banner-nuovo-messaggio" style="display: none; background: #ffc107; color: #856404; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 10px; width: 100%; max-width: 400px; cursor: pointer; border: 1px solid #ffeeba; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onclick="window.location.href='bacheca_utility.html'">
         🔔 Nuovo avviso in Bacheca Utility! Clicca per leggere.
+    </div>
+
+    <div id="banner-dds-alert" style="display: none; background: #f5365c; color: white; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 20px; width: 100%; max-width: 400px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);" onclick="window.location.href='bacheca_utility.html'">
+        ⚠️ Attenzione nuova DDS: <span id="titolo-dds-text"></span>
     </div>
 
     <div class="menu-grid">
@@ -139,6 +141,16 @@
         <a href="admin.html" id="secret-btn" class="menu-btn">🔒 Admin</a>
     </div>
 
+    <div id="loginPromptModal">
+        <div class="modal-content" style="text-align: center;">
+            <h3 style="margin-top: 0; color: var(--primary);">☁️ Esegui l'accesso</h3>
+            <p style="font-size: 14px; color: #555; line-height: 1.5;">
+                Esegui l'accesso in alto a sinistra per salvare i tuoi dati. Avrai accesso ai tuoi dati da qualsiasi dispositivo in cui farai il login, riceverai gli avvisi in tempo reale e avrai accesso a tutte le funzioni di Utility.
+            </p>
+            <button class="btn-modal" style="background-color: var(--primary); color: white; margin-top: 15px;" onclick="document.getElementById('loginPromptModal').style.display='none'">Ho capito, chiudi</button>
+        </div>
+    </div>
+
     <div id="profileModal">
         <div class="modal-content">
             <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f;" onclick="document.getElementById('profileModal').style.display='none'">&times;</span>
@@ -159,7 +171,7 @@
             <label style="font-size: 12px; color: #666; font-weight: bold;">Cognome:</label>
             <input type="text" id="profileCognome" class="input-field" placeholder="Inserisci cognome">
             
-            <label style="font-size: 12px; color: #666; font-weight: bold;">Numero omonimia Es. 02, 03 ecc (Facoltativo):</label>
+            <label style="font-size: 12px; color: #666; font-weight: bold;">Numero omonimia (Facoltativo):</label>
             <input type="text" id="profileProgressivo" class="input-field" placeholder="es. 02, 03 ecc.">
             
             <label style="font-size: 12px; color: #666; font-weight: bold;">Soprannome:</label>
@@ -250,12 +262,9 @@
         titleTrigger.addEventListener('mouseup', () => clearTimeout(holdTimer));
         titleTrigger.addEventListener('touchend', () => clearTimeout(holdTimer));
 
-        // --- SISTEMA DI AVVISO DDS ---
         function checkLocalDDSReminders() {
             const dObj = new Date();
             const localToday = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
-
-            // Se l'abbiamo già mostrato oggi, esce.
             if (localStorage.getItem('last_dds_reminder') === localToday) return;
 
             const reqDB = indexedDB.open("UtilityDB");
@@ -279,17 +288,14 @@
                         });
                         document.getElementById('ddsReminderList').innerHTML = html;
                         document.getElementById('ddsReminderModal').style.display = 'flex';
-                        
                         document.getElementById('chiudi-dds-btn').onclick = () => {
                             document.getElementById('ddsReminderModal').style.display = 'none';
-                            localStorage.setItem('last_dds_reminder', localToday); // Registra il popup mostrato
+                            localStorage.setItem('last_dds_reminder', localToday);
                         };
                     }
                 };
             };
         }
-        
-        // Esegue il controllo all'avvio della pagina
         document.addEventListener('DOMContentLoaded', checkLocalDDSReminders);
     </script>
 
@@ -312,7 +318,9 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
         
-        const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2"; // UID Amministratore Centrale
+        // --- DEFINIZIONE RUOLI ---
+        const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2"; 
+        const COLLABORATORE_UIDS = ["INSERISCI_QUI_UID_1", "INSERISCI_QUI_UID_2"]; 
 
         function mostraErroreAuth(msg, isSuccess = false) {
             const errDiv = document.getElementById('authError');
@@ -321,93 +329,38 @@
             errDiv.style.display = 'block';
         }
 
-        window.loginGoogle = async () => {
-            try { 
-                await signInWithPopup(auth, provider); 
-            } catch(error) { 
-                mostraErroreAuth("Errore durante l'accesso con Google."); 
-            }
-        };
-
-        window.loginEmail = async () => {
-            document.getElementById('authError').style.display = 'none';
-            try {
-                await signInWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value);
-            } catch (error) {
-                let msg = "Errore durante l'accesso.";
-                if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') msg = "Email o Password errata.";
-                else if (error.code === 'auth/invalid-email') msg = "Formato email non valido.";
-                mostraErroreAuth(msg);
-            }
-        };
-
-        window.registraEmail = async () => {
-            document.getElementById('authError').style.display = 'none';
-            try {
-                await createUserWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value);
-            } catch (error) {
-                let msg = "Errore durante la registrazione.";
-                if (error.code === 'auth/email-already-in-use') msg = "Questa email è già registrata.";
-                else if (error.code === 'auth/weak-password') msg = "La password deve avere almeno 6 caratteri.";
-                else if (error.code === 'auth/invalid-email') msg = "Formato email non valido.";
-                mostraErroreAuth(msg);
-            }
-        };
-
-        window.recuperaPassword = async () => {
-            document.getElementById('authError').style.display = 'none';
-            const email = document.getElementById('emailInput').value;
-            if (!email) {
-                mostraErroreAuth("Inserisci prima la tua email nel campo qui sopra.");
-                return;
-            }
-            try {
-                await sendPasswordResetEmail(auth, email);
-                mostraErroreAuth("Email di recupero inviata! Controlla la tua casella.", true);
-            } catch (error) {
-                mostraErroreAuth("Impossibile inviare l'email. Controlla l'indirizzo inserito.");
-            }
-        };
-
+        window.loginGoogle = async () => { try { await signInWithPopup(auth, provider); } catch(error) { mostraErroreAuth("Errore durante l'accesso con Google."); }};
+        window.loginEmail = async () => { document.getElementById('authError').style.display = 'none'; try { await signInWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value); } catch (error) { mostraErroreAuth("Email o Password errata."); }};
+        window.registraEmail = async () => { document.getElementById('authError').style.display = 'none'; try { await createUserWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value); } catch (error) { mostraErroreAuth("Errore durante la registrazione."); }};
+        window.recuperaPassword = async () => { const email = document.getElementById('emailInput').value; if (!email) { mostraErroreAuth("Inserisci prima la tua email."); return; } try { await sendPasswordResetEmail(auth, email); mostraErroreAuth("Email inviata!", true); } catch (error) { mostraErroreAuth("Errore invio email."); }};
         window.logout = () => { signOut(auth); document.getElementById('profileModal').style.display='none'; };
 
         window.salvaProfilo = async () => {
             const user = auth.currentUser;
             if (!user) return;
-
             const btn = document.getElementById('btnSalvaProfilo');
-            btn.innerText = "⏳ Salvataggio...";
-            btn.disabled = true;
+            btn.innerText = "⏳ Salvataggio..."; btn.disabled = true;
 
-            const nome = document.getElementById('profileNome').value.trim();
-            const cognome = document.getElementById('profileCognome').value.trim();
-            const progressivo = document.getElementById('profileProgressivo').value.trim();
-            const soprannome = document.getElementById('profileSoprannome').value.trim();
-            const mansione = document.getElementById('profileMansione').value;
-            const matricola = document.getElementById('profileMatricola').value.trim();
-            const telefono = document.getElementById('profileTelefono').value.trim();
-
-            const profileData = { nome: nome, cognome: cognome, progressivo: progressivo, soprannome: soprannome, mansione: mansione, matricola: matricola, telefono: telefono };
+            const profileData = { 
+                nome: document.getElementById('profileNome').value.trim(), 
+                cognome: document.getElementById('profileCognome').value.trim(), 
+                progressivo: document.getElementById('profileProgressivo').value.trim(), 
+                soprannome: document.getElementById('profileSoprannome').value.trim(), 
+                mansione: document.getElementById('profileMansione').value, 
+                matricola: document.getElementById('profileMatricola').value.trim(), 
+                telefono: document.getElementById('profileTelefono').value.trim() 
+            };
 
             try {
                 const docRef = doc(db, "utenti", user.uid);
                 await setDoc(docRef, profileData, { merge: true });
-
                 const rubricaRef = doc(db, "rubrica", user.uid);
                 const rubricaSnap = await getDoc(rubricaRef);
-                if (rubricaSnap.exists()) {
-                    await setDoc(rubricaRef, profileData, { merge: true });
-                }
-
-                alert("✅ Profilo salvato correttamente!");
+                if (rubricaSnap.exists()) await setDoc(rubricaRef, profileData, { merge: true });
+                alert("✅ Profilo salvato!");
                 document.getElementById('profileModal').style.display = 'none';
-            } catch (e) {
-                console.error(e);
-                alert("❌ Errore durante il salvataggio.");
-            } finally {
-                btn.innerText = "Salva Modifiche";
-                btn.disabled = false;
-            }
+            } catch (e) { alert("❌ Errore durante il salvataggio."); } 
+            finally { btn.innerText = "Salva Modifiche"; btn.disabled = false; }
         };
 
         window.controllaNotificheBacheca = async () => {
@@ -415,12 +368,23 @@
                 const ultimoAccesso = parseInt(localStorage.getItem('ultimo_accesso_bacheca')) || 0;
                 const snap = await getDocs(collection(db, "bacheca_utility"));
                 
+                const stateApp = JSON.parse(localStorage.getItem('myTurniApp')) || {};
+                const pid = stateApp.profiloAttivoId || 'default';
+                const profileObj = stateApp.profiliSalvati ? stateApp.profiliSalvati[pid] : stateApp;
+                const rotazioneUtente = profileObj ? profileObj.depositoAttivo : null;
+                
+                const oggiStr = new Date().toISOString().split('T')[0];
                 let messaggiNonLetti = 0;
+                let ddsAttivaTitolo = "";
+
                 snap.forEach(d => {
                     const m = d.data();
-                    if (m.timestamp > ultimoAccesso) {
-                        messaggiNonLetti++;
+                    if (m.scadenza && m.scadenza < oggiStr) return; 
+                    if (m.target && m.target !== "tutti") {
+                        if (!rotazioneUtente || !m.target.includes(rotazioneUtente)) return;
                     }
+                    if (m.timestamp > ultimoAccesso) messaggiNonLetti++;
+                    if (m.tipo === "dds") ddsAttivaTitolo = m.titolo_dds;
                 });
 
                 if (messaggiNonLetti > 0) {
@@ -429,11 +393,17 @@
                     badge.style.display = 'flex';
                     document.getElementById('banner-nuovo-messaggio').style.display = 'block';
                 }
+
+                if (ddsAttivaTitolo) {
+                    document.getElementById('titolo-dds-text').innerText = ddsAttivaTitolo;
+                    document.getElementById('banner-dds-alert').style.display = 'block';
+                }
             } catch (e) { console.error("Errore controllo notifiche", e); }
         };
 
-        window.controllaNotificheBacheca();
-
+        // Gestione Auth (Apertura app e lettura Notifiche protetta)
+        let isFirstLoad = true;
+        
         onAuthStateChanged(auth, async (user) => {
             const btnLogin = document.getElementById('btnOpenLogin');
             const btnProfile = document.getElementById('btnOpenProfile');
@@ -441,22 +411,42 @@
             const profileEmail = document.getElementById('profileEmail');
 
             if (user) {
+                // Rimuove popup se presente
+                document.getElementById('loginPromptModal').style.display = 'none';
                 
-                // --- Sblocco Admin Automatico ---
-                if (user.uid === ADMIN_UID) {
+                const isSuperAdmin = (user.uid === ADMIN_UID);
+                const isCollaboratore = COLLABORATORE_UIDS.includes(user.uid);
+                const isPrivileged = isSuperAdmin || isCollaboratore;
+
+                if (isSuperAdmin) {
                     document.getElementById('secret-btn').style.display = 'block';
+                    document.getElementById('generatore-btn').style.display = 'block';
                     document.getElementById('adminBadge').style.display = 'block';
+                    document.getElementById('adminBadge').innerHTML = '👑 Account Amministratore';
                     localStorage.setItem('dev_mode_active', 'true');
+                    localStorage.setItem('generatore_sbloccato', 'true');
+                } else if (isCollaboratore) {
+                    document.getElementById('generatore-btn').style.display = 'block'; 
+                    document.getElementById('adminBadge').style.display = 'block';
+                    document.getElementById('adminBadge').innerHTML = '🛡️ Account Collaboratore';
+                    document.getElementById('adminBadge').style.background = '#d4edda'; 
+                    document.getElementById('adminBadge').style.color = '#155724';
+                    document.getElementById('adminBadge').style.borderColor = '#c3e6cb';
+                    localStorage.setItem('generatore_sbloccato', 'true');
+                    localStorage.removeItem('dev_mode_active'); 
+                } else {
+                    localStorage.removeItem('dev_mode_active');
+                    localStorage.removeItem('generatore_sbloccato');
                 }
-                
+
                 document.getElementById('authModal').style.display = 'none';
-                document.getElementById('authError').style.display = 'none'; 
                 btnLogin.style.display = 'none';
                 btnProfile.style.display = 'block';
                 statusText.style.display = 'block';
                 statusText.innerHTML = `☁️ Online`;
                 profileEmail.value = user.email;
 
+                // Solo se loggato legge i messaggi in bacheca
                 window.controllaNotificheBacheca();
 
                 try {
@@ -472,10 +462,8 @@
                         document.getElementById('profileMatricola').value = data.matricola || '';
                         document.getElementById('profileTelefono').value = data.telefono || '';
                         
-                        const isAdmin = localStorage.getItem('dev_mode_active') === 'true' || user.uid === ADMIN_UID;
                         const strikes = data.revoche_rubrica || 0;
-                        
-                        if (strikes > 0 && !isAdmin) {
+                        if (strikes > 0 && !isPrivileged) {
                             document.getElementById('profileStrikes').style.display = 'block';
                             document.getElementById('strikeCount').innerText = strikes;
                             if (strikes >= 3) {
@@ -488,13 +476,23 @@
                             document.getElementById('profileStrikes').style.display = 'none';
                         }
                     }
-                } catch(e) { console.error("Errore caricamento profilo:", e); }
-                
+                } catch(e) {}
             } else {
+                // LOGICA UTENTE NON LOGGATO
                 btnLogin.style.display = 'block';
                 btnProfile.style.display = 'none';
                 statusText.style.display = 'none';
+                
+                // Nascondi sempre gli avvisi per chi non è loggato
+                document.getElementById('banner-nuovo-messaggio').style.display = 'none';
+                document.getElementById('banner-dds-alert').style.display = 'none';
+                
+                // Mostra il popup di Login invadente alla prima esecuzione (se non è loggato)
+                if (isFirstLoad) {
+                    document.getElementById('loginPromptModal').style.display = 'flex';
+                }
             }
+            isFirstLoad = false;
         });
     </script>
 </body>

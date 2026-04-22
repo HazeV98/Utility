@@ -318,7 +318,6 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
         
-        // --- DEFINIZIONE RUOLI ---
         const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2"; 
         const COLLABORATORE_UIDS = ["INSERISCI_QUI_UID_1", "INSERISCI_QUI_UID_2"]; 
 
@@ -335,6 +334,7 @@
         window.recuperaPassword = async () => { const email = document.getElementById('emailInput').value; if (!email) { mostraErroreAuth("Inserisci prima la tua email."); return; } try { await sendPasswordResetEmail(auth, email); mostraErroreAuth("Email inviata!", true); } catch (error) { mostraErroreAuth("Errore invio email."); }};
         window.logout = () => { signOut(auth); document.getElementById('profileModal').style.display='none'; };
 
+        // MODIFICATA: Salva anche in locale
         window.salvaProfilo = async () => {
             const user = auth.currentUser;
             if (!user) return;
@@ -350,6 +350,9 @@
                 matricola: document.getElementById('profileMatricola').value.trim(), 
                 telefono: document.getElementById('profileTelefono').value.trim() 
             };
+
+            // Backup locale immediato
+            localStorage.setItem('backup_profilo_haze', JSON.stringify(profileData));
 
             try {
                 const docRef = doc(db, "utenti", user.uid);
@@ -367,43 +370,31 @@
             try {
                 const ultimoAccesso = parseInt(localStorage.getItem('ultimo_accesso_bacheca')) || 0;
                 const snap = await getDocs(collection(db, "bacheca_utility"));
-                
                 const stateApp = JSON.parse(localStorage.getItem('myTurniApp')) || {};
-                const pid = stateApp.profiloAttivoId || 'default';
-                const profileObj = stateApp.profiliSalvati ? stateApp.profiliSalvati[pid] : stateApp;
+                const profileObj = stateApp.profiliSalvati ? stateApp.profiliSalvati[stateApp.profiloAttivoId || 'default'] : stateApp;
                 const rotazioneUtente = profileObj ? profileObj.depositoAttivo : null;
-                
                 const oggiStr = new Date().toISOString().split('T')[0];
-                let messaggiNonLetti = 0;
-                let ddsAttivaTitolo = "";
-
+                let nonLetti = 0; let ddsTitolo = "";
                 snap.forEach(d => {
                     const m = d.data();
                     if (m.scadenza && m.scadenza < oggiStr) return; 
-                    if (m.target && m.target !== "tutti") {
-                        if (!rotazioneUtente || !m.target.includes(rotazioneUtente)) return;
-                    }
-                    if (m.timestamp > ultimoAccesso) messaggiNonLetti++;
-                    if (m.tipo === "dds") ddsAttivaTitolo = m.titolo_dds;
+                    if (m.target && m.target !== "tutti" && (!rotazioneUtente || !m.target.includes(rotazioneUtente))) return;
+                    if (m.timestamp > ultimoAccesso) nonLetti++;
+                    if (m.tipo === "dds") ddsTitolo = m.titolo_dds;
                 });
-
-                if (messaggiNonLetti > 0) {
-                    const badge = document.getElementById('badge-messaggi');
-                    badge.innerText = messaggiNonLetti;
-                    badge.style.display = 'flex';
+                if (nonLetti > 0) {
+                    document.getElementById('badge-messaggi').innerText = nonLetti;
+                    document.getElementById('badge-messaggi').style.display = 'flex';
                     document.getElementById('banner-nuovo-messaggio').style.display = 'block';
                 }
-
-                if (ddsAttivaTitolo) {
-                    document.getElementById('titolo-dds-text').innerText = ddsAttivaTitolo;
+                if (ddsTitolo) {
+                    document.getElementById('titolo-dds-text').innerText = ddsTitolo;
                     document.getElementById('banner-dds-alert').style.display = 'block';
                 }
-            } catch (e) { console.error("Errore controllo notifiche", e); }
+            } catch (e) {}
         };
 
-        // Gestione Auth (Apertura app e lettura Notifiche protetta)
         let isFirstLoad = true;
-        
         onAuthStateChanged(auth, async (user) => {
             const btnLogin = document.getElementById('btnOpenLogin');
             const btnProfile = document.getElementById('btnOpenProfile');
@@ -411,32 +402,21 @@
             const profileEmail = document.getElementById('profileEmail');
 
             if (user) {
-                // Rimuove popup se presente
                 document.getElementById('loginPromptModal').style.display = 'none';
-                
                 const isSuperAdmin = (user.uid === ADMIN_UID);
                 const isCollaboratore = COLLABORATORE_UIDS.includes(user.uid);
-                const isPrivileged = isSuperAdmin || isCollaboratore;
-
                 if (isSuperAdmin) {
                     document.getElementById('secret-btn').style.display = 'block';
                     document.getElementById('generatore-btn').style.display = 'block';
                     document.getElementById('adminBadge').style.display = 'block';
-                    document.getElementById('adminBadge').innerHTML = '👑 Account Amministratore';
+                    document.getElementById('adminBadge').innerHTML = 'Account Amministratore';
                     localStorage.setItem('dev_mode_active', 'true');
                     localStorage.setItem('generatore_sbloccato', 'true');
                 } else if (isCollaboratore) {
                     document.getElementById('generatore-btn').style.display = 'block'; 
                     document.getElementById('adminBadge').style.display = 'block';
-                    document.getElementById('adminBadge').innerHTML = '🛡️ Account Collaboratore';
-                    document.getElementById('adminBadge').style.background = '#d4edda'; 
-                    document.getElementById('adminBadge').style.color = '#155724';
-                    document.getElementById('adminBadge').style.borderColor = '#c3e6cb';
+                    document.getElementById('adminBadge').innerHTML = 'Account Collaboratore';
                     localStorage.setItem('generatore_sbloccato', 'true');
-                    localStorage.removeItem('dev_mode_active'); 
-                } else {
-                    localStorage.removeItem('dev_mode_active');
-                    localStorage.removeItem('generatore_sbloccato');
                 }
 
                 document.getElementById('authModal').style.display = 'none';
@@ -446,51 +426,53 @@
                 statusText.innerHTML = `☁️ Online`;
                 profileEmail.value = user.email;
 
-                // Solo se loggato legge i messaggi in bacheca
                 window.controllaNotificheBacheca();
 
                 try {
                     const docRef = doc(db, "utenti", user.uid);
                     const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        document.getElementById('profileNome').value = data.nome || '';
-                        document.getElementById('profileCognome').value = data.cognome || '';
-                        document.getElementById('profileProgressivo').value = data.progressivo || '';
-                        document.getElementById('profileSoprannome').value = data.soprannome || '';
-                        document.getElementById('profileMansione').value = data.mansione || '';
-                        document.getElementById('profileMatricola').value = data.matricola || '';
-                        document.getElementById('profileTelefono').value = data.telefono || '';
-                        
-                        const strikes = data.revoche_rubrica || 0;
-                        if (strikes > 0 && !isPrivileged) {
-                            document.getElementById('profileStrikes').style.display = 'block';
-                            document.getElementById('strikeCount').innerText = strikes;
-                            if (strikes >= 3) {
-                                document.getElementById('profileStrikes').style.color = '#721c24';
-                                document.getElementById('profileStrikes').style.backgroundColor = '#f8d7da';
-                                document.getElementById('profileStrikes').style.borderColor = '#f5c6cb';
-                                document.getElementById('profileStrikes').innerHTML = '🚫 <b>Accesso Rubrica Bloccato:</b> Limite revoche superato.';
-                            }
-                        } else {
-                            document.getElementById('profileStrikes').style.display = 'none';
-                        }
+                    let data = docSnap.exists() ? docSnap.data() : {};
+
+                    // --- SISTEMA DI RIPRISTINO "PARACADUTE" (Anche in Index) ---
+                    const localDati = JSON.parse(localStorage.getItem('backup_profilo_haze') || "{}");
+                    let dbAggiornato = false;
+
+                    // Se mancano dati nel DB ma ci sono in locale, ripristina
+                    if (!data.nome && localDati.nome) { data.nome = localDati.nome; dbAggiornato = true; }
+                    if (!data.cognome && localDati.cognome) { data.cognome = localDati.cognome; dbAggiornato = true; }
+                    if (!data.matricola && localDati.matricola) { data.matricola = localDati.matricola; dbAggiornato = true; }
+
+                    if (dbAggiornato) {
+                        await setDoc(docRef, data, { merge: true });
+                    }
+                    
+                    // Se il DB ha dati freschi, aggiorna il backup locale
+                    if (data.nome || data.cognome) {
+                        localStorage.setItem('backup_profilo_haze', JSON.stringify(data));
+                    }
+                    // -----------------------------------------------------------
+
+                    document.getElementById('profileNome').value = data.nome || '';
+                    document.getElementById('profileCognome').value = data.cognome || '';
+                    document.getElementById('profileProgressivo').value = data.progressivo || '';
+                    document.getElementById('profileSoprannome').value = data.soprannome || '';
+                    document.getElementById('profileMansione').value = data.mansione || '';
+                    document.getElementById('profileMatricola').value = data.matricola || '';
+                    document.getElementById('profileTelefono').value = data.telefono || '';
+                    
+                    const strikes = data.revoche_rubrica || 0;
+                    if (strikes > 0 && !(isSuperAdmin || isCollaboratore)) {
+                        document.getElementById('profileStrikes').style.display = 'block';
+                        document.getElementById('strikeCount').innerText = strikes;
                     }
                 } catch(e) {}
             } else {
-                // LOGICA UTENTE NON LOGGATO
                 btnLogin.style.display = 'block';
                 btnProfile.style.display = 'none';
                 statusText.style.display = 'none';
-                
-                // Nascondi sempre gli avvisi per chi non è loggato
                 document.getElementById('banner-nuovo-messaggio').style.display = 'none';
                 document.getElementById('banner-dds-alert').style.display = 'none';
-                
-                // Mostra il popup di Login invadente alla prima esecuzione (se non è loggato)
-                if (isFirstLoad) {
-                    document.getElementById('loginPromptModal').style.display = 'flex';
-                }
+                if (isFirstLoad) document.getElementById('loginPromptModal').style.display = 'flex';
             }
             isFirstLoad = false;
         });

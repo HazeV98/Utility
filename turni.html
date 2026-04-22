@@ -59,7 +59,7 @@
         .sidebar-link { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 18px; border-bottom: 1px solid #eee; display: block; text-transform: none;}
         .sidebar-link:active, .sidebar-link:hover { background-color: #f4f7f6; color: var(--primary); font-weight: bold; }
 
-        /* VISTE DI SICUREZZA E MODALI (NUOVI) */
+        /* VISTE DI SICUREZZA E MODALI */
         .view-container { width: 100%; max-width: 400px; display: none; flex-direction: column; gap: 15px; text-align: center; }
         .btn-action { background-color: var(--success); color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; width: 100%; transition: opacity 0.2s; margin-top: 10px; }
         .btn-action:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -130,6 +130,7 @@
         <a href="rotazione_ferie.html" class="sidebar-link">🌴 Rotazione Ferie</a>
         <a href="orari.html" class="sidebar-link">🕒 Orari Navigazione</a>
         <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
+        <a href="link.html" class="sidebar-link">🔗 Link</a>
         <a href="contatti.html" class="sidebar-link">📇 Contatti</a>
         <a href="buoni.html" class="sidebar-link">🍝 Buoni Pasto</a>
     </div>
@@ -174,7 +175,7 @@
             <label style="font-size: 12px; font-weight: bold; color: #666;">Matricola *</label>
             <input type="text" id="req-matricola" class="input-field" placeholder="La tua matricola">
 
-            <label style="font-size: 12px; font-weight: bold; color: #666;">Numero Omonimia (Facoltativo)</label>
+            <label style="font-size: 12px; font-weight: bold; color: #666;">Omonimia (Facoltativo)</label>
             <input type="text" id="req-prog" class="input-field" placeholder="Es. 02, 03...">
 
             <button id="btn-save-profile" class="btn-action" onclick="salvaProfiloObbligatorio()">Salva e Accedi</button>
@@ -183,7 +184,6 @@
 
     <div id="view-main" class="view-container">
         <button id="btn-admin-gestione" class="btn-action" style="background: #32325d; display: none; margin-top: 0; margin-bottom: 10px;" onclick="apriGestioneAccessi()">🛠️ Gestione Accessi Turni</button>
-        
         <div id="content-area" style="display: flex; flex-direction: column; gap: 15px;"></div>
     </div>
 
@@ -296,7 +296,6 @@
             try {
                 const docRef = doc(db, "utenti", user.uid);
                 const docSnap = await getDoc(docRef);
-                
                 let data = docSnap.exists() ? docSnap.data() : {};
 
                 if (data.turni_banned === true) {
@@ -305,17 +304,30 @@
                     return;
                 }
 
-                if (!data.nome || !data.cognome || !data.matricola) {
+                // --- SISTEMA DI RIPRISTINO "PARACADUTE" ---
+                // Se i dati mancano nel DB perché cancellati da altre pagine, li recupera dalla memoria
+                const localDati = JSON.parse(localStorage.getItem('backup_profilo_haze') || "{}");
+                let dbAggiornato = false;
+
+                if (!data.nome && localDati.nome) { data.nome = localDati.nome; dbAggiornato = true; }
+                if (!data.cognome && localDati.cognome) { data.cognome = localDati.cognome; dbAggiornato = true; }
+                if (data.matricola === undefined && localDati.matricola !== undefined) { data.matricola = localDati.matricola; dbAggiornato = true; }
+
+                if (dbAggiornato) {
+                    await setDoc(docRef, { nome: data.nome, cognome: data.cognome, matricola: data.matricola, progressivo: localDati.progressivo || "" }, { merge: true });
+                }
+                // -------------------------------------------
+
+                if (!data.nome || !data.cognome || data.matricola === undefined || data.matricola === "") {
                     nascondiTutto();
-                    document.getElementById('req-nome').value = data.nome || "";
-                    document.getElementById('req-cognome').value = data.cognome || "";
-                    document.getElementById('req-matricola').value = data.matricola || "";
-                    document.getElementById('req-prog').value = data.progressivo || "";
+                    document.getElementById('req-nome').value = data.nome || localDati.nome || "";
+                    document.getElementById('req-cognome').value = data.cognome || localDati.cognome || "";
+                    document.getElementById('req-matricola').value = data.matricola || localDati.matricola || "";
+                    document.getElementById('req-prog').value = data.progressivo || localDati.progressivo || "";
                     document.getElementById('view-profile-required').style.display = 'block';
                     return;
                 }
 
-                // Accesso consentito: mostriamo la view-main ed avviamo init()
                 nascondiTutto();
                 document.getElementById('view-main').style.display = 'flex';
                 initTurniApp();
@@ -325,7 +337,6 @@
                 }
 
             } catch (error) {
-                console.error("Errore verifica", error);
                 document.getElementById('view-loading').innerHTML = "<div class='status-message' style='color:red;'>Errore di connessione.</div>";
             }
         });
@@ -350,6 +361,9 @@
             const profileData = { 
                 nome: nome, cognome: cognome, matricola: matricola, progressivo: prog, turni_access: true 
             };
+
+            // Salva il backup "paracadute" nel telefono
+            localStorage.setItem('backup_profilo_haze', JSON.stringify(profileData));
 
             try {
                 await setDoc(doc(db, "utenti", user.uid), profileData, { merge: true });

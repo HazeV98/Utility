@@ -305,12 +305,25 @@
                     return;
                 }
 
-                if (!data.nome || !data.cognome || !data.matricola) {
+                // --- SISTEMA DI RIPRISTINO "PARACADUTE" ---
+                const localDati = JSON.parse(localStorage.getItem('backup_profilo_haze') || "{}");
+                let dbAggiornato = false;
+
+                if (!data.nome && localDati.nome) { data.nome = localDati.nome; dbAggiornato = true; }
+                if (!data.cognome && localDati.cognome) { data.cognome = localDati.cognome; dbAggiornato = true; }
+                if (data.matricola === undefined && localDati.matricola !== undefined) { data.matricola = localDati.matricola; dbAggiornato = true; }
+
+                if (dbAggiornato) {
+                    await setDoc(docRef, { nome: data.nome, cognome: data.cognome, matricola: data.matricola, progressivo: localDati.progressivo || "" }, { merge: true });
+                }
+                // -------------------------------------------
+
+                if (!data.nome || !data.cognome || data.matricola === undefined || data.matricola === "") {
                     nascondiTutto();
-                    document.getElementById('req-nome').value = data.nome || "";
-                    document.getElementById('req-cognome').value = data.cognome || "";
-                    document.getElementById('req-matricola').value = data.matricola || "";
-                    document.getElementById('req-prog').value = data.progressivo || "";
+                    document.getElementById('req-nome').value = data.nome || localDati.nome || "";
+                    document.getElementById('req-cognome').value = data.cognome || localDati.cognome || "";
+                    document.getElementById('req-matricola').value = data.matricola || localDati.matricola || "";
+                    document.getElementById('req-prog').value = data.progressivo || localDati.progressivo || "";
                     document.getElementById('view-profile-required').style.display = 'block';
                     return;
                 }
@@ -356,6 +369,9 @@
                 progressivo: prog,
                 contatti_access: true
             };
+
+            // Salva il backup "paracadute" nel telefono
+            localStorage.setItem('backup_profilo_haze', JSON.stringify(profileData));
 
             try {
                 await setDoc(doc(db, "utenti", user.uid), profileData, { merge: true });

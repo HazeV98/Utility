@@ -149,7 +149,7 @@
             <label style="font-size: 12px; font-weight: bold; color: #666;">Matricola *</label>
             <input type="text" id="req-matricola" class="input-field" placeholder="La tua matricola">
 
-            <label style="font-size: 12px; font-weight: bold; color: #666;">Numero Omonimia (Facoltativo)</label>
+            <label style="font-size: 12px; font-weight: bold; color: #666;">Omonimia (Facoltativo)</label>
             <input type="text" id="req-prog" class="input-field" placeholder="Es. 02, 03...">
 
             <button id="btn-save-profile" class="btn-action" onclick="salvaProfiloObbligatorio()">Salva e Accedi</button>
@@ -281,6 +281,16 @@
             <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f;" onclick="document.getElementById('modal-letture').style.display='none'">&times;</span>
             <h3 style="margin-top: 5px; color: var(--primary);">👁️ Visualizzazioni</h3>
             <div id="lista-letture" style="margin-top: 15px; max-height: 50vh; overflow-y: auto;">
+                <div class="status-message">Caricamento in corso...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-voti" class="modal-overlay" onclick="chiudiSeSfondo(event, 'modal-voti')" style="z-index: 6000;">
+        <div class="modal-content" style="max-width: 350px;">
+            <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f;" onclick="document.getElementById('modal-voti').style.display='none'">&times;</span>
+            <h3 style="margin-top: 5px; color: var(--primary);">📊 Dettaglio Voti</h3>
+            <div id="lista-voti-dettaglio" style="margin-top: 15px; max-height: 50vh; overflow-y: auto;">
                 <div class="status-message">Caricamento in corso...</div>
             </div>
         </div>
@@ -587,10 +597,17 @@
                     if (d.id === auth.currentUser.uid) mieScelte = scelteUtente;
                 });
 
+                let adminVotiBtn = (auth.currentUser && auth.currentUser.uid === ADMIN_UID) 
+                    ? `<button class="btn-outline" style="padding: 3px 8px; font-size: 11px; background: white; margin-left: 8px;" onclick="mostraVotiDettaglio('${msgId}')">👁️ Chi ha votato</button>` 
+                    : '';
+
                 let tipoText = isMulti ? "(Risposte multiple)" : "(Risposta singola)";
                 let html = `<div style="background: #f4f7f6; padding: 15px; border-radius: 12px; border: 1px solid #e9ecef;">
-                        <div style="font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 2px; display: flex; justify-content: space-between;">
-                            <span>📊 Sondaggio</span>
+                        <div style="font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center;">
+                                <span>📊 Sondaggio</span>
+                                ${adminVotiBtn}
+                            </div>
                             <span style="font-weight: normal; font-size: 12px; color: #666;">${totPartecipanti} partecipanti</span>
                         </div>
                         <div style="font-size: 11px; color: #888; margin-bottom: 12px;">${tipoText}</div>`;
@@ -646,6 +663,49 @@
                 });
                 container.innerHTML = html || `<div class="status-message">Nessuno ha ancora visualizzato.</div>`;
             } catch(e) { container.innerHTML = `<div class="status-message" style="color:red;">Errore.</div>`; }
+        };
+
+        window.mostraVotiDettaglio = async (msgId) => {
+            document.getElementById('modal-voti').style.display = 'flex';
+            const container = document.getElementById('lista-voti-dettaglio');
+            container.innerHTML = `<div class="status-message">Caricamento in corso...</div>`;
+
+            try {
+                // Legge i voti per quel sondaggio specifico
+                const snapVoti = await getDocs(collection(db, "bacheca_utility", msgId, "voti"));
+                if (snapVoti.empty) {
+                    container.innerHTML = `<div class="status-message">Nessuno ha ancora votato.</div>`;
+                    return;
+                }
+
+                // Legge in un solo colpo tutti i profili per associare l'UID al nome dell'utente
+                const snapUtenti = await getDocs(collection(db, "utenti"));
+                let mappaUtenti = {};
+                snapUtenti.forEach(d => {
+                    const u = d.data();
+                    const omo = u.progressivo ? ` ${u.progressivo}` : '';
+                    mappaUtenti[d.id] = `${u.cognome || ''} ${u.nome || ''}${omo}`.trim() || 'Utente Sconosciuto';
+                });
+
+                let html = "";
+                snapVoti.forEach(d => {
+                    const v = d.data();
+                    const userName = mappaUtenti[d.id] || 'Utente Sconosciuto';
+                    let scelte = Array.isArray(v.scelte) ? v.scelte.join(", ") : (v.scelta || "Nessuna scelta");
+                    const dateStr = v.timestamp ? new Date(v.timestamp).toLocaleDateString('it-IT') + " - " + new Date(v.timestamp).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}) : '';
+
+                    html += `
+                        <div style="padding: 10px; border-bottom: 1px solid #eee;">
+                            <div style="font-weight: bold; font-size: 14px; color: #32325d;">${userName}</div>
+                            <div style="font-size: 13px; color: var(--primary); margin-top: 4px;">Scelta: <b>${scelte}</b></div>
+                            <div style="font-size: 11px; color: #888; margin-top: 2px;">${dateStr}</div>
+                        </div>`;
+                });
+
+                container.innerHTML = html;
+            } catch(e) {
+                container.innerHTML = `<div class="status-message" style="color:red;">Errore: ${e.message}</div>`;
+            }
         };
 
         window.apriModaleNuovo = () => {

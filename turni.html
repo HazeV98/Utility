@@ -190,13 +190,22 @@
     <div id="modal-gestione" class="modal-overlay" onclick="chiudiSeSfondoModale(event, 'modal-gestione')">
         <div class="modal-content" style="max-width: 400px;">
             <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f;" onclick="document.getElementById('modal-gestione').style.display='none'">&times;</span>
-            <h3 style="margin-top: 5px; color: #32325d;">
-                Utenti Autorizzati <span id="badge-conteggio" style="font-size: 14px; background: var(--primary); color: white; padding: 2px 8px; border-radius: 12px; vertical-align: middle; display: none;">0</span>
+            <h3 style="margin-top: 5px; margin-bottom: 15px; color: #32325d;">
+                Utenti Autorizzati
             </h3>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div style="background: var(--primary); color: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; flex: 1; text-align: center;">
+                    Totali: <span id="badge-totali">0</span>
+                </div>
+                <div style="background: var(--success); color: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; flex: 1; text-align: center;">
+                    Oggi: <span id="badge-oggi">0</span>
+                </div>
+            </div>
 
             <p style="font-size: 12px; color: #666;">Elenco di chi ha avuto accesso alla pagina Turni.</p>
             
-            <div id="lista-utenti-accessi" style="margin-top: 15px; max-height: 60vh; overflow-y: auto;">
+            <div id="lista-utenti-accessi" style="margin-top: 15px; max-height: 50vh; overflow-y: auto;">
                 <div class="status-message">Caricamento utenti...</div>
             </div>
         </div>
@@ -280,7 +289,7 @@
         }
 
         // ==========================================
-        // LOGICA PROTEZIONE ACCESSI FIREBASE
+        // LOGICA PROTEZIONE ACCESSI E TRACCIAMENTO
         // ==========================================
         onAuthStateChanged(auth, async (user) => {
             nascondiTutto();
@@ -307,8 +316,6 @@
                     return;
                 }
 
-                // --- SISTEMA DI RIPRISTINO "PARACADUTE" ---
-                // Se i dati mancano nel DB perché cancellati da altre pagine, li recupera dalla memoria
                 const localDati = JSON.parse(localStorage.getItem('backup_profilo_haze') || "{}");
                 let dbAggiornato = false;
 
@@ -319,7 +326,6 @@
                 if (dbAggiornato) {
                     await setDoc(docRef, { nome: data.nome, cognome: data.cognome, matricola: data.matricola, progressivo: localDati.progressivo || "" }, { merge: true });
                 }
-                // -------------------------------------------
 
                 if (!data.nome || !data.cognome || data.matricola === undefined || data.matricola === "") {
                     nascondiTutto();
@@ -335,8 +341,13 @@
                 document.getElementById('view-main').style.display = 'flex';
                 initTurniApp();
 
-                if (data.turni_access !== true) {
-                    await setDoc(docRef, { turni_access: true }, { merge: true });
+                // --- TRACCIAMENTO ACCESSI (UNA VOLTA AL GIORNO) ---
+                const oggiStr = new Date().toISOString().split('T')[0]; // Es: "2026-04-23"
+                if (data.turni_access !== true || data.last_turni_access !== oggiStr) {
+                    await setDoc(docRef, { 
+                        turni_access: true,
+                        last_turni_access: oggiStr
+                    }, { merge: true });
                 }
 
             } catch (error) {
@@ -361,11 +372,16 @@
             const btn = document.getElementById('btn-save-profile');
             btn.innerText = "⏳ Salvataggio..."; btn.disabled = true;
 
+            const oggiStr = new Date().toISOString().split('T')[0];
             const profileData = { 
-                nome: nome, cognome: cognome, matricola: matricola, progressivo: prog, turni_access: true 
+                nome: nome, 
+                cognome: cognome, 
+                matricola: matricola, 
+                progressivo: prog, 
+                turni_access: true,
+                last_turni_access: oggiStr
             };
 
-            // Salva il backup "paracadute" nel telefono
             localStorage.setItem('backup_profilo_haze', JSON.stringify(profileData));
 
             try {
@@ -384,33 +400,43 @@
         window.apriGestioneAccessi = async () => {
             document.getElementById('modal-gestione').style.display = 'flex';
             const container = document.getElementById('lista-utenti-accessi');
-            const badgeConteggio = document.getElementById('badge-conteggio');
+            const badgeTotali = document.getElementById('badge-totali');
+            const badgeOggi = document.getElementById('badge-oggi');
+            const oggiStr = new Date().toISOString().split('T')[0];
 
             container.innerHTML = `<div class="status-message">Caricamento in corso...</div>`;
-            badgeConteggio.style.display = 'none';
+            badgeTotali.innerText = "0";
+            badgeOggi.innerText = "0";
 
             try {
                 const snap = await getDocs(collection(db, "utenti"));
                 let html = "";
-                let numeroUtenti = 0;
+                let numeroTotali = 0;
+                let numeroOggi = 0;
                 
                 snap.forEach(d => {
                     const u = d.data();
                     
                     if (u.turni_access === true) { 
-                        numeroUtenti++;
+                        numeroTotali++;
+                        if (u.last_turni_access === oggiStr) {
+                            numeroOggi++;
+                        }
                         
                         const isBanned = u.turni_banned === true;
                         const omo = u.progressivo ? ` ${u.progressivo}` : '';
                         const fullName = `${u.cognome || ''} ${u.nome || ''}${omo}`.trim() || 'Utente Sconosciuto';
                         const matr = u.matricola ? `(Matr. ${u.matricola})` : '';
                         
+                        // Piccolo indicatore verde se l'utente è entrato oggi
+                        const dotOggi = (u.last_turni_access === oggiStr) ? `<span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%; margin-left:5px;" title="Accesso effettuato oggi"></span>` : '';
+
                         let btnHtml = isBanned 
                             ? `<button class="btn-outline" style="color:var(--success); border-color:var(--success);" onclick="toggleBan('${d.id}', false)">Sblocca</button>` 
                             : `<button class="btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="toggleBan('${d.id}', true)">Blocca</button>`;
 
                         html += `<div class="user-list-item ${isBanned ? 'user-banned' : ''}">
-                                <div><div style="font-weight: bold; font-size: 14px; color: #32325d;">${fullName}</div>
+                                <div><div style="font-weight: bold; font-size: 14px; color: #32325d;">${fullName}${dotOggi}</div>
                                 <div style="font-size: 11px; color: #666;">${matr}</div></div>
                                 <div>${btnHtml}</div></div>`;
                     }
@@ -420,8 +446,8 @@
                     container.innerHTML = `<div class="status-message">Nessun utente ha ancora registrato l'accesso.</div>`;
                 } else {
                     container.innerHTML = html;
-                    badgeConteggio.innerText = numeroUtenti;
-                    badgeConteggio.style.display = 'inline-block';
+                    badgeTotali.innerText = numeroTotali;
+                    badgeOggi.innerText = numeroOggi;
                 }
             } catch (e) { 
                 container.innerHTML = `<div class="status-message" style="color:red;">Errore.</div>`; 

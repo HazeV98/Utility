@@ -136,7 +136,17 @@
     <div id="modal-gestione" class="modal-overlay" onclick="chiudiSeSfondo(event, 'modal-gestione')">
         <div class="modal-content" style="max-width: 400px;">
             <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f;" onclick="document.getElementById('modal-gestione').style.display='none'">&times;</span>
-            <h3 style="margin-top: 5px; color: #32325d;">Utenti Autorizzati (Link)</h3>
+            <h3 style="margin-top: 5px; margin-bottom: 15px; color: #32325d;">Utenti Autorizzati (Link)</h3>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div style="background: var(--primary); color: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; flex: 1; text-align: center;">
+                    Totali: <span id="badge-totali">0</span>
+                </div>
+                <div style="background: var(--success); color: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; flex: 1; text-align: center;">
+                    Oggi: <span id="badge-oggi">0</span>
+                </div>
+            </div>
+
             <div id="lista-utenti-accessi" style="margin-top: 15px; max-height: 60vh; overflow-y: auto;"></div>
         </div>
     </div>
@@ -211,8 +221,12 @@
                 document.getElementById('view-main').style.display = 'flex';
                 caricaLink();
 
-                if (data.link_access !== true) {
-                    await setDoc(docRef, { link_access: true }, { merge: true });
+                const oggiStr = new Date().toISOString().split('T')[0];
+                if (data.link_access !== true || data.last_link_access !== oggiStr) {
+                    await setDoc(docRef, { 
+                        link_access: true,
+                        last_link_access: oggiStr
+                    }, { merge: true });
                 }
             } catch (error) { console.error(error); }
         });
@@ -228,7 +242,15 @@
             const btn = document.getElementById('btn-save-profile');
             btn.innerText = "⏳..."; btn.disabled = true;
 
-            const profileData = { nome, cognome, matricola, progressivo: prog, link_access: true };
+            const oggiStr = new Date().toISOString().split('T')[0];
+            const profileData = { 
+                nome, 
+                cognome, 
+                matricola, 
+                progressivo: prog, 
+                link_access: true,
+                last_link_access: oggiStr
+            };
             
             // Salva backup nel telefono
             localStorage.setItem('backup_profilo_haze', JSON.stringify(profileData));
@@ -245,28 +267,56 @@
         window.apriGestioneAccessi = async () => {
             document.getElementById('modal-gestione').style.display = 'flex';
             const container = document.getElementById('lista-utenti-accessi');
-            container.innerHTML = "Caricamento...";
-            const snap = await getDocs(collection(db, "utenti"));
-            let html = "";
-            snap.forEach(d => {
-                const u = d.data();
-                if (u.link_access === true) {
-                    const isBanned = u.link_banned === true;
-                    const omo = u.progressivo ? ` ${u.progressivo}` : '';
-                    const fullName = `${u.cognome || ''} ${u.nome || ''}${omo}`.trim() || 'Utente Sconosciuto';
-                    const matr = u.matricola ? `(Matr. ${u.matricola})` : '';
+            const badgeTotali = document.getElementById('badge-totali');
+            const badgeOggi = document.getElementById('badge-oggi');
+            const oggiStr = new Date().toISOString().split('T')[0];
 
-                    html += `<div class="user-list-item ${isBanned ? 'user-banned' : ''}">
-                        <div>
-                            <div style="font-weight:bold; font-size:14px; color: #32325d;">${fullName}</div>
-                            <div style="font-size: 11px; color: #666;">${matr}</div>
-                        </div>
-                        <button class="btn-outline" style="color:${isBanned?'var(--success)':'var(--danger)'}; border-color:${isBanned?'var(--success)':'var(--danger)'};" 
-                        onclick="toggleBan('${d.id}', ${!isBanned})">${isBanned?'Sblocca':'Blocca'}</button>
-                    </div>`;
+            container.innerHTML = `<div class="status-message">Caricamento in corso...</div>`;
+            badgeTotali.innerText = "0";
+            badgeOggi.innerText = "0";
+
+            try {
+                const snap = await getDocs(collection(db, "utenti"));
+                let html = "";
+                let numeroTotali = 0;
+                let numeroOggi = 0;
+
+                snap.forEach(d => {
+                    const u = d.data();
+                    if (u.link_access === true) {
+                        numeroTotali++;
+                        if (u.last_link_access === oggiStr) {
+                            numeroOggi++;
+                        }
+
+                        const isBanned = u.link_banned === true;
+                        const omo = u.progressivo ? ` ${u.progressivo}` : '';
+                        const fullName = `${u.cognome || ''} ${u.nome || ''}${omo}`.trim() || 'Utente Sconosciuto';
+                        const matr = u.matricola ? `(Matr. ${u.matricola})` : '';
+
+                        const dotOggi = (u.last_link_access === oggiStr) ? `<span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%; margin-left:5px;" title="Accesso effettuato oggi"></span>` : '';
+
+                        html += `<div class="user-list-item ${isBanned ? 'user-banned' : ''}">
+                            <div>
+                                <div style="font-weight:bold; font-size:14px; color: #32325d;">${fullName}${dotOggi}</div>
+                                <div style="font-size: 11px; color: #666;">${matr}</div>
+                            </div>
+                            <button class="btn-outline" style="color:${isBanned?'var(--success)':'var(--danger)'}; border-color:${isBanned?'var(--success)':'var(--danger)'};" 
+                            onclick="toggleBan('${d.id}', ${!isBanned})">${isBanned?'Sblocca':'Blocca'}</button>
+                        </div>`;
+                    }
+                });
+
+                if (html === "") {
+                    container.innerHTML = `<div class="status-message">Nessun accesso registrato.</div>`;
+                } else {
+                    container.innerHTML = html;
+                    badgeTotali.innerText = numeroTotali;
+                    badgeOggi.innerText = numeroOggi;
                 }
-            });
-            container.innerHTML = html || "Nessun accesso registrato.";
+            } catch(e) {
+                container.innerHTML = `<div class="status-message" style="color:red;">Errore.</div>`;
+            }
         };
 
         window.toggleBan = async (uid, status) => {

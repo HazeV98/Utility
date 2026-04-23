@@ -149,7 +149,7 @@
             <label style="font-size: 12px; font-weight: bold; color: #666;">Matricola *</label>
             <input type="text" id="req-matricola" class="input-field" placeholder="La tua matricola">
 
-            <label style="font-size: 12px; font-weight: bold; color: #666;">Numero Omonimia (Facoltativo)</label>
+            <label style="font-size: 12px; font-weight: bold; color: #666;">Omonimia (Facoltativo)</label>
             <input type="text" id="req-prog" class="input-field" placeholder="Es. 02, 03...">
 
             <button id="btn-save-profile" class="btn-action" onclick="salvaProfiloObbligatorio()">Salva e Accedi</button>
@@ -168,7 +168,9 @@
     <div id="modal-gestione" class="modal-overlay" onclick="chiudiSeSfondo(event, 'modal-gestione')">
         <div class="modal-content" style="max-width: 400px;">
             <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f;" onclick="document.getElementById('modal-gestione').style.display='none'">&times;</span>
-            <h3 style="margin-top: 5px; color: #32325d;">Utenti Bacheca</h3>
+            <h3 style="margin-top: 5px; color: #32325d;">
+                Utenti Autorizzati <span id="badge-conteggio" style="font-size: 14px; background: var(--primary); color: white; padding: 2px 8px; border-radius: 12px; vertical-align: middle; display: none;">0</span>
+            </h3>
             <p style="font-size: 12px; color: #666;">Gestisci gli accessi alla Bacheca Utility.</p>
             
             <div id="lista-utenti-accessi" style="margin-top: 15px; max-height: 60vh; overflow-y: auto;">
@@ -386,7 +388,6 @@
                         return;
                     }
 
-                    // --- SISTEMA DI RIPRISTINO "PARACADUTE" ---
                     const localDati = JSON.parse(localStorage.getItem('backup_profilo_haze') || "{}");
                     let dbAggiornato = false;
 
@@ -397,7 +398,6 @@
                     if (dbAggiornato) {
                         await setDoc(docRef, { nome: data.nome, cognome: data.cognome, matricola: data.matricola, progressivo: localDati.progressivo || "" }, { merge: true });
                     }
-                    // -------------------------------------------
 
                     if (!data.nome || !data.cognome || data.matricola === undefined || data.matricola === "") {
                         nascondiTutto();
@@ -409,7 +409,6 @@
                         return;
                     }
 
-                    // Imposta il nome per la bacheca
                     const omo = data.progressivo ? ` ${data.progressivo}` : '';
                     currentUserFullName = `${data.cognome || ''} ${data.nome || ''}${omo}`.trim();
 
@@ -445,7 +444,6 @@
 
             const profileData = { nome: nome, cognome: cognome, matricola: matricola, progressivo: prog, bacheca_access: true };
 
-            // Salva backup nel telefono
             localStorage.setItem('backup_profilo_haze', JSON.stringify(profileData));
 
             try {
@@ -457,17 +455,25 @@
             } catch (e) { alert("Errore salvataggio."); btn.innerText = "Salva"; btn.disabled = false; }
         };
 
+        // --- FUNZIONE AGGIORNATA CON IL CONTATORE ---
         window.apriGestioneAccessi = async () => {
             document.getElementById('modal-gestione').style.display = 'flex';
             const container = document.getElementById('lista-utenti-accessi');
+            const badgeConteggio = document.getElementById('badge-conteggio');
+
             container.innerHTML = `<div class="status-message">Caricamento in corso...</div>`;
+            badgeConteggio.style.display = 'none';
 
             try {
                 const snap = await getDocs(collection(db, "utenti"));
                 let html = "";
+                let numeroUtenti = 0;
+                
                 snap.forEach(d => {
                     const u = d.data();
                     if (u.bacheca_access === true) {
+                        numeroUtenti++;
+                        
                         const isBanned = u.bacheca_banned === true;
                         const omo = u.progressivo ? ` ${u.progressivo}` : '';
                         const fullName = `${u.cognome || ''} ${u.nome || ''}${omo}`.trim() || 'Utente Sconosciuto';
@@ -483,7 +489,14 @@
                                 <div>${btnHtml}</div></div>`;
                     }
                 });
-                container.innerHTML = html || `<div class="status-message">Nessun utente ha ancora registrato l'accesso.</div>`;
+                
+                if (html === "") {
+                    container.innerHTML = `<div class="status-message">Nessun utente ha ancora registrato l'accesso.</div>`;
+                } else {
+                    container.innerHTML = html;
+                    badgeConteggio.innerText = numeroUtenti;
+                    badgeConteggio.style.display = 'inline-block';
+                }
             } catch (e) { container.innerHTML = `<div class="status-message" style="color:red;">Errore.</div>`; }
         };
 
@@ -671,14 +684,12 @@
             container.innerHTML = `<div class="status-message">Caricamento in corso...</div>`;
 
             try {
-                // Legge i voti per quel sondaggio specifico
                 const snapVoti = await getDocs(collection(db, "bacheca_utility", msgId, "voti"));
                 if (snapVoti.empty) {
                     container.innerHTML = `<div class="status-message">Nessuno ha ancora votato.</div>`;
                     return;
                 }
 
-                // Legge in un solo colpo tutti i profili per associare l'UID al nome dell'utente
                 const snapUtenti = await getDocs(collection(db, "utenti"));
                 let mappaUtenti = {};
                 snapUtenti.forEach(d => {

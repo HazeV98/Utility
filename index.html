@@ -133,7 +133,6 @@
             word-wrap: break-word;
         }
 
-        /* Gestione tasti Admin nascosti */
         #secret-btn, #generatore-btn, #rotazioni-btn { display: none; }
         #secret-btn .app-icon, #generatore-btn .app-icon { background: linear-gradient(135deg, #dc3545, #bd2130); }
 
@@ -198,18 +197,18 @@
             </div>
             <div class="header-side right">
                 <button id="install-btn">Installa</button>
-                <div id="icona-bacheca" style="position: relative; cursor: pointer; margin-left: 15px;" onclick="window.location.href='bacheca_utility.html'">
+                <div id="icona-bacheca" style="position: relative; cursor: pointer; margin-left: 15px;" onclick="apriBachecaUtility()">
                     <span style="font-size: 26px;">📢</span>
                     <div id="badge-messaggi" style="display: none; position: absolute; top: -5px; right: -8px; background: var(--danger); color: white; border-radius: 50%; font-size: 11px; font-weight: bold; width: 18px; height: 18px; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">0</div>
                 </div>
             </div>
         </div>
 
-        <div id="banner-nuovo-messaggio" style="display: none; background: #ffc107; color: #856404; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 10px; width: 100%; max-width: 400px; cursor: pointer; border: 1px solid #ffeeba; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onclick="window.location.href='bacheca_utility.html'">
+        <div id="banner-nuovo-messaggio" style="display: none; background: #ffc107; color: #856404; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 10px; width: 100%; max-width: 400px; cursor: pointer; border: 1px solid #ffeeba; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onclick="apriBachecaUtility()">
             🔔 Nuovo avviso in Bacheca Utility! Clicca per leggere.
         </div>
 
-        <div id="banner-dds-alert" style="display: none; background: #f5365c; color: white; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 20px; width: 100%; max-width: 400px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);" onclick="window.location.href='bacheca_utility.html'">
+        <div id="banner-dds-alert" style="display: none; background: #f5365c; color: white; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 20px; width: 100%; max-width: 400px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);" onclick="apriBachecaUtility()">
             ⚠️ Attenzione nuova DDS: <span id="titolo-dds-text"></span>
         </div>
 
@@ -495,6 +494,18 @@
         const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2"; 
         const COLLABORATORE_UIDS = ["INSERISCI_QUI_UID_1", "INSERISCI_QUI_UID_2"]; 
 
+        // Nuova funzione integrata per azzerare e navigare
+        window.apriBachecaUtility = () => {
+            const timestamp = Date.now();
+            localStorage.setItem('ultimo_accesso_bacheca', timestamp);
+            const user = auth.currentUser;
+            if (user) {
+                // Esegue l'update su Firebase in background
+                setDoc(doc(db, "utenti", user.uid), { ultimo_accesso_bacheca: timestamp }, { merge: true }).catch(()=>{});
+            }
+            window.location.href = 'bacheca_utility.html';
+        };
+
         function mostraErroreAuth(msg, isSuccess = false) {
             const errDiv = document.getElementById('authError');
             errDiv.innerText = msg;
@@ -633,6 +644,9 @@
                     document.getElementById('badge-messaggi').innerText = nonLetti;
                     document.getElementById('badge-messaggi').style.display = 'flex';
                     document.getElementById('banner-nuovo-messaggio').style.display = 'block';
+                } else {
+                    document.getElementById('badge-messaggi').style.display = 'none';
+                    document.getElementById('banner-nuovo-messaggio').style.display = 'none';
                 }
                 if (ddsTitolo) {
                     document.getElementById('titolo-dds-text').innerText = ddsTitolo;
@@ -760,10 +774,26 @@
                     statusText.innerHTML = `☁️ Online`;
                     profileEmail.value = user.email;
 
+                    let dbAggiornato = false;
+
+                    // --- INIZIO SYNC INCROCIATO BACHECA ---
+                    const localBacheca = parseInt(localStorage.getItem('ultimo_accesso_bacheca')) || 0;
+                    const dbBacheca = data.ultimo_accesso_bacheca || 0;
+                    
+                    if (dbBacheca > localBacheca) {
+                        // Il DB è più aggiornato, scarico sul dispositivo
+                        localStorage.setItem('ultimo_accesso_bacheca', dbBacheca);
+                    } else if (localBacheca > dbBacheca) {
+                        // Il dispositivo è più aggiornato, carico sul DB
+                        data.ultimo_accesso_bacheca = localBacheca;
+                        dbAggiornato = true;
+                    }
+                    // --- FINE SYNC INCROCIATO ---
+
+                    // Spostato DOPO la sincronizzazione per una lettura accurata
                     window.controllaNotificheBacheca();
 
                     const localDati = JSON.parse(localStorage.getItem('backup_profilo_haze') || "{}");
-                    let dbAggiornato = false;
 
                     if (!data.nome && localDati.nome) { data.nome = localDati.nome; dbAggiornato = true; }
                     if (!data.cognome && localDati.cognome) { data.cognome = localDati.cognome; dbAggiornato = true; }

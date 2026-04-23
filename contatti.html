@@ -159,7 +159,17 @@
     <div id="modal-gestione" class="modal-overlay" onclick="chiudiSeSfondo(event, 'modal-gestione')">
         <div class="modal-content" style="max-width: 400px;">
             <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f;" onclick="document.getElementById('modal-gestione').style.display='none'">&times;</span>
-            <h3 style="margin-top: 5px; color: #32325d;">Utenti Autorizzati</h3>
+            <h3 style="margin-top: 5px; margin-bottom: 15px; color: #32325d;">Utenti Autorizzati</h3>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div style="background: var(--primary); color: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; flex: 1; text-align: center;">
+                    Totali: <span id="badge-totali">0</span>
+                </div>
+                <div style="background: var(--success); color: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; flex: 1; text-align: center;">
+                    Oggi: <span id="badge-oggi">0</span>
+                </div>
+            </div>
+
             <p style="font-size: 12px; color: #666;">Elenco di tutti coloro che hanno avuto accesso a questa pagina.</p>
             
             <div id="lista-utenti-accessi" style="margin-top: 15px; max-height: 60vh; overflow-y: auto;">
@@ -305,25 +315,12 @@
                     return;
                 }
 
-                // --- SISTEMA DI RIPRISTINO "PARACADUTE" ---
-                const localDati = JSON.parse(localStorage.getItem('backup_profilo_haze') || "{}");
-                let dbAggiornato = false;
-
-                if (!data.nome && localDati.nome) { data.nome = localDati.nome; dbAggiornato = true; }
-                if (!data.cognome && localDati.cognome) { data.cognome = localDati.cognome; dbAggiornato = true; }
-                if (data.matricola === undefined && localDati.matricola !== undefined) { data.matricola = localDati.matricola; dbAggiornato = true; }
-
-                if (dbAggiornato) {
-                    await setDoc(docRef, { nome: data.nome, cognome: data.cognome, matricola: data.matricola, progressivo: localDati.progressivo || "" }, { merge: true });
-                }
-                // -------------------------------------------
-
-                if (!data.nome || !data.cognome || data.matricola === undefined || data.matricola === "") {
+                if (!data.nome || !data.cognome || !data.matricola) {
                     nascondiTutto();
-                    document.getElementById('req-nome').value = data.nome || localDati.nome || "";
-                    document.getElementById('req-cognome').value = data.cognome || localDati.cognome || "";
-                    document.getElementById('req-matricola').value = data.matricola || localDati.matricola || "";
-                    document.getElementById('req-prog').value = data.progressivo || localDati.progressivo || "";
+                    document.getElementById('req-nome').value = data.nome || "";
+                    document.getElementById('req-cognome').value = data.cognome || "";
+                    document.getElementById('req-matricola').value = data.matricola || "";
+                    document.getElementById('req-prog').value = data.progressivo || "";
                     document.getElementById('view-profile-required').style.display = 'block';
                     return;
                 }
@@ -334,8 +331,12 @@
                 caricaContatti();
 
                 // Tracciamento
-                if (data.contatti_access !== true) {
-                    await setDoc(docRef, { contatti_access: true }, { merge: true });
+                const oggiStr = new Date().toISOString().split('T')[0];
+                if (data.contatti_access !== true || data.last_contatti_access !== oggiStr) {
+                    await setDoc(docRef, { 
+                        contatti_access: true,
+                        last_contatti_access: oggiStr
+                    }, { merge: true });
                 }
 
             } catch (error) {
@@ -362,16 +363,15 @@
             btn.innerText = "⏳ Salvataggio...";
             btn.disabled = true;
 
+            const oggiStr = new Date().toISOString().split('T')[0];
             const profileData = { 
                 nome: nome, 
                 cognome: cognome, 
                 matricola: matricola,
                 progressivo: prog,
-                contatti_access: true
+                contatti_access: true,
+                last_contatti_access: oggiStr
             };
-
-            // Salva il backup "paracadute" nel telefono
-            localStorage.setItem('backup_profilo_haze', JSON.stringify(profileData));
 
             try {
                 await setDoc(doc(db, "utenti", user.uid), profileData, { merge: true });
@@ -390,21 +390,37 @@
         window.apriGestioneAccessi = async () => {
             document.getElementById('modal-gestione').style.display = 'flex';
             const container = document.getElementById('lista-utenti-accessi');
+            const badgeTotali = document.getElementById('badge-totali');
+            const badgeOggi = document.getElementById('badge-oggi');
+            const oggiStr = new Date().toISOString().split('T')[0];
+            
             container.innerHTML = `<div class="status-message">Caricamento utenti in corso...</div>`;
+            badgeTotali.innerText = "0";
+            badgeOggi.innerText = "0";
 
             try {
                 const snap = await getDocs(collection(db, "utenti"));
                 let html = "";
+                let numeroTotali = 0;
+                let numeroOggi = 0;
                 
                 snap.forEach(d => {
                     const u = d.data();
                     const uid = d.id;
                     
                     if (u.contatti_access === true) {
+                        numeroTotali++;
+                        if (u.last_contatti_access === oggiStr) {
+                            numeroOggi++;
+                        }
+
                         const isBanned = u.contatti_banned === true;
                         
                         // RECUPERO E FORMATTAZIONE DEL NUMERO DI OMONIMIA
                         const omonimia = u.progressivo ? ` ${u.progressivo}` : '';
+                        
+                        // Piccolo indicatore verde se l'utente è entrato oggi
+                        const dotOggi = (u.last_contatti_access === oggiStr) ? `<span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%; margin-left:5px;" title="Accesso effettuato oggi"></span>` : '';
                         
                         // Nome + Cognome + Eventuale omonimia attaccata
                         const fullName = `${u.cognome || ''} ${u.nome || ''}${omonimia}`.trim() || 'Utente Sconosciuto';
@@ -417,7 +433,7 @@
                         html += `
                             <div class="user-list-item ${isBanned ? 'user-banned' : ''}">
                                 <div>
-                                    <div style="font-weight: bold; font-size: 14px; color: #32325d;">${fullName}</div>
+                                    <div style="font-weight: bold; font-size: 14px; color: #32325d;">${fullName}${dotOggi}</div>
                                     <div style="font-size: 11px; color: #666;">${matr}</div>
                                 </div>
                                 <div>${btnHtml}</div>
@@ -426,8 +442,13 @@
                     }
                 });
 
-                if (html === "") html = `<div class="status-message">Nessun utente ha ancora registrato l'accesso.</div>`;
-                container.innerHTML = html;
+                if (html === "") {
+                    container.innerHTML = `<div class="status-message">Nessun utente ha ancora registrato l'accesso.</div>`;
+                } else {
+                    container.innerHTML = html;
+                    badgeTotali.innerText = numeroTotali;
+                    badgeOggi.innerText = numeroOggi;
+                }
 
             } catch (e) {
                 container.innerHTML = `<div class="status-message" style="color:red;">Errore: ${e.message}</div>`;

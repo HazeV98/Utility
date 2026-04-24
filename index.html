@@ -16,7 +16,7 @@
             url.searchParams.set('nocache', new Date().getTime());
             window.location.replace(url.toString());
         } else {
-            const APP_VERSION = "2.1"; 
+            const APP_VERSION = "2.2"; 
             if (localStorage.getItem('app_version_cache') !== APP_VERSION) {
                 if ('caches' in window) { caches.keys().then((names) => { names.forEach(name => caches.delete(name)); }); }
                 if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then((registrations) => { registrations.forEach(registration => registration.unregister()); }); }
@@ -388,7 +388,7 @@
 
             applicaGrafica: function() {
                 const c1 = encodeURIComponent(this.prefs.c1); const c2 = encodeURIComponent(this.prefs.c2); const c3 = encodeURIComponent(this.prefs.c3);
-                const svg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Crect width='100' height='100' fill='${c3}'/%3E%3Cpath d='M0,60 C25,80 45,80 65,55 C80,35 90,35 100,55 L100,0 L0,0 Z' fill='${c2}'/%3E%3Cpath d='M0,40 C20,60 40,60 60,40 C80,20 90,20 100,45 L100,0 L0,0 Z' fill='${c1}'/%3E%3C/svg%3E`;
+                const svg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Crect width='100' height='100' fill='${c3}'/%3E%3Cpath d='M0,60 C35,90 65,30 100,60 L100,0 L0,0 Z' fill='${c2}'/%3E%3Cpath d='M0,45 C35,65 65,25 100,45 L100,0 L0,0 Z' fill='${c1}'/%3E%3C/svg%3E`;
                 document.body.style.backgroundImage = `url("${svg}")`;
                 document.documentElement.style.setProperty('--label-size', this.prefs.fontSize + 'px');
                 let baseClass = this.prefs.view === 'list' ? 'app-list' : 'app-grid';
@@ -421,12 +421,11 @@
                     const labelHtml = app.label.replace('\n', '<br>');
                     const badgeHtml = this.isEditMode ? `<div class="edit-badge">✏️</div>` : '';
                     
-                    // Gestione Immagine vs Emoji
                     let iconStyle = `background-color: ${finalColor};`;
                     let iconContent = app.icon || "";
                     if (app.image) {
                         iconStyle += ` background-image: url('${app.image}'); background-size: cover; background-position: center;`;
-                        iconContent = ""; // Nasconde testo/emoji se c'è immagine
+                        iconContent = "";
                     }
 
                     container.innerHTML += `
@@ -446,7 +445,7 @@
                     const img = new Image();
                     img.onload = function() {
                         const canvas = document.createElement('canvas');
-                        const MAX = 120; // Compressione a 120px max per alleggerire Firebase
+                        const MAX = 120;
                         let w = img.width; let h = img.height;
                         if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } 
                         else { if (h > MAX) { w *= MAX / h; h = MAX; } }
@@ -458,7 +457,7 @@
                         document.getElementById(modalType + '-app-img-data').value = dataUrl;
                         document.getElementById(modalType + '-app-img-preview-src').src = dataUrl;
                         document.getElementById(modalType + '-app-img-preview').style.display = 'block';
-                        document.getElementById(modalType + '-app-icon').value = ""; // Rimuove emoji
+                        document.getElementById(modalType + '-app-icon').value = ""; 
                     }
                     img.src = e.target.result;
                 }
@@ -552,7 +551,6 @@
                 this.prefs.apps.push(newApp); 
                 window.chiudiModal('customAppModal'); 
                 
-                // Resetta form new app
                 document.getElementById('new-app-label').value = ""; document.getElementById('new-app-url').value = "";
                 document.getElementById('new-app-icon').value = ""; this.rimuoviImmagine('new');
 

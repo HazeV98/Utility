@@ -16,7 +16,7 @@
             url.searchParams.set('nocache', new Date().getTime());
             window.location.replace(url.toString());
         } else {
-            const APP_VERSION = "1.7"; 
+            const APP_VERSION = "1.8"; 
             if (localStorage.getItem('app_version_cache') !== APP_VERSION) {
                 if ('caches' in window) { caches.keys().then((names) => { names.forEach(name => caches.delete(name)); }); }
                 if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then((registrations) => { registrations.forEach(registration => registration.unregister()); }); }
@@ -303,6 +303,16 @@
         <div class="modal-content" style="max-width: 400px;">
             <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f;" onclick="chiudiModal('modal-gestione')">&times;</span>
             <h3 style="margin-top: 5px; margin-bottom: 15px; color: #32325d;">Utenti App</h3>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div style="background: var(--primary); color: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; flex: 1; text-align: center;">
+                    Totali: <span id="badge-totali">0</span>
+                </div>
+                <div style="background: var(--success); color: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; flex: 1; text-align: center;">
+                    Oggi: <span id="badge-oggi">0</span>
+                </div>
+            </div>
+
             <div id="lista-utenti-accessi" style="margin-top: 15px; max-height: 60vh; overflow-y: auto;"></div>
         </div>
     </div>
@@ -351,8 +361,6 @@
         ];
 
         window.LayoutEngine = {
-            // Colori di base ripristinati. appBg a #5dade2 (soft) apre saturo nel picker. 
-            // Invertito il rendering c1/c3 nell'SVG sotto.
             prefs: { c1: "#a9dfcd", c2: "#ffffff", c3: "#a4c5e3", appBg: "#5dade2", view: "grid", apps: [] },
             isEditMode: false,
             sortableInstance: null,
@@ -388,7 +396,6 @@
 
             applicaSfondo: function() {
                 const c1 = encodeURIComponent(this.prefs.c1); const c2 = encodeURIComponent(this.prefs.c2); const c3 = encodeURIComponent(this.prefs.c3);
-                // Inversione logica c1/c3 per far corrispondere Alto con Alto e Basso con Basso
                 const svg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Crect width='100' height='100' fill='${c3}'/%3E%3Cpath d='M0,60 C25,80 45,80 65,55 C80,35 90,35 100,55 L100,0 L0,0 Z' fill='${c2}'/%3E%3Cpath d='M0,40 C20,60 40,60 60,40 C80,20 90,20 100,45 L100,0 L0,0 Z' fill='${c1}'/%3E%3C/svg%3E`;
                 document.body.style.backgroundImage = `url("${svg}")`;
                 document.getElementById('app-container').className = this.prefs.view === 'list' ? 'app-list' : 'app-grid';
@@ -553,7 +560,6 @@
             }
         };
 
-        // --- SISTEMA AUTENTICAZIONE E LOGICA BASE ---
         window.apriBachecaUtility = () => {
             const timestamp = Date.now();
             localStorage.setItem('ultimo_accesso_bacheca', timestamp);
@@ -567,23 +573,49 @@
         window.apriGestioneAccessi = async () => {
             apriModal('modal-gestione');
             const container = document.getElementById('lista-utenti-accessi');
+            const badgeTotali = document.getElementById('badge-totali');
+            const badgeOggi = document.getElementById('badge-oggi');
+            
             container.innerHTML = `<div style="text-align:center; color:#666; padding:20px;">Caricamento...</div>`;
+            if (badgeTotali) badgeTotali.innerText = "0";
+            if (badgeOggi) badgeOggi.innerText = "0";
+
             try {
                 const snap = await getDocs(collection(db, "utenti"));
-                let html = ""; const oggiStr = new Date().toISOString().split('T')[0];
+                let htmlOggi = ""; 
+                let htmlAltri = "";
+                let tot = 0; 
+                let oggi = 0;
+                const oggiStr = new Date().toISOString().split('T')[0];
+                
                 snap.forEach(d => {
-                    const u = d.data(); const isBanned = u.app_banned === true;
+                    const u = d.data(); 
+                    tot++;
+                    const isOggi = (u.last_app_access === oggiStr);
+                    if (isOggi) oggi++;
+
+                    const isBanned = u.app_banned === true;
                     const omo = u.progressivo ? ` ${u.progressivo}` : '';
                     const fullName = `${u.cognome || ''} ${u.nome || ''}${omo}`.trim() || 'Sconosciuto';
-                    const dotOggi = (u.last_app_access === oggiStr) ? `<span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%; margin-left:5px;"></span>` : '';
-                    html += `<div style="display:flex; justify-content:space-between; align-items:center; background:${isBanned ? '#fff5f5' : '#f8f9fa'}; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid ${isBanned ? '#ffc9c9' : '#e9ecef'};">
+                    const dotOggi = isOggi ? `<span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%; margin-left:5px;"></span>` : '';
+                    
+                    const riga = `<div style="display:flex; justify-content:space-between; align-items:center; background:${isBanned ? '#fff5f5' : '#f8f9fa'}; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid ${isBanned ? '#ffc9c9' : '#e9ecef'};">
                         <div><div style="font-weight:bold; font-size:14px; color:#32325d;">${fullName}${dotOggi}</div><div style="font-size:11px; color:#666;">(Matr. ${u.matricola || '??'})</div></div>
                         <button style="background:transparent; border:2px solid ${isBanned ? 'var(--success)' : 'var(--danger)'}; color:${isBanned ? 'var(--success)' : 'var(--danger)'}; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="toggleAppBan('${d.id}', ${!isBanned})">${isBanned ? 'Sblocca' : 'Blocca'}</button>
                     </div>`;
+
+                    if (isOggi) {
+                        htmlOggi += riga;
+                    } else {
+                        htmlAltri += riga;
+                    }
                 });
-                container.innerHTML = html;
-            } catch(e) { container.innerHTML = "Errore."; }
+                container.innerHTML = htmlOggi + htmlAltri || `<div style="text-align:center; color:#666; padding:20px;">Nessun utente.</div>`;
+                if (badgeTotali) badgeTotali.innerText = tot;
+                if (badgeOggi) badgeOggi.innerText = oggi;
+            } catch(e) { container.innerHTML = "Errore durante il caricamento."; }
         };
+        
         window.toggleAppBan = async (uid, status) => { if(confirm("Confermi?")) { await setDoc(doc(db, "utenti", uid), { app_banned: status }, { merge: true }); window.apriGestioneAccessi(); } };
 
         let currentAuthMode = 'login';

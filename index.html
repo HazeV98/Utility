@@ -337,6 +337,7 @@
         const COLLABORATORE_UIDS = ["INSERISCI_QUI_UID_1", "INSERISCI_QUI_UID_2"]; 
         let globalIsAdmin = false; let globalIsCollab = false; let globalIsF9 = false;
 
+        // --- DEFINIZIONE APP DI SISTEMA ---
         const DEFAULT_APPS = [
             { id: "oggi", label: "Oggi", icon: "🎯", href: "calendario.html?oggi=true", defaultColor: "#28a745" },
             { id: "calendario", label: "Calendario", icon: "📅", href: "calendario.html" },
@@ -382,8 +383,29 @@
             },
 
             mergeWithDefaults: function() {
+                // 1. Rimuovi vecchie app di sistema non più presenti nel codice sorgente
+                const defaultIds = DEFAULT_APPS.map(a => a.id);
+                this.prefs.apps = this.prefs.apps.filter(app => app.id.startsWith('custom_') || defaultIds.includes(app.id));
+
+                // 2. Sincronizza (aggiorna) i collegamenti delle app di sistema, mantenendo le modifiche estetiche dell'utente
+                this.prefs.apps.forEach(app => {
+                    if (!app.id.startsWith('custom_')) {
+                        const def = DEFAULT_APPS.find(d => d.id === app.id);
+                        if (def) {
+                            if (def.href) app.href = def.href; else delete app.href;
+                            if (def.onclick) app.onclick = def.onclick; else delete app.onclick;
+                            if (def.condition) app.condition = def.condition; else delete app.condition;
+                        }
+                    }
+                });
+
+                // 3. Aggiungi le eventuali NUOVE app di sistema
                 let currentIds = this.prefs.apps.map(a => a.id);
-                DEFAULT_APPS.forEach(defApp => { if(!currentIds.includes(defApp.id)) this.prefs.apps.push(JSON.parse(JSON.stringify(defApp))); });
+                DEFAULT_APPS.forEach(defApp => {
+                    if(!currentIds.includes(defApp.id)) {
+                        this.prefs.apps.push(JSON.parse(JSON.stringify(defApp)));
+                    }
+                });
             },
 
             applicaGrafica: function() {

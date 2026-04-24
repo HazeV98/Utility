@@ -20,7 +20,7 @@
             url.searchParams.set('nocache', new Date().getTime());
             window.location.replace(url.toString());
         } else {
-            const APP_VERSION = "1.2"; 
+            const APP_VERSION = "1.3"; 
             if (localStorage.getItem('app_version_cache') !== APP_VERSION) {
                 if ('caches' in window) {
                     caches.keys().then((names) => {
@@ -81,8 +81,8 @@
         .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: flex-start; margin-top: 10px; margin-bottom: 30px; position: relative; }
         .header-side { flex: 1; display: flex; align-items: center; }
         .header-side.right { justify-content: flex-end; }
-        .header-center { display: flex; flex-direction: column; align-items: center; flex: 2; }
-        h2 { margin: 0; color: var(--primary); font-size: 30px; font-weight: bold; text-align: center; user-select: none; -webkit-user-select: none; cursor: pointer; display: flex; align-items: center; justify-content: center;}
+        .header-center { display: flex; flex-direction: column; align-items: center; flex: 2; justify-content: center;}
+        h2 { margin: 0; color: var(--primary); font-size: 30px; font-weight: bold; text-align: center; user-select: none; -webkit-user-select: none; display: flex; align-items: center; justify-content: center;}
         
         .view-container { width: 100%; max-width: 400px; display: none; flex-direction: column; align-items: center; }
 
@@ -91,7 +91,7 @@
         .btn-header-alt { background-color: var(--primary); color: white; border: none; padding: 8px 12px; font-size: 12px; font-weight: bold; border-radius: 20px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: none; }
         @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
         
-        /* NUOVO LAYOUT: App Grid Stile iOS/Android */
+        /* APP GRID STILE SMARTPHONE */
         .app-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -123,6 +123,7 @@
         }
         .app-icon.oggi { background: linear-gradient(135deg, #28a745, #1e7e34); box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4); }
         .app-icon.gray { background: linear-gradient(135deg, #6c757d, #5a6268); }
+        .app-icon.admin { background: linear-gradient(135deg, #32325d, #1a1a2e); }
         .app-label {
             font-size: 11px;
             color: #1a1a1a;
@@ -133,7 +134,7 @@
             word-wrap: break-word;
         }
 
-        #secret-btn, #generatore-btn, #rotazioni-btn { display: none; }
+        #secret-btn, #generatore-btn, #rotazioni-btn, #admin-gestione-btn { display: none; }
         #secret-btn .app-icon, #generatore-btn .app-icon { background: linear-gradient(135deg, #dc3545, #bd2130); }
 
         .btn-action { background-color: var(--success); color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; width: 100%; transition: opacity 0.2s; margin-top: 10px; }
@@ -142,7 +143,7 @@
         .telegram-icon { display: inline-block; transition: transform 0.2s ease; }
         .telegram-icon:active { transform: scale(0.9); }
         
-        #ddsReminderModal, #authModal, #profileModal, #modal-gestione { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 5000; padding: 20px; box-sizing: border-box; backdrop-filter: blur(3px); }
+        #ddsReminderModal, #authModal, #profileModal, #modal-gestione, #modal-google-data { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 5000; padding: 20px; box-sizing: border-box; backdrop-filter: blur(3px); }
         
         .modal-content { background: white; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; color: var(--text-color); max-height: 90vh; overflow-y: auto; }
         .input-field { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #e9ecef; border-radius: 8px; box-sizing: border-box; font-size: 14px; font-family: inherit; background-color: white;}
@@ -193,7 +194,6 @@
                 <h2 id="main-title">
                     <img src="icon-512.png" alt="U" style="height: 32px; margin-right: 1px; margin-bottom: 2px; pointer-events: none;">tility
                 </h2>
-                <div id="user-status" style="font-size: 11px; color: var(--success); font-weight: bold; display: none; margin-top: 4px;"></div>
             </div>
             <div class="header-side right">
                 <button id="install-btn">Installa</button>
@@ -223,7 +223,7 @@
             </a>
             <a href="dati_calendario.html" class="app-btn">
                 <div class="app-icon">📊</div>
-                <div class="app-label">Statistiche</div>
+                <div class="app-label">Statistiche<br>Calendario</div>
             </a>
             <a href="rotazioni.html" class="app-btn">
                 <div class="app-icon">👥</div>
@@ -286,10 +286,14 @@
                 <div class="app-icon">🔒</div>
                 <div class="app-label">Admin</div>
             </a>
+            <div id="admin-gestione-btn" class="app-btn" onclick="apriGestioneAccessi()">
+                <div class="app-icon admin">🛠️</div>
+                <div class="app-label">Accessi</div>
+            </div>
         </div>
+    </div> 
 
-        <button id="btn-admin-gestione" class="btn-action" style="background: #32325d; display: none; margin-top: 20px; width: 100%;" onclick="apriGestioneAccessi()">🛠️ Gestione Accessi App</button>
-    </div> <div id="profileModal">
+    <div id="profileModal">
         <div class="modal-content">
             <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f;" onclick="document.getElementById('profileModal').style.display='none'">&times;</span>
             <h3 style="margin-top: 5px; color: #32325d; text-align: center;">Profilo Utente</h3>
@@ -377,6 +381,17 @@
         </div>
     </div>
 
+    <div id="modal-google-data">
+        <div class="modal-content" style="text-align: center;">
+            <h3 style="color: #32325d; margin-top: 5px;">📝 Dati Obbligatori</h3>
+            <p style="font-size: 13px; color: #666; margin-bottom: 20px; line-height: 1.5;">Per continuare ad utilizzare Utility, inserisci i tuoi dati reali (stessi della registrazione).</p>
+            <input type="text" id="g-nome" placeholder="Nome *" class="input-field">
+            <input type="text" id="g-cognome" placeholder="Cognome *" class="input-field">
+            <input type="text" id="g-matricola" placeholder="Matricola *" class="input-field">
+            <button class="btn-modal" style="background: var(--success); color: white;" onclick="salvaDatiGoogle()">Salva e Continua</button>
+        </div>
+    </div>
+
     <div id="modal-gestione" onclick="if(event.target.id === 'modal-gestione') this.style.display='none'">
         <div class="modal-content" style="max-width: 400px;">
             <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f;" onclick="document.getElementById('modal-gestione').style.display='none'">&times;</span>
@@ -408,32 +423,6 @@
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('install-btn').style.display = 'block'; });
         document.getElementById('install-btn').addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; } });
-
-        const titleTrigger = document.getElementById('main-title');
-        let tapCount = 0; let tapTimer; let holdTimer;
-        document.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('dev_mode_active') === 'true') {
-                document.getElementById('secret-btn').style.display = 'block';
-                document.getElementById('adminBadge').style.display = 'block'; 
-            }
-            if (localStorage.getItem('generatore_sbloccato') === 'true') document.getElementById('generatore-btn').style.display = 'block';
-            const appDataStr = localStorage.getItem('myTurniApp');
-            if (appDataStr && appDataStr.toLowerCase().includes('nove')) document.getElementById('rotazioni-btn').style.display = 'block';
-        });
-
-        function handleStart(e) {
-            clearTimeout(tapTimer); clearTimeout(holdTimer); tapCount++;
-            if (tapCount === 3 || tapCount === 5) {
-                holdTimer = setTimeout(() => {
-                    if (tapCount === 5) { localStorage.setItem('dev_mode_active', 'true'); alert("🛠️ Admin Sbloccato"); location.reload(); }
-                    else { localStorage.setItem('generatore_sbloccato', 'true'); alert("🔑 Generatore Sbloccato"); location.reload(); }
-                }, 3000);
-            } else { tapTimer = setTimeout(() => tapCount = 0, 500); }
-        }
-        titleTrigger.addEventListener('mousedown', handleStart);
-        titleTrigger.addEventListener('touchstart', (e) => { e.preventDefault(); handleStart(e); });
-        titleTrigger.addEventListener('mouseup', () => clearTimeout(holdTimer));
-        titleTrigger.addEventListener('touchend', () => clearTimeout(holdTimer));
 
         function checkLocalDDSReminders() {
             const dObj = new Date();
@@ -494,13 +483,17 @@
         const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2"; 
         const COLLABORATORE_UIDS = ["INSERISCI_QUI_UID_1", "INSERISCI_QUI_UID_2"]; 
 
-        // Nuova funzione integrata per azzerare e navigare
+        // Sparizione immediata UI Notifiche + Navigazione
         window.apriBachecaUtility = () => {
             const timestamp = Date.now();
             localStorage.setItem('ultimo_accesso_bacheca', timestamp);
+            
+            document.getElementById('badge-messaggi').style.display = 'none';
+            document.getElementById('banner-nuovo-messaggio').style.display = 'none';
+            document.getElementById('banner-dds-alert').style.display = 'none';
+            
             const user = auth.currentUser;
             if (user) {
-                // Esegue l'update su Firebase in background
                 setDoc(doc(db, "utenti", user.uid), { ultimo_accesso_bacheca: timestamp }, { merge: true }).catch(()=>{});
             }
             window.location.href = 'bacheca_utility.html';
@@ -594,6 +587,32 @@
         window.recuperaPassword = async () => { const email = document.getElementById('emailInput').value; if (!email) { mostraErroreAuth("Inserisci prima la tua email."); return; } try { await sendPasswordResetEmail(auth, email); mostraErroreAuth("Email inviata!", true); } catch (error) { mostraErroreAuth("Errore invio email."); }};
         window.logout = () => { signOut(auth); document.getElementById('profileModal').style.display='none'; };
 
+        // Salvataggio dei dati dal Popup di Blocco Google
+        window.salvaDatiGoogle = async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+            const nome = document.getElementById('g-nome').value.trim();
+            const cognome = document.getElementById('g-cognome').value.trim();
+            const matricola = document.getElementById('g-matricola').value.trim();
+
+            if (!nome || !cognome || !matricola) {
+                alert("Tutti i campi (Nome, Cognome, Matricola) sono obbligatori.");
+                return;
+            }
+
+            const profileData = { nome: nome, cognome: cognome, matricola: matricola };
+            localStorage.setItem('backup_profilo_haze', JSON.stringify(profileData));
+
+            try {
+                await setDoc(doc(db, "utenti", user.uid), profileData, { merge: true });
+                await setDoc(doc(db, "rubrica", user.uid), profileData, { merge: true });
+                document.getElementById('modal-google-data').style.display = 'none';
+                location.reload(); 
+            } catch (e) {
+                alert("Errore durante il salvataggio.");
+            }
+        };
+
         window.salvaProfilo = async () => {
             const user = auth.currentUser;
             if (!user) return;
@@ -633,13 +652,15 @@
                 const rotazioneUtente = profileObj ? profileObj.depositoAttivo : null;
                 const oggiStr = new Date().toISOString().split('T')[0];
                 let nonLetti = 0; let ddsTitolo = "";
+                
                 snap.forEach(d => {
                     const m = d.data();
                     if (m.scadenza && m.scadenza < oggiStr) return; 
                     if (m.target && m.target !== "tutti" && (!rotazioneUtente || !m.target.includes(rotazioneUtente))) return;
-                    if (m.timestamp > ultimoAccesso) nonLetti++;
+                    if (parseInt(m.timestamp) > ultimoAccesso) nonLetti++;
                     if (m.tipo === "dds") ddsTitolo = m.titolo_dds;
                 });
+
                 if (nonLetti > 0) {
                     document.getElementById('badge-messaggi').innerText = nonLetti;
                     document.getElementById('badge-messaggi').style.display = 'flex';
@@ -648,6 +669,7 @@
                     document.getElementById('badge-messaggi').style.display = 'none';
                     document.getElementById('banner-nuovo-messaggio').style.display = 'none';
                 }
+                
                 if (ddsTitolo) {
                     document.getElementById('titolo-dds-text').innerText = ddsTitolo;
                     document.getElementById('banner-dds-alert').style.display = 'block';
@@ -718,9 +740,6 @@
         onAuthStateChanged(auth, async (user) => {
             const btnLogin = document.getElementById('btnOpenLogin');
             const btnProfile = document.getElementById('btnOpenProfile');
-            const statusText = document.getElementById('user-status');
-            const profileEmail = document.getElementById('profileEmail');
-            
             const viewLoading = document.getElementById('view-loading');
             const viewGuest = document.getElementById('view-guest');
             const viewApp = document.getElementById('view-app');
@@ -743,7 +762,11 @@
                         return;
                     }
 
-                    // Ripristiniamo lo sfondo vettoriale per l'app
+                    // Blocco Dati Google Obbligatori
+                    if (!data.nome || !data.cognome || !data.matricola) {
+                        document.getElementById('modal-google-data').style.display = 'flex';
+                    }
+
                     document.body.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23a4c5e3'/%3E%3Cpath d='M0,60 C25,80 45,80 65,55 C80,35 90,35 100,55 L100,0 L0,0 Z' fill='%23ffffff'/%3E%3Cpath d='M0,40 C20,60 40,60 60,40 C80,20 90,20 100,45 L100,0 L0,0 Z' fill='%23a9dfcd'/%3E%3C/svg%3E")`;
                     
                     viewGuest.style.display = 'none';
@@ -752,45 +775,38 @@
 
                     const isSuperAdmin = (user.uid === ADMIN_UID);
                     const isCollaboratore = COLLABORATORE_UIDS.includes(user.uid);
+                    
                     if (isSuperAdmin) {
                         document.getElementById('secret-btn').style.display = 'block';
                         document.getElementById('generatore-btn').style.display = 'block';
-                        document.getElementById('btn-admin-gestione').style.display = 'block';
+                        document.getElementById('admin-gestione-btn').style.display = 'block';
                         document.getElementById('adminBadge').style.display = 'block';
                         document.getElementById('adminBadge').innerHTML = 'Account Amministratore';
-                        localStorage.setItem('dev_mode_active', 'true');
-                        localStorage.setItem('generatore_sbloccato', 'true');
                     } else if (isCollaboratore) {
                         document.getElementById('generatore-btn').style.display = 'block'; 
                         document.getElementById('adminBadge').style.display = 'block';
                         document.getElementById('adminBadge').innerHTML = 'Account Collaboratore';
-                        localStorage.setItem('generatore_sbloccato', 'true');
                     }
 
                     document.getElementById('authModal').style.display = 'none';
                     btnLogin.style.display = 'none';
                     btnProfile.style.display = 'block';
-                    statusText.style.display = 'block';
-                    statusText.innerHTML = `☁️ Online`;
-                    profileEmail.value = user.email;
+                    document.getElementById('profileEmail').value = user.email;
 
                     let dbAggiornato = false;
 
                     // --- INIZIO SYNC INCROCIATO BACHECA ---
                     const localBacheca = parseInt(localStorage.getItem('ultimo_accesso_bacheca')) || 0;
-                    const dbBacheca = data.ultimo_accesso_bacheca || 0;
+                    const dbBacheca = parseInt(data.ultimo_accesso_bacheca) || 0;
                     
                     if (dbBacheca > localBacheca) {
-                        // Il DB è più aggiornato, scarico sul dispositivo
                         localStorage.setItem('ultimo_accesso_bacheca', dbBacheca);
                     } else if (localBacheca > dbBacheca) {
-                        // Il dispositivo è più aggiornato, carico sul DB
                         data.ultimo_accesso_bacheca = localBacheca;
                         dbAggiornato = true;
                     }
                     // --- FINE SYNC INCROCIATO ---
 
-                    // Spostato DOPO la sincronizzazione per una lettura accurata
                     window.controllaNotificheBacheca();
 
                     const localDati = JSON.parse(localStorage.getItem('backup_profilo_haze') || "{}");
@@ -835,7 +851,6 @@
 
                 btnLogin.style.display = 'block';
                 btnProfile.style.display = 'none';
-                statusText.style.display = 'none';
                 document.getElementById('banner-nuovo-messaggio').style.display = 'none';
                 document.getElementById('banner-dds-alert').style.display = 'none';
             }

@@ -143,7 +143,7 @@
         .telegram-icon { display: inline-block; transition: transform 0.2s ease; }
         .telegram-icon:active { transform: scale(0.9); }
         
-        #ddsReminderModal, #authModal, #profileModal, #modal-gestione, #modal-google-data { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 5000; padding: 20px; box-sizing: border-box; backdrop-filter: blur(3px); }
+        #ddsReminderModal, #authModal, #profileModal, #modal-gestione, #modal-dati-obbligatori { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 5000; padding: 20px; box-sizing: border-box; backdrop-filter: blur(3px); }
         
         .modal-content { background: white; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; color: var(--text-color); max-height: 90vh; overflow-y: auto; }
         .input-field { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #e9ecef; border-radius: 8px; box-sizing: border-box; font-size: 14px; font-family: inherit; background-color: white;}
@@ -224,10 +224,6 @@
             <a href="dati_calendario.html" class="app-btn">
                 <div class="app-icon">📊</div>
                 <div class="app-label">Statistiche<br>Calendario</div>
-            </a>
-            <a href="rotazioni.html" class="app-btn">
-                <div class="app-icon">👥</div>
-                <div class="app-label">Rotazioni<br>(test)</div>
             </a>
             <a href="rotazionef9.html" id="rotazioni-btn" class="app-btn">
                 <div class="app-icon">🚢</div>
@@ -381,14 +377,17 @@
         </div>
     </div>
 
-    <div id="modal-google-data">
+    <div id="modal-dati-obbligatori">
         <div class="modal-content" style="text-align: center;">
             <h3 style="color: #32325d; margin-top: 5px;">📝 Dati Obbligatori</h3>
-            <p style="font-size: 13px; color: #666; margin-bottom: 20px; line-height: 1.5;">Per continuare ad utilizzare Utility, inserisci i tuoi dati reali (stessi della registrazione).</p>
-            <input type="text" id="g-nome" placeholder="Nome *" class="input-field">
-            <input type="text" id="g-cognome" placeholder="Cognome *" class="input-field">
-            <input type="text" id="g-matricola" placeholder="Matricola *" class="input-field">
-            <button class="btn-modal" style="background: var(--success); color: white;" onclick="salvaDatiGoogle()">Salva e Continua</button>
+            <p style="font-size: 13px; color: #666; margin-bottom: 20px; line-height: 1.5;">
+                Per la sicurezza dei dati presenti in Utility, per accedere è necessario inserire i tuoi dati reali.
+            </p>
+            <input type="text" id="obbl-nome" placeholder="Nome *" class="input-field">
+            <input type="text" id="obbl-cognome" placeholder="Cognome *" class="input-field">
+            <input type="text" id="obbl-matricola" placeholder="Matricola *" class="input-field">
+            <input type="text" id="obbl-prog" placeholder="Numero omonimia es. 02 (Facoltativo)" class="input-field">
+            <button class="btn-modal" style="background: var(--success); color: white;" onclick="salvaDatiObbligatori()">Salva e Continua</button>
         </div>
     </div>
 
@@ -597,26 +596,30 @@
         window.recuperaPassword = async () => { const email = document.getElementById('emailInput').value; if (!email) { mostraErroreAuth("Inserisci prima la tua email."); return; } try { await sendPasswordResetEmail(auth, email); mostraErroreAuth("Email inviata!", true); } catch (error) { mostraErroreAuth("Errore invio email."); }};
         window.logout = () => { signOut(auth); document.getElementById('profileModal').style.display='none'; };
 
-        // Salvataggio dei dati dal Popup di Blocco Google
-        window.salvaDatiGoogle = async () => {
+        // Salvataggio dei dati dal Popup Globale (Per tutti gli utenti incompleti)
+        window.salvaDatiObbligatori = async () => {
             const user = auth.currentUser;
             if (!user) return;
-            const nome = document.getElementById('g-nome').value.trim();
-            const cognome = document.getElementById('g-cognome').value.trim();
-            const matricola = document.getElementById('g-matricola').value.trim();
+            const nome = document.getElementById('obbl-nome').value.trim();
+            const cognome = document.getElementById('obbl-cognome').value.trim();
+            const matricola = document.getElementById('obbl-matricola').value.trim();
+            const prog = document.getElementById('obbl-prog').value.trim();
 
             if (!nome || !cognome || !matricola) {
-                alert("Tutti i campi (Nome, Cognome, Matricola) sono obbligatori.");
+                alert("I campi Nome, Cognome e Matricola sono obbligatori.");
                 return;
             }
 
-            const profileData = { nome: nome, cognome: cognome, matricola: matricola };
-            localStorage.setItem('backup_profilo_haze', JSON.stringify(profileData));
+            const profileData = { nome: nome, cognome: cognome, matricola: matricola, progressivo: prog };
+            
+            const localDati = JSON.parse(localStorage.getItem('backup_profilo_haze') || "{}");
+            Object.assign(localDati, profileData);
+            localStorage.setItem('backup_profilo_haze', JSON.stringify(localDati));
 
             try {
                 await setDoc(doc(db, "utenti", user.uid), profileData, { merge: true });
                 await setDoc(doc(db, "rubrica", user.uid), profileData, { merge: true });
-                document.getElementById('modal-google-data').style.display = 'none';
+                document.getElementById('modal-dati-obbligatori').style.display = 'none';
                 location.reload(); 
             } catch (e) {
                 alert("Errore durante il salvataggio.");
@@ -772,9 +775,9 @@
                         return;
                     }
 
-                    // Blocco Dati Google Obbligatori
+                    // Blocco Dati Obbligatori GLOBALE (Per tutti i tipi di login)
                     if (!data.nome || !data.cognome || !data.matricola) {
-                        document.getElementById('modal-google-data').style.display = 'flex';
+                        document.getElementById('modal-dati-obbligatori').style.display = 'flex';
                     }
 
                     document.body.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23a4c5e3'/%3E%3Cpath d='M0,60 C25,80 45,80 65,55 C80,35 90,35 100,55 L100,0 L0,0 Z' fill='%23ffffff'/%3E%3Cpath d='M0,40 C20,60 40,60 60,40 C80,20 90,20 100,45 L100,0 L0,0 Z' fill='%23a9dfcd'/%3E%3C/svg%3E")`;

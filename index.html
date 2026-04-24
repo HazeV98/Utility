@@ -16,7 +16,7 @@
             url.searchParams.set('nocache', new Date().getTime());
             window.location.replace(url.toString());
         } else {
-            const APP_VERSION = "1.8"; 
+            const APP_VERSION = "1.9"; 
             if (localStorage.getItem('app_version_cache') !== APP_VERSION) {
                 if ('caches' in window) { caches.keys().then((names) => { names.forEach(name => caches.delete(name)); }); }
                 if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then((registrations) => { registrations.forEach(registration => registration.unregister()); }); }
@@ -92,6 +92,10 @@
         .app-list .app-btn:active { transform: scale(0.98); background: rgba(255,255,255,1); }
         .app-list .app-icon { width: 45px; height: 45px; margin: 0 15px 0 0; border-radius: 12px; color: white; font-size: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .app-list .app-label { font-size: 15px; color: #333; font-weight: bold; margin: 0; text-shadow: none; flex: 1; }
+
+        /* MODALITÀ ICONE TRASPARENTI */
+        .transparent-icons .app-icon { background: transparent !important; box-shadow: none !important; font-size: 48px !important; color: #333 !important; }
+        .transparent-icons.app-list .app-icon { font-size: 32px !important; }
 
         /* WIGGLE & EDIT MODE */
         @keyframes wiggle { 0% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } 100% { transform: rotate(-2deg); } }
@@ -194,6 +198,12 @@
             <select id="set-viewmode" class="input-field" style="background: #f8f9fa;">
                 <option value="grid">Griglia app</option>
                 <option value="list">Lista</option>
+            </select>
+
+            <label style="font-size: 12px; color: #666; font-weight: bold;">Stile Icone:</label>
+            <select id="set-iconstyle" class="input-field" style="background: #f8f9fa;">
+                <option value="box">Con Sfondo</option>
+                <option value="transparent">Solo Icona (Trasparente)</option>
             </select>
 
             <button class="btn-modal" style="background: #ff9800; color: white;" onclick="LayoutEngine.toggleEditMode(); chiudiModal('settingsModal');">✏️ Modifica Layout (Trascina e Ordina)</button>
@@ -361,7 +371,7 @@
         ];
 
         window.LayoutEngine = {
-            prefs: { c1: "#a9dfcd", c2: "#ffffff", c3: "#a4c5e3", appBg: "#5dade2", view: "grid", apps: [] },
+            prefs: { c1: "#a9dfcd", c2: "#ffffff", c3: "#a4c5e3", appBg: "#5dade2", view: "grid", iconStyle: "box", apps: [] },
             isEditMode: false,
             sortableInstance: null,
             
@@ -398,7 +408,12 @@
                 const c1 = encodeURIComponent(this.prefs.c1); const c2 = encodeURIComponent(this.prefs.c2); const c3 = encodeURIComponent(this.prefs.c3);
                 const svg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Crect width='100' height='100' fill='${c3}'/%3E%3Cpath d='M0,60 C25,80 45,80 65,55 C80,35 90,35 100,55 L100,0 L0,0 Z' fill='${c2}'/%3E%3Cpath d='M0,40 C20,60 40,60 60,40 C80,20 90,20 100,45 L100,0 L0,0 Z' fill='${c1}'/%3E%3C/svg%3E`;
                 document.body.style.backgroundImage = `url("${svg}")`;
-                document.getElementById('app-container').className = this.prefs.view === 'list' ? 'app-list' : 'app-grid';
+                
+                let baseClass = this.prefs.view === 'list' ? 'app-list' : 'app-grid';
+                if (this.prefs.iconStyle === 'transparent') {
+                    baseClass += ' transparent-icons';
+                }
+                document.getElementById('app-container').className = baseClass;
             },
 
             popolaModaleImpostazioni: function() {
@@ -407,6 +422,7 @@
                 document.getElementById('set-col3').value = this.prefs.c3;
                 document.getElementById('set-appbg').value = this.prefs.appBg;
                 document.getElementById('set-viewmode').value = this.prefs.view;
+                document.getElementById('set-iconstyle').value = this.prefs.iconStyle || 'box';
             },
 
             render: function() {
@@ -534,6 +550,7 @@
                 this.prefs.c3 = document.getElementById('set-col3').value;
                 this.prefs.appBg = document.getElementById('set-appbg').value;
                 this.prefs.view = document.getElementById('set-viewmode').value;
+                this.prefs.iconStyle = document.getElementById('set-iconstyle').value;
                 
                 this.applicaSfondo();
                 this.render();

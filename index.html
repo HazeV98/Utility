@@ -16,7 +16,7 @@
             url.searchParams.set('nocache', new Date().getTime());
             window.location.replace(url.toString());
         } else {
-            const APP_VERSION = "2.0"; 
+            const APP_VERSION = "2.1"; 
             if (localStorage.getItem('app_version_cache') !== APP_VERSION) {
                 if ('caches' in window) { caches.keys().then((names) => { names.forEach(name => caches.delete(name)); }); }
                 if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then((registrations) => { registrations.forEach(registration => registration.unregister()); }); }
@@ -87,17 +87,18 @@
         .app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 25px 5px; padding: 10px 5px; box-sizing: border-box; }
         .app-grid .app-btn { display: block; text-decoration: none; cursor: pointer; position: relative; }
         .app-grid .app-btn:active { transform: scale(0.9); transition: transform 0.1s; }
-        .app-grid .app-icon { width: 60px; height: 60px; margin: 0 auto 8px auto; border-radius: 16px; color: white; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: background 0.3s; }
+        .app-grid .app-icon { width: 60px; height: 60px; margin: 0 auto 8px auto; border-radius: 16px; color: white; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: background 0.3s; overflow: hidden; }
         .app-grid .app-label { font-size: var(--label-size); color: #1a1a1a; font-weight: bold; text-align: center; line-height: 1.2; text-shadow: 0px 1px 2px rgba(255,255,255,0.8); word-wrap: break-word; }
 
         /* LISTA */
         .app-list { display: flex; flex-direction: column; gap: 12px; padding: 10px; box-sizing: border-box; }
         .app-list .app-btn { display: flex; align-items: center; background: rgba(255,255,255,0.85); padding: 12px 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.08); text-decoration: none; position: relative; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.4); }
-        .app-list .app-icon { width: 45px; height: 45px; margin: 0 15px 0 0; border-radius: 12px; color: white; font-size: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .app-list .app-icon { width: 45px; height: 45px; margin: 0 15px 0 0; border-radius: 12px; color: white; font-size: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow: hidden; }
         .app-list .app-label { font-size: calc(var(--label-size) + 3px); color: #333; font-weight: bold; margin: 0; text-shadow: none; flex: 1; }
 
         /* MODALITÀ ICONE TRASPARENTI */
-        .transparent-icons .app-icon { background: transparent !important; box-shadow: none !important; font-size: 48px !important; color: #333 !important; }
+        .transparent-icons .app-icon { background-color: transparent !important; box-shadow: none !important; color: #333 !important; }
+        .transparent-icons.app-grid .app-icon { font-size: 48px !important; }
         .transparent-icons.app-list .app-icon { font-size: 32px !important; }
 
         /* WIGGLE & EDIT MODE */
@@ -220,11 +221,25 @@
             <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer;" onclick="chiudiModal('editAppModal')">&times;</span>
             <h3 style="text-align: center; color: #32325d;">Modifica App</h3>
             <input type="hidden" id="edit-app-id">
+            
             <label style="font-size: 11px; font-weight: bold; color: #666;">Titolo:</label>
             <input type="text" id="edit-app-label" class="input-field">
-            <label style="font-size: 11px; font-weight: bold; color: #666;">Icona (Emoji/Testo):</label>
-            <input type="text" id="edit-app-icon" class="input-field" maxlength="2">
+            
+            <label style="font-size: 11px; font-weight: bold; color: #666;">Icona (Emoji o Immagine):</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="text" id="edit-app-icon" class="input-field" style="margin-bottom:0;" placeholder="Emoji" maxlength="2">
+                <button class="btn-modal" style="margin:0; background:#e9ecef; color:#333; width:auto; padding:0 15px; font-size:20px;" onclick="document.getElementById('edit-upload').click()">🖼️</button>
+                <input type="file" id="edit-upload" accept="image/*" style="display:none;" onchange="LayoutEngine.handleImageUpload(event, 'edit')">
+            </div>
+            
+            <div id="edit-app-img-preview" style="display:none; text-align:center; margin-bottom:10px; background:#f8f9fa; padding:10px; border-radius:8px;">
+                <img id="edit-app-img-preview-src" src="" style="width:50px; height:50px; border-radius:10px; object-fit:cover; vertical-align:middle; box-shadow:0 2px 5px rgba(0,0,0,0.2);">
+                <button class="btn-modal" style="background:var(--danger); color:white; width:auto; padding:5px 10px; margin-left:10px;" onclick="LayoutEngine.rimuoviImmagine('edit')">Rimuovi Foto</button>
+            </div>
+            <input type="hidden" id="edit-app-img-data">
+
             <div class="color-picker-row"><label>Colore Specifco</label><input type="color" id="edit-app-color"></div>
+            
             <button class="btn-modal" style="background: var(--success); color: white;" onclick="LayoutEngine.salvaModificaSingolaApp()">Conferma</button>
             <button id="btn-elimina-custom" class="btn-modal" style="background: transparent; color: var(--danger); border: 1px dashed var(--danger); display: none;" onclick="LayoutEngine.eliminaAppCorrente()">🗑️ Elimina</button>
         </div>
@@ -234,9 +249,23 @@
         <div class="modal-content">
             <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer;" onclick="chiudiModal('customAppModal')">&times;</span>
             <h3 style="text-align: center; color: #32325d;">➕ Nuova App</h3>
-            <input type="text" id="new-app-label" class="input-field" placeholder="Nome">
-            <input type="url" id="new-app-url" class="input-field" placeholder="https://...">
-            <input type="text" id="new-app-icon" class="input-field" placeholder="Icona (es. 🚀)" maxlength="2">
+            
+            <input type="text" id="new-app-label" class="input-field" placeholder="Nome App">
+            <input type="url" id="new-app-url" class="input-field" placeholder="Link: https://...">
+            
+            <label style="font-size: 11px; font-weight: bold; color: #666;">Icona (Emoji o Immagine):</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="text" id="new-app-icon" class="input-field" style="margin-bottom:0;" placeholder="Emoji (es. 🚀)" maxlength="2">
+                <button class="btn-modal" style="margin:0; background:#e9ecef; color:#333; width:auto; padding:0 15px; font-size:20px;" onclick="document.getElementById('new-upload').click()">🖼️</button>
+                <input type="file" id="new-upload" accept="image/*" style="display:none;" onchange="LayoutEngine.handleImageUpload(event, 'new')">
+            </div>
+
+            <div id="new-app-img-preview" style="display:none; text-align:center; margin-bottom:10px; background:#f8f9fa; padding:10px; border-radius:8px;">
+                <img id="new-app-img-preview-src" src="" style="width:50px; height:50px; border-radius:10px; object-fit:cover; vertical-align:middle; box-shadow:0 2px 5px rgba(0,0,0,0.2);">
+                <button class="btn-modal" style="background:var(--danger); color:white; width:auto; padding:5px 10px; margin-left:10px;" onclick="LayoutEngine.rimuoviImmagine('new')">Rimuovi Foto</button>
+            </div>
+            <input type="hidden" id="new-app-img-data">
+
             <button class="btn-modal" style="background: var(--success); color: white;" onclick="LayoutEngine.creaAppPersonalizzata()">Crea</button>
         </div>
     </div>
@@ -359,7 +388,6 @@
 
             applicaGrafica: function() {
                 const c1 = encodeURIComponent(this.prefs.c1); const c2 = encodeURIComponent(this.prefs.c2); const c3 = encodeURIComponent(this.prefs.c3);
-                // Corrispondenza Colore 1 -> Alto, Colore 3 -> Basso
                 const svg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Crect width='100' height='100' fill='${c3}'/%3E%3Cpath d='M0,60 C25,80 45,80 65,55 C80,35 90,35 100,55 L100,0 L0,0 Z' fill='${c2}'/%3E%3Cpath d='M0,40 C20,60 40,60 60,40 C80,20 90,20 100,45 L100,0 L0,0 Z' fill='${c1}'/%3E%3C/svg%3E`;
                 document.body.style.backgroundImage = `url("${svg}")`;
                 document.documentElement.style.setProperty('--label-size', this.prefs.fontSize + 'px');
@@ -386,13 +414,61 @@
                     if (app.condition === 'f9' && !globalIsF9) return;
                     if (app.condition === 'admin' && !globalIsAdmin) return;
                     if (app.condition === 'collab' && !(globalIsAdmin || globalIsCollab)) return;
+                    
                     const finalColor = app.color || app.defaultColor || this.prefs.appBg;
                     const isLink = app.href ? `href="${app.href}"` : `onclick="${app.onclick}"`;
                     const editHandler = this.isEditMode ? `onclick="event.preventDefault(); window.LayoutEngine.apriEditorApp('${app.id}');"` : isLink;
                     const labelHtml = app.label.replace('\n', '<br>');
                     const badgeHtml = this.isEditMode ? `<div class="edit-badge">✏️</div>` : '';
-                    container.innerHTML += `<a ${editHandler} class="app-btn" id="btn-${app.id}">${badgeHtml}<div class="app-icon" style="background: ${finalColor};">${app.icon}</div><div class="app-label">${labelHtml}</div></a>`;
+                    
+                    // Gestione Immagine vs Emoji
+                    let iconStyle = `background-color: ${finalColor};`;
+                    let iconContent = app.icon || "";
+                    if (app.image) {
+                        iconStyle += ` background-image: url('${app.image}'); background-size: cover; background-position: center;`;
+                        iconContent = ""; // Nasconde testo/emoji se c'è immagine
+                    }
+
+                    container.innerHTML += `
+                        <a ${editHandler} class="app-btn" id="btn-${app.id}">
+                            ${badgeHtml}
+                            <div class="app-icon" style="${iconStyle}">${iconContent}</div>
+                            <div class="app-label">${labelHtml}</div>
+                        </a>`;
                 });
+            },
+
+            handleImageUpload: function(event, modalType) {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX = 120; // Compressione a 120px max per alleggerire Firebase
+                        let w = img.width; let h = img.height;
+                        if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } 
+                        else { if (h > MAX) { w *= MAX / h; h = MAX; } }
+                        canvas.width = w; canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const dataUrl = canvas.toDataURL('image/webp', 0.8);
+                        
+                        document.getElementById(modalType + '-app-img-data').value = dataUrl;
+                        document.getElementById(modalType + '-app-img-preview-src').src = dataUrl;
+                        document.getElementById(modalType + '-app-img-preview').style.display = 'block';
+                        document.getElementById(modalType + '-app-icon').value = ""; // Rimuove emoji
+                    }
+                    img.src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            },
+
+            rimuoviImmagine: function(modalType) {
+                document.getElementById(modalType + '-app-img-data').value = "";
+                document.getElementById(modalType + '-app-img-preview').style.display = 'none';
+                document.getElementById(modalType + '-app-img-preview-src').src = "";
             },
 
             toggleEditMode: function() {
@@ -424,8 +500,15 @@
                 const app = this.prefs.apps.find(a => a.id === appId); if(!app) return;
                 document.getElementById('edit-app-id').value = app.id;
                 document.getElementById('edit-app-label').value = app.label.replace('\n', ' ');
-                document.getElementById('edit-app-icon').value = app.icon;
+                document.getElementById('edit-app-icon').value = app.icon || "";
                 document.getElementById('edit-app-color').value = app.color || app.defaultColor || this.prefs.appBg || "#5dade2";
+                
+                if (app.image) {
+                    document.getElementById('edit-app-img-data').value = app.image;
+                    document.getElementById('edit-app-img-preview-src').src = app.image;
+                    document.getElementById('edit-app-img-preview').style.display = 'block';
+                } else { this.rimuoviImmagine('edit'); }
+
                 document.getElementById('btn-elimina-custom').style.display = app.id.startsWith('custom_') ? 'block' : 'none';
                 window.apriModal('editAppModal');
             },
@@ -435,8 +518,16 @@
                 const index = this.prefs.apps.findIndex(a => a.id === id);
                 if(index > -1) {
                     this.prefs.apps[index].label = document.getElementById('edit-app-label').value;
-                    this.prefs.apps[index].icon = document.getElementById('edit-app-icon').value || "🔹";
                     this.prefs.apps[index].color = document.getElementById('edit-app-color').value;
+                    
+                    const imgData = document.getElementById('edit-app-img-data').value;
+                    if (imgData) {
+                        this.prefs.apps[index].image = imgData;
+                        this.prefs.apps[index].icon = "";
+                    } else {
+                        delete this.prefs.apps[index].image;
+                        this.prefs.apps[index].icon = document.getElementById('edit-app-icon').value || "🔹";
+                    }
                 }
                 window.chiudiModal('editAppModal'); this.render();
             },
@@ -446,8 +537,26 @@
                 let url = document.getElementById('new-app-url').value.trim();
                 if(!label || !url) { alert("Dati mancanti"); return; }
                 if(!url.startsWith('http')) url = 'https://' + url;
-                const newApp = { id: "custom_" + Date.now(), label: label, icon: document.getElementById('new-app-icon').value || "🔗", href: url, color: this.prefs.appBg };
-                this.prefs.apps.push(newApp); window.chiudiModal('customAppModal'); this.sincronizzaConFirebase(); this.render();
+                
+                const imgData = document.getElementById('new-app-img-data').value;
+                const newApp = { 
+                    id: "custom_" + Date.now(), 
+                    label: label, 
+                    href: url, 
+                    color: this.prefs.appBg 
+                };
+                
+                if (imgData) { newApp.image = imgData; } 
+                else { newApp.icon = document.getElementById('new-app-icon').value || "🔗"; }
+
+                this.prefs.apps.push(newApp); 
+                window.chiudiModal('customAppModal'); 
+                
+                // Resetta form new app
+                document.getElementById('new-app-label').value = ""; document.getElementById('new-app-url').value = "";
+                document.getElementById('new-app-icon').value = ""; this.rimuoviImmagine('new');
+
+                this.sincronizzaConFirebase(); this.render();
             },
 
             eliminaAppCorrente: function() {

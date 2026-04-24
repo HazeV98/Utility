@@ -458,7 +458,17 @@
                 };
             };
         }
-        document.addEventListener('DOMContentLoaded', checkLocalDDSReminders);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLocalDDSReminders();
+            
+            // --- MOSTRA ROTAZIONE F.NOVE SE IMPOSTATA ---
+            const appDataStr = localStorage.getItem('myTurniApp');
+            if (appDataStr && appDataStr.toLowerCase().includes('nove')) {
+                const btnNove = document.getElementById('rotazioni-btn');
+                if (btnNove) btnNove.style.display = 'block';
+            }
+        });
     </script>
 
     <script type="module">

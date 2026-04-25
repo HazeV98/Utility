@@ -104,8 +104,9 @@
             font-family: inherit;
         }
 
-        input[type="text"] { font-size: 20px; text-transform: uppercase; letter-spacing: 2px; }
-        input[type="text"]::placeholder { text-transform: none; font-size: 16px; letter-spacing: normal; }
+        /* Applico maiuscolo e font maggiorato SOLO al codice turno, non ai dati personali */
+        #input-codice-turno { font-size: 20px; text-transform: uppercase; letter-spacing: 2px; }
+        #input-codice-turno::placeholder { text-transform: none; font-size: 16px; letter-spacing: normal; }
         
         .btn {
             background-color: var(--primary); color: white; border: none; padding: 16px;
@@ -115,10 +116,6 @@
         .btn:active { transform: translateY(2px); opacity: 0.9; }
         
         #error-msg { color: var(--danger); font-size: 14px; margin-top: 10px; min-height: 20px; font-weight: bold; }
-
-        .support-section { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
-        .telegram-icon { display: inline-block; transition: transform 0.2s ease; margin-top: 10px; }
-        .telegram-icon:active { transform: scale(0.9); }
 
         /* --- STILI CARDS MENSILI E BOTTONI --- */
         .status-message { text-align: center; color: #666; font-size: 16px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
@@ -178,6 +175,8 @@
         .cell-disp { background-color: #ffc107; color: black; font-weight: bold;}
         .cell-espe { background-color: #6f42c1; color: white; }
         .cell-fer { background-color: #20c997; color: white; font-size: 12px; font-weight: bold; }
+        
+        details > summary::-webkit-details-marker { display: none; }
     </style>
 </head>
 <body>
@@ -185,7 +184,13 @@
     <div class="header">
         <button class="hamburger-btn" onclick="apriMenuLaterale()">☰</button>
         <h2>Rotazioni</h2>
-        <div style="width: 50px;"></div>
+        <div style="display: flex; gap: 15px; align-items: center; justify-content: flex-end; width: 80px;">
+            <button id="btn-miei-dati" style="display:none; background:none; border:none; font-size:24px; cursor:pointer; padding:0;" onclick="apriMieiDatiModal()" title="I Miei Dati">👤</button>
+            <button id="btn-gestione-accessi" style="display:none; background:none; border:none; font-size:24px; cursor:pointer; padding:0; position:relative;" onclick="apriGestioneAccessiModal()" title="Gestione">
+                ⚙️
+                <span id="badge-header" style="display:none; position:absolute; top:-4px; right:-6px; background:var(--danger); color:white; border-radius:50%; width:18px; height:18px; font-size:11px; line-height:18px; text-align:center; font-weight:bold; font-family:sans-serif; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></span>
+            </button>
+        </div>
     </div>
 
     <div id="sidebar-overlay" class="sidebar-overlay" onclick="chiudiMenuLaterale()"></div>
@@ -212,18 +217,52 @@
     </div>
 
     <div id="auth-section">
-        <p>Area riservata. Inserisci il codice di accesso per visualizzare le rotazioni</p>
-        <input type="text" id="access-code" placeholder="Codice di accesso" maxlength="6" autocomplete="off">
-        <button class="btn" onclick="verificaCodice()">Accedi</button>
-        <div id="error-msg"></div>
+        <div id="login-warning" style="display: none; text-align: center;">
+            <p>Accesso riservato. Effettua il login o registrati dalla Home Page per continuare.</p>
+            <a href="index.html" class="btn file-btn" style="text-decoration:none; display: inline-block;">🏠 Vai alla Home</a>
+        </div>
+        
+        <div id="pending-section" style="display: none; text-align: center;">
+            <p style="color: var(--primary); font-weight: bold; font-size: 18px; margin-bottom: 5px;">⏳ Richiesta In Attesa</p>
+            <p>La tua richiesta di accesso è in fase di valutazione da parte di un amministratore.</p>
+            <button class="btn" onclick="location.reload()" style="background-color: var(--info);">🔄 Aggiorna Pagina</button>
+        </div>
 
-        <div class="support-section">
-            <p style="font-size: 14px; margin-bottom: 5px;">Se non hai un codice di accesso contatta un amministratore per averlo con il tasto qui sotto scrivendo nome, cognome e matricola</p>
-            <a href="http://t.me/MattiaB1058" target="_blank" class="telegram-icon">
-                <svg viewBox="0 0 24 24" width="48" height="48" fill="#0088cc">
-                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.45c.538-.196 1.006.128.832.941z"/>
-                </svg>
-            </a>
+        <div id="request-section" style="display: none; text-align: left;">
+            <h3 style="color: var(--primary); text-align: center; margin-top: 0; font-size: 20px;">Richiesta Accesso</h3>
+            
+            <div id="intro-request">
+                <p style="font-size: 14px; color: #555; text-align: center; margin-bottom: 20px; line-height: 1.5;">
+                    In questa pagina troverai le rotazioni dei turni.<br>Per accedere si deve dare il consenso a condividere i propri dati nelle rotazioni.<br>Puoi richiedere l'accesso qui sotto.
+                </p>
+                <button class="btn" style="background-color: var(--primary);" onclick="mostraFormRichiesta()">Richiedi Accesso</button>
+            </div>
+
+            <div id="form-request" style="display: none;">
+                <p style="font-size: 13px; color: #666; text-align: center; margin-bottom: 15px;">Verifica i tuoi dati e scegli la tua rotazione di appartenenza.</p>
+                
+                <input type="text" id="req-nome" placeholder="Nome">
+                <input type="text" id="req-cognome" placeholder="Cognome">
+                <input type="text" id="req-matricola" placeholder="Matricola">
+                <input type="text" id="req-omonimia" placeholder="Numero omonimia es. 02, 03 ecc (facoltativo)">
+                
+                <select id="req-rotazione" style="margin-top: 10px; width: 100%; padding: 15px; border-radius: 8px; border: 2px solid #ccc; font-size: 14px; background: white;">
+                    <option value="" disabled selected>Seleziona Rotazione di Appartenenza</option>
+                </select>
+                
+                <div id="div-data-riposo-req" style="display:none; margin-top: 10px;">
+                    <label style="font-size: 14px; font-weight: bold; color: #555; text-align: left; display: block; margin-bottom: 5px;">Data di un tuo Riposo Singolo:</label>
+                    <input type="date" id="req-data-riposo" style="margin: 0; padding: 12px;">
+                </div>
+                
+                <label style="display: flex; align-items: center; margin-top: 15px; font-size: 14px; color: #333; cursor: pointer; text-align: left; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                    <input type="checkbox" id="req-consenso" style="width: auto; transform: scale(1.3); margin-right: 12px; margin-left: 5px;">
+                    <span style="flex:1;">Accetto di condividere i miei dati nelle rotazioni.</span>
+                </label>
+
+                <button class="btn" style="margin-top: 15px; background-color: var(--success);" onclick="inviaRichiestaAccesso()">Invia Richiesta</button>
+                <div id="req-error-msg" style="color: var(--danger); font-size: 14px; text-align: center; margin-top: 10px; font-weight: bold;"></div>
+            </div>
         </div>
     </div>
 
@@ -293,6 +332,74 @@
         </div>
     </div>
 
+    <div id="modal-miei-dati" class="modal-overlay" onclick="chiudiSeSfondo(event, 'modal-miei-dati')">
+        <div class="modal-content" style="max-width: 400px; text-align: left;">
+            <span class="close-modal" onclick="chiudiModal('modal-miei-dati')">&times;</span>
+            <h3 style="margin-top:0; color:var(--primary); text-align: center;">I Miei Dati</h3>
+            <p style="font-size: 13px; color: #666; text-align: center; margin-bottom: 15px;">Aggiorna i tuoi dati o la tua rotazione di appartenenza.</p>
+            
+            <input type="text" id="edit-nome" placeholder="Nome">
+            <input type="text" id="edit-cognome" placeholder="Cognome">
+            <input type="text" id="edit-matricola" placeholder="Matricola">
+            <input type="text" id="edit-omonimia" placeholder="Numero omonimia es. 02, 03 ecc (facoltativo)">
+            
+            <select id="edit-rotazione" style="margin-top: 10px; width: 100%; padding: 15px; border-radius: 8px; border: 2px solid #ccc; font-size: 14px; background: white;">
+                <option value="" disabled selected>Seleziona Rotazione di Appartenenza</option>
+            </select>
+            
+            <div id="div-data-riposo-edit" style="display:none; margin-top: 10px;">
+                <label style="font-size: 14px; font-weight: bold; color: #555; text-align: left; display: block; margin-bottom: 5px;">Data di un tuo Riposo Singolo:</label>
+                <input type="date" id="edit-data-riposo" style="margin: 0; padding: 12px;">
+            </div>
+            
+            <button class="btn" style="margin-top: 15px; background-color: var(--success);" onclick="salvaMieiDati()">Salva Modifiche</button>
+            <div id="edit-error-msg" style="color: var(--danger); font-size: 14px; text-align: center; margin-top: 10px; font-weight: bold;"></div>
+        </div>
+    </div>
+
+    <div id="modal-gestione-accessi" class="modal-overlay" onclick="chiudiSeSfondo(event, 'modal-gestione-accessi')">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close-modal" onclick="chiudiModal('modal-gestione-accessi')">&times;</span>
+            <h3 style="margin-top:0; color:var(--primary);">Gestione Accessi</h3>
+            <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                <button class="btn" style="background: var(--info); padding: 10px; font-size: 13px; margin: 0; flex: 1; position:relative;" onclick="apriGestioneRichieste()">
+                    🔔 Richieste
+                    <span id="badge-modal" style="display:none; background:var(--danger); color:white; border-radius:10px; padding:2px 6px; font-size:11px; margin-left:5px;"></span>
+                </button>
+                <button id="btn-collab-admin" class="btn" style="display:none; background: #6f42c1; padding: 10px; font-size: 13px; margin: 0; flex: 1;" onclick="apriGestioneCollaboratori()">👥 Collab.</button>
+            </div>
+            <div id="lista-utenti-abilitati" style="max-height: 60vh; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <div id="modal-gestione-richieste" class="modal-overlay" onclick="chiudiSeSfondo(event, 'modal-gestione-richieste')">
+        <div class="modal-content" style="max-width: 400px; padding: 15px;">
+            <span class="close-modal" onclick="chiudiModal('modal-gestione-richieste')">&times;</span>
+            <h3 style="margin-top:0; color:var(--info);">Richieste in Attesa</h3>
+            <button class="btn" style="background: #6c757d; padding: 8px; font-size: 13px; margin-bottom: 15px;" onclick="chiudiModal('modal-gestione-richieste'); apriGestioneAccessiModal();">⬅️ Indietro</button>
+            <div id="lista-richieste" style="max-height: 55vh; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <div id="modal-gestione-collaboratori" class="modal-overlay" onclick="chiudiSeSfondo(event, 'modal-gestione-collaboratori')">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close-modal" onclick="chiudiModal('modal-gestione-collaboratori')">&times;</span>
+            <h3 style="margin-top:0; color:#6f42c1;">Collaboratori</h3>
+            <button class="btn" style="background: #6c757d; padding: 8px; font-size: 13px; margin-bottom: 15px;" onclick="chiudiModal('modal-gestione-collaboratori'); apriGestioneAccessiModal();">⬅️ Indietro</button>
+            <div id="lista-collaboratori" style="max-height: 55vh; overflow-y: auto;"></div>
+        </div>
+    </div>
+    
+    <div id="modal-permessi-collaboratore" class="modal-overlay" onclick="chiudiSeSfondo(event, 'modal-permessi-collaboratore')">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close-modal" onclick="chiudiModal('modal-permessi-collaboratore')">&times;</span>
+            <h3 style="margin-top:0; color:#6f42c1;">Permessi <span id="nome-collab-titolo"></span></h3>
+            <input type="hidden" id="uid-collab-edit">
+            <div id="lista-checkbox-rotazioni" style="max-height: 50vh; overflow-y: auto; text-align: left; margin-bottom: 15px; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #ddd;"></div>
+            <button class="btn" style="background: var(--success);" onclick="salvaPermessiCollab()">Salva Permessi</button>
+        </div>
+    </div>
+
     <div id="imageModal" style="display: none; position: fixed; z-index: 20000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); overflow: hidden;" onclick="chiudiSeSfondoModalImg(event)">
         <div style="position: absolute; top: calc(20px + env(safe-area-inset-top)); right: 20px; font-size: 35px; color: white; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 20001;" onclick="chiudiImageModal()">&times;</div>
         <div id="imageFlexContainer" style="display:flex; flex-direction: column; justify-content:center; align-items:center; height:100%; padding:20px; padding-bottom: 80px; position: relative;">
@@ -305,9 +412,25 @@
     </div>
 
     <script>
+        // Array globale per tracciare i nomi presenti nei tabulati JSON
+        window.globalNomiRotazioni = [];
+
         // --- FUNZIONI MENU LATERALE ---
         function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
         function chiudiMenuLaterale() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; }
+        
+        window.mostraFormRichiesta = () => {
+            document.getElementById('intro-request').style.display = 'none';
+            document.getElementById('form-request').style.display = 'block';
+        };
+
+        // Mostrare/Nascondere Data Riposo Singolo
+        document.getElementById('req-rotazione').addEventListener('change', function() {
+            document.getElementById('div-data-riposo-req').style.display = (this.value.startsWith('disp_')) ? 'block' : 'none';
+        });
+        document.getElementById('edit-rotazione').addEventListener('change', function() {
+            document.getElementById('div-data-riposo-edit').style.display = (this.value.startsWith('disp_')) ? 'block' : 'none';
+        });
 
         // Variabili Globali
         const CARTELLA_BASE = "rotazioni";
@@ -318,63 +441,6 @@
         let pzInstance = null;
         let currentImagePath = "";
 
-        // ==========================================
-        // LOGICA DI AUTENTICAZIONE
-        // ==========================================
-        document.addEventListener('DOMContentLoaded', () => {
-            const codiceSalvato = localStorage.getItem('auth_rotazioni');
-            if (codiceSalvato) {
-                eseguiVerifica(codiceSalvato, true);
-            }
-        });
-
-        async function verificaCodice() {
-            const inputCodice = document.getElementById('access-code').value.trim().toUpperCase();
-            const errorMsg = document.getElementById('error-msg');
-            
-            if (!inputCodice) { errorMsg.innerText = "Inserisci un codice valido."; return; }
-            
-            errorMsg.innerText = "Verifica in corso...";
-            errorMsg.style.color = "#666";
-            
-            await eseguiVerifica(inputCodice, false);
-        }
-
-        async function eseguiVerifica(codice, isAutoLogin) {
-            const errorMsg = document.getElementById('error-msg');
-            try {
-                const url = 'codici.json?t=' + new Date().getTime();
-                const response = await fetch(url);
-                if (!response.ok) throw new Error("Errore nel recupero dei codici.");
-                
-                const codiciValidi = await response.json();
-                const codiceTrovato = codiciValidi.find(c => c.codice === codice && c.attivo === true);
-                
-                if (codiceTrovato) {
-                    document.getElementById('auth-section').style.display = 'none';
-                    document.getElementById('content-section').style.display = 'flex';
-                    localStorage.setItem('auth_rotazioni', codice);
-                    errorMsg.innerText = "";
-                    
-                    initPanzoom();
-                    caricaDatiTurniSilenzioso(); 
-                    caricaRotazioni();
-                } else {
-                    if (isAutoLogin) {
-                        localStorage.removeItem('auth_rotazioni');
-                        document.getElementById('auth-section').style.display = 'block';
-                        document.getElementById('content-section').style.display = 'none';
-                    } else {
-                        errorMsg.innerText = "❌ Codice errato, inesistente o revocato.";
-                        errorMsg.style.color = "var(--danger)";
-                    }
-                }
-            } catch (error) {
-                errorMsg.innerText = "⚠️ Errore di connessione. Riprova.";
-                errorMsg.style.color = "var(--danger)";
-            }
-        }
-
         // --- LETTURA SILENZIOSA DATI (100% FIREBASE) ---
         async function caricaDatiTurniSilenzioso() {
             try {
@@ -384,16 +450,14 @@
                 const mappa = await resMappa.json();
                 const rootFiles = mappa.albero || mappa.root || [];
                 
-                // Cerca ESATTAMENTE e SOLO la cartella dei turni ignorando i file all'interno
                 let imgDirs = rootFiles.filter(f => f.match(/^turni_\d{4}-\d{2}-\d{2}\/?$/));
                 if (imgDirs.length > 0) {
                     imgDirs.sort((a, b) => b.localeCompare(a));
-                    globalImgDir = imgDirs[0].replace("/", ""); // Esatto: "turni_2026-03-28"
+                    globalImgDir = imgDirs[0].replace("/", "");
                 } else {
                     console.warn("Nessuna cartella turni_ trovata nella mappa");
                 }
                 
-                // Cerca e unisci tutti i file info_turni_.json presenti
                 let jsonFiles = rootFiles.filter(f => f.match(/^info_turni_\d{4}-\d{2}-\d{2}\.json$/));
                 for (let jf of jsonFiles) {
                     fetch(jf + `?t=${new Date().getTime()}`)
@@ -405,6 +469,13 @@
             } catch (e) {
                 console.error("Errore caricamento dati turni", e);
             }
+        }
+
+        // Helper per i riposi dinamici
+        function stringToNum(s) { 
+            if(!s) return 0; 
+            let p = s.split('-'); 
+            return Math.floor(new Date(p[0], p[1]-1, p[2], 12, 0, 0).getTime() / 86400000); 
         }
 
         // ==========================================
@@ -421,8 +492,6 @@
 
             try {
                 const timestamp = new Date().getTime();
-                
-                // Leggiamo la Mappa File
                 const resMappa = await fetch('mappa_file.json?t=' + timestamp);
                 if (!resMappa.ok) throw new Error("Mappa non trovata");
                 
@@ -461,9 +530,73 @@
 
                     if (g.json) {
                         try {
-                            // Carica il JSON usando il percorso relativo (da Firebase)
                             let dataRes = await fetch(`${CARTELLA_BASE}/${g.json}?t=${timestamp}`);
                             let jsonData = await dataRes.json();
+
+                            // Generazione dinamica dei "Disponibili" leggendo dal Database Firestore in tempo reale
+                            if (window.getUtentiAbilitatiFirebase) {
+                                let allU = await window.getUtentiAbilitatiFirebase();
+                                let disp51 = {}; let disp6261 = {};
+                                let parts = g.base.split('_');
+                                
+                                if (parts.length >= 3) {
+                                    const mesiMap = { "gennaio": 1, "febbraio": 2, "marzo": 3, "aprile": 4, "maggio": 5, "giugno": 6, "luglio": 7, "agosto": 8, "settembre": 9, "ottobre": 10, "novembre": 11, "dicembre": 12 };
+                                    let m = mesiMap[parts[1].toLowerCase()];
+                                    let y = parseInt(parts[2]);
+
+                                    if (m && y) {
+                                        allU.forEach(u => {
+                                            if (u.data_riposo_singolo) {
+                                                let nomeCompl = (u.cognome + " " + u.nome + " " + (u.progressivo || "")).trim().toUpperCase();
+                                                let turni = {};
+                                                let dRiposoNum = stringToNum(u.data_riposo_singolo);
+                                                
+                                                for(let i=1; i<=31; i++) {
+                                                    let dCheck = new Date(y, m-1, i);
+                                                    if (dCheck.getMonth() !== m-1) break; 
+                                                    let cNum = stringToNum(`${y}-${m}-${i}`);
+                                                    
+                                                    if (u.rotazione_richiesta === "disp_5_1") {
+                                                        let diff = (cNum - dRiposoNum) % 6;
+                                                        if (diff < 0) diff += 6;
+                                                        turni[i.toString()] = (diff === 0) ? "RI" : "DISP";
+                                                    } else if (u.rotazione_richiesta === "disp_6_2_6_1") {
+                                                        let diff = (cNum - dRiposoNum) % 15;
+                                                        if (diff < 0) diff += 15;
+                                                        if (diff === 0 || diff === 7 || diff === 8) { turni[i.toString()] = "RI"; } 
+                                                        else { turni[i.toString()] = "DISP"; }
+                                                    }
+                                                }
+                                                if (u.rotazione_richiesta === "disp_5_1") disp51[nomeCompl] = turni;
+                                                if (u.rotazione_richiesta === "disp_6_2_6_1") disp6261[nomeCompl] = turni;
+                                            }
+                                        });
+
+                                        function ordinaCascata(dict) {
+                                            let arr = Object.keys(dict).map(k => {
+                                                let firstRi = 32;
+                                                for(let i=1; i<=31; i++) { if(dict[k][i.toString()]==="RI") { firstRi = i; break; } }
+                                                return { nome: k, turni: dict[k], firstRi };
+                                            });
+                                            arr.sort((a,b) => a.firstRi - b.firstRi);
+                                            let res = {}; arr.forEach(x => res[x.nome] = x.turni);
+                                            return res;
+                                        }
+
+                                        if (Object.keys(disp51).length > 0) jsonData["Disponibili 5-1"] = ordinaCascata(disp51);
+                                        if (Object.keys(disp6261).length > 0) jsonData["Disponibili 6-2-6-1"] = ordinaCascata(disp6261);
+                                    }
+                                }
+                            }
+
+                            // Memorizziamo globalmente i nomi presenti in tutte le rotazioni (per pallino verde admin)
+                            Object.values(jsonData).forEach(rot => {
+                                Object.keys(rot).forEach(nome => {
+                                    if (!window.globalNomiRotazioni.includes(nome.toUpperCase())) {
+                                        window.globalNomiRotazioni.push(nome.toUpperCase());
+                                    }
+                                });
+                            });
 
                             Object.keys(jsonData).forEach(rotName => {
                                 let rotContainer = document.createElement('div');
@@ -515,7 +648,7 @@
                         let btnPdf = document.createElement('a');
                         btnPdf.className = "file-btn btn-pdf";
                         btnPdf.innerHTML = `📄 Apri PDF Originale`;
-                        btnPdf.href = `${CARTELLA_BASE}/${g.pdf}?t=${timestamp}`; // Percorso Relativo
+                        btnPdf.href = `${CARTELLA_BASE}/${g.pdf}?t=${timestamp}`; 
                         btnPdf.target = "_blank";
                         btnGrid.appendChild(btnPdf);
                     }
@@ -595,7 +728,8 @@
                 }
                 databaseTurni.push({
                     nome: nome.split(" - ").join(" e "), 
-                    turni: turniArr
+                    turni: turniArr,
+                    rotazione: rotName // Salviamo il nome della rotazione per il calcolo specifico 5-1
                 });
             }
 
@@ -651,7 +785,7 @@
             }
         }
 
-        function analizzaCicloLavorativo(turniMese, indiceGiorno) {
+        function analizzaCicloLavorativo(turniMese, indiceGiorno, rotazione) {
             const turnoAttuale = turniMese[indiceGiorno];
             
             if (turnoAttuale === "AL" || turnoAttuale === "RI" || turnoAttuale === "") {
@@ -676,7 +810,7 @@
                 giorniLavorati++;
             }
 
-            if (trovatoRiposoPassato) return determinaFaseDaGiorno(giorniLavorati);
+            if (trovatoRiposoPassato) return determinaFaseDaGiorno(giorniLavorati, rotazione);
 
             let giorniAlProssimoRiposo = 0;
             for (let i = indiceGiorno + 1; i < turniMese.length; i++) {
@@ -684,11 +818,22 @@
                 giorniAlProssimoRiposo++;
             }
 
-            const giornoStimato = 6 - giorniAlProssimoRiposo;
-            return determinaFaseDaGiorno(giornoStimato > 0 ? giornoStimato : giorniLavorati);
+            let stima = 6 - giorniAlProssimoRiposo;
+            if (rotazione && rotazione.includes("5-1")) {
+                stima = 5 - giorniAlProssimoRiposo;
+            }
+            return determinaFaseDaGiorno(stima > 0 ? stima : giorniLavorati, rotazione);
         }
 
-        function determinaFaseDaGiorno(n) {
+        function determinaFaseDaGiorno(n, rotazione) {
+            // Regola specifica per la rotazione "Disponibili 5-1"
+            if (rotazione && rotazione.includes("5-1")) {
+                if (n === 1 || n === 2) return { fase: "Terzo", giornoEsatto: n };
+                if (n === 3) return { fase: "Mezzo", giornoEsatto: n };
+                if (n === 4 || n === 5) return { fase: "Primo", giornoEsatto: n };
+                return { fase: "Oltre 5 giorni", giornoEsatto: n };
+            }
+            // Regola standard
             if (n === 1 || n === 2) return { fase: "Terzo", giornoEsatto: n };
             if (n === 3 || n === 4) return { fase: "Mezzo", giornoEsatto: n };
             if (n === 5 || n === 6) return { fase: "Primo", giornoEsatto: n };
@@ -709,7 +854,7 @@
             let risultatiHtml = [];
 
             databaseTurni.forEach(dipendente => {
-                const analisi = analizzaCicloLavorativo(dipendente.turni, indiceGiorno);
+                const analisi = analizzaCicloLavorativo(dipendente.turni, indiceGiorno, dipendente.rotazione);
                 if (analisi.fase === faseDesiderata) {
                     if (faseDesiderata === "Riposo") {
                         if (analisi.tipoRiposo !== "Vuoto") {
@@ -748,47 +893,46 @@
         }
 
         // ==========================================
-        // MOTORE RICERCA FUTURA (LOGICA FASI 15 GIORNI)
+        // MOTORE RICERCA FUTURA (LOGICA FASI 15 GIORNI O 5-1)
         // ==========================================
-        function stringToNum(s) { 
-            if(!s) return 0; 
-            let p = s.split('-'); 
-            return Math.floor(new Date(p[0], p[1]-1, p[2], 12, 0, 0).getTime() / 86400000); 
-        }
-
         function formattaData(dStr) {
             let p = dStr.split('-');
             return `${p[2]}/${p[1]}/${p[0]}`;
         }
 
-        function buildColleaguePredictor(nome, turniMese, m, y) {
+        function buildColleaguePredictor(nome, turniMese, m, y, rotazione) {
             let refNum = null;
-            
-            let alIndex = turniMese.findIndex(t => t === "AL");
-            if (alIndex !== -1) {
-                refNum = stringToNum(`${y}-${m}-${alIndex + 1}`) - 7;
+            let is51 = rotazione && rotazione.includes("5-1");
+
+            if (is51) {
+                let riIndex = turniMese.findIndex(t => t === "RI" || t === "AL");
+                if (riIndex !== -1) {
+                    let dNum = stringToNum(`${y}-${m}-${riIndex + 1}`);
+                    refNum = dNum - 5; // Inizio ciclo di 6 giorni (0..4 lavoro, 5 riposo)
+                }
             } else {
-                for (let i = 0; i < turniMese.length; i++) {
-                    if (turniMese[i] === "RI") {
-                        let prevAL = (i - 1 >= 0 && turniMese[i-1] === "AL");
-                        let prevRI = (i - 1 >= 0 && turniMese[i-1] === "RI");
-                        let nextRI = (i + 1 < turniMese.length && turniMese[i+1] === "RI");
-                        
-                        let dNum = stringToNum(`${y}-${m}-${i + 1}`);
-                        if (prevAL || prevRI) {
-                            refNum = dNum - 8; 
-                        } else if (nextRI) {
-                            refNum = dNum - 7; 
-                        } else {
-                            refNum = dNum; 
+                let alIndex = turniMese.findIndex(t => t === "AL");
+                if (alIndex !== -1) {
+                    refNum = stringToNum(`${y}-${m}-${alIndex + 1}`) - 7;
+                } else {
+                    for (let i = 0; i < turniMese.length; i++) {
+                        if (turniMese[i] === "RI") {
+                            let prevAL = (i - 1 >= 0 && turniMese[i-1] === "AL");
+                            let prevRI = (i - 1 >= 0 && turniMese[i-1] === "RI");
+                            let nextRI = (i + 1 < turniMese.length && turniMese[i+1] === "RI");
+                            
+                            let dNum = stringToNum(`${y}-${m}-${i + 1}`);
+                            if (prevAL || prevRI) { refNum = dNum - 8; } 
+                            else if (nextRI) { refNum = dNum - 7; } 
+                            else { refNum = dNum; }
+                            break;
                         }
-                        break;
                     }
                 }
             }
 
             if (refNum === null) return null; 
-            return { nome, refNum };
+            return { nome, refNum, rotazione };
         }
 
         function apriRicercaFutura(baseName, rotName, jsonData) {
@@ -813,7 +957,7 @@
                     turniMese.push(t.toUpperCase().replace(/\s+/g, ''));
                 }
 
-                let p = buildColleaguePredictor(nome.split(" - ").join(" e "), turniMese, m, y);
+                let p = buildColleaguePredictor(nome.split(" - ").join(" e "), turniMese, m, y, rotName);
                 if (p) activePredictors.push(p);
             }
 
@@ -835,22 +979,36 @@
             let trovati = [];
 
             activePredictors.forEach(p => {
-                let pos = ((targetNum - p.refNum + 6) % 15 + 15) % 15;
-                
                 let faseCalcolata = "";
                 let infoExtra = "";
                 let giornoLav = 0;
 
-                if (pos === 6) { faseCalcolata = "Riposo"; infoExtra = "Singolo (RI)"; }
-                else if (pos === 13) { faseCalcolata = "Riposo"; infoExtra = "Doppio (1° g. AL)"; }
-                else if (pos === 14) { faseCalcolata = "Riposo"; infoExtra = "Doppio (2° g. RI)"; }
+                // Calcolo per cicli 5-1
+                if (p.rotazione && p.rotazione.includes("5-1")) {
+                    let pos = ((targetNum - p.refNum) % 6 + 6) % 6;
+                    if (pos === 5) { 
+                        faseCalcolata = "Riposo"; infoExtra = "Singolo (RI)"; 
+                    } else {
+                        giornoLav = pos + 1;
+                        if (giornoLav === 1 || giornoLav === 2) faseCalcolata = "Terzo";
+                        else if (giornoLav === 3) faseCalcolata = "Mezzo";
+                        else if (giornoLav === 4 || giornoLav === 5) faseCalcolata = "Primo";
+                    }
+                } 
+                // Calcolo Standard per tutte le altre (15 o 6 giorni standard)
                 else {
-                    if (pos >= 0 && pos <= 5) giornoLav = pos + 1; 
-                    else if (pos >= 7 && pos <= 12) giornoLav = pos - 6; 
-                    
-                    if (giornoLav === 1 || giornoLav === 2) faseCalcolata = "Terzo";
-                    else if (giornoLav === 3 || giornoLav === 4) faseCalcolata = "Mezzo";
-                    else if (giornoLav === 5 || giornoLav === 6) faseCalcolata = "Primo";
+                    let pos = ((targetNum - p.refNum + 6) % 15 + 15) % 15;
+                    if (pos === 6) { faseCalcolata = "Riposo"; infoExtra = "Singolo (RI)"; }
+                    else if (pos === 13) { faseCalcolata = "Riposo"; infoExtra = "Doppio (1° g. AL)"; }
+                    else if (pos === 14) { faseCalcolata = "Riposo"; infoExtra = "Doppio (2° g. RI)"; }
+                    else {
+                        if (pos >= 0 && pos <= 5) giornoLav = pos + 1; 
+                        else if (pos >= 7 && pos <= 12) giornoLav = pos - 6; 
+                        
+                        if (giornoLav === 1 || giornoLav === 2) faseCalcolata = "Terzo";
+                        else if (giornoLav === 3 || giornoLav === 4) faseCalcolata = "Mezzo";
+                        else if (giornoLav === 5 || giornoLav === 6) faseCalcolata = "Primo";
+                    }
                 }
 
                 if (faseCalcolata === faseDesiderata) {
@@ -913,40 +1071,33 @@
             }
 
             let imgElement = document.getElementById('turnoImage');
-            
-            // Tenta prima con estensione .jpg
             currentImagePath = `${globalImgDir}/${turnoPilota}.jpg`;
             
             imgElement.onload = function() {
                 if (pzInstance) { pzInstance.reset(); }
                 document.getElementById('imageModal').style.display = 'block';
-                // Rimuove gli handler una volta caricato per evitare loop
                 imgElement.onload = null;
                 imgElement.onerror = null;
             };
 
             imgElement.onerror = function() {
-                // Se fallisce .jpg, tenta con .png
                 currentImagePath = `${globalImgDir}/${turnoPilota}.png`;
-                
                 imgElement.onload = function() {
                     if (pzInstance) { pzInstance.reset(); }
                     document.getElementById('imageModal').style.display = 'block';
                     imgElement.onload = null;
                     imgElement.onerror = null;
                 };
-                
                 imgElement.onerror = function() {
                     alert("L'immagine per il turno " + turnoPilota + " non è presente nell'archivio.");
                     chiudiImageModal();
                     imgElement.onload = null;
                     imgElement.onerror = null;
                 };
-                
-                imgElement.src = currentImagePath; // Innesca il secondo tentativo
+                imgElement.src = currentImagePath;
             };
 
-            imgElement.src = currentImagePath; // Innesca il primo tentativo
+            imgElement.src = currentImagePath;
         }
 
         function chiudiSeSfondoModalImg(event) { 
@@ -989,7 +1140,6 @@
             const timestamp = new Date().getTime();
             const baseName = pdfName.substring(0, pdfName.lastIndexOf('.'));
             
-            // Usiamo il percorso locale Firebase
             let targetUrl = `${CARTELLA_BASE}/${encodeURIComponent(baseName)}.xlsx?t=${timestamp}`;
             let res;
 
@@ -1132,6 +1282,343 @@
             let arr = ["AL", "RI", "DISP", "DI", "FER", "MAL", "PRT", "ESPE"];
             return arr.includes(val) || val.match(/^[0-9]+[A-Z]+[0-9]*$/) || val.match(/^[A-Z]+[0-9]+$/);
         }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, getDocs, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", authDomain: "utility-haze.firebaseapp.com", projectId: "utility-haze", storageBucket: "utility-haze.firebasestorage.app", messagingSenderId: "686237947418", appId: "1:686237947418:web:f03ba19ab8fff43110a3a3" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2";
+
+        const ROTAZIONI_MAP = {
+            "disp_5_1": "Disponibile 5-1",
+            "disp_6_2_6_1": "Disponibile 6-2-6-1",
+            "rot_fnove": "Rotazione F.Nove", "spez_fnove": "Spezzati F.Nove", "tc_spez_fnove": "T.C. Spezzati F.Nove",
+            "rot_proma": "Rotazione P.Roma", "spez_proma": "Spezzati P.Roma", "ris_proma": "Riserva P.Roma",
+            "rot_szaccaria": "Rotazione S.Zaccaria", "spez_szaccaria": "Spezzati S.Zaccaria", "tc_spez_szaccaria": "T.C. Spezzati S.Zaccaria",
+            "rot_lido": "Rotazione Lido", "spez_lido": "Spezzati Lido", "tc_spez_lido": "T.C. Spezzati Lido",
+            "rot_linea12": "Rotazione Linea 12", "rot_linea13": "Rotazione Linea 13", "rot_linea14": "Rotazione Linea 14 M/N",
+            "rot_linea14_mb": "Rotazione Linea 14 M/B", "rot_17sn": "Rotazione Linea 17 S. Nicolò", "tc_rot_17sn": "T.C. Rotazione 17 S. Nicolò",
+            "rot_17tr": "Rotazione Linea 17 Tron.", "tc_rot_17tr": "T.C. Rotazione Linea 17 Tronc."
+        };
+
+        let currentUserDoc = null; let isCollab = false; let isAdmin = false; let currentUserId = null;
+
+        const selRot = document.getElementById('req-rotazione');
+        const selRotEdit = document.getElementById('edit-rotazione');
+        if(selRot) {
+            for(let key in ROTAZIONI_MAP) {
+                let opt = document.createElement('option'); opt.value = key; opt.innerText = ROTAZIONI_MAP[key]; selRot.appendChild(opt);
+                if(selRotEdit) {
+                    let opt2 = document.createElement('option'); opt2.value = key; opt2.innerText = ROTAZIONI_MAP[key]; selRotEdit.appendChild(opt2);
+                }
+            }
+        }
+
+        // Esponiamo la funzione globalmente per farla usare al renderer JSON della tabella
+        window.getUtentiAbilitatiFirebase = async () => {
+            const q = query(collection(db, "utenti"), where("abilitato_rotazioni", "==", true));
+            const snap = await getDocs(q);
+            let arr = [];
+            snap.forEach(d => arr.push(d.data()));
+            return arr;
+        };
+        
+        window.aggiornaBadgeRichieste = async () => {
+            if (!isAdmin && !isCollab) return;
+            try {
+                const q = query(collection(db, "utenti"), where("stato_richiesta", "==", "pending"));
+                const snap = await getDocs(q);
+                let count = 0;
+                snap.forEach(d => {
+                    const u = d.data();
+                    if (isAdmin) { count++; }
+                    else if (isCollab && (currentUserDoc.permessi_gestione || []).includes(u.rotazione_richiesta)) { count++; }
+                });
+                
+                const bHead = document.getElementById('badge-header');
+                const bMod = document.getElementById('badge-modal');
+                if (count > 0) {
+                    bHead.innerText = count; bHead.style.display = 'block';
+                    bMod.innerText = count; bMod.style.display = 'inline-block';
+                } else {
+                    bHead.style.display = 'none';
+                    bMod.style.display = 'none';
+                }
+            } catch(e) { console.error("Errore conteggio richieste", e); }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            const authSect = document.getElementById('auth-section'); const warnLog = document.getElementById('login-warning');
+            const reqSect = document.getElementById('request-section'); const pendSect = document.getElementById('pending-section');
+            const contSect = document.getElementById('content-section');
+            
+            if (user) {
+                currentUserId = user.uid; isAdmin = (user.uid === ADMIN_UID);
+                const docRef = doc(db, "utenti", user.uid); const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    currentUserDoc = docSnap.data(); isCollab = (currentUserDoc.ruolo === 'collaborator');
+                    
+                    const oldCode = localStorage.getItem('auth_rotazioni');
+                    if (oldCode && !currentUserDoc.abilitato_rotazioni && currentUserDoc.stato_richiesta !== 'pending') {
+                        await updateDoc(docRef, { abilitato_rotazioni: true, stato_richiesta: 'approved', rotazione_richiesta: 'legacy_code' });
+                        currentUserDoc.abilitato_rotazioni = true;
+                        localStorage.removeItem('auth_rotazioni');
+                    }
+
+                    if (currentUserDoc.abilitato_rotazioni === true) {
+                        authSect.style.display = 'none'; contSect.style.display = 'flex';
+                        document.getElementById('btn-miei-dati').style.display = 'inline-block';
+                        if (isAdmin || isCollab) {
+                            document.getElementById('btn-gestione-accessi').style.display = 'inline-block';
+                            window.aggiornaBadgeRichieste();
+                        }
+                        window.initPanzoom(); window.caricaDatiTurniSilenzioso(); window.caricaRotazioni();
+                    } else if (currentUserDoc.stato_richiesta === 'pending') {
+                        warnLog.style.display = 'none'; reqSect.style.display = 'none'; pendSect.style.display = 'block';
+                    } else {
+                        warnLog.style.display = 'none'; pendSect.style.display = 'none'; reqSect.style.display = 'block';
+                        document.getElementById('req-nome').value = currentUserDoc.nome || '';
+                        document.getElementById('req-cognome').value = currentUserDoc.cognome || '';
+                        document.getElementById('req-matricola').value = currentUserDoc.matricola || '';
+                        document.getElementById('req-omonimia').value = currentUserDoc.progressivo || '';
+                    }
+                } else reqSect.style.display = 'block';
+            } else { warnLog.style.display = 'block'; }
+        });
+
+        window.apriMieiDatiModal = () => {
+            if (!currentUserDoc) return;
+            document.getElementById('edit-nome').value = currentUserDoc.nome || '';
+            document.getElementById('edit-cognome').value = currentUserDoc.cognome || '';
+            document.getElementById('edit-matricola').value = currentUserDoc.matricola || '';
+            document.getElementById('edit-omonimia').value = currentUserDoc.progressivo || '';
+            
+            let rReq = currentUserDoc.rotazione_richiesta;
+            if (ROTAZIONI_MAP[rReq]) {
+                document.getElementById('edit-rotazione').value = rReq;
+            } else {
+                document.getElementById('edit-rotazione').value = '';
+            }
+            
+            document.getElementById('edit-data-riposo').value = currentUserDoc.data_riposo_singolo || '';
+            document.getElementById('div-data-riposo-edit').style.display = (rReq && rReq.startsWith('disp_')) ? 'block' : 'none';
+            
+            document.getElementById('edit-error-msg').innerText = '';
+            document.getElementById('modal-miei-dati').style.display = 'flex';
+        };
+
+        window.salvaMieiDati = async () => {
+            const rot = document.getElementById('edit-rotazione').value;
+            const n = document.getElementById('edit-nome').value.trim();
+            const c = document.getElementById('edit-cognome').value.trim();
+            const m = document.getElementById('edit-matricola').value.trim();
+            const omo = document.getElementById('edit-omonimia').value.trim();
+            const dRip = document.getElementById('edit-data-riposo').value;
+            const err = document.getElementById('edit-error-msg');
+            
+            if (!n || !c || !m) { err.innerText = "Nome, Cognome e Matricola sono obbligatori."; return; }
+            if (!rot) { err.innerText = "Seleziona la tua rotazione di appartenenza."; return; }
+            if (rot.startsWith('disp_') && !dRip) { err.innerText = "Inserisci la data del riposo singolo."; return; }
+            
+            err.innerText = "Salvataggio in corso..."; err.style.color = "#666";
+            try {
+                await updateDoc(doc(db, "utenti", currentUserId), { 
+                    nome: n, cognome: c, matricola: m, progressivo: omo,
+                    rotazione_richiesta: rot, data_riposo_singolo: dRip || null
+                });
+                
+                currentUserDoc.nome = n; currentUserDoc.cognome = c; currentUserDoc.matricola = m; 
+                currentUserDoc.progressivo = omo; currentUserDoc.rotazione_richiesta = rot;
+                currentUserDoc.data_riposo_singolo = dRip || null;
+                
+                alert("Dati aggiornati con successo! Ricordati di ricaricare la pagina per visualizzare le tabelle generate.");
+                chiudiModal('modal-miei-dati');
+            } catch(e) { err.innerText = "Errore durante il salvataggio. Riprova."; err.style.color = "var(--danger)"; }
+        };
+
+        window.inviaRichiestaAccesso = async () => {
+            const rot = document.getElementById('req-rotazione').value;
+            const n = document.getElementById('req-nome').value.trim();
+            const c = document.getElementById('req-cognome').value.trim();
+            const m = document.getElementById('req-matricola').value.trim();
+            const omo = document.getElementById('req-omonimia').value.trim();
+            const cons = document.getElementById('req-consenso').checked;
+            const dRip = document.getElementById('req-data-riposo').value;
+            const err = document.getElementById('req-error-msg');
+            
+            if (!n || !c || !m) { err.innerText = "Nome, Cognome e Matricola sono obbligatori."; return; }
+            if (!rot) { err.innerText = "Seleziona la tua rotazione di appartenenza."; return; }
+            if (rot.startsWith('disp_') && !dRip) { err.innerText = "Inserisci la data di un tuo riposo singolo."; return; }
+            if (!cons) { err.innerText = "Devi accettare di condividere i dati per continuare."; return; }
+            if (!currentUserId) return;
+            
+            err.innerText = "Invio in corso..."; err.style.color = "#666";
+            try {
+                await updateDoc(doc(db, "utenti", currentUserId), { 
+                    nome: n, cognome: c, matricola: m, progressivo: omo,
+                    stato_richiesta: 'pending', rotazione_richiesta: rot, data_riposo_singolo: dRip || null
+                });
+                location.reload();
+            } catch(e) { err.innerText = "Errore durante l'invio. Riprova."; err.style.color = "var(--danger)"; }
+        };
+
+        window.apriGestioneAccessiModal = async () => {
+            document.getElementById('modal-gestione-accessi').style.display = 'flex';
+            if (isAdmin) document.getElementById('btn-collab-admin').style.display = 'inline-block';
+            const cont = document.getElementById('lista-utenti-abilitati');
+            cont.innerHTML = "<div style='text-align:center; padding:15px; font-size:14px;'>Caricamento...</div>";
+            const snap = await getDocs(collection(db, "utenti")); let html = "";
+            snap.forEach(d => {
+                const u = d.data();
+                if (u.abilitato_rotazioni === true) {
+                    let isLegacy = (u.rotazione_richiesta === 'legacy_code' || (u.rotazione_richiesta && u.rotazione_richiesta.length > 50));
+                    if (isCollab && !isAdmin && !isLegacy && !(currentUserDoc.permessi_gestione || []).includes(u.rotazione_richiesta)) return;
+                    
+                    let rotNome = ROTAZIONI_MAP[u.rotazione_richiesta];
+                    if (!rotNome) { rotNome = isLegacy ? 'Accesso con Codice' : (u.rotazione_richiesta || 'Assegnazione Manuale'); }
+                    
+                    // Controllo presenza nei tabulati
+                    const checkC = (u.cognome || '').trim().toUpperCase();
+                    const checkN = (u.nome || '').trim().toUpperCase();
+                    const presente = checkC && checkN && (window.globalNomiRotazioni || []).some(n => n.includes(checkC) && n.includes(checkN));
+                    const pallino = presente ? '<span title="Presente nei tabulati" style="font-size:11px; margin-left:4px;">🟢</span>' : '';
+
+                    let btnBloccaHTML = (d.id === ADMIN_UID) ? 
+                        `<span style="font-size:13px; color:var(--primary); font-weight:bold; margin-right:5px;">Admin</span>` : 
+                        `<button class="btn" style="width:auto; padding:6px 12px; background:var(--danger); margin:0;" onclick="revocaAccesso('${d.id}')">Blocca</button>`;
+
+                    html += `<div style="background:#f8f9fa; border:1px solid #ddd; padding:10px; margin-bottom:8px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong style="font-size:14px;">${u.cognome||''} ${u.nome||''} ${u.progressivo||''} ${pallino}</strong><br>
+                            <span style="font-size:12px; color:#666;">Matr: ${u.matricola||''} | ${rotNome}</span>
+                        </div>
+                        ${btnBloccaHTML}
+                    </div>`;
+                }
+            });
+            cont.innerHTML = html || "<div style='text-align:center; font-size:14px; color:#666;'>Nessun utente trovato nella tua area.</div>";
+        };
+
+        window.revocaAccesso = async (uid) => {
+            if(confirm("Vuoi revocare l'accesso a questo utente? Dovrà rifare la richiesta.")) { 
+                await updateDoc(doc(db, "utenti", uid), { abilitato_rotazioni: false, stato_richiesta: 'rejected' }); 
+                window.apriGestioneAccessiModal(); 
+            }
+        };
+
+        window.apriGestioneRichieste = async () => {
+            chiudiModal('modal-gestione-accessi'); 
+            document.getElementById('modal-gestione-richieste').style.display = 'flex';
+            const cont = document.getElementById('lista-richieste'); 
+            cont.innerHTML = "<div style='text-align:center; padding:15px; font-size:14px;'>Ricerca richieste...</div>";
+            
+            const snap = await getDocs(collection(db, "utenti")); 
+            let groupedRequests = {};
+            let count = 0;
+            
+            snap.forEach(d => {
+                const u = d.data();
+                if (u.stato_richiesta === 'pending') {
+                    if (isCollab && !isAdmin && !(currentUserDoc.permessi_gestione || []).includes(u.rotazione_richiesta)) return;
+                    let rotKey = u.rotazione_richiesta || 'Sconosciuta';
+                    if (!groupedRequests[rotKey]) groupedRequests[rotKey] = [];
+                    groupedRequests[rotKey].push({ id: d.id, ...u });
+                    count++;
+                }
+            });
+
+            if (count === 0) {
+                cont.innerHTML = "<div style='text-align:center; font-size:14px; color:#666;'>Nessuna richiesta in sospeso per la tua area.</div>";
+                return;
+            }
+
+            let html = "";
+            for (let k in groupedRequests) {
+                let rotNome = ROTAZIONI_MAP[k] || k;
+                let reqs = groupedRequests[k];
+                html += `<details style="margin-bottom:10px; border:1px solid #ddd; border-radius:8px; background:#fff;" open>
+                    <summary style="padding:12px; font-weight:bold; cursor:pointer; background:#e9ecef; border-radius:8px; color:var(--primary); outline:none; display:flex; justify-content:space-between; align-items:center;">
+                        <span>📁 ${rotNome}</span>
+                        <span style="background:var(--danger); color:#fff; border-radius:10px; padding:2px 8px; font-size:12px;">${reqs.length}</span>
+                    </summary>
+                    <div style="padding:10px; border-top:1px solid #eee;">`;
+                
+                reqs.forEach(u => {
+                    // Controllo presenza nei tabulati per inserire il pallino
+                    const checkC = (u.cognome || '').trim().toUpperCase();
+                    const checkN = (u.nome || '').trim().toUpperCase();
+                    const presente = checkC && checkN && (window.globalNomiRotazioni || []).some(n => n.includes(checkC) && n.includes(checkN));
+                    const pallino = presente ? '<span title="Presente nei tabulati" style="font-size:11px; margin-left:4px;">🟢</span>' : '';
+
+                    html += `<div style="background:#fff3cd; border:1px solid #ffeeba; padding:10px; margin-bottom:8px; border-radius:8px;">
+                        <strong style="font-size:14px; color:#856404;">${u.cognome||''} ${u.nome||''} ${u.progressivo||''} ${pallino}</strong><br>
+                        <span style="font-size:12px; color:#666;">Matr: ${u.matricola||''}</span>
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <button class="btn" style="background:var(--success); padding:8px; font-size:13px; margin:0;" onclick="gestisciRichiesta('${u.id}', true)">✅ Consenti</button>
+                            <button class="btn" style="background:var(--danger); padding:8px; font-size:13px; margin:0;" onclick="gestisciRichiesta('${u.id}', false)">❌ Rifiuta</button>
+                        </div>
+                    </div>`;
+                });
+                html += `</div></details>`;
+            }
+            cont.innerHTML = html;
+        };
+
+        window.gestisciRichiesta = async (uid, ok) => {
+            await updateDoc(doc(db, "utenti", uid), { abilitato_rotazioni: ok, stato_richiesta: ok ? 'approved' : 'rejected' });
+            window.aggiornaBadgeRichieste();
+            window.apriGestioneRichieste();
+        };
+
+        window.apriGestioneCollaboratori = async () => {
+            if(!isAdmin) return;
+            chiudiModal('modal-gestione-accessi'); document.getElementById('modal-gestione-collaboratori').style.display = 'flex';
+            const cont = document.getElementById('lista-collaboratori'); cont.innerHTML = "<div style='text-align:center; padding:15px; font-size:14px;'>Caricamento...</div>";
+            const snap = await getDocs(collection(db, "utenti")); let html = "";
+            snap.forEach(d => {
+                const u = d.data();
+                if (u.ruolo === 'collaborator') {
+                    html += `<div style="background:#e2e3e5; border:1px solid #d6d8db; padding:10px; margin-bottom:8px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong style="font-size:14px; color:#383d41;">${u.cognome||''} ${u.nome||''}</strong><br>
+                            <span style="font-size:12px; color:#666;">Permessi: ${(u.permessi_gestione||[]).length} aree</span>
+                        </div>
+                        <button class="btn" style="width:auto; padding:6px 12px; background:#6f42c1; margin:0;" onclick='apriPermessiCollab("${d.id}", "${u.nome}", ${JSON.stringify(u.permessi_gestione||[])})'>⚙️ Modifica</button>
+                    </div>`;
+                }
+            });
+            cont.innerHTML = html || "<div style='text-align:center; font-size:14px; color:#666;'>Nessun collaboratore trovato. Assegna il ruolo dalla Home Page.</div>";
+        };
+
+        window.apriPermessiCollab = (uid, nome, perms) => {
+            chiudiModal('modal-gestione-collaboratori'); document.getElementById('modal-permessi-collaboratore').style.display = 'flex';
+            document.getElementById('nome-collab-titolo').innerText = nome || '';
+            document.getElementById('uid-collab-edit').value = uid;
+            const cont = document.getElementById('lista-checkbox-rotazioni'); let html = "";
+            for(let k in ROTAZIONI_MAP) {
+                html += `<label style="display:block; margin-bottom:10px; font-size:14px; cursor:pointer;">
+                    <input type="checkbox" class="collab-perm-check" value="${k}" ${perms.includes(k)?"checked":""} style="transform: scale(1.2); margin-right: 8px;"> 
+                    ${ROTAZIONI_MAP[k]}
+                </label>`;
+            }
+            cont.innerHTML = html;
+        };
+
+        window.salvaPermessiCollab = async () => {
+            const uid = document.getElementById('uid-collab-edit').value;
+            const nP = Array.from(document.querySelectorAll('.collab-perm-check:checked')).map(c => c.value);
+            try {
+                await updateDoc(doc(db, "utenti", uid), { permessi_gestione: nP });
+                alert("Permessi aggiornati con successo.");
+                chiudiModal('modal-permessi-collaboratore'); window.apriGestioneCollaboratori();
+            } catch(e) { alert("Errore nel salvataggio dei permessi."); }
+        };
     </script>
 </body>
 </html>

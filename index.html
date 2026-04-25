@@ -274,17 +274,52 @@
     </div>
 
     <div id="profileModal" class="modal-overlay" onclick="chiudiSuSfondo(event, 'profileModal')">
-        <div class="modal-content">
-            <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer;" onclick="chiudiModal('profileModal')">&times;</span>
-            <h3 style="text-align: center; color: #32325d;">Profilo</h3>
-            <div id="adminBadge" style="display:none;"></div>
+        <div class="modal-content" style="text-align: left;">
+            <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f;" onclick="chiudiModal('profileModal')">&times;</span>
+            <h3 style="text-align: center; color: #32325d; margin-top: 0; border-bottom: 2px solid #e9ecef; padding-bottom: 10px;">👤 Il tuo Profilo</h3>
+            
+            <div id="adminBadge" style="display:none; text-align:center; background:#ea4335; color:white; padding:5px; border-radius:5px; margin-bottom:10px; font-weight:bold; font-size: 14px;">Admin</div>
+            
+            <label style="font-size: 11px; font-weight: bold; color: #666;">Email Autenticazione:</label>
             <input type="text" id="profileEmail" class="input-field" disabled style="background: #f8f9fa;">
-            <input type="text" id="profileNome" class="input-field" placeholder="Nome">
-            <input type="text" id="profileCognome" class="input-field" placeholder="Cognome">
-            <input type="text" id="profileProgressivo" class="input-field" placeholder="Omonimia (es. 02)">
-            <input type="text" id="profileMatricola" class="input-field" placeholder="Matricola">
-            <button class="btn-modal" style="background: var(--success); color: white;" onclick="salvaProfilo()">Salva</button>
-            <button class="btn-modal" style="background: #525f7f; color: white;" onclick="logout()">Logout</button>
+            
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label style="font-size: 11px; font-weight: bold; color: #666;">Nome:</label>
+                    <input type="text" id="profileNome" class="input-field" placeholder="Es. Mario">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 11px; font-weight: bold; color: #666;">Cognome:</label>
+                    <input type="text" id="profileCognome" class="input-field" placeholder="Es. Rossi">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label style="font-size: 11px; font-weight: bold; color: #666;">Matricola:</label>
+                    <input type="text" id="profileMatricola" class="input-field" placeholder="Es. 123456">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 11px; font-weight: bold; color: #666;">Numero Omonimia (facoltativo):</label>
+                    <input type="text" id="profileProgressivo" class="input-field" placeholder="Es. 02, 03 ecc">
+                </div>
+            </div>
+
+            <label style="font-size: 11px; font-weight: bold; color: #666;">Mansione:</label>
+            <select id="profileMansione" class="input-field" style="background-color: white;">
+                <option value="" disabled selected>Seleziona Mansione (Facoltativo)</option>
+                <option value="Preposto al comando">Preposto al comando</option>
+                <option value="Marinaio">Marinaio</option>
+                <option value="Comandante">Comandante</option>
+                <option value="Timoniere">Timoniere</option>
+                <option value="Marinaio polivalente">Marinaio polivalente</option>
+                <option value="Direttore di macchina">Direttore di macchina</option>
+            </select>
+
+            <hr style="border: 0; border-top: 1px solid #e9ecef; margin: 15px 0;">
+            
+            <button class="btn-modal" style="background: var(--success); color: white; margin-top: 5px;" onclick="salvaProfilo()">💾 Salva Modifiche</button>
+            <button class="btn-modal" style="background: transparent; color: var(--danger); border: 2px solid var(--danger); margin-top: 10px;" onclick="logout()">Esci dall'Account</button>
         </div>
     </div>
 
@@ -373,7 +408,7 @@
             { id: "oggi", label: "Oggi", icon: "🎯", href: "calendario.html?oggi=true", defaultColor: "#28a745" },
             { id: "calendario", label: "Calendario", icon: "📅", href: "calendario.html" },
             { id: "statistiche", label: "Statistiche", icon: "📊", href: "dati_calendario.html" },
-            { id: "rotazioni", label: "Rotazioni", icon: "👥", href: "rotazioni.html", condition: "f9" },
+            { id: "rotazioni", label: "Rotazione\nF.Nove", icon: "👥", href: "rotazioni.html", condition: "f9" },
             { id: "turni", label: "Turni", icon: "🔄", href: "turni.html" },
             { id: "bachecaturni", label: "Bacheca\nTurni", icon: "📌", href: "bacheca_turni.html" },
             { id: "rubrica", label: "Rubrica", icon: "📞", href: "rubrica.html" },
@@ -800,7 +835,13 @@
         };
 
         window.salvaProfilo = async () => {
-            const p = { nome: document.getElementById('profileNome').value, cognome: document.getElementById('profileCognome').value, progressivo: document.getElementById('profileProgressivo').value, matricola: document.getElementById('profileMatricola').value };
+            const p = { 
+                nome: document.getElementById('profileNome').value, 
+                cognome: document.getElementById('profileCognome').value, 
+                progressivo: document.getElementById('profileProgressivo').value, 
+                matricola: document.getElementById('profileMatricola').value,
+                mansione: document.getElementById('profileMansione').value
+            };
             await setDoc(doc(db, "utenti", auth.currentUser.uid), p, { merge: true });
             alert("Salvato!"); window.chiudiModal('profileModal');
         };
@@ -819,7 +860,7 @@
                     globalIsAdmin = (user.uid === ADMIN_UID); 
                     globalIsCollab = COLLABORATORE_UIDS.includes(user.uid) || data.ruolo === 'collaborator';
                     
-                    if(globalIsAdmin) { document.getElementById('adminBadge').style.display = 'block'; document.getElementById('adminBadge').innerHTML = 'Admin'; }
+                    if(globalIsAdmin) { document.getElementById('adminBadge').style.display = 'block'; }
                     vGuest.style.display = 'none'; vApp.style.display = 'flex'; vBanned.style.display = 'none';
                     document.getElementById('btnOpenLogin').style.display = 'none'; document.getElementById('btnOpenProfile').style.display = 'block';
                     document.getElementById('profileEmail').value = user.email;
@@ -836,8 +877,17 @@
                     const dbB = parseInt(data.ultimo_accesso_bacheca) || 0;
                     if (dbB > locB) localStorage.setItem('ultimo_accesso_bacheca', dbB);
                     
-                    document.getElementById('profileNome').value = data.nome || ''; document.getElementById('profileCognome').value = data.cognome || '';
-                    document.getElementById('profileMatricola').value = data.matricola || ''; document.getElementById('profileProgressivo').value = data.progressivo || '';
+                    document.getElementById('profileNome').value = data.nome || ''; 
+                    document.getElementById('profileCognome').value = data.cognome || '';
+                    document.getElementById('profileMatricola').value = data.matricola || ''; 
+                    document.getElementById('profileProgressivo').value = data.progressivo || '';
+                    
+                    if (data.mansione) {
+                        document.getElementById('profileMansione').value = data.mansione;
+                    } else {
+                        document.getElementById('profileMansione').value = '';
+                    }
+
                 } catch(e) { vLoad.style.display = 'none'; }
             } else { vLoad.style.display = 'none'; window.LayoutEngine.init(); vGuest.style.display = 'flex'; vApp.style.display = 'none'; vBanned.style.display = 'none'; }
         });

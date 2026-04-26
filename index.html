@@ -672,8 +672,8 @@
                 dataCopy.sort(sortAlpha);
             } else {
                 dataCopy.sort((a, b) => {
-                    let dateA = a.last_app_access || '1970-01-01';
-                    let dateB = b.last_app_access || '1970-01-01';
+                    let dateA = a.last_access_full || a.last_app_access || '1970-01-01';
+                    let dateB = b.last_access_full || b.last_app_access || '1970-01-01';
                     if (dateA > dateB) return -1;
                     if (dateA < dateB) return 1;
                     return sortAlpha(a, b);
@@ -688,7 +688,17 @@
                 const clickableName = `<span style="font-weight:bold; font-size:14px; cursor:pointer; color:var(--primary); text-decoration:underline;" onclick="apriDettaglioUtente('${u.uid}')">${fullName}</span>`;
                 const searchData = `${u.cognome || ''} ${u.nome || ''} ${u.matricola || ''}`.toUpperCase();
                 
-                return `<div class="utente-row-app" data-search="${searchData}" style="display:flex; justify-content:space-between; align-items:center; background:${isBanned ? '#fff5f5' : '#f8f9fa'}; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid ${isBanned ? '#ffc9c9' : '#e9ecef'};"><div><div>${clickableName}${dot}</div><div style="font-size:11px; color:#666; margin-top:3px;">(Matr. ${u.matricola || '??'})</div></div><button style="border:2px solid ${isBanned ? 'var(--success)' : 'var(--danger)'}; color:${isBanned ? 'var(--success)' : 'var(--danger)'}; background:none; padding:6px 10px; border-radius:8px; font-weight:bold;" onclick="toggleAppBan('${u.uid}', ${!isBanned})">${isBanned ? 'Sblocca' : 'Blocca'}</button></div>`;
+                let accessDisplay = 'Mai';
+                if (u.last_access_full) {
+                    let d = new Date(u.last_access_full);
+                    accessDisplay = d.toLocaleDateString('it-IT') + ' ' + d.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'});
+                } else if (u.last_app_access) {
+                    let p = u.last_app_access.split('-');
+                    if(p.length === 3) accessDisplay = `${p[2]}/${p[1]}/${p[0]}`;
+                    else accessDisplay = u.last_app_access;
+                }
+                
+                return `<div class="utente-row-app" data-search="${searchData}" style="display:flex; justify-content:space-between; align-items:center; background:${isBanned ? '#fff5f5' : '#f8f9fa'}; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid ${isBanned ? '#ffc9c9' : '#e9ecef'};"><div><div>${clickableName}${dot}</div><div style="font-size:11px; color:#666; margin-top:3px;">(Matr. ${u.matricola || '??'}) • Accesso: ${accessDisplay}</div></div><button style="border:2px solid ${isBanned ? 'var(--success)' : 'var(--danger)'}; color:${isBanned ? 'var(--success)' : 'var(--danger)'}; background:none; padding:6px 10px; border-radius:8px; font-weight:bold;" onclick="toggleAppBan('${u.uid}', ${!isBanned})">${isBanned ? 'Sblocca' : 'Blocca'}</button></div>`;
             };
 
             let html = dataCopy.map(u => buildRiga(u)).join('');
@@ -780,9 +790,11 @@
                     document.getElementById('btnOpenLogin').style.display = 'none'; document.getElementById('btnOpenProfile').style.display = 'block';
                     
                     document.getElementById('profileEmail').value = user.email;
-                    const oggiLogStr = new Date().toISOString().split('T')[0];
+                    
+                    const oggiLog = new Date();
+                    const oggiLogStr = oggiLog.toISOString().split('T')[0];
                     if (data.last_app_access !== oggiLogStr || !data.email) { 
-                        setDoc(doc(db, "utenti", user.uid), { last_app_access: oggiLogStr, email: user.email }, { merge: true }); 
+                        setDoc(doc(db, "utenti", user.uid), { last_app_access: oggiLogStr, last_access_full: oggiLog.toISOString(), email: user.email }, { merge: true }); 
                     }
                     
                     window.LayoutEngine.init(data.preferenze_layout);

@@ -392,7 +392,10 @@
                 </button>
                 <button id="btn-collab-admin" class="btn" style="display:none; background: #6f42c1; padding: 10px; font-size: 13px; margin: 0; flex: 1;" onclick="apriGestioneCollaboratori()">👥 Collab.</button>
             </div>
-            <div id="lista-utenti-abilitati" style="max-height: 60vh; overflow-y: auto;"></div>
+            
+            <input type="text" id="search-utenti-abilitati" placeholder="Cerca collega..." style="text-align: left; margin-top: 0; margin-bottom: 10px; padding: 12px; font-size: 14px; width: 100%; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box;" onkeyup="filtraUtentiAbilitati()">
+            
+            <div id="lista-utenti-abilitati" style="max-height: 55vh; overflow-y: auto;"></div>
         </div>
     </div>
 
@@ -447,8 +450,8 @@
 
     <script>
         window.globalNomiRotazioni = [];
-        window.utentiMap = {}; // Tracciamo i dati utente
-        window.currentUtentePdf = null; // Tracciamo utente per PDF
+        window.utentiMap = {}; 
+        window.currentUtentePdf = null; 
 
         function apriMenuLaterale() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; }
         function chiudiMenuLaterale() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; }
@@ -1303,6 +1306,20 @@
             let arr = ["AL", "RI", "DISP", "DI", "FER", "MAL", "PRT", "ESPE"];
             return arr.includes(val) || val.match(/^[0-9]+[A-Z]+[0-9]*$/) || val.match(/^[A-Z]+[0-9]+$/);
         }
+
+        window.filtraUtentiAbilitati = () => {
+            let input = document.getElementById('search-utenti-abilitati');
+            let filter = input.value.toUpperCase();
+            let rows = document.getElementsByClassName('utente-row');
+            for (let i = 0; i < rows.length; i++) {
+                let txtValue = rows[i].getAttribute('data-search');
+                if (txtValue.indexOf(filter) > -1) {
+                    rows[i].style.display = "flex";
+                } else {
+                    rows[i].style.display = "none";
+                }
+            }
+        };
     </script>
 
     <script type="module">
@@ -1380,7 +1397,6 @@
             const splitText = doc.splitTextToSize(text, 180);
             doc.text(splitText, 10, 100);
             
-            // Creazione nome file pulito e formattato
             const safeNome = (u.nome || 'nome').replace(/[^a-zA-Z0-9]/g, '');
             const safeCognome = (u.cognome || 'cognome').replace(/[^a-zA-Z0-9]/g, '');
             doc.save(`${safeCognome}_${safeNome}_consenso_rotazioni.pdf`);
@@ -1555,9 +1571,10 @@
             if (isAdmin) document.getElementById('btn-collab-admin').style.display = 'inline-block';
             const cont = document.getElementById('lista-utenti-abilitati');
             cont.innerHTML = "<div style='text-align:center; padding:15px; font-size:14px;'>Caricamento...</div>";
-            const snap = await getDocs(collection(db, "utenti")); let html = "";
+            const snap = await getDocs(collection(db, "utenti")); 
             
             window.utentiMap = {}; // Resetto mappa per dettaglio
+            let utentiArr = [];
             
             snap.forEach(d => {
                 const u = d.data();
@@ -1567,29 +1584,51 @@
                     
                     u.uid = d.id; // Salvo uid nel dizionario
                     window.utentiMap[d.id] = u;
-                    
-                    let rotNome = ROTAZIONI_MAP[u.rotazione_richiesta];
-                    if (!rotNome) { rotNome = isLegacy ? 'Accesso con Codice' : (u.rotazione_richiesta || 'Assegnazione Manuale'); }
-                    
-                    const checkC = (u.cognome || '').trim().toUpperCase();
-                    const checkN = (u.nome || '').trim().toUpperCase();
-                    const presente = checkC && checkN && (window.globalNomiRotazioni || []).some(n => n.includes(checkC) && n.includes(checkN));
-                    const pallino = presente ? '<span title="Presente nei tabulati" style="font-size:11px; margin-left:4px;">🟢</span>' : '';
-
-                    let btnBloccaHTML = (d.id === ADMIN_UID) ? 
-                        `<span style="font-size:13px; color:var(--primary); font-weight:bold; margin-right:5px;">Admin</span>` : 
-                        `<button class="btn" style="width:auto; padding:6px 12px; background:var(--danger); margin:0;" onclick="revocaAccesso('${d.id}')">Blocca</button>`;
-
-                    html += `<div style="background:#f8f9fa; border:1px solid #ddd; padding:10px; margin-bottom:8px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <strong style="font-size:14px; cursor:pointer; color:var(--primary); text-decoration:underline;" onclick="apriDettaglioUtente('${d.id}')">${u.cognome||''} ${u.nome||''} ${u.progressivo||''}</strong> ${pallino}<br>
-                            <span style="font-size:12px; color:#666;">Matr: ${u.matricola||''} | ${rotNome}</span>
-                        </div>
-                        ${btnBloccaHTML}
-                    </div>`;
+                    utentiArr.push(u);
                 }
             });
+
+            // Ordinamento alfabetico per Cognome e poi Nome
+            utentiArr.sort((a, b) => {
+                let cognomeA = (a.cognome || '').trim().toUpperCase();
+                let cognomeB = (b.cognome || '').trim().toUpperCase();
+                if (cognomeA < cognomeB) return -1;
+                if (cognomeA > cognomeB) return 1;
+                let nomeA = (a.nome || '').trim().toUpperCase();
+                let nomeB = (b.nome || '').trim().toUpperCase();
+                if (nomeA < nomeB) return -1;
+                if (nomeA > nomeB) return 1;
+                return 0;
+            });
+
+            let html = "";
+            utentiArr.forEach(u => {
+                let isLegacy = (u.rotazione_richiesta === 'legacy_code' || (u.rotazione_richiesta && u.rotazione_richiesta.length > 50));
+                let rotNome = ROTAZIONI_MAP[u.rotazione_richiesta];
+                if (!rotNome) { rotNome = isLegacy ? 'Accesso con Codice' : (u.rotazione_richiesta || 'Assegnazione Manuale'); }
+                
+                const checkC = (u.cognome || '').trim().toUpperCase();
+                const checkN = (u.nome || '').trim().toUpperCase();
+                const presente = checkC && checkN && (window.globalNomiRotazioni || []).some(n => n.includes(checkC) && n.includes(checkN));
+                const pallino = presente ? '<span title="Presente nei tabulati" style="font-size:11px; margin-left:4px;">🟢</span>' : '';
+
+                let btnBloccaHTML = (u.uid === ADMIN_UID) ? 
+                    `<span style="font-size:13px; color:var(--primary); font-weight:bold; margin-right:5px;">Admin</span>` : 
+                    `<button class="btn" style="width:auto; padding:6px 12px; background:var(--danger); margin:0;" onclick="revocaAccesso('${u.uid}')">Blocca</button>`;
+
+                // Aggiunta della classe "utente-row" e "data-search" per il filtro
+                html += `<div class="utente-row" data-search="${checkC} ${checkN} ${u.matricola||''}" style="background:#f8f9fa; border:1px solid #ddd; padding:10px; margin-bottom:8px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong style="font-size:14px; cursor:pointer; color:var(--primary); text-decoration:underline;" onclick="apriDettaglioUtente('${u.uid}')">${u.cognome||''} ${u.nome||''} ${u.progressivo||''}</strong> ${pallino}<br>
+                        <span style="font-size:12px; color:#666;">Matr: ${u.matricola||''} | ${rotNome}</span>
+                    </div>
+                    ${btnBloccaHTML}
+                </div>`;
+            });
             cont.innerHTML = html || "<div style='text-align:center; font-size:14px; color:#666;'>Nessun utente trovato nella tua area.</div>";
+            
+            let searchInput = document.getElementById('search-utenti-abilitati');
+            if (searchInput) searchInput.value = '';
         };
 
         window.revocaAccesso = async (uid) => {

@@ -361,6 +361,15 @@
                 <div style="background: var(--primary); color: white; padding: 6px; border-radius: 8px; flex: 1; text-align: center;">Totali: <span id="badge-totali">0</span></div>
                 <div style="background: var(--success); color: white; padding: 6px; border-radius: 8px; flex: 1; text-align: center;">Oggi: <span id="badge-oggi">0</span></div>
             </div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="text" id="search-utenti-app" placeholder="Cerca collega..." style="flex: 1; margin: 0; padding: 12px; font-size: 14px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box;" onkeyup="filtraUtentiApp()">
+                <select id="sort-utenti-app" style="padding: 12px; font-size: 13px; margin: 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; background: white; cursor:pointer;" onchange="renderGestioneAccessi()">
+                    <option value="recente">Recenti prima</option>
+                    <option value="alfabetico">Alfabetico</option>
+                </select>
+            </div>
+            
             <div id="lista-utenti-accessi" style="max-height: 55vh; overflow-y: auto;"></div>
         </div>
     </div>
@@ -389,6 +398,7 @@
         let globalIsAdmin = false; let globalIsCollab = false;
         window.currentUserData = {}; 
         window.utentiMap = {};
+        window.utentiArrayCache = [];
 
         window.ROTAZIONI_MAP = {
             "disp_5_1": "Disponibile 5-1", "disp_6_2_6_1": "Disponibile 6-2-6-1",
@@ -405,7 +415,7 @@
             { id: "oggi", label: "Oggi", icon: "🎯", href: "calendario.html?oggi=true", defaultColor: "#28a745" },
             { id: "calendario", label: "Calendario", icon: "📅", href: "calendario.html" },
             { id: "statistiche", label: "Statistiche", icon: "📊", href: "dati_calendario.html" },
-            { id: "rotazioni", label: "Rotazioni", icon: "👥", href: "rotazioni.html" }, // Tasto ora visibile a TUTTI
+            { id: "rotazioni", label: "Rotazioni", icon: "👥", href: "rotazioni.html" },
             { id: "turni", label: "Turni", icon: "🔄", href: "turni.html" },
             { id: "bachecaturni", label: "Bacheca\nTurni", icon: "📌", href: "bacheca_turni.html" },
             { id: "rubrica", label: "Rubrica", icon: "📞", href: "rubrica.html" },
@@ -472,7 +482,7 @@
                             if (def.href) app.href = def.href; else delete app.href;
                             if (def.onclick) app.onclick = def.onclick; else delete app.onclick;
                             if (def.condition) app.condition = def.condition; else delete app.condition;
-                            app.label = def.label; // Forza l'aggiornamento dell'etichetta
+                            app.label = def.label; 
                         }
                     }
                 });
@@ -613,25 +623,95 @@
         };
 
         window.apriGestioneAccessi = async () => {
-            window.apriModal('modal-gestione'); const container = document.getElementById('lista-utenti-accessi');
-            const bTot = document.getElementById('badge-totali'); const bOggi = document.getElementById('badge-oggi');
+            window.apriModal('modal-gestione');
+            const container = document.getElementById('lista-utenti-accessi');
+            const bTot = document.getElementById('badge-totali'); 
+            const bOggi = document.getElementById('badge-oggi');
             container.innerHTML = `<div style="text-align:center; padding:20px;">Attendere...</div>`;
+            
             try {
-                const snap = await getDocs(collection(db, "utenti")); let htmlOggi = ""; let htmlAltri = ""; let tot = 0; let oggi = 0; const oggiStr = new Date().toISOString().split('T')[0];
+                const snap = await getDocs(collection(db, "utenti")); 
+                let tot = 0; let oggi = 0; const oggiStr = new Date().toISOString().split('T')[0];
+                
+                window.utentiArrayCache = [];
+                window.utentiMap = {};
+
                 snap.forEach(d => {
                     const u = d.data(); tot++; const isOggi = (u.last_app_access === oggiStr); if (isOggi) oggi++;
-                    const isBanned = u.app_banned === true; const fullName = `${u.cognome || ''} ${u.nome || ''} ${u.progressivo || ''}`.trim() || 'Sconosciuto';
+                    u.uid = d.id;
                     window.utentiMap[d.id] = u;
-                    const dot = isOggi ? `<span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%; margin-left:5px;"></span>` : '';
-                    const clickableName = `<span style="font-weight:bold; font-size:14px; cursor:pointer; color:var(--primary); text-decoration:underline;" onclick="apriDettaglioUtente('${d.id}')">${fullName}</span>`;
-                    const riga = `<div style="display:flex; justify-content:space-between; align-items:center; background:${isBanned ? '#fff5f5' : '#f8f9fa'}; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid ${isBanned ? '#ffc9c9' : '#e9ecef'};"><div><div>${clickableName}${dot}</div><div style="font-size:11px; color:#666; margin-top:3px;">(Matr. ${u.matricola || '??'})</div></div><button style="border:2px solid ${isBanned ? 'var(--success)' : 'var(--danger)'}; color:${isBanned ? 'var(--success)' : 'var(--danger)'}; background:none; padding:6px 10px; border-radius:8px; font-weight:bold;" onclick="toggleAppBan('${d.id}', ${!isBanned})">${isBanned ? 'Sblocca' : 'Blocca'}</button></div>`;
-                    if (isOggi) htmlOggi += riga; else htmlAltri += riga;
+                    window.utentiArrayCache.push(u);
                 });
-                container.innerHTML = htmlOggi + htmlAltri; bTot.innerText = tot; bOggi.innerText = oggi;
+                
+                bTot.innerText = tot; bOggi.innerText = oggi;
+                window.renderGestioneAccessi();
+
             } catch(e) { container.innerHTML = "Errore."; }
         };
 
+        window.renderGestioneAccessi = () => {
+            const container = document.getElementById('lista-utenti-accessi');
+            const sortMode = document.getElementById('sort-utenti-app') ? document.getElementById('sort-utenti-app').value : 'recente';
+            const oggiStr = new Date().toISOString().split('T')[0];
+            
+            let dataCopy = [...window.utentiArrayCache];
+
+            const sortAlpha = (a, b) => {
+                let cognomeA = (a.cognome || '').trim().toUpperCase();
+                let cognomeB = (b.cognome || '').trim().toUpperCase();
+                if (cognomeA < cognomeB) return -1;
+                if (cognomeA > cognomeB) return 1;
+                let nomeA = (a.nome || '').trim().toUpperCase();
+                let nomeB = (b.nome || '').trim().toUpperCase();
+                if (nomeA < nomeB) return -1;
+                if (nomeA > nomeB) return 1;
+                return 0;
+            };
+
+            if (sortMode === 'alfabetico') {
+                dataCopy.sort(sortAlpha);
+            } else {
+                dataCopy.sort((a, b) => {
+                    let dateA = a.last_app_access || '1970-01-01';
+                    let dateB = b.last_app_access || '1970-01-01';
+                    if (dateA > dateB) return -1;
+                    if (dateA < dateB) return 1;
+                    return sortAlpha(a, b);
+                });
+            }
+
+            const buildRiga = (u) => {
+                const isOggi = (u.last_app_access === oggiStr);
+                const isBanned = u.app_banned === true; 
+                const fullName = `${u.cognome || ''} ${u.nome || ''} ${u.progressivo || ''}`.trim() || 'Sconosciuto';
+                const dot = isOggi ? `<span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%; margin-left:5px;"></span>` : '';
+                const clickableName = `<span style="font-weight:bold; font-size:14px; cursor:pointer; color:var(--primary); text-decoration:underline;" onclick="apriDettaglioUtente('${u.uid}')">${fullName}</span>`;
+                const searchData = `${u.cognome || ''} ${u.nome || ''} ${u.matricola || ''}`.toUpperCase();
+                
+                return `<div class="utente-row-app" data-search="${searchData}" style="display:flex; justify-content:space-between; align-items:center; background:${isBanned ? '#fff5f5' : '#f8f9fa'}; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid ${isBanned ? '#ffc9c9' : '#e9ecef'};"><div><div>${clickableName}${dot}</div><div style="font-size:11px; color:#666; margin-top:3px;">(Matr. ${u.matricola || '??'})</div></div><button style="border:2px solid ${isBanned ? 'var(--success)' : 'var(--danger)'}; color:${isBanned ? 'var(--success)' : 'var(--danger)'}; background:none; padding:6px 10px; border-radius:8px; font-weight:bold;" onclick="toggleAppBan('${u.uid}', ${!isBanned})">${isBanned ? 'Sblocca' : 'Blocca'}</button></div>`;
+            };
+
+            let html = dataCopy.map(u => buildRiga(u)).join('');
+            container.innerHTML = html;
+            window.filtraUtentiApp();
+        };
+
+        window.filtraUtentiApp = () => {
+            let input = document.getElementById('search-utenti-app');
+            let filter = input.value.toUpperCase();
+            let rows = document.getElementsByClassName('utente-row-app');
+            for (let i = 0; i < rows.length; i++) {
+                let txtValue = rows[i].getAttribute('data-search');
+                if (txtValue.indexOf(filter) > -1) {
+                    rows[i].style.display = "flex";
+                } else {
+                    rows[i].style.display = "none";
+                }
+            }
+        };
+
         window.toggleAppBan = async (uid, status) => { if(confirm("Confermi l'azione?")) { await setDoc(doc(db, "utenti", uid), { app_banned: status }, { merge: true }); window.apriGestioneAccessi(); } };
+        
         window.apriDettaglioUtente = (uid) => {
             const u = window.utentiMap[uid]; if(!u) return;
             const isCollab = u.ruolo === 'collaborator';

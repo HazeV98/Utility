@@ -657,11 +657,18 @@
             const email = document.getElementById('emailInput').value.trim(); const pwd = document.getElementById('passwordInput').value;
             const err = document.getElementById('authError'); err.style.display='none';
             if (!email || !pwd) { err.innerText = "Dati mancanti."; err.style.display='block'; return; }
-            if (currentAuthMode === 'login') { try { await signInWithEmailAndPassword(auth, email, pwd); window.chiudiModal('authModal'); } catch (e) { err.innerText = "Email o Pass errata."; err.style.display='block'; } }
+            if (currentAuthMode === 'login') { 
+                try { await signInWithEmailAndPassword(auth, email, pwd); window.chiudiModal('authModal'); } 
+                catch (e) { err.innerText = "Email o Pass errata."; err.style.display='block'; } 
+            }
             else {
                 const nome = document.getElementById('regNome').value.trim(); const cognome = document.getElementById('regCognome').value.trim(); const matricola = document.getElementById('regMatricola').value.trim();
                 if (!nome || !cognome || !matricola) { err.innerText = "Campi obbligatori."; err.style.display='block'; return; }
-                try { const res = await createUserWithEmailAndPassword(auth, email, pwd); await setDoc(doc(db, "utenti", res.user.uid), { nome, cognome, matricola, progressivo: document.getElementById('regProg').value.trim() }, { merge: true }); window.chiudiModal('authModal'); } catch (e) { err.innerText = "Errore."; err.style.display='block'; }
+                try { 
+                    const res = await createUserWithEmailAndPassword(auth, email, pwd); 
+                    await setDoc(doc(db, "utenti", res.user.uid), { nome, cognome, matricola, progressivo: document.getElementById('regProg').value.trim(), email: email }, { merge: true }); 
+                    window.chiudiModal('authModal'); 
+                } catch (e) { err.innerText = "Errore."; err.style.display='block'; }
             }
         };
 
@@ -691,9 +698,13 @@
                     if(globalIsAdmin) document.getElementById('adminBadge').style.display = 'block';
                     vGuest.style.display = 'none'; vApp.style.display = 'flex'; vBanned.style.display = 'none';
                     document.getElementById('btnOpenLogin').style.display = 'none'; document.getElementById('btnOpenProfile').style.display = 'block';
+                    
                     document.getElementById('profileEmail').value = user.email;
                     const oggiLogStr = new Date().toISOString().split('T')[0];
-                    if (data.last_app_access !== oggiLogStr) setDoc(doc(db, "utenti", user.uid), { last_app_access: oggiLogStr }, { merge: true });
+                    if (data.last_app_access !== oggiLogStr || !data.email) { 
+                        setDoc(doc(db, "utenti", user.uid), { last_app_access: oggiLogStr, email: user.email }, { merge: true }); 
+                    }
+                    
                     window.LayoutEngine.init(data.preferenze_layout);
                     document.getElementById('profileNome').value = data.nome || ''; document.getElementById('profileCognome').value = data.cognome || '';
                     document.getElementById('profileMatricola').value = data.matricola || ''; document.getElementById('profileProgressivo').value = data.progressivo || '';

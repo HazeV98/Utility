@@ -1303,6 +1303,43 @@
             let arr = ["AL", "RI", "DISP", "DI", "FER", "MAL", "PRT", "ESPE"];
             return arr.includes(val) || val.match(/^[0-9]+[A-Z]+[0-9]*$/) || val.match(/^[A-Z]+[0-9]+$/);
         }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, getDocs, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", authDomain: "utility-haze.firebaseapp.com", projectId: "utility-haze", storageBucket: "utility-haze.firebasestorage.app", messagingSenderId: "686237947418", appId: "1:686237947418:web:f03ba19ab8fff43110a3a3" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2";
+
+        const ROTAZIONI_MAP = {
+            "disp_5_1": "Disponibile 5-1",
+            "disp_6_2_6_1": "Disponibile 6-2-6-1",
+            "rot_fnove": "Rotazione F.Nove", "spez_fnove": "Spezzati F.Nove", "tc_spez_fnove": "T.C. Spezzati F.Nove",
+            "rot_proma": "Rotazione P.Roma", "spez_proma": "Spezzati P.Roma", "ris_proma": "Riserva P.Roma",
+            "rot_szaccaria": "Rotazione S.Zaccaria", "spez_szaccaria": "Spezzati S.Zaccaria", "tc_spez_szaccaria": "T.C. Spezzati S.Zaccaria",
+            "rot_lido": "Rotazione Lido", "spez_lido": "Spezzati Lido", "tc_spez_lido": "T.C. Spezzati Lido",
+            "rot_linea12": "Rotazione Linea 12", "rot_linea13": "Rotazione Linea 13", "rot_linea14": "Rotazione Linea 14 M/N",
+            "rot_linea14_mb": "Rotazione Linea 14 M/B", "rot_17sn": "Rotazione Linea 17 S. Nicolò", "tc_rot_17sn": "T.C. Rotazione 17 S. Nicolò",
+            "rot_17tr": "Rotazione Linea 17 Tron.", "tc_rot_17tr": "T.C. Rotazione Linea 17 Tronc."
+        };
+
+        let currentUserDoc = null; let isCollab = false; let isAdmin = false; let currentUserId = null;
+
+        const selRot = document.getElementById('req-rotazione');
+        const selRotEdit = document.getElementById('edit-rotazione');
+        if(selRot) {
+            for(let key in ROTAZIONI_MAP) {
+                let opt = document.createElement('option'); opt.value = key; opt.innerText = ROTAZIONI_MAP[key]; selRot.appendChild(opt);
+                if(selRotEdit) {
+                    let opt2 = document.createElement('option'); opt2.value = key; opt2.innerText = ROTAZIONI_MAP[key]; selRotEdit.appendChild(opt2);
+                }
+            }
+        }
 
         window.apriDettaglioUtente = (uid) => {
             const u = window.utentiMap[uid];
@@ -1343,45 +1380,11 @@
             const splitText = doc.splitTextToSize(text, 180);
             doc.text(splitText, 10, 100);
             
-            doc.save(`Consenso_${u.cognome}_${u.nome}.pdf`);
+            // Creazione nome file pulito e formattato
+            const safeNome = (u.nome || 'nome').replace(/[^a-zA-Z0-9]/g, '');
+            const safeCognome = (u.cognome || 'cognome').replace(/[^a-zA-Z0-9]/g, '');
+            doc.save(`${safeCognome}_${safeNome}_consenso_rotazioni.pdf`);
         };
-    </script>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, getDocs, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-
-        const firebaseConfig = { apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", authDomain: "utility-haze.firebaseapp.com", projectId: "utility-haze", storageBucket: "utility-haze.firebasestorage.app", messagingSenderId: "686237947418", appId: "1:686237947418:web:f03ba19ab8fff43110a3a3" };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2";
-
-        const ROTAZIONI_MAP = {
-            "disp_5_1": "Disponibile 5-1",
-            "disp_6_2_6_1": "Disponibile 6-2-6-1",
-            "rot_fnove": "Rotazione F.Nove", "spez_fnove": "Spezzati F.Nove", "tc_spez_fnove": "T.C. Spezzati F.Nove",
-            "rot_proma": "Rotazione P.Roma", "spez_proma": "Spezzati P.Roma", "ris_proma": "Riserva P.Roma",
-            "rot_szaccaria": "Rotazione S.Zaccaria", "spez_szaccaria": "Spezzati S.Zaccaria", "tc_spez_szaccaria": "T.C. Spezzati S.Zaccaria",
-            "rot_lido": "Rotazione Lido", "spez_lido": "Spezzati Lido", "tc_spez_lido": "T.C. Spezzati Lido",
-            "rot_linea12": "Rotazione Linea 12", "rot_linea13": "Rotazione Linea 13", "rot_linea14": "Rotazione Linea 14 M/N",
-            "rot_linea14_mb": "Rotazione Linea 14 M/B", "rot_17sn": "Rotazione Linea 17 S. Nicolò", "tc_rot_17sn": "T.C. Rotazione 17 S. Nicolò",
-            "rot_17tr": "Rotazione Linea 17 Tron.", "tc_rot_17tr": "T.C. Rotazione Linea 17 Tronc."
-        };
-
-        let currentUserDoc = null; let isCollab = false; let isAdmin = false; let currentUserId = null;
-
-        const selRot = document.getElementById('req-rotazione');
-        const selRotEdit = document.getElementById('edit-rotazione');
-        if(selRot) {
-            for(let key in ROTAZIONI_MAP) {
-                let opt = document.createElement('option'); opt.value = key; opt.innerText = ROTAZIONI_MAP[key]; selRot.appendChild(opt);
-                if(selRotEdit) {
-                    let opt2 = document.createElement('option'); opt2.value = key; opt2.innerText = ROTAZIONI_MAP[key]; selRotEdit.appendChild(opt2);
-                }
-            }
-        }
 
         window.getUtentiAbilitatiFirebase = async () => {
             const q = query(collection(db, "utenti"), where("abilitato_rotazioni", "==", true));

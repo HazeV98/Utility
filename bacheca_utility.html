@@ -341,7 +341,15 @@
                 const permission = await Notification.requestPermission();
                 
                 if (permission === 'granted') {
-                    const token = await getToken(messaging, { vapidKey: 'BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI' });
+                    // Calcola automaticamente la cartella base (utile per GitHub Pages)
+                    const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+                    const swPath = basePath + '/firebase-messaging-sw.js';
+                    const swRegistration = await navigator.serviceWorker.register(swPath);
+                    
+                    const token = await getToken(messaging, { 
+                        vapidKey: 'BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI',
+                        serviceWorkerRegistration: swRegistration
+                    });
                     
                     if (token) {
                         await setDoc(doc(db, "utenti", auth.currentUser.uid), { 
@@ -357,7 +365,7 @@
                 }
             } catch (error) {
                 console.error("Errore attivazione notifiche:", error);
-                alert("Errore durante l'attivazione delle notifiche.");
+                alert("Errore durante l'attivazione delle notifiche. Controlla la console.");
             }
         };
 

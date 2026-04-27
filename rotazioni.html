@@ -279,6 +279,9 @@
     </div>
 
     <div id="content-section">
+        <button id="btn-attiva-notifiche" style="display: none; background-color: #17a2b8; color: white; border: none; padding: 14px; font-size: 15px; font-weight: bold; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; margin-bottom: 15px;" onclick="attivaNotifichePush()">
+            🔔 Attiva Notifiche Push
+        </button>
         <div id="rotazioni-list"></div>
     </div>
 
@@ -1326,6 +1329,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, collection, getDocs, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-messaging.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", authDomain: "utility-haze.firebaseapp.com", projectId: "utility-haze", storageBucket: "utility-haze.firebasestorage.app", messagingSenderId: "686237947418", appId: "1:686237947418:web:f03ba19ab8fff43110a3a3" };
         const app = initializeApp(firebaseConfig);
@@ -1434,6 +1438,39 @@
             } catch(e) { console.error("Errore conteggio richieste", e); }
         };
 
+        window.attivaNotifichePush = async () => {
+            const btn = document.getElementById('btn-attiva-notifiche');
+            const testoOriginale = btn.innerText;
+            btn.innerText = "⏳ Attivazione in corso...";
+            btn.disabled = true; 
+            btn.style.pointerEvents = 'none';
+
+            try {
+                const messaging = getMessaging(app);
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+                    const swRegistration = await navigator.serviceWorker.register(basePath + '/firebase-messaging-sw.js');
+                    const token = await getToken(messaging, { vapidKey: 'BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI', serviceWorkerRegistration: swRegistration });
+                    
+                    if (token && auth.currentUser) {
+                        await updateDoc(doc(db, "utenti", auth.currentUser.uid), { fcm_token: token });
+                        btn.style.display = 'none';
+                        alert("🔔 Notifiche attivate con successo!");
+                    }
+                } else { 
+                    btn.style.display = 'none'; 
+                    alert("Hai negato il permesso per le notifiche."); 
+                }
+            } catch (error) { 
+                console.error(error);
+                btn.innerText = testoOriginale; 
+                btn.disabled = false; 
+                btn.style.pointerEvents = 'auto'; 
+                alert("Errore durante l'attivazione. Riprova."); 
+            }
+        };
+
         onAuthStateChanged(auth, async (user) => {
             const authSect = document.getElementById('auth-section'); const warnLog = document.getElementById('login-warning');
             const reqSect = document.getElementById('request-section'); const pendSect = document.getElementById('pending-section');
@@ -1458,6 +1495,9 @@
                         if (isAdmin || isCollab) {
                             document.getElementById('btn-gestione-accessi').style.display = 'inline-block';
                             window.aggiornaBadgeRichieste();
+                            if (!currentUserDoc.fcm_token && Notification.permission !== 'denied') {
+                                document.getElementById('btn-attiva-notifiche').style.display = 'block';
+                            }
                         }
                         window.initPanzoom(); window.caricaDatiTurniSilenzioso(); window.caricaRotazioni();
                     } else if (currentUserDoc.stato_richiesta === 'pending') {

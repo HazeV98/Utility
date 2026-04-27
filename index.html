@@ -482,7 +482,7 @@
                             if (def.href) app.href = def.href; else delete app.href;
                             if (def.onclick) app.onclick = def.onclick; else delete app.onclick;
                             if (def.condition) app.condition = def.condition; else delete app.condition;
-                            app.label = def.label; 
+                            // Rimosso app.label = def.label per non sovrascrivere il nome modificato dall'utente
                         }
                     }
                 });
@@ -583,7 +583,7 @@
                     this.prefs.apps[index].color = document.getElementById('edit-app-color').value;
                     const imgData = document.getElementById('edit-app-img-data').value;
                     if (imgData) { this.prefs.apps[index].image = imgData; this.prefs.apps[index].icon = ""; } else { delete this.prefs.apps[index].image; this.prefs.apps[index].icon = document.getElementById('edit-app-icon').value || "🔹"; }
-                } window.chiudiModal('editAppModal'); this.render();
+                } window.chiudiModal('editAppModal'); this.render(); this.sincronizzaConFirebase();
             },
             creaAppPersonalizzata: function() {
                 const label = document.getElementById('new-app-label').value.trim(); let url = document.getElementById('new-app-url').value.trim();
@@ -597,7 +597,7 @@
                 document.getElementById('new-app-icon').value = ""; this.rimuoviImmagine('new');
                 this.sincronizzaConFirebase(); this.render();
             },
-            eliminaAppCorrente: function() { const id = document.getElementById('edit-app-id').value; this.prefs.apps = this.prefs.apps.filter(a => a.id !== id); window.chiudiModal('editAppModal'); this.render(); },
+            eliminaAppCorrente: function() { const id = document.getElementById('edit-app-id').value; this.prefs.apps = this.prefs.apps.filter(a => a.id !== id); window.chiudiModal('editAppModal'); this.render(); this.sincronizzaConFirebase(); },
             salvaPreferenzeGlobali: function() {
                 this.prefs.c1 = document.getElementById('set-col1').value; this.prefs.c2 = document.getElementById('set-col2').value; this.prefs.c3 = document.getElementById('set-col3').value;
                 this.prefs.appBg = document.getElementById('set-appbg').value; this.prefs.view = document.getElementById('set-viewmode').value;
@@ -725,7 +725,7 @@
         window.apriDettaglioUtente = (uid) => {
             const u = window.utentiMap[uid]; if(!u) return;
             const isCollab = u.ruolo === 'collaborator';
-            document.getElementById('dettaglio-utente-body').innerHTML = `<div style="margin-bottom:8px;"><strong>Nome:</strong> ${u.nome || '-'}</div><div style="margin-bottom:8px;"><strong>Cognome:</strong> ${u.cognome || '-'}</div><div style="margin-bottom:8px;"><strong>Matricola:</strong> ${u.matricola || '-'}</div><div style="margin-bottom:8px;"><strong>Omonimia:</strong> ${u.progressivo || '-'}</div>`;
+            document.getElementById('dettaglio-utente-body').innerHTML = `<div style="margin-bottom:8px;"><strong>Nome:</strong> ${u.nome || '-'}</div><div style="margin-bottom:8px;"><strong>Cognome:</strong> ${u.cognome || '-'}</div><div style="margin-bottom:8px;"><strong>Matricola:</strong> ${u.matricola || '-'}</div><div style="margin-bottom:8px;"><strong>Omonimia:</strong> ${u.progressivo || '-'}</div><div style="margin-bottom:8px;"><strong>Email:</strong> ${u.email || 'Non registrata'}</div><div style="margin-bottom:8px; font-size:12px; word-break: break-all;"><strong>ID Account:</strong> ${u.uid || '-'}</div>`;
             const btnCollab = document.getElementById('btn-rendi-collab');
             if (isCollab) { btnCollab.innerText = "Revoca Collaboratore"; btnCollab.style.background = "transparent"; btnCollab.style.color = "var(--danger)"; btnCollab.style.border = "1px solid var(--danger)"; btnCollab.onclick = () => window.cambiaRuoloUtente(uid, 'user'); }
             else { btnCollab.innerText = "Rendi Collaboratore"; btnCollab.style.background = "#6f42c1"; btnCollab.style.color = "white"; btnCollab.style.border = "none"; btnCollab.onclick = () => window.cambiaRuoloUtente(uid, 'collaborator'); }

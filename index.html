@@ -118,7 +118,7 @@
         input[type="color"] { width: 40px; height: 40px; border: none; border-radius: 8px; cursor: pointer; padding: 0; background: transparent; }
         input[type="range"] { width: 100%; margin: 10px 0; }
 
-        /* BADGE NOTIFICHE ROTAZIONI */
+        /* BADGE NOTIFICHE ROTAZIONI E PROMEMORIA */
         .badge-rotazioni { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; font-size: 11px; font-weight: bold; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 10; pointer-events: none;}
     </style>
 </head>
@@ -173,8 +173,12 @@
             🔔 Nuovo avviso in Bacheca Utility!
         </div>
 
-        <div id="banner-dds-alert" style="display: none; background: #f5365c; color: white; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 20px; width: 100%; max-width: 400px; cursor: pointer;" onclick="apriBachecaUtility()">
+        <div id="banner-dds-alert" style="display: none; background: #f5365c; color: white; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 10px; width: 100%; max-width: 400px; cursor: pointer;" onclick="apriBachecaUtility()">
             ⚠️ Nuova DDS: <span id="titolo-dds-text"></span>
+        </div>
+
+        <div id="banner-promemoria-alert" style="display: none; background: #17a2b8; color: white; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 20px; width: 100%; max-width: 400px; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" onclick="window.location.href='promemoria.html'">
+            ⏰ Hai dei promemoria in sospeso!
         </div>
 
         <div id="app-container" class="app-grid"></div>
@@ -487,6 +491,60 @@
             } catch(e) {}
         };
 
+        // --- FUNZIONE DI AVVISO PROMEMORIA (AGGIUNTA) ---
+        window.controllaPromemoria = async () => {
+            if (!auth.currentUser) return;
+            try {
+                // Tenta prima nella root (struttura globale più comune)
+                let q = query(collection(db, "promemoria"), where("uid", "==", auth.currentUser.uid));
+                let snap = await getDocs(q);
+                let count = 0;
+                const oggiStr = new Date().toISOString().split('T')[0];
+
+                snap.forEach(d => {
+                    const p = d.data();
+                    // Se non è completato e la data è oggi (o precedente)
+                    if (p.completato !== true && p.data && p.data <= oggiStr) {
+                        count++;
+                    }
+                });
+
+                if (count > 0) {
+                    mostraAvvisoPromemoria(count);
+                } else if (snap.empty) {
+                    throw new Error("Prova la sottocollezione");
+                }
+            } catch(e) {
+                // Se fallisce, tenta nella sottocollezione dell'utente
+                try {
+                    let q2 = query(collection(db, "utenti", auth.currentUser.uid, "promemoria"));
+                    let snap2 = await getDocs(q2);
+                    let count2 = 0;
+                    const oggiStr = new Date().toISOString().split('T')[0];
+                    snap2.forEach(d => {
+                        const p = d.data();
+                        if (p.completato !== true && p.data && p.data <= oggiStr) count2++;
+                    });
+                    if (count2 > 0) mostraAvvisoPromemoria(count2);
+                } catch(ex) { console.warn("Controllo promemoria bypassato."); }
+            }
+        };
+
+        function mostraAvvisoPromemoria(count) {
+            const banner = document.getElementById('banner-promemoria-alert');
+            if (banner) {
+                banner.innerHTML = `⏰ Hai ${count} promemoria in sospeso!`;
+                banner.style.display = 'block';
+            }
+            const btn = document.getElementById('btn-promemoria');
+            if (btn) {
+                let b = btn.querySelector('.badge-rotazioni');
+                if (b) b.remove();
+                btn.insertAdjacentHTML('beforeend', `<div class="badge-rotazioni" style="background:#17a2b8;">${count}</div>`);
+            }
+        }
+        // --- FINE FUNZIONE PROMEMORIA ---
+
         window.LayoutEngine = {
             prefs: { c1: "#a9dfcd", c2: "#ffffff", c3: "#a4c5e3", appBg: "#5dade2", view: "grid", iconStyle: "box", fontSize: 11, apps: [] },
             isEditMode: false,
@@ -515,7 +573,6 @@
                             if (def.href) app.href = def.href; else delete app.href;
                             if (def.onclick) app.onclick = def.onclick; else delete app.onclick;
                             if (def.condition) app.condition = def.condition; else delete app.condition;
-                            // Rimosso app.label = def.label per non sovrascrivere il nome modificato dall'utente
                         }
                     }
                 });
@@ -566,7 +623,11 @@
                     if (app.image) { iconStyle += ` background-image: url('${app.image}'); background-size: cover; background-position: center;`; iconContent = ""; }
                     container.innerHTML += `<a ${editHandler} class="app-btn" id="btn-${app.id}">${badgeHtml}<div class="app-icon" style="${iconStyle}">${iconContent}</div><div class="app-label">${app.label.replace('\n', '<br>')}</div></a>`;
                 });
-                setTimeout(window.controllaRichiesteSospese, 200);
+                // AGGIUNTA QUI: Lancio anche il controllo promemoria dopo il render della griglia
+                setTimeout(() => {
+                    window.controllaRichiesteSospese();
+                    if(window.controllaPromemoria) window.controllaPromemoria();
+                }, 200);
             },
             handleImageUpload: function(event, modalType) {
                 const file = event.target.files[0]; if (!file) return;

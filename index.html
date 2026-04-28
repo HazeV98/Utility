@@ -178,7 +178,7 @@
         </div>
 
         <div id="banner-promemoria-alert" style="display: none; background: #17a2b8; color: white; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 20px; width: 100%; max-width: 400px; cursor: pointer; box-sizing: border-box; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" onclick="window.location.href='promemoria.html'">
-            ⏰ Hai dei promemoria in sospeso!
+            ⏰ Hai dei promemoria per oggi!
         </div>
 
         <div id="app-container" class="app-grid"></div>
@@ -491,58 +491,38 @@
             } catch(e) {}
         };
 
-        // --- FUNZIONE DI AVVISO PROMEMORIA (AGGIUNTA) ---
+        // --- FUNZIONE DI AVVISO PROMEMORIA (AGGIORNATA PER LEGGERE FIREBASE) ---
         window.controllaPromemoria = async () => {
             if (!auth.currentUser) return;
             try {
-                // Tenta prima nella root (struttura globale più comune)
-                let q = query(collection(db, "promemoria"), where("uid", "==", auth.currentUser.uid));
-                let snap = await getDocs(q);
-                let count = 0;
                 const oggiStr = new Date().toISOString().split('T')[0];
+                const q = query(collection(db, "utenti", auth.currentUser.uid, "promemoria_sync"), where("completato", "==", false));
+                const snap = await getDocs(q);
+                let activeCount = 0;
 
                 snap.forEach(d => {
                     const p = d.data();
-                    // Se non è completato e la data è oggi (o precedente)
-                    if (p.completato !== true && p.data && p.data <= oggiStr) {
-                        count++;
+                    // Controlla se oggi fa parte delle date programmate
+                    if (p.date && p.date.includes(oggiStr)) {
+                        activeCount++;
                     }
                 });
 
-                if (count > 0) {
-                    mostraAvvisoPromemoria(count);
-                } else if (snap.empty) {
-                    throw new Error("Prova la sottocollezione");
+                if (activeCount > 0) {
+                    const banner = document.getElementById('banner-promemoria-alert');
+                    if (banner) {
+                        banner.innerHTML = `⏰ Hai ${activeCount} promemoria per oggi!`;
+                        banner.style.display = 'block';
+                    }
+                    const btn = document.getElementById('btn-promemoria');
+                    if (btn) {
+                        let b = btn.querySelector('.badge-rotazioni');
+                        if (b) b.remove();
+                        btn.insertAdjacentHTML('beforeend', `<div class="badge-rotazioni" style="background:#17a2b8;">${activeCount}</div>`);
+                    }
                 }
-            } catch(e) {
-                // Se fallisce, tenta nella sottocollezione dell'utente
-                try {
-                    let q2 = query(collection(db, "utenti", auth.currentUser.uid, "promemoria"));
-                    let snap2 = await getDocs(q2);
-                    let count2 = 0;
-                    const oggiStr = new Date().toISOString().split('T')[0];
-                    snap2.forEach(d => {
-                        const p = d.data();
-                        if (p.completato !== true && p.data && p.data <= oggiStr) count2++;
-                    });
-                    if (count2 > 0) mostraAvvisoPromemoria(count2);
-                } catch(ex) { console.warn("Controllo promemoria bypassato."); }
-            }
+            } catch(e) { console.error("Errore check promemoria:", e); }
         };
-
-        function mostraAvvisoPromemoria(count) {
-            const banner = document.getElementById('banner-promemoria-alert');
-            if (banner) {
-                banner.innerHTML = `⏰ Hai ${count} promemoria in sospeso!`;
-                banner.style.display = 'block';
-            }
-            const btn = document.getElementById('btn-promemoria');
-            if (btn) {
-                let b = btn.querySelector('.badge-rotazioni');
-                if (b) b.remove();
-                btn.insertAdjacentHTML('beforeend', `<div class="badge-rotazioni" style="background:#17a2b8;">${count}</div>`);
-            }
-        }
         // --- FINE FUNZIONE PROMEMORIA ---
 
         window.LayoutEngine = {
@@ -623,7 +603,6 @@
                     if (app.image) { iconStyle += ` background-image: url('${app.image}'); background-size: cover; background-position: center;`; iconContent = ""; }
                     container.innerHTML += `<a ${editHandler} class="app-btn" id="btn-${app.id}">${badgeHtml}<div class="app-icon" style="${iconStyle}">${iconContent}</div><div class="app-label">${app.label.replace('\n', '<br>')}</div></a>`;
                 });
-                // AGGIUNTA QUI: Lancio anche il controllo promemoria dopo il render della griglia
                 setTimeout(() => {
                     window.controllaRichiesteSospese();
                     if(window.controllaPromemoria) window.controllaPromemoria();
@@ -870,7 +849,7 @@
             await setDoc(doc(db, "utenti", auth.currentUser.uid), p, { merge: true }); alert("Salvato!"); window.chiudiModal('profileModal');
         };
 
-        // --- GESTIONE NOTIFICHE (AGGIUNTO) ---
+        // --- GESTIONE NOTIFICHE ---
         window.attivaNotifichePushIndex = async () => {
             const btn = document.getElementById('btn-impostazioni-notifiche');
             btn.innerText = "⏳ Attivazione...";
@@ -965,7 +944,6 @@
                 btn.innerHTML = originalText;
             }
         };
-        // --- FINE GESTIONE NOTIFICHE ---
 
         onAuthStateChanged(auth, async (user) => {
             const vLoad = document.getElementById('view-loading'); const vGuest = document.getElementById('view-guest'); const vApp = document.getElementById('view-app'); const vBanned = document.getElementById('view-banned');
@@ -993,7 +971,7 @@
                     document.getElementById('profileMatricola').value = data.matricola || ''; document.getElementById('profileProgressivo').value = data.progressivo || '';
                     document.getElementById('profileMansione').value = data.mansione || '';
                     
-                    window.aggiornaTastoNotifiche(); // Aggiorna il tasto nelle impostazioni
+                    window.aggiornaTastoNotifiche();
 
                 } catch(e) { vLoad.style.display = 'none'; }
             } else { vLoad.style.display = 'none'; window.LayoutEngine.init(); vGuest.style.display = 'flex'; vApp.style.display = 'none'; vBanned.style.display = 'none'; }

@@ -231,23 +231,35 @@
             const tx = localDb.transaction(storeName, "readwrite");
             const reqAdd = tx.objectStore(storeName).add(nuovoPromemoria);
 
-            reqAdd.onsuccess = async function() {
-                const pushAttiva = document.getElementById('push-attiva').checked;
-                const pushOrario = document.getElementById('push-orario').value;
-
-                if (pushAttiva && pushOrario && auth.currentUser) {
+            reqAdd.onsuccess = async function(event) {
+                const newId = event.target.result;
+                
+                if (auth.currentUser) {
                     try {
-                        const noteRef = doc(collection(db, "utenti", auth.currentUser.uid, "notifiche_programmate"));
-                        await setDoc(noteRef, {
-                            titolo: "🔔 " + titolo,
+                        const syncRef = doc(db, "utenti", auth.currentUser.uid, "promemoria_sync", newId.toString());
+                        await setDoc(syncRef, {
+                            titolo: titolo,
                             date: selectedDates,
-                            orario: pushOrario,
-                            tipo: "Promemoria",
-                            note: note,
-                            fuso_orario: "Europe/Rome",
-                            timestamp_creazione: Date.now()
+                            completato: false,
+                            ultimo_aggiornamento: Date.now()
                         });
-                    } catch(err) { console.error("Errore salvataggio push:", err); }
+
+                        const pushAttiva = document.getElementById('push-attiva').checked;
+                        const pushOrario = document.getElementById('push-orario').value;
+
+                        if (pushAttiva && pushOrario) {
+                            const noteRef = doc(collection(db, "utenti", auth.currentUser.uid, "notifiche_programmate"));
+                            await setDoc(noteRef, {
+                                titolo: "🔔 " + titolo,
+                                date: selectedDates,
+                                orario: pushOrario,
+                                tipo: "Promemoria",
+                                note: note,
+                                fuso_orario: "Europe/Rome",
+                                timestamp_creazione: Date.now()
+                            });
+                        }
+                    } catch(err) { console.error("Errore salvataggio sync:", err); }
                 }
 
                 alert("✅ Promemoria salvato!");
@@ -270,7 +282,6 @@
                 const oggiStr = new Date().toISOString().split('T')[0];
                 let idDaEliminare = [];
 
-                // Solo Promemoria e Auto-Pulizia
                 ddsArray = ddsArray.filter(dds => {
                     if (!dds.isPromemoria) return false;
                     if (dds.dateValidita && dds.dateValidita.length > 0) {
@@ -283,7 +294,12 @@
 
                 if (idDaEliminare.length > 0) {
                     const txDel = localDb.transaction(storeName, "readwrite");
-                    idDaEliminare.forEach(id => txDel.objectStore(storeName).delete(id));
+                    idDaEliminare.forEach(id => {
+                        txDel.objectStore(storeName).delete(id);
+                        if (auth.currentUser) {
+                            try { setDoc(doc(db, "utenti", auth.currentUser.uid, "promemoria_sync", id.toString()), { completato: true }, { merge: true }); } catch(e){}
+                        }
+                    });
                 }
 
                 ddsArray.sort((a, b) => new Date(b.dateValidita[0]) - new Date(a.dateValidita[0]));
@@ -309,7 +325,18 @@
             };
         }
 
-        window.eliminaDDS = (id) => { if (confirm("Eliminare questo promemoria?")) { localDb.transaction(storeName, "readwrite").objectStore(storeName).delete(id).onsuccess = caricaListaDDS; } };
+        window.eliminaDDS = async (id) => { 
+            if (confirm("Eliminare questo promemoria?")) { 
+                localDb.transaction(storeName, "readwrite").objectStore(storeName).delete(id).onsuccess = async () => {
+                    if (auth.currentUser) {
+                        try {
+                            await setDoc(doc(db, "utenti", auth.currentUser.uid, "promemoria_sync", id.toString()), { completato: true }, { merge: true });
+                        } catch(e) {}
+                    }
+                    caricaListaDDS();
+                };
+            } 
+        };
     </script>
 </body>
 </html>

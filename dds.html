@@ -185,9 +185,10 @@
                     const token = await getToken(messaging, { vapidKey: 'BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI', serviceWorkerRegistration: swRegistration });
                     
                     if (token && auth.currentUser) {
-                        await setDoc(doc(db, "utenti", auth.currentUser.uid), { fcm_token: token }, { merge: true });
+                        const prefDefault = { bachecaturni: false, bachecautility: true, promemoria: true, rotazioni: false };
+                        await setDoc(doc(db, "utenti", auth.currentUser.uid), { fcm_token: token, notifiche_pref: prefDefault }, { merge: true });
                         btn.style.display = 'none';
-                        alert("🔔 Notifiche attivate!");
+                        alert("🔔 Notifiche attivate con successo!");
                     }
                 } else {
                     btn.style.display = 'none'; alert("Hai negato il permesso.");

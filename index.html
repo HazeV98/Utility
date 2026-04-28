@@ -461,7 +461,7 @@
             { id: "link", label: "Link", icon: "🔗", href: "link.html" },
             { id: "contatti", label: "Contatti", icon: "📇", href: "contatti.html" },
             { id: "buoni", label: "Buoni\nPasto", icon: "🍝", href: "buoni.html" },
-            { id: "promemoria", label: "Promemoria", icon: "⏰", href: "promemoria.html" }, // APP INSERITA QUI
+            { id: "promemoria", label: "Promemoria", icon: "⏰", href: "promemoria.html" },
             { id: "dds", label: "Archivio\nDDS", icon: "📂", href: "dds.html" },
             { id: "impostazioni", label: "Impostazioni", icon: "⚙️", onclick: "window.apriModal('settingsModal')", defaultColor: "#6c757d" },
             { id: "guida", label: "Guida", icon: "📖", href: "guida.html", defaultColor: "#7f8c8d" },
@@ -491,7 +491,6 @@
             } catch(e) {}
         };
 
-        // --- CONTROLLO PROMEMORIA AGGIUNTO ---
         window.controllaPromemoria = async () => {
             if (!auth.currentUser) return;
             try {
@@ -551,7 +550,6 @@
                             if (def.href) app.href = def.href; else delete app.href;
                             if (def.onclick) app.onclick = def.onclick; else delete app.onclick;
                             if (def.condition) app.condition = def.condition; else delete app.condition;
-                            // Rimosso app.label = def.label per non sovrascrivere il nome modificato dall'utente
                         }
                     }
                 });
@@ -848,7 +846,6 @@
             await setDoc(doc(db, "utenti", auth.currentUser.uid), p, { merge: true }); alert("Salvato!"); window.chiudiModal('profileModal');
         };
 
-        // --- GESTIONE NOTIFICHE AGGIUNTA QUI ---
         window.attivaNotifichePushIndex = async () => {
             const btn = document.getElementById('btn-impostazioni-notifiche');
             btn.innerText = "⏳ Attivazione...";
@@ -861,7 +858,8 @@
                     const token = await getToken(messaging, { vapidKey: 'BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI', serviceWorkerRegistration: swRegistration });
                     
                     if (token && auth.currentUser) {
-                        const prefDefault = { bachecaturni: true, bachecautility: true, promemoria: true, rotazioni: false };
+                        // SPUNTA BACHECATURNI IMPOSTATA SU FALSE
+                        const prefDefault = { bachecaturni: false, bachecautility: true, promemoria: true, rotazioni: false };
                         await setDoc(doc(db, "utenti", auth.currentUser.uid), { fcm_token: token, notifiche_pref: prefDefault }, { merge: true });
                         if(window.currentUserData) {
                             window.currentUserData.fcm_token = token;
@@ -898,7 +896,8 @@
         };
 
         window.apriCentroNotifiche = () => {
-            const pref = window.currentUserData?.notifiche_pref || { bachecaturni: true, bachecautility: true, promemoria: true, rotazioni: false };
+            // SPUNTA BACHECATURNI IMPOSTATA SU FALSE
+            const pref = window.currentUserData?.notifiche_pref || { bachecaturni: false, bachecautility: true, promemoria: true, rotazioni: false };
             document.getElementById('notif-bachecaturni').checked = pref.bachecaturni !== false;
             document.getElementById('notif-bachecautility').checked = pref.bachecautility !== false;
             document.getElementById('notif-promemoria').checked = pref.promemoria !== false;
@@ -970,7 +969,7 @@
                     document.getElementById('profileMatricola').value = data.matricola || ''; document.getElementById('profileProgressivo').value = data.progressivo || '';
                     document.getElementById('profileMansione').value = data.mansione || '';
                     
-                    window.aggiornaTastoNotifiche(); // Tasto notifiche richiamato qui
+                    window.aggiornaTastoNotifiche();
 
                 } catch(e) { vLoad.style.display = 'none'; }
             } else { vLoad.style.display = 'none'; window.LayoutEngine.init(); vGuest.style.display = 'flex'; vApp.style.display = 'none'; vBanned.style.display = 'none'; }

@@ -335,11 +335,11 @@
         window.chiudiMenuLaterale = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; };
         window.chiudiSeSfondo = (event, id) => { if(event.target.id === id) document.getElementById(id).style.display = 'none'; };
 
+        // MODIFICATA LA FUNZIONE DI ATTIVAZIONE NOTIFICHE
         window.attivaNotificheBacheca = async () => {
             const btn = document.getElementById('btn-attiva-notifiche');
             const testoOriginale = btn.innerText;
 
-            // Feedback visivo e blocco click multipli
             btn.innerText = "⏳ Attivazione in corso...";
             btn.disabled = true;
             btn.style.pointerEvents = 'none';
@@ -349,7 +349,6 @@
                 const permission = await Notification.requestPermission();
 
                 if (permission === 'granted') {
-                    // Calcola automaticamente la cartella base (utile per GitHub Pages)
                     const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
                     const swPath = basePath + '/firebase-messaging-sw.js';
                     const swRegistration = await navigator.serviceWorker.register(swPath);
@@ -359,15 +358,17 @@
                         serviceWorkerRegistration: swRegistration
                     });
 
-                    if (token) {
-                        await setDoc(doc(db, "utenti", auth.currentUser.uid), {
-                            fcm_token: token
+                    if (token && auth.currentUser) {
+                        // LA MODIFICA È QUI: bachecaturni impostato su false di default
+                        const prefDefault = { bachecaturni: false, bachecautility: true, promemoria: true, rotazioni: false };
+                        await setDoc(doc(db, "utenti", auth.currentUser.uid), { 
+                            fcm_token: token,
+                            notifiche_pref: prefDefault 
                         }, { merge: true });
 
                         btn.style.display = 'none';
                         alert("🔔 Notifiche attivate! Riceverai un avviso per ogni nuovo Annuncio o DDS.");
                     } else {
-                         // In caso di token nullo
                          btn.innerText = testoOriginale;
                          btn.disabled = false;
                          btn.style.pointerEvents = 'auto';
@@ -379,12 +380,9 @@
                 }
             } catch (error) {
                 console.error("Errore attivazione notifiche:", error);
-
-                // Se c'è un errore, ripristiniamo il tasto per permettere un nuovo tentativo
                 btn.innerText = testoOriginale;
                 btn.disabled = false;
                 btn.style.pointerEvents = 'auto';
-
                 alert("Errore durante l'attivazione delle notifiche. Controlla la console.");
             }
         };
@@ -479,7 +477,6 @@
                     const omo = data.progressivo ? ` ${data.progressivo}` : '';
                     currentUserFullName = `${data.cognome || ''} ${data.nome || ''}${omo}`.trim();
 
-                    // Verifica consenso notifiche per visualizzare o meno il bottone
                     if (!data.fcm_token && Notification.permission !== 'denied') {
                         document.getElementById('btn-attiva-notifiche').style.display = 'block';
                     }
@@ -540,7 +537,6 @@
             } catch (e) { alert("Errore salvataggio."); btn.innerText = "Salva"; btn.disabled = false; }
         };
 
-        // --- FUNZIONE AGGIORNATA CON IL CONTATORE ---
         window.apriGestioneAccessi = async () => {
             document.getElementById('modal-gestione').style.display = 'flex';
             const container = document.getElementById('lista-utenti-accessi');

@@ -158,13 +158,16 @@
                     const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
                     const swRegistration = await navigator.serviceWorker.register(basePath + '/firebase-messaging-sw.js');
                     const token = await getToken(messaging, { vapidKey: 'BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI', serviceWorkerRegistration: swRegistration });
+                    
                     if (token && auth.currentUser) {
-                        await setDoc(doc(db, "utenti", auth.currentUser.uid), { fcm_token: token }, { merge: true });
+                        const prefDefault = { bachecaturni: false, bachecautility: true, promemoria: true, rotazioni: false };
+                        await setDoc(doc(db, "utenti", auth.currentUser.uid), { fcm_token: token, notifiche_pref: prefDefault }, { merge: true });
+                        
                         btn.style.display = 'none';
                         alert("🔔 Notifiche attivate con successo!");
                     }
-                } else { alert("Permesso negato."); }
-            } catch (error) { alert("Errore attivazione."); }
+                } else { alert("Permesso negato."); btn.innerText = "🔔 Attiva Notifiche Push"; }
+            } catch (error) { alert("Errore attivazione."); btn.innerText = "🔔 Attiva Notifiche Push"; }
         };
 
         onAuthStateChanged(auth, async (user) => {
@@ -219,10 +222,9 @@
 
             btn.innerText = "⏳ Salvataggio..."; btn.disabled = true;
 
-            // Creiamo un ID unico basato sul tempo per sincronizzare i due database
             const uniqueId = "prom_" + Date.now();
             const nuovoPromemoria = { 
-                id_sync: uniqueId, // Campo per legarlo a Firebase
+                id_sync: uniqueId, 
                 titolo: titolo, 
                 dateValidita: selectedDates, 
                 reminder: selectedReminders, 
@@ -236,7 +238,6 @@
             reqAdd.onsuccess = async function(event) {
                 if (auth.currentUser) {
                     try {
-                        // 1. Sincronizzazione per Alert in Index
                         const syncRef = doc(db, "utenti", auth.currentUser.uid, "promemoria_sync", uniqueId);
                         await setDoc(syncRef, {
                             titolo: titolo,
@@ -245,7 +246,6 @@
                             timestamp: Date.now()
                         });
 
-                        // 2. Programmazione Notifica Push
                         if (document.getElementById('push-attiva').checked && document.getElementById('push-orario').value) {
                             const noteRef = doc(collection(db, "utenti", auth.currentUser.uid, "notifiche_programmate"));
                             await setDoc(noteRef, {
@@ -280,7 +280,6 @@
                 let ddsArray = e.target.result.filter(dds => dds.isPromemoria);
                 const oggiStr = new Date().toISOString().split('T')[0];
 
-                // Auto-pulizia scaduti
                 ddsArray = ddsArray.filter(dds => {
                     if (dds.dateValidita && dds.dateValidita.length > 0) {
                         if (dds.dateValidita[dds.dateValidita.length - 1] < oggiStr) {
@@ -315,7 +314,6 @@
                 tx.objectStore(storeName).delete(id).onsuccess = async () => {
                     if (auth.currentUser && idSync) {
                         try {
-                            // Segniamo come completato online così sparisce l'alert nell'index
                             await updateDoc(doc(db, "utenti", auth.currentUser.uid, "promemoria_sync", idSync), { completato: true });
                         } catch(e) { console.error("Firebase update error", e); }
                     }

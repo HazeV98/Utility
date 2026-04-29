@@ -27,12 +27,11 @@
     </script>
 
     <script>
+        // Gestione importazione dati turni
         const urlParams = new URLSearchParams(window.location.search);
         const datiImportati = urlParams.get('dati');
-        const codiceImportato = urlParams.get('codice');
-        if (datiImportati || codiceImportato) {
-            if (datiImportati) localStorage.setItem('myTurniApp', datiImportati);
-            if (codiceImportato) localStorage.setItem('auth_rotazioni', codiceImportato);
+        if (datiImportati) {
+            localStorage.setItem('myTurniApp', datiImportati);
             window.history.replaceState({}, document.title, window.location.pathname);
         }
     </script>

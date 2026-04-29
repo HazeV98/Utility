@@ -172,7 +172,39 @@
             document.getElementById('banner-attiva').checked = false;
             
             if (!fpInstance) {
-                fpInstance = flatpickr("#dds-date-picker", { mode: "multiple", dateFormat: "Y-m-d", locale: "it", altInput: true, altFormat: "d/m/Y", conjunction: ", " });
+                fpInstance = flatpickr("#dds-date-picker", { 
+                    mode: "multiple", 
+                    dateFormat: "Y-m-d", 
+                    locale: "it", 
+                    altInput: true, 
+                    altFormat: "d/m/Y", 
+                    conjunction: ", ",
+                    onReady: function(selectedDates, dateStr, instance) {
+                        const btnContainer = document.createElement("div");
+                        btnContainer.style.padding = "10px";
+                        btnContainer.style.borderTop = "1px solid #eee";
+                        btnContainer.style.backgroundColor = "#fff";
+                        
+                        const btn = document.createElement("button");
+                        btn.innerHTML = "Fatto ✔️";
+                        btn.style.backgroundColor = "var(--primary)";
+                        btn.style.color = "white";
+                        btn.style.border = "none";
+                        btn.style.padding = "10px";
+                        btn.style.borderRadius = "8px";
+                        btn.style.fontWeight = "bold";
+                        btn.style.cursor = "pointer";
+                        btn.style.width = "100%";
+                        btn.style.fontSize = "16px";
+                        
+                        btn.onclick = function() {
+                            instance.close();
+                        };
+                        
+                        btnContainer.appendChild(btn);
+                        instance.calendarContainer.appendChild(btnContainer);
+                    }
+                });
             }
             fpInstance.clear();
             document.querySelectorAll('.rem-checkbox').forEach(cb => cb.checked = (cb.value === 'all_days'));

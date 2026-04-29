@@ -50,8 +50,6 @@
         .input-group label { font-size: 14px; font-weight: bold; color: #555; }
         .input-field, .input-group input[type="text"], .input-group input[type="file"] { padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 15px; width: 100%; box-sizing: border-box; font-family: inherit; }
         
-        .flatpickr-input { background-color: #fff !important; cursor: pointer !important; }
-
         .checkbox-group { display: flex; flex-direction: column; gap: 10px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; }
         .checkbox-label { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: normal; color: #333; cursor: pointer; }
         .checkbox-label input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; margin: 0; }
@@ -92,9 +90,6 @@
     </div>
 
     <div class="content-area">
-        
-        <button id="btn-attiva-notifiche" class="btn-add-main" style="display: none; background-color: #17a2b8; margin-bottom: 5px;" onclick="attivaNotifichePush()">🔔 Attiva Notifiche Push</button>
-
         <button class="btn-add-main" style="margin-bottom: 5px;" onclick="apriModaleAggiungi()">➕ Carica Nuova DDS (PDF)</button>
         
         <div class="backup-group">
@@ -136,13 +131,9 @@
 
             <div class="input-group" style="background: #eef2ff; padding: 15px; border-radius: 8px; border: 1px dashed var(--primary);">
                 <label class="checkbox-label" style="font-weight: bold; color: var(--primary);">
-                    <input type="checkbox" id="push-attiva" onchange="togglePushTime()"> 🔔 Attiva notifica push
+                    <input type="checkbox" id="banner-attiva"> ⚠️ Mostra banner in Home Page
                 </label>
-                <div id="push-time-container" style="display: none; margin-top: 10px;">
-                    <label style="font-size: 13px; color: #555;">Orario della notifica:</label>
-                    <input type="time" id="push-orario" class="input-field" style="margin-bottom: 0;">
-                    <div style="font-size: 11px; color: #888; margin-top: 5px;">Riceverai la notifica nei giorni validi all'orario indicato (Fuso orario italiano).</div>
-                </div>
+                <div style="font-size: 11px; color: #888; margin-top: 5px;">Se attivo, vedrai un avviso rosso nella Home Page per tutta la durata dei giorni validi.</div>
             </div>
 
             <button id="btn-salva-dds" class="btn-esegui" onclick="salvaDDS()">💾 Salva DDS</button>
@@ -152,65 +143,17 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-messaging.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", authDomain: "utility-haze.firebaseapp.com", projectId: "utility-haze", messagingSenderId: "686237947418", appId: "1:686237947418:web:f03ba19ab8fff43110a3a3" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Collegamento funzioni a window per i bottoni HTML
         window.apriMenuLaterale = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; };
         window.chiudiMenuLaterale = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; };
         
-        window.togglePushTime = () => {
-            const isChecked = document.getElementById('push-attiva').checked;
-            document.getElementById('push-time-container').style.display = isChecked ? 'block' : 'none';
-        };
-
-        window.attivaNotifichePush = async () => {
-            const btn = document.getElementById('btn-attiva-notifiche');
-            const testoOriginale = btn.innerText;
-            btn.innerText = "⏳ Attivazione in corso...";
-            btn.disabled = true; btn.style.pointerEvents = 'none';
-
-            try {
-                const messaging = getMessaging(app);
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-                    const swRegistration = await navigator.serviceWorker.register(basePath + '/firebase-messaging-sw.js');
-                    const token = await getToken(messaging, { vapidKey: 'BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI', serviceWorkerRegistration: swRegistration });
-                    
-                    if (token && auth.currentUser) {
-                        const prefDefault = { bachecaturni: false, bachecautility: true, promemoria: true, rotazioni: false };
-                        await setDoc(doc(db, "utenti", auth.currentUser.uid), { fcm_token: token, notifiche_pref: prefDefault }, { merge: true });
-                        btn.style.display = 'none';
-                        alert("🔔 Notifiche attivate con successo!");
-                    }
-                } else {
-                    btn.style.display = 'none'; alert("Hai negato il permesso.");
-                }
-            } catch (error) {
-                btn.innerText = testoOriginale; btn.disabled = false; btn.style.pointerEvents = 'auto';
-                alert("Errore durante l'attivazione.");
-            }
-        };
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const docSnap = await getDoc(doc(db, "utenti", user.uid));
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    if (!data.fcm_token && Notification.permission !== 'denied') {
-                        document.getElementById('btn-attiva-notifiche').style.display = 'block';
-                    }
-                }
-            }
-        });
-
         let fpInstance;
         const dbName = "UtilityDB";
         const storeName = "archivio_dds";
@@ -226,9 +169,7 @@
         window.apriModaleAggiungi = () => {
             document.getElementById('dds-titolo').value = '';
             document.getElementById('dds-file').value = '';
-            document.getElementById('push-attiva').checked = false;
-            document.getElementById('push-orario').value = '';
-            window.togglePushTime();
+            document.getElementById('banner-attiva').checked = false;
             
             if (!fpInstance) {
                 fpInstance = flatpickr("#dds-date-picker", { mode: "multiple", dateFormat: "Y-m-d", locale: "it", altInput: true, altFormat: "d/m/Y", conjunction: ", " });
@@ -258,36 +199,30 @@
             }
 
             const file = fileInput.files[0];
-            if (file.size > 10 * 1024 * 1024) return alert("Il file PDF supera i 10 MB.");
-
             btn.innerText = "⏳ Salvataggio..."; btn.disabled = true;
 
             const reader = new FileReader();
             reader.onload = function(e) {
                 const nuovaDDS = { titolo: titolo, dateValidita: selectedDates, reminder: selectedReminders, fileData: e.target.result, fileName: file.name };
-
                 const tx = localDb.transaction(storeName, "readwrite");
                 const reqAdd = tx.objectStore(storeName).add(nuovaDDS);
 
                 reqAdd.onsuccess = async function() {
-                    const pushAttiva = document.getElementById('push-attiva').checked;
-                    const pushOrario = document.getElementById('push-orario').value;
+                    const bannerAttiva = document.getElementById('banner-attiva').checked;
 
-                    if (pushAttiva && pushOrario && auth.currentUser) {
+                    if (bannerAttiva && auth.currentUser) {
                         try {
                             const noteRef = doc(collection(db, "utenti", auth.currentUser.uid, "notifiche_programmate"));
                             await setDoc(noteRef, {
                                 titolo: "DDS: " + titolo,
                                 date: selectedDates,
-                                orario: pushOrario,
-                                tipo: "DDS",
-                                fuso_orario: "Europe/Rome",
+                                tipo: "DDS_BANNER",
                                 timestamp_creazione: Date.now()
                             });
-                        } catch(err) { console.error("Errore salvataggio push:", err); }
+                        } catch(err) { console.error("Errore salvataggio banner:", err); }
                     }
 
-                    alert("✅ DDS salvata con successo nell'archivio!");
+                    alert("✅ DDS salvata con successo!");
                     window.chiudiModaleAggiungi();
                     caricaListaDDS();
                     btn.innerText = "💾 Salva DDS"; btn.disabled = false;
@@ -300,64 +235,34 @@
             if (!localDb) return;
             const listContainer = document.getElementById('dds-list');
             listContainer.innerHTML = '';
-
             const tx = localDb.transaction(storeName, "readonly");
             const reqGetAll = tx.objectStore(storeName).getAll();
 
             reqGetAll.onsuccess = function() {
-                let ddsArray = reqGetAll.result.filter(dds => !dds.isPromemoria); // Mostra SOLO le DDS
+                let ddsArray = reqGetAll.result.filter(dds => !dds.isPromemoria);
+                ddsArray.sort((a, b) => new Date(b.dateValidita[0]) - new Date(a.dateValidita[0]));
 
-                ddsArray.sort((a, b) => {
-                    let d1 = a.dateValidita ? a.dateValidita[0] : (a.dataDa || a.dataEntrata);
-                    let d2 = b.dateValidita ? b.dateValidita[0] : (b.dataDa || b.dataEntrata);
-                    return new Date(d2) - new Date(d1);
-                });
-
-                if (ddsArray.length === 0) {
-                    listContainer.innerHTML = '<div class="empty-state">Nessuna DDS archiviata.</div>'; return;
-                }
+                if (ddsArray.length === 0) { listContainer.innerHTML = '<div class="empty-state">Nessuna DDS archiviata.</div>'; return; }
 
                 ddsArray.forEach(dds => {
-                    let validitaTesto = "";
-                    if (dds.dateValidita && dds.dateValidita.length > 0) {
-                        if (dds.dateValidita.length <= 3) validitaTesto = dds.dateValidita.map(d => { let p = d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }).join(', ');
-                        else { let pStart = dds.dateValidita[0].split('-'); let pEnd = dds.dateValidita[dds.dateValidita.length-1].split('-'); validitaTesto = `<b>${dds.dateValidita.length} giorni totali</b> (dal ${pStart[2]}/${pStart[1]} al ${pEnd[2]}/${pEnd[1]})`; }
-                    }
-                    
-                    let remTesti = []; let remArray = Array.isArray(dds.reminder) ? dds.reminder : [dds.reminder];
-                    if (remArray.includes('day_before')) remTesti.push("Giorno prima");
-                    if (remArray.includes('first_day')) remTesti.push("Primo giorno");
-                    if (remArray.includes('all_days')) remTesti.push("Giorni attivi");
-                    
-                    let remTesto = remTesti.length > 0 ? "🔔 " + remTesti.join(" + ") : "";
-
                     const card = document.createElement('div'); card.className = 'dds-card';
-                    let htmlCard = `<div class="dds-title">${dds.titolo}</div><div class="dds-date">Validità: ${validitaTesto}</div>`;
-                    if (remTesto) htmlCard += `<div class="dds-reminder-badge">${remTesto}</div>`;
-                    
-                    htmlCard += `<div class="btn-group">
-                        <button class="btn-open" onclick="apriPDF(${dds.id})">📄 Apri PDF</button>
-                        <button class="btn-delete" onclick="eliminaDDS(${dds.id})">🗑️ Elimina</button>
-                    </div>`;
-                    
-                    card.innerHTML = htmlCard; listContainer.appendChild(card);
+                    card.innerHTML = `<div class="dds-title">${dds.titolo}</div>
+                        <div class="dds-date">Validità: ${dds.dateValidita.length} giorni</div>
+                        <div class="btn-group">
+                            <button class="btn-open" onclick="apriPDF(${dds.id})">📄 Apri PDF</button>
+                            <button class="btn-delete" onclick="eliminaDDS(${dds.id})">🗑️ Elimina</button>
+                        </div>`;
+                    listContainer.appendChild(card);
                 });
             };
         }
 
         window.apriPDF = (id) => {
-            const tx = localDb.transaction(storeName, "readonly");
-            tx.objectStore(storeName).get(id).onsuccess = function(e) {
+            localDb.transaction(storeName, "readonly").objectStore(storeName).get(id).onsuccess = function(e) {
                 const dds = e.target.result;
                 if (dds && dds.fileData) {
-                    const parts = dds.fileData.split(',');
-                    const byteCharacters = atob(parts[1]); const byteNumbers = new Array(byteCharacters.length);
-                    for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
-                    const blob = new Blob([new Uint8Array(byteNumbers)], {type: 'application/pdf'});
-                    const fileURL = URL.createObjectURL(blob);
-                    const a = document.createElement('a'); a.href = fileURL; a.target = "_blank";
+                    const a = document.createElement('a'); a.href = dds.fileData; a.target = "_blank";
                     document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                    setTimeout(() => URL.revokeObjectURL(fileURL), 2000);
                 }
             };
         };
@@ -365,13 +270,11 @@
         window.eliminaDDS = (id) => { if (confirm("Eliminare questa DDS?")) { localDb.transaction(storeName, "readwrite").objectStore(storeName).delete(id).onsuccess = caricaListaDDS; } };
 
         window.esportaDDS = () => {
-            if (!localDb) return;
             localDb.transaction(storeName, "readonly").objectStore(storeName).getAll().onsuccess = function(e) {
-                const data = e.target.result; if (data.length === 0) return alert("Archivio vuoto.");
-                const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+                const blob = new Blob([JSON.stringify(e.target.result)], { type: "application/json" });
                 const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-                a.download = `backup_archivio_dds_${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                a.download = `backup_dds_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
             };
         };
 
@@ -379,13 +282,10 @@
             const file = event.target.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-                    if (!confirm(`Vuoi importare ${importedData.length} elementi?`)) return;
-                    const tx = localDb.transaction(storeName, "readwrite");
-                    importedData.forEach(item => { delete item.id; tx.objectStore(storeName).add(item); });
-                    tx.oncomplete = () => { alert("✅ Importazione completata!"); caricaListaDDS(); };
-                } catch (err) { alert("❌ Errore file non valido."); }
+                const data = JSON.parse(e.target.result);
+                const tx = localDb.transaction(storeName, "readwrite");
+                data.forEach(item => { delete item.id; tx.objectStore(storeName).add(item); });
+                tx.oncomplete = () => { alert("Importato!"); caricaListaDDS(); };
             };
             reader.readAsText(file);
         };

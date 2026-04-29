@@ -151,7 +151,7 @@
             <label style="font-size: 12px; font-weight: bold; color: #666;">Matricola *</label>
             <input type="text" id="req-matricola" class="input-field" placeholder="La tua matricola">
 
-            <label style="font-size: 12px; font-weight: bold; color: #666;">Nuemro Omonimia (Facoltativo)</label>
+            <label style="font-size: 12px; font-weight: bold; color: #666;">Numero Omonimia (Facoltativo)</label>
             <input type="text" id="req-prog" class="input-field" placeholder="Es. 02, 03...">
 
             <button id="btn-save-profile" class="btn-action" onclick="salvaProfiloObbligatorio()">Salva e Accedi</button>
@@ -159,7 +159,6 @@
     </div>
 
     <div id="view-main" class="view-container">
-        <button id="btn-attiva-notifiche" class="btn-action" style="display: none; background-color: #17a2b8; margin-top: 0; margin-bottom: 15px;" onclick="attivaNotificheBacheca()">🔔 Attiva Notifiche Avvisi e DDS</button>
         <div style="display: flex; gap: 10px; margin-bottom: 15px; margin-top: 0;">
             <button id="btn-admin-add" class="btn-action" style="display: none; margin-top: 0; flex: 1;" onclick="apriModaleNuovo()">+ Pubblica Avviso</button>
             <button id="btn-admin-gestione" class="btn-action" style="background: #32325d; display: none; margin-top: 0; flex: 1;" onclick="apriGestioneAccessi()">🛠️ Gestione Accessi</button>
@@ -313,7 +312,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
         import { getFirestore, collection, getDocs, getDoc, setDoc, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-messaging.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", 
@@ -334,58 +332,6 @@
         window.apriMenuLaterale = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; };
         window.chiudiMenuLaterale = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; };
         window.chiudiSeSfondo = (event, id) => { if(event.target.id === id) document.getElementById(id).style.display = 'none'; };
-
-        // MODIFICATA LA FUNZIONE DI ATTIVAZIONE NOTIFICHE
-        window.attivaNotificheBacheca = async () => {
-            const btn = document.getElementById('btn-attiva-notifiche');
-            const testoOriginale = btn.innerText;
-
-            btn.innerText = "⏳ Attivazione in corso...";
-            btn.disabled = true;
-            btn.style.pointerEvents = 'none';
-
-            try {
-                const messaging = getMessaging(app);
-                const permission = await Notification.requestPermission();
-
-                if (permission === 'granted') {
-                    const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-                    const swPath = basePath + '/firebase-messaging-sw.js';
-                    const swRegistration = await navigator.serviceWorker.register(swPath);
-
-                    const token = await getToken(messaging, {
-                        vapidKey: 'BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI',
-                        serviceWorkerRegistration: swRegistration
-                    });
-
-                    if (token && auth.currentUser) {
-                        // LA MODIFICA È QUI: bachecaturni impostato su false di default
-                        const prefDefault = { bachecaturni: false, bachecautility: true, promemoria: true, rotazioni: false };
-                        await setDoc(doc(db, "utenti", auth.currentUser.uid), { 
-                            fcm_token: token,
-                            notifiche_pref: prefDefault 
-                        }, { merge: true });
-
-                        btn.style.display = 'none';
-                        alert("🔔 Notifiche attivate! Riceverai un avviso per ogni nuovo Annuncio o DDS.");
-                    } else {
-                         btn.innerText = testoOriginale;
-                         btn.disabled = false;
-                         btn.style.pointerEvents = 'auto';
-                         alert("Non è stato possibile ottenere il token per le notifiche.");
-                    }
-                } else {
-                    btn.style.display = 'none';
-                    alert("Hai negato il permesso per le notifiche.");
-                }
-            } catch (error) {
-                console.error("Errore attivazione notifiche:", error);
-                btn.innerText = testoOriginale;
-                btn.disabled = false;
-                btn.style.pointerEvents = 'auto';
-                alert("Errore durante l'attivazione delle notifiche. Controlla la console.");
-            }
-        };
 
         window.toggleCampiDDS = () => {
             const isDDS = document.getElementById('pub-tipo').value === 'dds';
@@ -476,10 +422,6 @@
 
                     const omo = data.progressivo ? ` ${data.progressivo}` : '';
                     currentUserFullName = `${data.cognome || ''} ${data.nome || ''}${omo}`.trim();
-
-                    if (!data.fcm_token && Notification.permission !== 'denied') {
-                        document.getElementById('btn-attiva-notifiche').style.display = 'block';
-                    }
 
                     nascondiTutto();
                     document.getElementById('view-main').style.display = 'flex';

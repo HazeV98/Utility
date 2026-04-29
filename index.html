@@ -217,40 +217,9 @@
             <button class="btn-modal" style="background: #ff9800; color: white;" onclick="LayoutEngine.toggleEditMode(); chiudiModal('settingsModal');">✏️ Modifica Layout (Trascina e Ordina)</button>
             <button class="btn-modal" style="background: #17a2b8; color: white;" onclick="apriModal('customAppModal'); chiudiModal('settingsModal');">➕ Aggiungi App Personalizzata</button>
             
-            <button id="btn-impostazioni-notifiche" class="btn-modal" style="background: #6f42c1; color: white; display: none; margin-top: 20px;"></button>
-
             <hr style="border: 0; border-top: 1px solid #e9ecef; margin: 20px 0;">
             <button class="btn-modal" style="background: var(--success); color: white;" onclick="LayoutEngine.salvaPreferenzeGlobali()">💾 Salva Impostazioni</button>
             <button class="btn-modal" style="background: transparent; color: var(--danger); border: 2px solid var(--danger);" onclick="LayoutEngine.ripristinaPredefiniti()">🔄 Ripristina Predefiniti</button>
-        </div>
-    </div>
-
-    <div id="notificheModal" class="modal-overlay" onclick="chiudiSuSfondo(event, 'notificheModal')">
-        <div class="modal-content" style="max-width: 350px;">
-            <span style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #525f7f;" onclick="chiudiModal('notificheModal')">&times;</span>
-            <h3 style="margin-top: 5px; color: #32325d; text-align: center;">🔔 Centro Notifiche</h3>
-            <p style="font-size: 13px; color: #666; text-align: center; margin-bottom: 15px;">Scegli per quali sezioni ricevere avvisi sul tuo dispositivo.</p>
-            
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; margin-bottom: 15px;">
-                <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; cursor: pointer;">
-                    <span style="font-size: 14px; font-weight: bold; color: #333;">📌 Bacheca Turni</span>
-                    <input type="checkbox" id="notif-bachecaturni" style="transform: scale(1.3);">
-                </label>
-                <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; cursor: pointer;">
-                    <span style="font-size: 14px; font-weight: bold; color: #333;">📢 Bacheca Utility</span>
-                    <input type="checkbox" id="notif-bachecautility" style="transform: scale(1.3);">
-                </label>
-                <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; cursor: pointer;">
-                    <span style="font-size: 14px; font-weight: bold; color: #333;">⏰ Promemoria</span>
-                    <input type="checkbox" id="notif-promemoria" style="transform: scale(1.3);">
-                </label>
-                <label id="row-notif-rotazioni" style="display: none; align-items: center; justify-content: space-between; margin-bottom: 5px; cursor: pointer;">
-                    <span style="font-size: 14px; font-weight: bold; color: #333;">👥 Rotazioni</span>
-                    <input type="checkbox" id="notif-rotazioni" style="transform: scale(1.3);">
-                </label>
-            </div>
-
-            <button class="btn-modal" style="background: var(--success); color: white;" onclick="salvaPreferenzeNotifiche(event)">💾 Salva Preferenze</button>
         </div>
     </div>
 
@@ -424,7 +393,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-messaging.js"; // Import aggiunto
 
         const firebaseConfig = { apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", authDomain: "utility-haze.firebaseapp.com", projectId: "utility-haze", storageBucket: "utility-haze.firebasestorage.app", messagingSenderId: "686237947418", appId: "1:686237947418:web:f03ba19ab8fff43110a3a3" };
         const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getFirestore(app); const provider = new GoogleAuthProvider();
@@ -846,103 +814,6 @@
             await setDoc(doc(db, "utenti", auth.currentUser.uid), p, { merge: true }); alert("Salvato!"); window.chiudiModal('profileModal');
         };
 
-        window.attivaNotifichePushIndex = async () => {
-            const btn = document.getElementById('btn-impostazioni-notifiche');
-            btn.innerText = "⏳ Attivazione...";
-            try {
-                const messaging = getMessaging(app);
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-                    const swRegistration = await navigator.serviceWorker.register(basePath + '/firebase-messaging-sw.js');
-                    const token = await getToken(messaging, { vapidKey: 'BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI', serviceWorkerRegistration: swRegistration });
-                    
-                    if (token && auth.currentUser) {
-                        // SPUNTA BACHECATURNI IMPOSTATA SU FALSE
-                        const prefDefault = { bachecaturni: false, bachecautility: true, promemoria: true, rotazioni: false };
-                        await setDoc(doc(db, "utenti", auth.currentUser.uid), { fcm_token: token, notifiche_pref: prefDefault }, { merge: true });
-                        if(window.currentUserData) {
-                            window.currentUserData.fcm_token = token;
-                            window.currentUserData.notifiche_pref = prefDefault;
-                        }
-                        alert("🔔 Notifiche attivate con successo!");
-                        window.aggiornaTastoNotifiche();
-                        window.chiudiModal('settingsModal');
-                        window.apriCentroNotifiche();
-                    }
-                } else {
-                    alert("Hai negato il permesso per le notifiche.");
-                    window.aggiornaTastoNotifiche();
-                }
-            } catch (e) {
-                console.error(e);
-                alert("Errore durante l'attivazione. Riprova.");
-                window.aggiornaTastoNotifiche();
-            }
-        };
-
-        window.aggiornaTastoNotifiche = () => {
-            const btn = document.getElementById('btn-impostazioni-notifiche');
-            if(!auth.currentUser) { btn.style.display = 'none'; return; }
-            btn.style.display = 'block';
-            
-            if (Notification.permission === 'granted' && window.currentUserData?.fcm_token) {
-                btn.innerHTML = "⚙️ Centro Notifiche";
-                btn.onclick = () => { window.chiudiModal('settingsModal'); window.apriCentroNotifiche(); };
-            } else {
-                btn.innerHTML = "🔔 Attiva Notifiche";
-                btn.onclick = window.attivaNotifichePushIndex;
-            }
-        };
-
-        window.apriCentroNotifiche = () => {
-            // SPUNTA BACHECATURNI IMPOSTATA SU FALSE
-            const pref = window.currentUserData?.notifiche_pref || { bachecaturni: false, bachecautility: true, promemoria: true, rotazioni: false };
-            document.getElementById('notif-bachecaturni').checked = pref.bachecaturni !== false;
-            document.getElementById('notif-bachecautility').checked = pref.bachecautility !== false;
-            document.getElementById('notif-promemoria').checked = pref.promemoria !== false;
-            
-            const rowRotazioni = document.getElementById('row-notif-rotazioni');
-            if (globalIsAdmin || globalIsCollab) {
-                rowRotazioni.style.display = 'flex';
-                document.getElementById('notif-rotazioni').checked = pref.rotazioni !== false;
-            } else {
-                rowRotazioni.style.display = 'none';
-            }
-            
-            window.apriModal('notificheModal');
-        };
-
-        window.salvaPreferenzeNotifiche = async (event) => {
-            const btn = event.target;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "⏳ Salvataggio...";
-            
-            const pref = {
-                bachecaturni: document.getElementById('notif-bachecaturni').checked,
-                bachecautility: document.getElementById('notif-bachecautility').checked,
-                promemoria: document.getElementById('notif-promemoria').checked,
-            };
-            
-            if (globalIsAdmin || globalIsCollab) {
-                pref.rotazioni = document.getElementById('notif-rotazioni').checked;
-            } else {
-                pref.rotazioni = window.currentUserData?.notifiche_pref?.rotazioni || false;
-            }
-            
-            try {
-                await setDoc(doc(db, "utenti", auth.currentUser.uid), { notifiche_pref: pref }, { merge: true });
-                if(window.currentUserData) window.currentUserData.notifiche_pref = pref;
-                btn.innerHTML = originalText;
-                window.chiudiModal('notificheModal');
-                alert("Preferenze Notifiche salvate!");
-            } catch(e) {
-                console.error(e);
-                alert("Errore nel salvataggio.");
-                btn.innerHTML = originalText;
-            }
-        };
-
         onAuthStateChanged(auth, async (user) => {
             const vLoad = document.getElementById('view-loading'); const vGuest = document.getElementById('view-guest'); const vApp = document.getElementById('view-app'); const vBanned = document.getElementById('view-banned');
             if (user) {
@@ -969,8 +840,6 @@
                     document.getElementById('profileMatricola').value = data.matricola || ''; document.getElementById('profileProgressivo').value = data.progressivo || '';
                     document.getElementById('profileMansione').value = data.mansione || '';
                     
-                    window.aggiornaTastoNotifiche();
-
                 } catch(e) { vLoad.style.display = 'none'; }
             } else { vLoad.style.display = 'none'; window.LayoutEngine.init(); vGuest.style.display = 'flex'; vApp.style.display = 'none'; vBanned.style.display = 'none'; }
         });

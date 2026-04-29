@@ -82,7 +82,6 @@
     </div>
 
     <div class="content-area">
-        <button id="btn-attiva-notifiche" class="btn-add-main" style="display: none; background-color: #17a2b8; color: white; margin-bottom: 5px;" onclick="attivaNotifichePush()">🔔 Attiva Notifiche Push</button>
         <button class="btn-add-main" style="margin-bottom: 5px;" onclick="apriModalePromemoria()">➕ Nuovo Promemoria</button>
         <div id="dds-list"></div>
     </div>
@@ -117,13 +116,9 @@
 
             <div class="input-group" style="background: #fff8e1; padding: 15px; border-radius: 8px; border: 1px dashed #ffc107;">
                 <label class="checkbox-label" style="font-weight: bold; color: #856404;">
-                    <input type="checkbox" id="push-attiva" onchange="togglePushTime()"> 🔔 Attiva notifica push
+                    <input type="checkbox" id="banner-attiva"> ⚠️ Mostra banner in Home Page
                 </label>
-                <div id="push-time-container" style="display: none; margin-top: 10px;">
-                    <label style="font-size: 13px; color: #555;">Orario della notifica:</label>
-                    <input type="time" id="push-orario" class="input-field" style="margin-bottom: 0;">
-                    <div style="font-size: 11px; color: #888; margin-top: 5px;">Fuso orario italiano.</div>
-                </div>
+                <div style="font-size: 11px; color: #888; margin-top: 5px;">Se attivo, vedrai un avviso nella Home Page per tutta la durata dei giorni validi.</div>
             </div>
 
             <button id="btn-salva-prom" class="btn-esegui" onclick="salvaPromemoria()">💾 Salva Promemoria</button>
@@ -133,51 +128,16 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, updateDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-messaging.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, updateDoc, collection } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", authDomain: "utility-haze.firebaseapp.com", projectId: "utility-haze", messagingSenderId: "686237947418", appId: "1:686237947418:web:f03ba19ab8fff43110a3a3" };
-        const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getFirestore(app);
+        const app = initializeApp(firebaseConfig); 
+        const auth = getAuth(app); 
+        const db = getFirestore(app);
 
         window.apriMenuLaterale = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; };
         window.chiudiMenuLaterale = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; };
-        
-        window.togglePushTime = () => {
-            const isChecked = document.getElementById('push-attiva').checked;
-            document.getElementById('push-time-container').style.display = isChecked ? 'block' : 'none';
-        };
-
-        window.attivaNotifichePush = async () => {
-            const btn = document.getElementById('btn-attiva-notifiche');
-            btn.innerText = "⏳ Attivazione...";
-            try {
-                const messaging = getMessaging(app);
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-                    const swRegistration = await navigator.serviceWorker.register(basePath + '/firebase-messaging-sw.js');
-                    const token = await getToken(messaging, { vapidKey: 'BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI', serviceWorkerRegistration: swRegistration });
-                    
-                    if (token && auth.currentUser) {
-                        const prefDefault = { bachecaturni: false, bachecautility: true, promemoria: true, rotazioni: false };
-                        await setDoc(doc(db, "utenti", auth.currentUser.uid), { fcm_token: token, notifiche_pref: prefDefault }, { merge: true });
-                        
-                        btn.style.display = 'none';
-                        alert("🔔 Notifiche attivate con successo!");
-                    }
-                } else { alert("Permesso negato."); btn.innerText = "🔔 Attiva Notifiche Push"; }
-            } catch (error) { alert("Errore attivazione."); btn.innerText = "🔔 Attiva Notifiche Push"; }
-        };
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const docSnap = await getDoc(doc(db, "utenti", user.uid));
-                if (docSnap.exists() && !docSnap.data().fcm_token && Notification.permission !== 'denied') {
-                    document.getElementById('btn-attiva-notifiche').style.display = 'block';
-                }
-            }
-        });
 
         let fpPromemoriaInstance;
         const dbName = "UtilityDB";
@@ -194,12 +154,42 @@
         window.apriModalePromemoria = () => {
             document.getElementById('prom-titolo').value = '';
             document.getElementById('prom-note').value = '';
-            document.getElementById('push-attiva').checked = false;
-            document.getElementById('push-orario').value = '';
-            window.togglePushTime();
+            document.getElementById('banner-attiva').checked = false;
             
             if (!fpPromemoriaInstance) { 
-                fpPromemoriaInstance = flatpickr("#prom-date-picker", { mode: "multiple", dateFormat: "Y-m-d", locale: "it", altInput: true, altFormat: "d/m/Y", conjunction: ", " }); 
+                fpPromemoriaInstance = flatpickr("#prom-date-picker", { 
+                    mode: "multiple", 
+                    dateFormat: "Y-m-d", 
+                    locale: "it", 
+                    altInput: true, 
+                    altFormat: "d/m/Y", 
+                    conjunction: ", ",
+                    onReady: function(selectedDates, dateStr, instance) {
+                        const btnContainer = document.createElement("div");
+                        btnContainer.style.padding = "10px";
+                        btnContainer.style.borderTop = "1px solid #eee";
+                        btnContainer.style.backgroundColor = "#fff";
+                        
+                        const btn = document.createElement("button");
+                        btn.innerHTML = "Fatto ✔️";
+                        btn.style.backgroundColor = "var(--warning)";
+                        btn.style.color = "#333";
+                        btn.style.border = "none";
+                        btn.style.padding = "10px";
+                        btn.style.borderRadius = "8px";
+                        btn.style.fontWeight = "bold";
+                        btn.style.cursor = "pointer";
+                        btn.style.width = "100%";
+                        btn.style.fontSize = "16px";
+                        
+                        btn.onclick = function() {
+                            instance.close();
+                        };
+                        
+                        btnContainer.appendChild(btn);
+                        instance.calendarContainer.appendChild(btnContainer);
+                    }
+                }); 
             }
             fpPromemoriaInstance.clear();
             document.querySelectorAll('.rem-prom-checkbox').forEach(cb => cb.checked = (cb.value === 'all_days'));
@@ -246,15 +236,13 @@
                             timestamp: Date.now()
                         });
 
-                        if (document.getElementById('push-attiva').checked && document.getElementById('push-orario').value) {
+                        if (document.getElementById('banner-attiva').checked) {
                             const noteRef = doc(collection(db, "utenti", auth.currentUser.uid, "notifiche_programmate"));
                             await setDoc(noteRef, {
                                 titolo: "🔔 " + titolo,
                                 date: selectedDates,
-                                orario: document.getElementById('push-orario').value,
-                                tipo: "Promemoria",
+                                tipo: "PROMEMORIA_BANNER",
                                 note: note,
-                                fuso_orario: "Europe/Rome",
                                 timestamp_creazione: Date.now()
                             });
                         }

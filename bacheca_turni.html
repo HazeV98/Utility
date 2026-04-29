@@ -95,8 +95,6 @@
     <div id="view-main" class="view-container">
         <button class="btn-action" style="margin-top: 0; margin-bottom: 10px;" onclick="apriModaleAnnuncio()">+ Nuovo Scambio</button>
         
-        <button id="btn-attiva-notifiche" class="btn-action" style="display: none; background-color: #17a2b8; margin-top: 0; margin-bottom: 10px;" onclick="attivaNotificheTurni()">🔔 Attiva Notifiche Cambi Turno</button>
-        
         <div class="card" style="padding: 15px; margin-bottom: 15px;">
             <div style="display: flex; gap: 10px;">
                 <div style="flex: 1;">
@@ -241,7 +239,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, where, addDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-messaging.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", authDomain: "utility-haze.firebaseapp.com", projectId: "utility-haze", storageBucket: "utility-haze.firebasestorage.app", messagingSenderId: "686237947418", appId: "1:686237947418:web:f03ba19ab8fff43110a3a3" };
         const app = initializeApp(firebaseConfig);
@@ -279,47 +276,6 @@
             const d = new Date();
             return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
         }
-
-        // --- LOGICA ATTIVAZIONE NOTIFICHE TURNI ---
-        window.attivaNotificheTurni = async () => {
-            const btn = document.getElementById('btn-attiva-notifiche');
-            const testoOriginale = btn.innerText;
-            btn.innerText = "⏳ Attivazione in corso...";
-            btn.disabled = true; btn.style.pointerEvents = 'none';
-
-            try {
-                const messaging = getMessaging(app);
-                const permission = await Notification.requestPermission();
-                
-                if (permission === 'granted') {
-                    const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-                    const swRegistration = await navigator.serviceWorker.register(basePath + '/firebase-messaging-sw.js');
-                    const token = await getToken(messaging, { vapidKey: 'BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI', serviceWorkerRegistration: swRegistration });
-                    
-                    if (token && currentUser) {
-                        // Preserva le preferenze vecchie e aggiorna solo bachecaturni a true
-                        let currentPrefs = userDataPrivate.notifiche_pref || { bachecautility: true, promemoria: true, rotazioni: false };
-                        currentPrefs.bachecaturni = true;
-                        
-                        await setDoc(doc(db, "utenti", currentUser.uid), { fcm_token: token, notifiche_pref: currentPrefs }, { merge: true });
-                        userDataPrivate.fcm_token = token;
-                        userDataPrivate.notifiche_pref = currentPrefs;
-                        
-                        btn.style.display = 'none';
-                        alert("🔔 Notifiche per i Cambi Turno attivate con successo!");
-                    } else {
-                        btn.innerText = testoOriginale; btn.disabled = false; btn.style.pointerEvents = 'auto';
-                    }
-                } else {
-                    btn.innerText = testoOriginale; btn.disabled = false; btn.style.pointerEvents = 'auto';
-                    alert("Permesso negato.");
-                }
-            } catch (error) {
-                btn.innerText = testoOriginale; btn.disabled = false; btn.style.pointerEvents = 'auto';
-                console.error(error);
-                alert("Errore durante l'attivazione. Riprova.");
-            }
-        };
 
         // --- MOTORE LOGICA DB COME IN CALENDARIO.HTML ---
         const LISTA_FILE_INFO = ["info_turni_2026-03-02.json", "info_turni_2026-03-28.json"];
@@ -506,18 +462,6 @@
                     apriModaleProfilo(); // Forza apertura
                     document.getElementById('btnCloseProfileModal').style.display = 'none'; // Nascondi X se non è completo
                     return;
-                }
-                
-                // LOGICA VISIBILITÀ BOTTONE NOTIFICHE TURNI
-                const fcmToken = userDataPrivate.fcm_token;
-                const prefs = userDataPrivate.notifiche_pref || {};
-                const turniAttivi = prefs.bachecaturni === true;
-                
-                const btnNotif = document.getElementById('btn-attiva-notifiche');
-                if ((!fcmToken && Notification.permission !== 'denied') || (fcmToken && !turniAttivi)) {
-                    btnNotif.style.display = 'block';
-                } else {
-                    btnNotif.style.display = 'none';
                 }
 
                 document.getElementById('filtroMansione').value = userDataPrivate.mansione || "Tutte";

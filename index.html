@@ -414,6 +414,11 @@
             <h2 id="authModalTitle">☁️ Accedi</h2>
             <input type="email" id="emailInput" placeholder="Email" class="input-field">
             <input type="password" id="passwordInput" placeholder="Password" class="input-field">
+            
+            <div id="forgotPasswordLink" style="margin-bottom: 15px; text-align: right;">
+                <a href="#" onclick="recuperaPassword(); return false;" style="font-size: 13px; color: #0056b3;">Password dimenticata?</a>
+            </div>
+
             <div id="registerFields" style="display: none; text-align: left;">
                 <input type="text" id="regNome" class="input-field" placeholder="Nome *">
                 <input type="text" id="regCognome" class="input-field" placeholder="Cognome *">
@@ -473,7 +478,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", authDomain: "utility-haze.firebaseapp.com", projectId: "utility-haze", storageBucket: "utility-haze.firebasestorage.app", messagingSenderId: "686237947418", appId: "1:686237947418:web:f03ba19ab8fff43110a3a3" };
@@ -789,7 +794,7 @@
                 const nuovoOrdine = []; document.querySelectorAll('#app-container .app-btn').forEach(nodo => {
                     const id = nodo.id.replace('btn-', ''); const app = this.prefs.apps.find(a => a.id === id); if (app) nuovoOrdine.push(app);
                 });
-                this.prefs.apps.forEach(app => { if (!nuovoOrdine.find(a => a.id === app.id)) nuovoOrdine.push(app); });
+                this.prefs.apps.forEach(app => { if (!nuonvoOrdine.find(a => a.id === app.id)) nuovoOrdine.push(app); });
                 this.prefs.apps = nuovoOrdine;
             },
             apriEditorApp: function(appId) {
@@ -963,10 +968,13 @@
         let currentAuthMode = 'login';
         window.switchAuthMode = () => { currentAuthMode = currentAuthMode === 'login' ? 'register' : 'login'; window.aggiornaUIAuth(); };
         window.aggiornaUIAuth = () => {
-            document.getElementById('authModalTitle').innerText = currentAuthMode === 'login' ? "☁️ Accedi" : "📝 Registrati";
-            document.getElementById('btnEseguiAuth').innerText = currentAuthMode === 'login' ? "Accedi" : "Registrati";
-            document.getElementById('registerFields').style.display = currentAuthMode === 'login' ? "none" : "block";
-            document.getElementById('authSwitchLink').innerText = currentAuthMode === 'login' ? "Registrati qui" : "Accedi qui";
+            const isLogin = currentAuthMode === 'login';
+            document.getElementById('authModalTitle').innerText = isLogin ? "☁️ Accedi" : "📝 Registrati";
+            document.getElementById('btnEseguiAuth').innerText = isLogin ? "Accedi" : "Registrati";
+            document.getElementById('registerFields').style.display = isLogin ? "none" : "block";
+            document.getElementById('authSwitchLink').innerText = isLogin ? "Registrati qui" : "Accedi qui";
+            // Gestione visibilità link password dimenticata
+            document.getElementById('forgotPasswordLink').style.display = isLogin ? "block" : "none";
         };
 
         window.eseguiAuth = async () => {
@@ -985,6 +993,22 @@
                     await setDoc(doc(db, "utenti", res.user.uid), { nome, cognome, matricola, progressivo: document.getElementById('regProg').value.trim(), email: email }, { merge: true }); 
                     window.chiudiModal('authModal'); 
                 } catch (e) { err.innerText = "Errore."; err.style.display='block'; }
+            }
+        };
+
+        // Funzione per il recupero della password
+        window.recuperaPassword = async () => {
+            const email = document.getElementById('emailInput').value.trim();
+            if (!email) {
+                alert("Inserisci il tuo indirizzo email nel campo sopra per ricevere il link di ripristino.");
+                return;
+            }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                alert("Email di ripristino inviata! Controlla la tua casella di posta (anche nella cartella Spam).");
+            } catch (error) {
+                console.error("Errore recupero password:", error);
+                alert("Si è verificato un errore. Verifica che l'indirizzo email sia corretto.");
             }
         };
 
@@ -1040,7 +1064,6 @@
                     
                     window.LayoutEngine.init(data.preferenze_layout);
                     
-                    // Inizializza le notifiche se siamo su App!
                     if(window.inizializzaNotificheSeNativa) window.inizializzaNotificheSeNativa(data);
 
                     document.getElementById('profileNome').value = data.nome || ''; document.getElementById('profileCognome').value = data.cognome || '';

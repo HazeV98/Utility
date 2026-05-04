@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BarcAdvisor - Utility</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #6c757d;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --danger: #dc3545;
+            --success: #28a745;
+            --warning: #ffc107;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        /* Header & Navigation */
+        .header {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }
+
+        .header h1 { margin: 0; font-size: 1.4rem; font-weight: 600; }
+        .btn-back { background: transparent; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
+
+        /* MENU LATERALE UNIFICATO */
+        .hamburger-btn { background: none; border: none; font-size: 30px; color: white; cursor: pointer; padding: 0; width: 50px; text-align: left; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 5999; }
+        .sidebar { position: fixed; top: 0; left: -280px; width: 250px; height: 100%; background-color: white; box-shadow: 2px 0 5px rgba(0,0,0,0.2); z-index: 6000; transition: left 0.3s ease; display: flex; flex-direction: column; }
+        .sidebar.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: var(--primary-color); color: white; }
+        .sidebar-link { padding: 15px 20px; text-decoration: none; color: var(--text-color); font-size: 18px; border-bottom: 1px solid #eee; display: block; text-transform: none; }
+        .sidebar-link:active, .sidebar-link:hover { background-color: #f4f7f6; color: var(--primary-color); font-weight: bold; }
+
+        /* Main Containers */
+        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        /* Search & Add Bar */
+        .top-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .search-wrapper { position: relative; }
+        .search-wrapper input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .btn-add {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 1.1rem;
+            width: 100%;
+        }
+
+        /* Cards List */
+        .unit-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .unit-card:active { transform: scale(0.98); }
+        .unit-info h3 { margin: 0; font-size: 1.1rem; }
+        .unit-rating { color: var(--warning); font-weight: bold; margin-top: 4px; }
+        
+        .admin-menu-trigger {
+            padding: 10px;
+            color: var(--secondary-color);
+            cursor: pointer;
+        }
+
+        /* Detail View */
+        .detail-header { margin-bottom: 20px; text-align: center; }
+        .rating-box {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .rating-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+
+        .rating-label { font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        .stars { display: flex; gap: 8px; font-size: 1.8rem; color: #ddd; }
+        .star { cursor: pointer; }
+        .star.active { color: var(--warning); }
+
+        /* Segnalazioni */
+        .reports-section { margin-top: 30px; }
+        .report-card {
+            background: #fff;
+            border-left: 4px solid var(--danger);
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .report-text { display: block; margin-bottom: 5px; font-weight: 500; }
+        .report-meta { font-size: 0.8rem; color: #777; }
+        .btn-resolve {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            float: right;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .report-form { display: flex; gap: 8px; margin-bottom: 20px; }
+        .report-form input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
+        .report-form button { width: auto; padding: 10px 15px; font-size: 1rem; }
+
+        /* Modal / Popups simple */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; z-index: 2000;
+            justify-content: center; align-items: center;
+        }
+
+        .modal-content {
+            background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px;
+        }
+
+        .admin-options button {
+            width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="chiudiMenuLaterale()"></div>
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3 style="margin:0; color:white;">Menu</h3>
+            <button style="background:none; border:none; color:white; font-size:24px; cursor:pointer;" onclick="chiudiMenuLaterale()">✕</button>
+        </div>
+        <a href="index.html" class="sidebar-link">🏠 Home Page</a>
+        <a href="calendario.html" class="sidebar-link">📅 Calendario</a>
+        <a href="dati_calendario.html" class="sidebar-link">📊 Statistiche Calendario</a>
+        <a href="rotazioni.html" class="sidebar-link">👥 Rotazioni</a>
+        <a href="turni.html" class="sidebar-link">🔄 Turni</a>
+        <a href="bacheca_turni.html" class="sidebar-link">🔄 Bacheca Turni</a>
+        <a href="rubrica.html" class="sidebar-link">📞 Rubrica Colleghi</a>
+        <a href="#" class="sidebar-link" style="background-color: #f4f7f6; color: var(--primary-color); font-weight: bold;">⛵ BarcAdvisor</a>
+        <a href="rotazione_ferie.html" class="sidebar-link">🌴 Rotazione Ferie</a>
+        <a href="orari.html" class="sidebar-link">🕒 Orari Navigazione</a>
+        <a href="documenti.html" class="sidebar-link">📄 Documenti</a>
+        <a href="link.html" class="sidebar-link">🔗 Link</a>
+        <a href="contatti.html" class="sidebar-link">📇 Contatti</a>
+        <a href="buoni.html" class="sidebar-link">🍝 Buoni Pasto</a>
+        <a href="dds.html" class="sidebar-link">📂 Archivio DDS</a>
+        <a href="guida.html" class="sidebar-link">📖 Guida</a>
+    </div>
+
+    <section id="listView" class="view-section active">
+        <header class="header">
+            <button class="hamburger-btn" onclick="apriMenuLaterale()">☰</button>
+            <h1>BarcAdvisor</h1>
+            <div style="width: 50px;"></div>
+        </header>
+
+        <div class="container">
+            <div class="top-controls">
+                <div class="search-wrapper">
+                    <input type="text" id="searchInput" placeholder="Cerca unità..." oninput="filterUnits()">
+                </div>
+                <button class="btn-add" onclick="openAddUnit()">
+                    <i class="fas fa-plus"></i> Aggiungi Unità
+                </button>
+            </div>
+
+            <div id="unitsContainer">
+                </div>
+        </div>
+    </section>
+
+    <section id="detailView" class="view-section">
+        <header class="header">
+            <button class="btn-back" onclick="showListView()"><i class="fas fa-arrow-left"></i></button>
+            <h1 id="detailTitle">Dettaglio</h1>
+            <div style="width: 30px;"></div>
+        </header>
+
+        <div class="container">
+            <div class="rating-box">
+                <div class="rating-row">
+                    <div class="rating-label">Potenza <span id="val-potenza">-</span></div>
+                    <div class="stars" data-category="potenza">
+                        <span class="star" data-value="1">&#9733;</span>
+                        <span class="star" data-value="2">&#9733;</span>
+                        <span class="star" data-value="3">&#9733;</span>
+                        <span class="star" data-value="4">&#9733;</span>
+                        <span class="star" data-value="5">&#9733;</span>
+                    </div>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">Manovrabilità <span id="val-manovrabilita">-</span></div>
+                    <div class="stars" data-category="manovrabilita">
+                        <span class="star" data-value="1">&#9733;</span>
+                        <span class="star" data-value="2">&#9733;</span>
+                        <span class="star" data-value="3">&#9733;</span>
+                        <span class="star" data-value="4">&#9733;</span>
+                        <span class="star" data-value="5">&#9733;</span>
+                    </div>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">Stato Generale <span id="val-stato">-</span></div>
+                    <div class="stars" data-category="stato">
+                        <span class="star" data-value="1">&#9733;</span>
+                        <span class="star" data-value="2">&#9733;</span>
+                        <span class="star" data-value="3">&#9733;</span>
+                        <span class="star" data-value="4">&#9733;</span>
+                        <span class="star" data-value="5">&#9733;</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reports-section">
+                <h3>Segnalazioni Problemi</h3>
+                <div class="report-form">
+                    <input type="text" id="newReportInput" placeholder="Descrivi il problema...">
+                    <button class="btn-add" onclick="submitReport()">Invia</button>
+                </div>
+                <div id="reportsContainer">
+                    </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="modalOverlay" class="modal-overlay" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 id="modalTitle">Titolo Modal</h3>
+            <div id="modalBody">
+                
+                <div id="addPrefixContainer" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <select id="modalPrefix" style="padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; background: white;">
+                        <option value="M/S">M/S</option>
+                        <option value="M/B">M/B</option>
+                        <option value="M/N">M/N</option>
+                        <option value="M/Z">M/Z</option>
+                    </select>
+                    <input type="text" id="modalInput" style="flex:1; padding:10px; border: 1px solid #ddd; border-radius: 8px; outline: none;">
+                </div>
+
+                <div class="admin-options">
+                    <button id="modalConfirmBtn" style="background:var(--success); color:white;">Conferma</button>
+                    <button onclick="closeModal()" style="background:#f8f9fa; color:var(--secondary-color); border: 1px solid #ddd;">Annulla</button>
+                    <button id="modalDeleteBtn" class="hidden" style="background:var(--danger); color:white;">Elimina Unità</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+
+        // Configurazione reale estratta dal tuo progetto
+        const firebaseConfig = { 
+            apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", 
+            authDomain: "utility-haze.firebaseapp.com", 
+            projectId: "utility-haze", 
+            storageBucket: "utility-haze.firebasestorage.app", 
+            messagingSenderId: "686237947418", 
+            appId: "1:686237947418:web:f03ba19ab8fff43110a3a3" 
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2";
+        let currentUser = null;
+        let allUnits = [];
+        let activeUnitId = null;
+
+        // Funzioni Menu Laterale
+        window.apriMenuLaterale = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; };
+        window.chiudiMenuLaterale = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; };
+
+        // --- INIZIALIZZAZIONE ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                initApp();
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        function initApp() {
+            onSnapshot(collection(db, "flotta_unita"), (snapshot) => {
+                allUnits = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderUnits();
+            });
+        }
+
+        // --- LOGICA VISTA LISTA ---
+        window.renderUnits = function() {
+            const container = document.getElementById('unitsContainer');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            container.innerHTML = '';
+
+            // Filtra convertendo l'underscore in slash per la ricerca
+            const filtered = allUnits.filter(u => u.id.replace(/_/g, '/').toLowerCase().includes(search));
+
+            filtered.sort((a,b) => a.id.localeCompare(b.id)).forEach(unit => {
+                const isAdmin = currentUser.uid === ADMIN_UID;
+                const card = document.createElement('div');
+                card.className = 'unit-card';
+                card.onclick = () => showDetail(unit.id);
+                
+                // Variabile per mostrare a schermo il nome con lo slash (/)
+                const displayId = unit.id.replace(/_/g, '/');
+
+                card.innerHTML = `
+                    <div class="unit-info">
+                        <h3>${displayId}</h3>
+                        <div class="unit-rating">⭐ ${unit.mediaVoto || 'N/D'}</div>
+                    </div>
+                    ${isAdmin ? `
+                        <div class="admin-menu-trigger" onclick="event.stopPropagation(); openAdminMenu('${unit.id}')">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </div>
+                    ` : ''}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        window.filterUnits = renderUnits;
+
+        // --- LOGICA DETTAGLIO ---
+        window.showDetail = async function(unitId) {
+            activeUnitId = unitId;
+            document.getElementById('detailTitle').innerText = unitId.replace(/_/g, '/');
+            document.getElementById('listView').classList.remove('active');
+            document.getElementById('detailView').classList.add('active');
+
+            const voteId = `${unitId}_${currentUser.uid}`;
+            onSnapshot(doc(db, "flotta_voti", voteId), (docSnap) => {
+                resetStars();
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if(data.potenza) applyStars('potenza', data.potenza);
+                    if(data.manovrabilita) applyStars('manovrabilita', data.manovrabilita);
+                    if(data.stato) applyStars('stato', data.stato);
+                }
+            });
+
+            const q = query(collection(db, "flotta_segnalazioni"), orderBy("data", "desc"));
+            onSnapshot(q, (snapshot) => {
+                const container = document.getElementById('reportsContainer');
+                container.innerHTML = '';
+                snapshot.docs.forEach(d => {
+                    const data = d.data();
+                    if (data.unitId === unitId) {
+                        const div = document.createElement('div');
+                        div.className = 'report-card';
+                        div.innerHTML = `
+                            <button class="btn-resolve" onclick="deleteReport('${d.id}')">Risolto</button>
+                            <span class="report-text">${data.testo}</span>
+                            <span class="report-meta">Segnalato da ${data.autore} il ${new Date(data.data).toLocaleString()}</span>
+                        `;
+                        container.appendChild(div);
+                    }
+                });
+            });
+        };
+
+        window.showListView = function() {
+            document.getElementById('detailView').classList.remove('active');
+            document.getElementById('listView').classList.add('active');
+            activeUnitId = null;
+        };
+
+        // --- VOTAZIONI ---
+        document.querySelectorAll('.star').forEach(star => {
+            star.onclick = async function() {
+                const val = parseInt(this.dataset.value);
+                const cat = this.parentElement.dataset.category;
+                
+                const voteId = `${activeUnitId}_${currentUser.uid}`;
+                const voteRef = doc(db, "flotta_voti", voteId);
+                
+                await setDoc(voteRef, {
+                    unitId: activeUnitId,
+                    uid: currentUser.uid,
+                    [cat]: val
+                }, { merge: true });
+
+                updateGlobalAverage(activeUnitId);
+            }
+        });
+
+        function applyStars(cat, val) {
+            const stars = document.querySelectorAll(`.stars[data-category="${cat}"] .star`);
+            stars.forEach(s => {
+                if (parseInt(s.dataset.value) <= val) s.classList.add('active');
+            });
+            document.getElementById(`val-${cat}`).innerText = val + "/5";
+        }
+
+        function resetStars() {
+            document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+            ['potenza','manovrabilita','stato'].forEach(c => document.getElementById(`val-${c}`).innerText = "-");
+        }
+
+        async function updateGlobalAverage(unitId) {
+            const votesSnap = await getDocs(collection(db, "flotta_voti"));
+            let total = 0;
+            let count = 0;
+            votesSnap.forEach(d => {
+                const data = d.data();
+                if (data.unitId === unitId) {
+                    let cats = 0; let sum = 0;
+                    if(data.potenza) { sum += data.potenza; cats++; }
+                    if(data.manovrabilita) { sum += data.manovrabilita; cats++; }
+                    if(data.stato) { sum += data.stato; cats++; }
+                    
+                    if(cats > 0) {
+                        total += (sum / cats);
+                        count++;
+                    }
+                }
+            });
+            const media = count > 0 ? (total / count).toFixed(1) : 0;
+            await updateDoc(doc(db, "flotta_unita", unitId), { mediaVoto: media });
+        }
+
+        // --- SEGNALAZIONI ---
+        window.submitReport = async function() {
+            const input = document.getElementById('newReportInput');
+            if (!input.value.trim()) return;
+
+            let userName = "Utente";
+            try {
+                const userDoc = await getDoc(doc(db, "utenti", currentUser.uid));
+                if(userDoc.exists()) {
+                    const ud = userDoc.data();
+                    userName = `${ud.cognome || ''} ${ud.nome || ''}`.trim() || currentUser.email;
+                }
+            } catch(e) {
+                console.error("Errore recupero nome:", e);
+                userName = currentUser.email || "Utente";
+            }
+
+            await setDoc(doc(collection(db, "flotta_segnalazioni")), {
+                unitId: activeUnitId,
+                testo: input.value,
+                autore: userName,
+                uid: currentUser.uid,
+                data: Date.now()
+            });
+            input.value = '';
+        };
+
+        window.deleteReport = async function(id) {
+            if (confirm("Confermi che il problema è stato risolto?")) {
+                await deleteDoc(doc(db, "flotta_segnalazioni", id));
+            }
+        };
+
+        // --- AZIONI ADMIN & AGGIUNTA ---
+        window.openAddUnit = function() {
+            const overlay = document.getElementById('modalOverlay');
+            document.getElementById('modalTitle').innerText = "Aggiungi Nuova Unità";
+            
+            // Mostra il menu a tendina
+            document.getElementById('modalPrefix').style.display = 'block';
+            
+            document.getElementById('modalInput').value = "";
+            document.getElementById('modalInput').placeholder = "Numero o Nome unità";
+            document.getElementById('modalDeleteBtn').classList.add('hidden');
+            
+            document.getElementById('modalConfirmBtn').onclick = async () => {
+                const prefix = document.getElementById('modalPrefix').value;
+                const inputVal = document.getElementById('modalInput').value.trim();
+                
+                if (inputVal) {
+                    // Unisce tendina e nome, poi converte gli slash (/) in underscore (_) per Firebase
+                    const fullName = `${prefix} ${inputVal}`;
+                    const name = fullName.replace(/\//g, '_');
+                    await setDoc(doc(db, "flotta_unita", name), { mediaVoto: 0 });
+                    closeModal();
+                }
+            };
+            overlay.style.display = 'flex';
+        };
+
+        window.openAdminMenu = function(unitId) {
+            const overlay = document.getElementById('modalOverlay');
+            
+            // Nasconde il menu a tendina in modifica per non spezzare il nome originale
+            document.getElementById('modalPrefix').style.display = 'none';
+
+            const displayId = unitId.replace(/_/g, '/'); // Ripristina lo slash visivo per l'input
+            document.getElementById('modalTitle').innerText = "Gestisci " + displayId;
+            document.getElementById('modalInput').value = displayId;
+            
+            const delBtn = document.getElementById('modalDeleteBtn');
+            delBtn.classList.remove('hidden');
+
+            document.getElementById('modalConfirmBtn').onclick = async () => {
+                const newName = document.getElementById('modalInput').value.trim().replace(/\//g, '_');
+                if (newName && newName !== unitId) {
+                    const oldData = allUnits.find(u => u.id === unitId);
+                    await setDoc(doc(db, "flotta_unita", newName), { ...oldData });
+                    await deleteDoc(doc(db, "flotta_unita", unitId));
+                    closeModal();
+                }
+            };
+
+            delBtn.onclick = async () => {
+                if (confirm(`Sei sicuro di voler eliminare definitivamente l'unità ${displayId}?`)) {
+                    await deleteDoc(doc(db, "flotta_unita", unitId));
+                    closeModal();
+                }
+            };
+
+            overlay.style.display = 'flex';
+        };
+
+        window.closeModal = function() {
+            document.getElementById('modalOverlay').style.display = 'none';
+        };
+
+    </script>
+</body>
+</html>

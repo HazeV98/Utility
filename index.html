@@ -44,21 +44,17 @@
         const UPDATE_CHECK_URL = "https://raw.githubusercontent.com/HazeV98/Utility/main/version.json";
 
         async function controllaAggiornamentiAPK() {
-            // Se non siamo dentro l'APK nativo (Capacitor), fermiamo tutto
             if (!window.Capacitor || !window.Capacitor.isNativePlatform() || !window.Capacitor.Plugins.App) {
                 return;
             }
 
             try {
-                // Legge la VERA versione dell'APK installato su Android
                 const appInfo = await window.Capacitor.Plugins.App.getInfo();
                 const versioneInstallata = appInfo.version; 
 
-                // Scarica la versione da GitHub
                 const response = await fetch(UPDATE_CHECK_URL + "?t=" + new Date().getTime());
                 const data = await response.json();
 
-                // Se la versione su GitHub è diversa da quella installata nel telefono, mostra il popup
                 if (data.latest_version && data.latest_version !== versioneInstallata) {
                     mostraPopupAggiornamento(data);
                 }
@@ -509,17 +505,20 @@
             { id: "rotazioni", label: "Rotazioni", icon: "👥", href: "rotazioni.html" },
             { id: "turni", label: "Turni", icon: "🔄", href: "turni.html" },
             { id: "bachecaturni", label: "Bacheca\nTurni", icon: "📌", href: "bacheca_turni.html" },
+            { id: "barcadvisor", label: "BarcAdvisor", image: "icone_app/iconba.png", href: "barcadvisor.html" },
             { id: "rubrica", label: "Rubrica", icon: "📞", href: "rubrica.html" },
             { id: "ferie", label: "Rotazione\nFerie", icon: "🌴", href: "rotazione_ferie.html" },
             { id: "orari", label: "Orari\nNavigaz.", icon: "🕒", href: "orari.html" },
+            { id: "chebateo", label: "CheBateo", image: "icone_app/iconcb.png", href: "https://m.chebateo.it/" },
             { id: "documenti", label: "Documenti", icon: "📄", href: "documenti.html" },
             { id: "link", label: "Link", icon: "🔗", href: "link.html" },
             { id: "contatti", label: "Contatti", icon: "📇", href: "contatti.html" },
             { id: "buoni", label: "Buoni\nPasto", icon: "🍝", href: "buoni.html" },
             { id: "promemoria", label: "Promemoria", icon: "⏰", href: "promemoria.html" },
             { id: "dds", label: "Archivio\nDDS", icon: "📂", href: "dds.html" },
-            { id: "impostazioni", label: "Impostazioni", icon: "⚙️", onclick: "window.apriModal('settingsModal')", defaultColor: "#6c757d" },
-            { id: "guida", label: "Guida", icon: "📖", href: "guida.html", defaultColor: "#7f8c8d" },
+            { id: "impostazioni", label: "Impostazioni", icon: "⚙️", onclick: "window.apriModal('settingsModal')" },
+            { id: "spriss", label: "Spriss", image: "icone_app/iconspriss.png", href: "https://spriss.avmspa.it/" },
+            { id: "guida", label: "Guida", icon: "📖", href: "guida.html" },
             { id: "admin", label: "Admin", icon: "🔒", href: "admin.html", condition: "admin", defaultColor: "#cb4335" },
             { id: "accessi", label: "Accessi", icon: "🛠️", onclick: "window.apriGestioneAccessi()", condition: "admin", defaultColor: "#2c3e50" }
         ];
@@ -577,7 +576,6 @@
             } catch(e) { console.error("Errore check promemoria:", e); }
         };
 
-        // --- GESTIONE NOTIFICHE NATIVE (CAPACITOR) ---
         window.inizializzaNotificheSeNativa = async (userData) => {
             if (window.Capacitor && window.Capacitor.isNativePlatform() && window.Capacitor.Plugins.PushNotifications) {
                 const PushNotifications = window.Capacitor.Plugins.PushNotifications;
@@ -588,12 +586,10 @@
                 const btn = document.getElementById('btn-attiva-notifiche');
                 const prefSection = document.getElementById('notif-preferences-section');
 
-                // Mostra opzione rotazioni solo per admin/collaboratori
                 if (userData && (userData.ruolo === 'admin' || userData.ruolo === 'collaborator' || globalIsAdmin || globalIsCollab)) {
                     document.getElementById('label-notif-rotazioni').style.display = 'flex';
                 }
 
-                // Pre-carica le preferenze
                 if (userData && userData.preferenze_notifiche) {
                     document.getElementById('pref-notif-promemoria').checked = !!userData.preferenze_notifiche.promemoria;
                     document.getElementById('pref-notif-dds').checked = !!userData.preferenze_notifiche.dds;
@@ -633,7 +629,6 @@
 
                 let permStatus = await PushNotifications.checkPermissions();
                 
-                // SE L'APP NON HA ANCORA CHIESTO IL PERMESSO, LO CHIEDE IN AUTOMATICO
                 if (permStatus.receive === 'prompt') {
                     permStatus = await PushNotifications.requestPermissions();
                 }
@@ -681,7 +676,6 @@
                 console.error("Errore salvataggio preferenze notifiche:", error);
             }
         };
-        // ----------------------------------------------
 
         window.LayoutEngine = {
             prefs: { c1: "#a9dfcd", c2: "#ffffff", c3: "#a4c5e3", appBg: "#5dade2", view: "grid", iconStyle: "box", fontSize: 14, apps: [] },
@@ -790,13 +784,28 @@
                     this.sortableInstance = new Sortable(document.getElementById('app-container'), { animation: 250, delay: 150, delayOnTouchOnly: true, ghostClass: "sortable-ghost", onEnd: () => { this.aggiornaOrdineDaDOM(); } });
                 } else { if(this.sortableInstance) this.sortableInstance.destroy(); this.sincronizzaConFirebase(); }
             },
+            
+            // --- FUNZIONE CORRETTA E SROTOLATA ---
             aggiornaOrdineDaDOM: function() {
-                const nuovoOrdine = []; document.querySelectorAll('#app-container .app-btn').forEach(nodo => {
-                    const id = nodo.id.replace('btn-', ''); const app = this.prefs.apps.find(a => a.id === id); if (app) nuovoOrdine.push(app);
+                const nuovoOrdine = []; 
+                document.querySelectorAll('#app-container .app-btn').forEach(nodo => {
+                    const id = nodo.id.replace('btn-', ''); 
+                    const app = this.prefs.apps.find(a => a.id === id); 
+                    if (app) {
+                        nuovoOrdine.push(app);
+                    }
                 });
-                this.prefs.apps.forEach(app => { if (!nuonvoOrdine.find(a => a.id === app.id)) nuovoOrdine.push(app); });
+                
+                this.prefs.apps.forEach(app => { 
+                    if (!nuovoOrdine.find(a => a.id === app.id)) {
+                        nuovoOrdine.push(app); 
+                    }
+                });
+                
                 this.prefs.apps = nuovoOrdine;
             },
+            // -------------------------------------
+
             apriEditorApp: function(appId) {
                 const app = this.prefs.apps.find(a => a.id === appId); if(!app) return;
                 document.getElementById('edit-app-id').value = app.id;
@@ -973,7 +982,6 @@
             document.getElementById('btnEseguiAuth').innerText = isLogin ? "Accedi" : "Registrati";
             document.getElementById('registerFields').style.display = isLogin ? "none" : "block";
             document.getElementById('authSwitchLink').innerText = isLogin ? "Registrati qui" : "Accedi qui";
-            // Gestione visibilità link password dimenticata
             document.getElementById('forgotPasswordLink').style.display = isLogin ? "block" : "none";
         };
 
@@ -996,7 +1004,6 @@
             }
         };
 
-        // Funzione per il recupero della password
         window.recuperaPassword = async () => {
             const email = document.getElementById('emailInput').value.trim();
             if (!email) {
@@ -1030,7 +1037,6 @@
                 mansione: document.getElementById('profileMansione').value 
             };
 
-            // BLOCCO DI SICUREZZA: Impedisce al sistema di sovrascrivere il Cloud con campi vuoti
             if (!p.nome || !p.cognome || !p.matricola) {
                 alert("Errore: Impossibile salvare. Nome, Cognome e Matricola non possono essere vuoti.");
                 return;

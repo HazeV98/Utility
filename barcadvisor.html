@@ -56,8 +56,6 @@
 
         /* Main Containers */
         .container { padding: 15px; max-width: 800px; margin: 0 auto; }
-        .view-section { display: none; }
-        .view-section.active { display: block; }
 
         /* Search & Add Bar */
         .top-controls {
@@ -75,6 +73,16 @@
             border: 1px solid #ddd;
             font-size: 1rem;
             outline: none;
+        }
+
+        .filter-wrapper select {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+            outline: none;
+            background: white;
         }
 
         .btn-add {
@@ -117,14 +125,14 @@
             cursor: pointer;
         }
 
-        /* Detail View */
-        .detail-header { margin-bottom: 20px; text-align: center; }
+        /* Detail View (Modal) */
         .rating-box {
             background: white;
             padding: 20px;
             border-radius: 15px;
             margin-bottom: 20px;
             box-shadow: var(--shadow);
+            border: 1px solid #eee;
         }
 
         .rating-row {
@@ -133,13 +141,14 @@
             margin-bottom: 15px;
         }
 
-        .rating-label { font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        .rating-label { font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .category-media { font-size: 0.85rem; color: var(--primary-color); background: #eef2f7; padding: 2px 8px; border-radius: 10px; font-weight: normal; }
         .stars { display: flex; gap: 8px; font-size: 1.8rem; color: #ddd; }
         .star { cursor: pointer; }
         .star.active { color: var(--warning); }
 
         /* Segnalazioni */
-        .reports-section { margin-top: 30px; }
+        .reports-section { margin-top: 20px; }
         .report-card {
             background: #fff;
             border-left: 4px solid var(--danger);
@@ -147,6 +156,7 @@
             margin-bottom: 10px;
             border-radius: 4px;
             position: relative;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
         .report-text { display: block; margin-bottom: 5px; font-weight: 500; }
@@ -166,7 +176,7 @@
         .report-form input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
         .report-form button { width: auto; padding: 10px 15px; font-size: 1rem; }
 
-        /* Modal / Popups simple */
+        /* Modal / Popups */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); display: none; z-index: 2000;
@@ -176,6 +186,13 @@
         .modal-content {
             background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px;
         }
+
+        /* Modifiche specifiche per il popup Dettaglio */
+        #detailViewModal .modal-content {
+            max-width: 500px; height: 90vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; width: 95%;
+        }
+        .modal-scroll-area { flex: 1; overflow-y: auto; padding: 15px; background: var(--bg-color); }
+        .modal-fixed-footer { padding: 15px; background: white; border-top: 1px solid #ddd; border-radius: 0 0 12px 12px; }
 
         .admin-options button {
             width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem;
@@ -210,7 +227,7 @@
         <a href="guida.html" class="sidebar-link">📖 Guida</a>
     </div>
 
-    <section id="listView" class="view-section active">
+    <section id="listView">
         <header class="header">
             <button class="hamburger-btn" onclick="apriMenuLaterale()">☰</button>
             <h1>BarcAdvisor</h1>
@@ -222,6 +239,15 @@
                 <div class="search-wrapper">
                     <input type="text" id="searchInput" placeholder="Cerca unità..." oninput="filterUnits()">
                 </div>
+                <div class="filter-wrapper">
+                    <select id="categoryFilter" onchange="filterUnits()">
+                        <option value="all">Tutte le categorie</option>
+                        <option value="M/S">M/S</option>
+                        <option value="M/B">M/B</option>
+                        <option value="M/N">M/N</option>
+                        <option value="M/Z">M/Z</option>
+                    </select>
+                </div>
                 <button class="btn-add" onclick="openAddUnit()">
                     <i class="fas fa-plus"></i> Aggiungi Unità
                 </button>
@@ -232,58 +258,71 @@
         </div>
     </section>
 
-    <section id="detailView" class="view-section">
-        <header class="header">
-            <button class="btn-back" onclick="showListView()"><i class="fas fa-arrow-left"></i></button>
-            <h1 id="detailTitle">Dettaglio</h1>
-            <div style="width: 30px;"></div>
-        </header>
+    <div id="detailViewModal" class="modal-overlay" onclick="closeDetailModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <header class="header" style="border-radius: 12px 12px 0 0; justify-content: center; position: relative;">
+                <h1 id="detailTitle" style="margin: 0;">Dettaglio</h1>
+            </header>
+            
+            <div class="modal-scroll-area">
+                <div class="rating-box">
+                    <div class="rating-row">
+                        <div class="rating-label">
+                            <span>Potenza <span id="val-potenza" style="font-weight:normal; color:#888;">-</span></span>
+                            <span id="media-potenza" class="category-media">Media: -</span>
+                        </div>
+                        <div class="stars" data-category="potenza">
+                            <span class="star" data-value="1">&#9733;</span>
+                            <span class="star" data-value="2">&#9733;</span>
+                            <span class="star" data-value="3">&#9733;</span>
+                            <span class="star" data-value="4">&#9733;</span>
+                            <span class="star" data-value="5">&#9733;</span>
+                        </div>
+                    </div>
+                    <div class="rating-row">
+                        <div class="rating-label">
+                            <span>Manovrabilità <span id="val-manovrabilita" style="font-weight:normal; color:#888;">-</span></span>
+                            <span id="media-manovrabilita" class="category-media">Media: -</span>
+                        </div>
+                        <div class="stars" data-category="manovrabilita">
+                            <span class="star" data-value="1">&#9733;</span>
+                            <span class="star" data-value="2">&#9733;</span>
+                            <span class="star" data-value="3">&#9733;</span>
+                            <span class="star" data-value="4">&#9733;</span>
+                            <span class="star" data-value="5">&#9733;</span>
+                        </div>
+                    </div>
+                    <div class="rating-row">
+                        <div class="rating-label">
+                            <span>Stato Generale <span id="val-stato" style="font-weight:normal; color:#888;">-</span></span>
+                            <span id="media-stato" class="category-media">Media: -</span>
+                        </div>
+                        <div class="stars" data-category="stato">
+                            <span class="star" data-value="1">&#9733;</span>
+                            <span class="star" data-value="2">&#9733;</span>
+                            <span class="star" data-value="3">&#9733;</span>
+                            <span class="star" data-value="4">&#9733;</span>
+                            <span class="star" data-value="5">&#9733;</span>
+                        </div>
+                    </div>
+                </div>
 
-        <div class="container">
-            <div class="rating-box">
-                <div class="rating-row">
-                    <div class="rating-label">Potenza <span id="val-potenza">-</span></div>
-                    <div class="stars" data-category="potenza">
-                        <span class="star" data-value="1">&#9733;</span>
-                        <span class="star" data-value="2">&#9733;</span>
-                        <span class="star" data-value="3">&#9733;</span>
-                        <span class="star" data-value="4">&#9733;</span>
-                        <span class="star" data-value="5">&#9733;</span>
+                <div class="reports-section">
+                    <h3 style="margin-top:0;">Segnalazioni Problemi</h3>
+                    <div class="report-form">
+                        <input type="text" id="newReportInput" placeholder="Descrivi il problema...">
+                        <button class="btn-add" style="width:auto;" onclick="submitReport()">Invia</button>
                     </div>
-                </div>
-                <div class="rating-row">
-                    <div class="rating-label">Manovrabilità <span id="val-manovrabilita">-</span></div>
-                    <div class="stars" data-category="manovrabilita">
-                        <span class="star" data-value="1">&#9733;</span>
-                        <span class="star" data-value="2">&#9733;</span>
-                        <span class="star" data-value="3">&#9733;</span>
-                        <span class="star" data-value="4">&#9733;</span>
-                        <span class="star" data-value="5">&#9733;</span>
-                    </div>
-                </div>
-                <div class="rating-row">
-                    <div class="rating-label">Stato Generale <span id="val-stato">-</span></div>
-                    <div class="stars" data-category="stato">
-                        <span class="star" data-value="1">&#9733;</span>
-                        <span class="star" data-value="2">&#9733;</span>
-                        <span class="star" data-value="3">&#9733;</span>
-                        <span class="star" data-value="4">&#9733;</span>
-                        <span class="star" data-value="5">&#9733;</span>
-                    </div>
+                    <div id="reportsContainer">
+                        </div>
                 </div>
             </div>
 
-            <div class="reports-section">
-                <h3>Segnalazioni Problemi</h3>
-                <div class="report-form">
-                    <input type="text" id="newReportInput" placeholder="Descrivi il problema...">
-                    <button class="btn-add" onclick="submitReport()">Invia</button>
-                </div>
-                <div id="reportsContainer">
-                    </div>
+            <div class="modal-fixed-footer">
+                <button style="background: var(--danger); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1rem; width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="closeDetailModal()">CHIUDI</button>
             </div>
         </div>
-    </section>
+    </div>
 
     <div id="modalOverlay" class="modal-overlay" onclick="closeModal()">
         <div class="modal-content" onclick="event.stopPropagation()">
@@ -333,6 +372,11 @@
         let allUnits = [];
         let activeUnitId = null;
 
+        // Variabili per scollegare i listener di Firebase e risparmiare risorse
+        let unsubUserVote = null;
+        let unsubAllVotes = null;
+        let unsubReports = null;
+
         // Funzioni Menu Laterale
         window.apriMenuLaterale = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').style.display = 'block'; };
         window.chiudiMenuLaterale = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').style.display = 'none'; };
@@ -358,10 +402,16 @@
         window.renderUnits = function() {
             const container = document.getElementById('unitsContainer');
             const search = document.getElementById('searchInput').value.toLowerCase();
+            const filterCat = document.getElementById('categoryFilter').value;
             container.innerHTML = '';
 
-            // Filtra convertendo l'underscore in slash per la ricerca
-            const filtered = allUnits.filter(u => u.id.replace(/_/g, '/').toLowerCase().includes(search));
+            // Filtro ricerca + filtro categoria
+            const filtered = allUnits.filter(u => {
+                const displayId = u.id.replace(/_/g, '/');
+                const matchesSearch = displayId.toLowerCase().includes(search);
+                const matchesCat = (filterCat === 'all' || displayId.startsWith(filterCat));
+                return matchesSearch && matchesCat;
+            });
 
             filtered.sort((a,b) => a.id.localeCompare(b.id)).forEach(unit => {
                 const isAdmin = currentUser.uid === ADMIN_UID;
@@ -389,15 +439,18 @@
 
         window.filterUnits = renderUnits;
 
-        // --- LOGICA DETTAGLIO ---
+        // --- LOGICA DETTAGLIO (MODAL) ---
         window.showDetail = async function(unitId) {
             activeUnitId = unitId;
             document.getElementById('detailTitle').innerText = unitId.replace(/_/g, '/');
-            document.getElementById('listView').classList.remove('active');
-            document.getElementById('detailView').classList.add('active');
+            
+            // Apri popup modale
+            document.getElementById('detailViewModal').style.display = 'flex';
 
+            // 1. Voto Personale
             const voteId = `${unitId}_${currentUser.uid}`;
-            onSnapshot(doc(db, "flotta_voti", voteId), (docSnap) => {
+            if(unsubUserVote) unsubUserVote();
+            unsubUserVote = onSnapshot(doc(db, "flotta_voti", voteId), (docSnap) => {
                 resetStars();
                 if (docSnap.exists()) {
                     const data = docSnap.data();
@@ -407,8 +460,28 @@
                 }
             });
 
+            // 2. Medie dinamiche per singola Categoria
+            if(unsubAllVotes) unsubAllVotes();
+            unsubAllVotes = onSnapshot(collection(db, "flotta_voti"), (snapshot) => {
+                let pSum = 0, pCount = 0, mSum = 0, mCount = 0, sSum = 0, sCount = 0;
+                snapshot.docs.forEach(d => {
+                    const data = d.data();
+                    if (data.unitId === unitId) {
+                        if(data.potenza) { pSum += data.potenza; pCount++; }
+                        if(data.manovrabilita) { mSum += data.manovrabilita; mCount++; }
+                        if(data.stato) { sSum += data.stato; sCount++; }
+                    }
+                });
+                
+                document.getElementById('media-potenza').innerHTML = pCount > 0 ? `Media: ${(pSum/pCount).toFixed(1)} <i class="fas fa-star" style="color:var(--warning); font-size:10px;"></i>` : `Media: -`;
+                document.getElementById('media-manovrabilita').innerHTML = mCount > 0 ? `Media: ${(mSum/mCount).toFixed(1)} <i class="fas fa-star" style="color:var(--warning); font-size:10px;"></i>` : `Media: -`;
+                document.getElementById('media-stato').innerHTML = sCount > 0 ? `Media: ${(sSum/sCount).toFixed(1)} <i class="fas fa-star" style="color:var(--warning); font-size:10px;"></i>` : `Media: -`;
+            });
+
+            // 3. Segnalazioni
+            if(unsubReports) unsubReports();
             const q = query(collection(db, "flotta_segnalazioni"), orderBy("data", "desc"));
-            onSnapshot(q, (snapshot) => {
+            unsubReports = onSnapshot(q, (snapshot) => {
                 const container = document.getElementById('reportsContainer');
                 container.innerHTML = '';
                 snapshot.docs.forEach(d => {
@@ -427,10 +500,13 @@
             });
         };
 
-        window.showListView = function() {
-            document.getElementById('detailView').classList.remove('active');
-            document.getElementById('listView').classList.add('active');
+        window.closeDetailModal = function() {
+            document.getElementById('detailViewModal').style.display = 'none';
             activeUnitId = null;
+            // Stop listeners to save firebase reads
+            if(unsubUserVote) unsubUserVote();
+            if(unsubAllVotes) unsubAllVotes();
+            if(unsubReports) unsubReports();
         };
 
         // --- VOTAZIONI ---

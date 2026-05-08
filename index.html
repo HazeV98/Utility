@@ -9,9 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
 
     <script>
-        // Gestione importazione dati turni
         const urlParams = new URLSearchParams(window.location.search);
         const datiImportati = urlParams.get('dati');
         if (datiImportati) {
@@ -72,7 +72,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <style>
-        /* --- CORE DESIGN SYSTEM --- */
         :root { 
             --primary: #0066cc; 
             --primary-hover: #0052a3;
@@ -96,7 +95,6 @@
             --transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* TEMA SCURO - Override Esplicito */
         :root[data-theme="dark"] {
             --primary: #4da3ff;
             --primary-hover: #73b9ff;
@@ -116,7 +114,6 @@
             --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.5);
         }
 
-        /* TEMA SCURO - Default di Sistema */
         @media (prefers-color-scheme: dark) {
             :root:not([data-theme="light"]) {
                 --primary: #4da3ff;
@@ -155,12 +152,10 @@
             transition: background-image 0.5s ease, background-color 0.3s;
         }
 
-        /* --- ANIMAZIONI --- */
         @keyframes slideInUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); opacity: 0.8; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        /* --- FISSAGGIO HEADER E SFUMATURA --- */
         #view-app {
             position: fixed !important;
             top: 0;
@@ -180,7 +175,7 @@
             top: 0;
             left: 0;
             width: 100%;
-            padding: 20px 20px 10px 20px;
+            padding: calc(20px + env(safe-area-inset-top, 0px)) 20px 10px 20px;
             margin: 0;
             box-sizing: border-box;
             z-index: 100;
@@ -195,17 +190,15 @@
             height: 100%;
             overflow-y: auto;
             overflow-x: hidden;
-            padding: 95px 20px 40px 20px; /* Spazio per l'header */
+            padding: calc(95px + env(safe-area-inset-top, 0px)) 20px 40px 20px;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
             
-            /* Maschera di sfumatura al top */
-            -webkit-mask-image: linear-gradient(to bottom, transparent 0px, transparent 65px, black 120px, black 100%);
-            mask-image: linear-gradient(to bottom, transparent 0px, transparent 65px, black 120px, black 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0px, transparent calc(65px + env(safe-area-inset-top, 0px)), black calc(120px + env(safe-area-inset-top, 0px)), black 100%);
+            mask-image: linear-gradient(to bottom, transparent 0px, transparent calc(65px + env(safe-area-inset-top, 0px)), black calc(120px + env(safe-area-inset-top, 0px)), black 100%);
             
-            /* Nascondere la scrollbar per un look pulito */
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
@@ -218,13 +211,11 @@
 
         .view-container { width: 100%; max-width: 440px; display: none; flex-direction: column; align-items: center; }
 
-        /* PULSANTI HEADER */
         #install-btn { display: none; background-color: var(--success); color: white; border: none; padding: 10px 16px; font-size: 13px; font-weight: 700; border-radius: 20px; cursor: pointer; box-shadow: 0 4px 10px rgba(15,157,88,0.3); white-space: nowrap; animation: pulse 2s infinite; align-items:center; gap:6px;}
         .btn-header-alt { background-color: var(--surface); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
         .btn-header-alt:active { transform: scale(0.95); }
         .btn-header-alt:hover { border-color: var(--primary); color: var(--primary); }
 
-        /* DASHBOARD GRID */
         #app-container { width: 100%; max-width: 440px; }
         .app-grid { 
             display: grid; 
@@ -243,6 +234,7 @@
             cursor: pointer; 
             position: relative; 
             width: 100%; 
+            min-width: 0; 
             animation: slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; 
         }
         .app-grid .app-btn:active { transform: scale(0.92); transition: transform 0.1s; }
@@ -262,7 +254,6 @@
             line-height: 1.2; text-shadow: 0px 1px 3px rgba(255,255,255,0.8); width: 100%; word-wrap: break-word; 
         }
 
-        /* LISTA */
         .app-list { display: flex; flex-direction: column; gap: 12px; padding: 10px; width: 100%; }
         .app-list .app-btn { 
             display: flex; align-items: center; background: rgba(255,255,255,0.85); padding: 14px 20px; 
@@ -277,7 +268,6 @@
         }
         .app-list .app-label { font-size: calc(var(--label-size) + 2px); color: #1a1a1a; font-weight: 700; margin: 0; text-shadow: none; flex: 1; text-align: left; }
 
-        /* TEMA SCURO TEXT SHADOWS E SFONDI */
         :root[data-theme="dark"] .app-grid .app-label { text-shadow: 0px 1px 3px rgba(0,0,0,0.8); }
         :root[data-theme="dark"] .app-list .app-btn { background: rgba(30, 30, 30, 0.85); border: 1px solid rgba(255,255,255,0.1); }
         :root[data-theme="dark"] .app-list .app-label { color: #e8eaed; }
@@ -288,20 +278,17 @@
             :root:not([data-theme="light"]) .app-list .app-label { color: #e8eaed; }
         }
 
-        /* MODALITÀ ICONE TRASPARENTI */
         .transparent-icons .app-icon { background-color: transparent !important; box-shadow: none !important; color: var(--text-main) !important; }
         .transparent-icons .app-icon::after { display: none; }
-        .transparent-icons.app-grid .app-icon { font-size: 44px !important; }
-        .transparent-icons.app-list .app-icon { font-size: 32px !important; }
+        .transparent-icons.app-grid .app-icon { font-size: 36px !important; } 
+        .transparent-icons.app-list .app-icon { font-size: 26px !important; }
 
-        /* WIGGLE & EDIT MODE */
         @keyframes wiggle { 0% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } 100% { transform: rotate(-2deg); } }
         .wiggle-mode .app-btn { animation: wiggle 0.3s infinite; cursor: grab; }
         .sortable-ghost { opacity: 0.3; transform: scale(0.9); }
         .edit-badge { position: absolute; top: -8px; right: 10px; background: var(--surface); color: var(--text-main); border-radius: 50%; width: 28px; height: 28px; display: flex; justify-content: center; align-items: center; box-shadow: var(--shadow-md); font-size: 14px; z-index: 10; border: 1px solid var(--border-color); pointer-events: none; }
         .app-list .edit-badge { right: auto; left: 0; top: -10px; }
 
-        /* SIDEBAR */
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 5999; animation: fadeIn 0.3s ease; }
         .sidebar { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background-color: var(--surface); box-shadow: var(--shadow-lg); z-index: 6000; transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; overflow-y: auto;}
         .sidebar.open { left: 0; }
@@ -312,7 +299,6 @@
         .sidebar-link:active, .sidebar-link:hover { background-color: var(--surface-hover); color: var(--primary); padding-left: 28px; }
         .sidebar-link:active i, .sidebar-link:hover i { color: var(--primary); }
 
-        /* ELEMENTI INTERFACCIA */
         .btn-action { background-color: var(--success); color: white; border: none; padding: 16px; font-size: 16px; font-weight: 700; border-radius: var(--radius-md); cursor: pointer; width: 100%; margin-top: 10px; display:flex; justify-content:center; align-items:center; gap:8px; box-shadow: 0 4px 12px rgba(15,157,88,0.2); transition: all 0.2s;}
         .btn-action:hover { transform: translateY(-2px); filter: brightness(1.05); }
         .btn-action:active { transform: translateY(1px); box-shadow: none; }
@@ -332,7 +318,6 @@
         input[type="color"] { width: 44px; height: 44px; border: none; border-radius: 10px; cursor: pointer; padding: 0; background: transparent; }
         input[type="range"] { width: 100%; margin: 10px 0; accent-color: var(--primary); }
 
-        /* BADGE NOTIFICHE */
         .badge-rotazioni { position: absolute; top: -6px; right: -6px; background: var(--danger); color: white; border-radius: 50%; font-size: 11px; font-weight: 800; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(217,48,37,0.4); border: 2px solid var(--bg-color); z-index: 10; pointer-events: none;}
 
         .banner-alert { padding: 14px; border-radius: var(--radius-md); font-size: 14px; font-weight: 700; text-align: center; margin-bottom: 20px; width: 100%; max-width: 440px; cursor: pointer; box-shadow: var(--shadow-sm); display:flex; align-items:center; justify-content:center; gap:10px; transition: transform 0.2s;}
@@ -431,7 +416,7 @@
             </div>
 
             <div id="banner-promemoria-alert" class="banner-alert banner-blue" style="display: none;" onclick="window.location.href='promemoria.html'">
-                <i class="fa-solid fa-stopwatch fa-beat"></i> Hai dei promemoria in sospeso!
+                <i class="fa-solid fa-stopwatch fa-beat"></i> Hai dei promemoria per oggi!
             </div>
 
             <div id="app-container" class="app-grid"></div>
@@ -505,6 +490,12 @@
             <select id="set-iconstyle" class="input-field" style="cursor:pointer;">
                 <option value="box">Con Sfondo (Box)</option>
                 <option value="transparent">Solo Icona (Trasparente)</option>
+            </select>
+
+            <label style="font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 8px; display:block;">Tipo Icone:</label>
+            <select id="set-icontype" class="input-field" style="cursor:pointer;">
+                <option value="minimal">Minimal</option>
+                <option value="emoji">Classiche (Emoji)</option>
             </select>
 
             <label style="font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 8px; display:block;">Dimensione Testo App:</label>
@@ -753,6 +744,13 @@
             impostazioni: "fa-solid fa-gear", guida: "fa-solid fa-book", admin: "fa-solid fa-lock", accessi: "fa-solid fa-users-gear"
         };
 
+        const EMOJI_MAP = {
+            oggi: "🎯", calendario: "📅", statistiche: "📊", rotazioni: "👥", turni: "🔄",
+            bachecaturni: "🤝", rubrica: "📒", ferie: "⛱️", orari: "🕒", documenti: "📄",
+            link: "🔗", contatti: "🪪", buoni: "🍽️", promemoria: "⏱️", dds: "🗃️",
+            impostazioni: "⚙️", guida: "📖", admin: "🔒", accessi: "👨‍💻"
+        };
+
         const DEFAULT_APPS = [
             { id: "oggi", label: "Oggi", href: "calendario.html?oggi=true", defaultColor: "#28a745" },
             { id: "calendario", label: "Calendario", href: "calendario.html", defaultColor: "#0066cc" },
@@ -922,7 +920,7 @@
         };
 
         window.LayoutEngine = {
-            prefs: { c1: "#a9dfcd", c2: "#ffffff", c3: "#a4c5e3", appBg: "#0066cc", view: "grid", iconStyle: "box", fontSize: 14, theme: "system", apps: [] },
+            prefs: { c1: "#a9dfcd", c2: "#ffffff", c3: "#a4c5e3", appBg: "#0066cc", view: "grid", iconStyle: "box", iconType: "minimal", fontSize: 14, theme: "system", apps: [] },
             isEditMode: false,
             sortableInstance: null,
             init: function(firebasePrefsStr) {
@@ -1007,6 +1005,7 @@
                 document.getElementById('set-appbg').value = this.prefs.appBg || "#0066cc";
                 document.getElementById('set-viewmode').value = this.prefs.view || "grid";
                 document.getElementById('set-iconstyle').value = this.prefs.iconStyle || "box";
+                document.getElementById('set-icontype').value = this.prefs.iconType || "minimal";
                 document.getElementById('set-labelsize').value = this.prefs.fontSize || 14;
                 document.getElementById('set-theme').value = this.prefs.theme || 'system';
             },
@@ -1026,31 +1025,47 @@
                     
                     let iconStyle = `background-color: ${finalColor};`;
                     let iconContent = "";
-
                     let isImagePath = false;
                     let imagePath = "";
+                    
+                    let currentImage = app.image;
+                    let currentIcon = app.icon;
+                    let useEmoji = (this.prefs.iconType === "emoji");
 
-                    if (app.image) {
+                    if (app.id === 'barcadvisor') {
+                        if (!useEmoji) { currentIcon = "fa-solid fa-sailboat"; currentImage = null; }
+                        else { currentImage = "icone_app/iconba.png"; currentIcon = null; }
+                    }
+                    if (app.id === 'spriss') {
+                        if (!useEmoji) { currentIcon = "fa-solid fa-martini-glass"; currentImage = null; }
+                        else { currentImage = "icone_app/iconspriss.png"; currentIcon = null; }
+                    }
+
+                    if (currentImage) {
                         isImagePath = true;
-                        imagePath = app.image;
-                    } else if (app.icon && (app.icon.includes('.png') || app.icon.includes('.jpg') || app.icon.includes('.svg') || app.icon.includes('icone_app/'))) {
+                        imagePath = currentImage;
+                    } else if (currentIcon && (currentIcon.includes('.png') || currentIcon.includes('.jpg') || currentIcon.includes('.svg') || currentIcon.includes('icone_app/'))) {
                         isImagePath = true;
-                        imagePath = app.icon;
+                        imagePath = currentIcon;
                     }
 
                     if (isImagePath) { 
                         iconStyle += ` background-image: url('${imagePath}'); background-size: cover; background-position: center; background-repeat: no-repeat;`; 
                         iconContent = ""; 
-                    } else if (app.icon) {
-                        if (app.icon.includes('fa-')) {
-                            iconContent = `<i class="${app.icon}"></i>`;
+                    } else if (currentIcon) {
+                        if (currentIcon.includes('fa-')) {
+                            iconContent = `<i class="${currentIcon}"></i>`;
                         } else {
-                            iconContent = app.icon;
+                            iconContent = currentIcon;
                         }
-                    } else if (ICON_MAP[app.id]) {
-                        iconContent = `<i class="${ICON_MAP[app.id]}"></i>`;
                     } else {
-                        iconContent = "🔗"; 
+                        if (useEmoji && EMOJI_MAP[app.id]) {
+                            iconContent = EMOJI_MAP[app.id];
+                        } else if (!useEmoji && ICON_MAP[app.id]) {
+                            iconContent = `<i class="${ICON_MAP[app.id]}"></i>`;
+                        } else {
+                            iconContent = "🔗"; 
+                        }
                     }
 
                     let animDelay = this.isEditMode ? "0s" : `${index * 0.04}s`;
@@ -1160,6 +1175,7 @@
                 this.prefs.c1 = document.getElementById('set-col1').value; this.prefs.c2 = document.getElementById('set-col2').value; this.prefs.c3 = document.getElementById('set-col3').value;
                 this.prefs.appBg = document.getElementById('set-appbg').value; this.prefs.view = document.getElementById('set-viewmode').value;
                 this.prefs.iconStyle = document.getElementById('set-iconstyle').value; this.prefs.fontSize = parseInt(document.getElementById('set-labelsize').value);
+                this.prefs.iconType = document.getElementById('set-icontype').value;
                 this.prefs.theme = document.getElementById('set-theme').value;
                 this.applicaGrafica(); this.render(); window.chiudiModal('settingsModal'); this.sincronizzaConFirebase();
             },
@@ -1416,7 +1432,6 @@
             }
         });
 
-        // --- LOGICA INSTALLAZIONE PWA ---
         let deferredPrompt;
         const installBtn = document.getElementById('install-btn');
 

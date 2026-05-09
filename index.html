@@ -318,7 +318,9 @@
         input[type="color"] { width: 44px; height: 44px; border: none; border-radius: 10px; cursor: pointer; padding: 0; background: transparent; }
         input[type="range"] { width: 100%; margin: 10px 0; accent-color: var(--primary); }
 
-        .badge-rotazioni { position: absolute; top: -6px; right: -6px; background: var(--danger); color: white; border-radius: 50%; font-size: 11px; font-weight: 800; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(217,48,37,0.4); border: 2px solid var(--bg-color); z-index: 10; pointer-events: none;}
+        .badge-rotazioni { position: absolute; top: -6px; right: -6px; background: var(--danger); color: white; border-radius: 50%; font-size: 11px; font-weight: 800; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: 2px solid var(--bg-color); z-index: 10; pointer-events: none;}
+
+        .badge-notif { position: absolute; top: -6px; right: -6px; background: var(--danger); color: white; border-radius: 50%; font-size: 11px; font-weight: 800; min-width: 22px; height: 22px; padding: 0 5px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: 2px solid var(--surface); z-index: 20; pointer-events: none; }
 
         .banner-alert { padding: 14px; border-radius: var(--radius-md); font-size: 14px; font-weight: 700; text-align: center; margin-bottom: 20px; width: 100%; max-width: 440px; cursor: pointer; box-shadow: var(--shadow-sm); display:flex; align-items:center; justify-content:center; gap:10px; transition: transform 0.2s;}
         .banner-alert:active { transform: scale(0.98); }
@@ -433,6 +435,7 @@
                 <h4 style="margin: 0 0 10px 0; color: var(--text-main); text-align: center; font-weight: 700;"><i class="fa-solid fa-bell" style="color: var(--primary);"></i> Preferenze Notifiche App</h4>
                 <p id="notif-status-text" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 15px; font-weight: 500;">Controllo stato in corso...</p>
                 <button id="btn-attiva-notifiche" class="btn-modal" style="background: var(--primary); color: white; margin-top: 0; display: none; width: 100%;" onclick="window.gestisciNotificheNative()"><i class="fa-solid fa-toggle-on"></i> Abilita Notifiche</button>
+                <button id="btn-disattiva-notifiche" class="btn-modal" style="background: transparent; color: var(--danger); border: 2px solid var(--danger); margin-top: 10px; display: none; width: 100%;" onclick="window.disattivaNotifiche()"><i class="fa-solid fa-bell-slash"></i> Disattiva Notifiche</button>
 
                 <div id="notif-preferences-section" style="display: none; margin-top: 15px; text-align: left; font-size: 14px;">
                     <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
@@ -713,6 +716,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+        import { getMessaging, getToken, deleteToken } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-messaging.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", authDomain: "utility-haze.firebaseapp.com", projectId: "utility-haze", storageBucket: "utility-haze.firebasestorage.app", messagingSenderId: "686237947418", appId: "1:686237947418:web:f03ba19ab8fff43110a3a3" };
         const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getFirestore(app); const provider = new GoogleAuthProvider();
@@ -830,13 +834,15 @@
         };
 
         window.inizializzaNotificheSeNativa = async (userData) => {
-            if (window.Capacitor && window.Capacitor.isNativePlatform() && window.Capacitor.Plugins.PushNotifications) {
-                const PushNotifications = window.Capacitor.Plugins.PushNotifications;
-                
+            const isNative = window.Capacitor && window.Capacitor.isNativePlatform() && window.Capacitor.Plugins.PushNotifications;
+            const isWeb = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+
+            if (isNative || isWeb) {
                 document.getElementById('native-notifications-center').style.display = 'block';
                 
                 const statusText = document.getElementById('notif-status-text');
                 const btn = document.getElementById('btn-attiva-notifiche');
+                const btnDisattiva = document.getElementById('btn-disattiva-notifiche');
                 const prefSection = document.getElementById('notif-preferences-section');
 
                 if (userData && (userData.ruolo === 'admin' || userData.ruolo === 'collaborator' || globalIsAdmin || globalIsCollab)) {
@@ -861,45 +867,149 @@
                         statusText.innerHTML = "<i class='fa-solid fa-circle-check'></i> Notifiche app attive";
                         statusText.style.color = "var(--success)";
                         btn.style.display = 'none';
+                        if (btnDisattiva) btnDisattiva.style.display = 'flex';
                         prefSection.style.display = 'block';
                     } else {
-                        statusText.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> Notifiche bloccate da Android";
+                        statusText.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> Notifiche bloccate o non attive";
                         statusText.style.color = "#856404";
                         btn.style.display = 'block';
+                        if (btnDisattiva) btnDisattiva.style.display = 'none';
                         prefSection.style.display = 'none';
                     }
                 };
 
-                PushNotifications.addListener('registration', async (token) => {
-                    if (auth.currentUser) {
-                        await setDoc(doc(db, "utenti", auth.currentUser.uid), {
-                            fcm_token: token.value,
-                            device_type: 'android_app'
-                        }, { merge: true });
+                if (isNative) {
+                    const PushNotifications = window.Capacitor.Plugins.PushNotifications;
+                    PushNotifications.addListener('registration', async (token) => {
+                        if (auth.currentUser) {
+                            await setDoc(doc(db, "utenti", auth.currentUser.uid), {
+                                fcm_token: token.value,
+                                device_type: 'android_app'
+                            }, { merge: true });
+                            aggiornaGraficaPermessi(true);
+                        }
+                    });
+
+                    let permStatus = await PushNotifications.checkPermissions();
+                    if (permStatus.receive === 'prompt') { permStatus = await PushNotifications.requestPermissions(); }
+
+                    if (permStatus.receive === 'granted') {
+                        PushNotifications.register();
                         aggiornaGraficaPermessi(true);
+                    } else { aggiornaGraficaPermessi(false); }
+                } else if (isWeb) {
+                    if (Notification.permission === 'granted') {
+                        aggiornaGraficaPermessi(true);
+                        try {
+                            const messaging = getMessaging(app);
+                            const swRegistration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+                            const token = await getToken(messaging, { 
+                                vapidKey: "BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI",
+                                serviceWorkerRegistration: swRegistration
+                            });
+                            if (token && auth.currentUser) {
+                                await setDoc(doc(db, "utenti", auth.currentUser.uid), {
+                                    fcm_token: token,
+                                    device_type: 'pwa_web'
+                                }, { merge: true });
+                            }
+                        } catch (e) { 
+                            console.warn("Nessun token web ottenuto:", e); 
+                        }
+                    } else {
+                        aggiornaGraficaPermessi(false);
                     }
-                });
-
-                let permStatus = await PushNotifications.checkPermissions();
-                if (permStatus.receive === 'prompt') { permStatus = await PushNotifications.requestPermissions(); }
-
-                if (permStatus.receive === 'granted') {
-                    PushNotifications.register();
-                    aggiornaGraficaPermessi(true);
-                } else { aggiornaGraficaPermessi(false); }
+                }
             }
         };
 
         window.gestisciNotificheNative = async () => {
-            const PushNotifications = window.Capacitor.Plugins.PushNotifications;
-            document.getElementById('notif-status-text').innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Richiesta permesso in corso...";
+            const isNative = window.Capacitor && window.Capacitor.isNativePlatform() && window.Capacitor.Plugins.PushNotifications;
+            const isWeb = 'Notification' in window;
+            const statusText = document.getElementById('notif-status-text');
+            const btnDisattiva = document.getElementById('btn-disattiva-notifiche');
             
-            let permStatus = await PushNotifications.requestPermissions();
-            if (permStatus.receive === 'granted') {
-                await PushNotifications.register();
-            } else {
-                document.getElementById('notif-status-text').innerHTML = "<i class='fa-solid fa-xmark'></i> Devi attivarle dalle Impostazioni del telefono.";
-                document.getElementById('notif-status-text').style.color = "var(--danger)";
+            statusText.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Richiesta permesso in corso...";
+
+            if (isNative) {
+                const PushNotifications = window.Capacitor.Plugins.PushNotifications;
+                let permStatus = await PushNotifications.requestPermissions();
+                if (permStatus.receive === 'granted') {
+                    await PushNotifications.register();
+                } else {
+                    statusText.innerHTML = "<i class='fa-solid fa-xmark'></i> Devi attivarle dalle Impostazioni del telefono.";
+                    statusText.style.color = "var(--danger)";
+                }
+            } else if (isWeb) {
+                try {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        statusText.innerHTML = "<i class='fa-solid fa-circle-check'></i> Notifiche app attive";
+                        statusText.style.color = "var(--success)";
+                        document.getElementById('btn-attiva-notifiche').style.display = 'none';
+                        if (btnDisattiva) btnDisattiva.style.display = 'flex';
+                        document.getElementById('notif-preferences-section').style.display = 'block';
+
+                        try {
+                            const messaging = getMessaging(app);
+                            const swRegistration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+                            const token = await getToken(messaging, { 
+                                vapidKey: "BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI",
+                                serviceWorkerRegistration: swRegistration
+                            });
+                            if (token && auth.currentUser) {
+                                await setDoc(doc(db, "utenti", auth.currentUser.uid), {
+                                    fcm_token: token,
+                                    device_type: 'pwa_web'
+                                }, { merge: true });
+                            }
+                        } catch (e) {
+                            console.error("Errore recupero token FCM Web:", e);
+                        }
+                    } else {
+                        statusText.innerHTML = "<i class='fa-solid fa-xmark'></i> Devi attivarle dalle Impostazioni del browser.";
+                        statusText.style.color = "var(--danger)";
+                    }
+                } catch (error) {
+                    console.error("Errore richiesta notifiche web:", error);
+                    statusText.innerHTML = "<i class='fa-solid fa-xmark'></i> Errore durante la richiesta.";
+                    statusText.style.color = "var(--danger)";
+                }
+            }
+        };
+
+        window.disattivaNotifiche = async () => {
+            if (!confirm("Vuoi disattivare le notifiche e scollegare questo dispositivo?")) return;
+            
+            const statusText = document.getElementById('notif-status-text');
+            statusText.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Disattivazione in corso...";
+            
+            try {
+                if (auth.currentUser) {
+                    await setDoc(doc(db, "utenti", auth.currentUser.uid), {
+                        fcm_token: null,
+                        device_type: null
+                    }, { merge: true });
+                }
+
+                const isWeb = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+                if (isWeb) {
+                    try {
+                        const messaging = getMessaging(app);
+                        await deleteToken(messaging);
+                    } catch (e) { console.warn("Service worker non presente, elimino solo su DB", e); }
+                }
+
+                statusText.innerHTML = "<i class='fa-solid fa-bell-slash'></i> Notifiche disattivate";
+                statusText.style.color = "var(--text-muted)";
+                document.getElementById('btn-disattiva-notifiche').style.display = 'none';
+                document.getElementById('btn-attiva-notifiche').style.display = 'flex';
+                document.getElementById('notif-preferences-section').style.display = 'none';
+                
+            } catch (error) {
+                console.error("Errore:", error);
+                statusText.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> Errore durante la disattivazione";
+                statusText.style.color = "var(--danger)";
             }
         };
 

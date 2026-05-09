@@ -86,7 +86,9 @@
         body { 
             font-family: 'Inter', -apple-system, sans-serif;
             background-color: var(--bg-color); color: var(--text-main); 
-            margin: 0; padding: 20px; 
+            margin: 0; 
+            /* Aggiunto il calc con env() per il notch degli smartphone */
+            padding: calc(20px + env(safe-area-inset-top)) 20px 20px 20px; 
             display: flex; flex-direction: column; align-items: center; 
             min-height: 100vh;
         }
@@ -101,7 +103,12 @@
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 5999; animation: fadeIn 0.3s ease; }
         .sidebar { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background-color: var(--surface); box-shadow: var(--shadow-lg); z-index: 6000; transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; overflow-y: auto;}
         .sidebar.open { left: 0; }
-        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 28px 24px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%); color: white; }
+        .sidebar-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            /* Aggiunto il calc con env() per proteggere la parte alta del menu */
+            padding: calc(28px + env(safe-area-inset-top)) 24px 28px 24px; 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%); color: white; 
+        }
         .sidebar-header h3 { margin:0; font-weight: 700; display: flex; align-items: center; gap: 10px;}
         .sidebar-link { padding: 16px 24px; text-decoration: none; color: var(--text-main); font-size: 15px; font-weight: 500; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; transition: all 0.2s; }
         .sidebar-link i { width: 28px; text-align: left; font-size: 18px; color: var(--text-muted); transition: color 0.2s;}

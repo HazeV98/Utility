@@ -817,7 +817,9 @@
         window.controllaPromemoria = async () => {
             if (!auth.currentUser) return;
             try {
-                const oggiStr = new Date().toISOString().split('T')[0];
+                const formatterDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
+                const oggiStr = formatterDate.format(new Date());
+                
                 const q = query(collection(db, "utenti", auth.currentUser.uid, "promemoria_sync"), where("completato", "==", false));
                 const snap = await getDocs(q);
                 let activeCount = 0;
@@ -1369,7 +1371,9 @@
             
             try {
                 const snap = await getDocs(collection(db, "utenti")); 
-                let tot = 0; let oggi = 0; const oggiStr = new Date().toISOString().split('T')[0];
+                let tot = 0; let oggi = 0; 
+                const formatterDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
+                const oggiStr = formatterDate.format(new Date());
                 
                 window.utentiArrayCache = [];
                 window.utentiMap = {};
@@ -1390,7 +1394,8 @@
         window.renderGestioneAccessi = () => {
             const container = document.getElementById('lista-utenti-accessi');
             const sortMode = document.getElementById('sort-utenti-app') ? document.getElementById('sort-utenti-app').value : 'recente';
-            const oggiStr = new Date().toISOString().split('T')[0];
+            const formatterDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
+            const oggiStr = formatterDate.format(new Date());
             
             let dataCopy = [...window.utentiArrayCache];
 
@@ -1575,7 +1580,8 @@
                     document.getElementById('profileEmail').value = user.email;
                     
                     const oggiLog = new Date();
-                    const oggiLogStr = oggiLog.toISOString().split('T')[0];
+                    const formatterDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
+                    const oggiLogStr = formatterDate.format(oggiLog);
                     if (data.last_app_access !== oggiLogStr || !data.email) { 
                         setDoc(doc(db, "utenti", user.uid), { last_app_access: oggiLogStr, last_access_full: oggiLog.toISOString(), email: user.email }, { merge: true }); 
                     }

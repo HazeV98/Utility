@@ -394,7 +394,6 @@
         import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
 
-        // Configurazione reale estratta dal tuo progetto
         const firebaseConfig = { 
             apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", 
             authDomain: "utility-haze.firebaseapp.com", 
@@ -412,6 +411,9 @@
         let currentUser = null;
         let allUnits = [];
         let activeUnitId = null;
+
+        // Aggiunta variabile globale per conteggio segnalazioni in tempo reale
+        window.reportsCount = {};
 
         let unsubUserVote = null;
         let unsubAllVotes = null;
@@ -435,8 +437,21 @@
         });
 
         function initApp() {
+            // Listener per le unità
             onSnapshot(collection(db, "flotta_unita"), (snapshot) => {
                 allUnits = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderUnits();
+            });
+
+            // Listener globale per le segnalazioni (serve per i badge nella lista)
+            onSnapshot(collection(db, "flotta_segnalazioni"), (snapshot) => {
+                window.reportsCount = {};
+                snapshot.docs.forEach(d => {
+                    const data = d.data();
+                    if(data.unitId) {
+                        window.reportsCount[data.unitId] = (window.reportsCount[data.unitId] || 0) + 1;
+                    }
+                });
                 renderUnits();
             });
         }
@@ -460,7 +475,8 @@
                 return;
             }
 
-            filtered.sort((a,b) => a.id.localeCompare(b.id)).forEach(unit => {
+            // Ordinamento Naturale con localeCompare e {numeric: true}
+            filtered.sort((a,b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' })).forEach(unit => {
                 const isAdmin = currentUser.uid === ADMIN_UID;
                 const card = document.createElement('div');
                 card.className = 'unit-card';
@@ -471,10 +487,19 @@
                 if(displayId.startsWith('M/B')) iconaBarca = 'fa-ferry';
                 if(displayId.startsWith('M/Z')) iconaBarca = 'fa-truck-fast';
 
+                // Creazione badge di attenzione se ci sono segnalazioni
+                const repCount = window.reportsCount ? (window.reportsCount[unit.id] || 0) : 0;
+                const alertBadge = repCount > 0 
+                    ? `<span style="color:var(--danger); margin-left:8px; font-weight:800; font-size:13px; display:inline-flex; align-items:center; gap:4px; background:var(--danger-light); padding:2px 6px; border-radius:6px; border:1px solid var(--danger-border);"><i class="fa-solid fa-triangle-exclamation"></i> ${repCount}</span>` 
+                    : '';
+
                 card.innerHTML = `
                     <div class="unit-info">
                         <h3><i class="fa-solid ${iconaBarca}"></i> ${displayId}</h3>
-                        <div class="unit-rating"><i class="fa-solid fa-star"></i> ${unit.mediaVoto || 'N/D'}</div>
+                        <div class="unit-rating">
+                            <i class="fa-solid fa-star"></i> ${unit.mediaVoto || 'N/D'}
+                            ${alertBadge}
+                        </div>
                     </div>
                     ${isAdmin ? `
                         <div class="admin-menu-trigger" onclick="event.stopPropagation(); openAdminMenu('${unit.id}')">

@@ -1,5 +1,3 @@
-import { initVisualizzatore } from './visualizzatore.js';
-
 // Variabili globali del modulo
 let numCartelle = 0;
 let currentImgList = [];
@@ -8,8 +6,7 @@ let currentCorseData = null;
 let mappaAlbero = [];
 
 export async function avviaMotoreTurni() {
-    // 1. Inizializza il visualizzatore immagini (che espone apriImmagineTurno)
-    initVisualizzatore();
+    
 
     const area = document.getElementById('content-area');
     if (!area) return; // Se la modale non è pronta, esce

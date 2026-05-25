@@ -894,19 +894,6 @@
 <!-- Richiamo dello script separato come concordato -->
 <script type="module" src="moduli/calendario.js"></script>
 
-<!-- Script utility per iniettare le icone FA nei bottoni del calendario -->
-<script>
-    setInterval(() => {
-        const buttons = document.querySelectorAll('.fc-button');
-        buttons.forEach(btn => {
-            const testoLower = btn.innerText.toLowerCase().trim();
-            // Trova il bottone di ricerca (sia che si chiami "Cerca", "Vai" o usi la lente Emoji)
-            if ((testoLower === 'cerca' || testoLower === 'vai' || btn.innerText.includes('🔍')) && !btn.querySelector('.fa-magnifying-glass')) {
-                btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i>';
-            }
-        });
-    }, 500);
-</script>
 
 </body>
 </html>

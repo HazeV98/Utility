@@ -407,6 +407,23 @@ window.controllaBacheca = async () => {
     } catch(e) { console.error("Errore check bacheca:", e); }
 };
 
+// ============================================================================
+// --- INIZIO AGGIUNTA: GESTIONE RIMOZIONE AVVISI VISIVI ALL'APERTURA DELLA BACHECA ---
+// ============================================================================
+window.addEventListener('bacheca-utility-letta', () => {
+    const badge = document.getElementById('badge-messaggi');
+    if (badge) badge.style.display = 'none';
+    
+    const bannerNormal = document.getElementById('banner-nuovo-messaggio');
+    if (bannerNormal) bannerNormal.style.display = 'none';
+    
+    const bannerDDS = document.getElementById('banner-dds-alert');
+    if (bannerDDS) bannerDDS.style.display = 'none';
+});
+// ============================================================================
+// --- FINE AGGIUNTA ---
+// ============================================================================
+
 window.controllaRichiesteSospese = async () => {
     if (!globalIsAdmin && !globalIsCollab) return;
     try {

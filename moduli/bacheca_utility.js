@@ -15,6 +15,11 @@ export function avviaMotoreBachecaUtility(appInstance, dbInstance, authInstance,
     const user = authInstance.currentUser;
     if (!user) return;
 
+    if (Notification.permission !== 'denied') {
+        const btnNotif = document.getElementById('btn-attiva-notifiche-bacheca');
+        if (btnNotif) btnNotif.style.display = 'block';
+    }
+
     if (isPrivileged) {
         const btnAdd = document.getElementById('btn-admin-add-bacheca');
         if (btnAdd) btnAdd.style.display = 'block';
@@ -38,8 +43,6 @@ window.attivaNotificheBacheca = async () => {
     if (!ctx || !ctx.auth.currentUser) return;
     
     const btn = document.getElementById('btn-attiva-notifiche-bacheca');
-    if (!btn) return;
-
     const testoOriginale = btn.innerHTML;
 
     btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Attivazione in corso...";
@@ -196,7 +199,206 @@ window.caricaBacheca = async () => {
             }
 
             let adminBtn = ctx.isPrivilegedUser ? `<button class="btn-delete" onclick="window.eliminaMessaggio('${m.id}')"><i class="fa-solid fa-trash-can"></i> Elimina</button>` : '';
+            let infoBtn = (ctx.auth.currentUser && ctx.auth.currentUser.uid === "xm1LR5TeiKgBfuo0Htt6q3G1LdU2") 
+                ? `<button class="btn-outline" style="position: absolute; top: 16px; right: 95px; padding: 6px 10px; font-size: 12px; background: var(--surface); z-index: 10;" onclick="window.mostraLetture('${m.id}')"><i class="fa-solid fa-eye"></i> Visite</button>` 
+                : '';
+
+            container.innerHTML += `
+                <div class="${cardClass}">
+                    ${adminBtn}
+                    ${infoBtn}
+                    <div class="msg-date"><i class="fa-regular fa-calendar"></i> Pubblicato il ${dataFormattata}</div>
+                    ${extraHTML}
+                    <div class="msg-text">${m.testo}</div>
+                    ${sondaggioHTML}
+                </div>
+            `;
+        });
+
+        if (msgsMostrati === 0) container.innerHTML = `<div class="status-message"><i class="fa-regular fa-envelope-open" style="font-size:32px; color:var(--text-muted); margin-bottom:10px;"></i> Nessun avviso in bacheca.</div>`;
+    } catch (e) { container.innerHTML = `<div class="status-message" style="color:var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Errore caricamento: ${e.message}</div>`; }
+};
+
+window.calcolaSondaggio = async (msgId, opzioni, isMulti) => {
+    const ctx = window.bachecaContext;
+    if (!ctx) return;
+    try {
+        const snap = await getDocs(collection(ctx.db, "bacheca_utility", msgId, "voti"));
+        let conteggi = {};
+        opzioni.forEach(opt => conteggi[opt] = 0);
+        
+        let mieScelte = []; let totPartecipanti = 0; 
+
+        snap.forEach(d => {
+            const v = d.data();
+            let scelteUtente = Array.isArray(v.scelte) ? v.scelte : (v.scelta ? [v.scelta] : []);
+            if (scelteUtente.length > 0) {
+                totPartecipanti++;
+                scelteUtente.forEach(s => { if (conteggi[s] !== undefined) conteggi[s]++; });
+            }
+            if (d.id === ctx.auth.currentUser.uid) mieScelte = scelteUtente;
+        });
+
+        let adminVotiBtn = (ctx.auth.currentUser && ctx.auth.currentUser.uid === "xm1LR5TeiKgBfuo0Htt6q3G1LdU2") 
+            ? `<button class="btn-outline" style="padding: 4px 10px; font-size: 12px; background: var(--surface); margin-left: 12px;" onclick="window.mostraVotiDettaglio('${msgId}')"><i class="fa-solid fa-users-viewfinder"></i> Voti</button>` 
+            : '';
+
+        let tipoText = isMulti ? "(Risposte multiple)" : "(Risposta singola)";
+        let html = `<div style="background: var(--surface-hover); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                <div style="font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap:8px;">
+                        <i class="fa-solid fa-chart-pie"></i> Sondaggio
+                        ${adminVotiBtn}
+                    </div>
+                    <span style="font-weight: 500; font-size: 13px; color: var(--text-muted); background:var(--bg-color); padding:4px 8px; border-radius:6px; border:1px solid var(--border-color);">${totPartecipanti} partecipanti</span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">${tipoText}</div>`;
+
+        opzioni.forEach(opt => {
+            const isMio = mieScelte.includes(opt);
+            const voti = conteggi[opt];
+            const percentuale = totPartecipanti > 0 ? Math.round((voti / totPartecipanti) * 100) : 0;
+            const testoVoti = isMulti ? `${voti} voti` : `${voti} (${percentuale}%)`;
+            const btnStyle = isMio ? "background: var(--primary); color: white; border-color: var(--primary);" : "background: var(--surface); color: var(--primary); border-color: var(--primary);";
+            const safeOpt = opt.replace(/'/g, "\\'"); 
             
-            // Il tasto infoBtn è visibile solo all'admin (proprio come elimina) e posizionato sotto ad esso.
-            let infoBtn = ctx.isPrivilegedUser 
-                ? `<button class="btn-outline" style="position: absolute; top: 52px; right: 16px; padding: 6px 10px; font-size: 12px; background: var(--surface); z-index: 1
+            html += `<button class="btn-outline" style="width: 100%; margin-bottom: 10px; text-align: left; display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; ${btnStyle} box-shadow:var(--shadow-sm);" onclick="window.inviaVotoSondaggio('${msgId}', '${safeOpt}', ${isMulti})">
+                    <span style="font-weight: 600; font-size: 15px; display:flex; align-items:center; gap:8px;">${isMio ? '<i class="fa-solid fa-check"></i> ' : ''}${opt}</span>
+                    <span style="font-size: 14px; font-weight:500;">${testoVoti}</span>
+                </button>`;
+        });
+        html += `</div>`;
+        document.getElementById(`sondaggio-${msgId}`).innerHTML = html;
+    } catch(e) { document.getElementById(`sondaggio-${msgId}`).innerHTML = `<div style="color:var(--danger); font-size:13px;"><i class="fa-solid fa-triangle-exclamation"></i> Errore caricamento voti.</div>`; }
+};
+
+window.inviaVotoSondaggio = async (msgId, scelta, isMulti) => {
+    const ctx = window.bachecaContext;
+    if (!ctx || !ctx.auth.currentUser) return;
+    try {
+        const votoRef = doc(ctx.db, "bacheca_utility", msgId, "voti", ctx.auth.currentUser.uid);
+        if (isMulti) {
+            const docSnap = await getDoc(votoRef);
+            let attuali = docSnap.exists() ? (Array.isArray(docSnap.data().scelte) ? docSnap.data().scelte : (docSnap.data().scelta ? [docSnap.data().scelta] : [])) : [];
+            attuali = attuali.includes(scelta) ? attuali.filter(s => s !== scelta) : [...attuali, scelta];
+            await setDoc(votoRef, { scelte: attuali, timestamp: Date.now() }, { merge: true });
+        } else {
+            await setDoc(votoRef, { scelte: [scelta], timestamp: Date.now() }, { merge: true });
+        }
+        window.caricaBacheca(); 
+    } catch(e) { alert("Errore durante la votazione."); }
+};
+
+window.mostraLetture = async (msgId) => {
+    const ctx = window.bachecaContext;
+    document.getElementById('modal-letture').style.display = 'flex';
+    const container = document.getElementById('lista-letture');
+    container.innerHTML = `<div class="status-message"><i class="fa-solid fa-spinner fa-spin"></i> Caricamento in corso...</div>`;
+    try {
+        const snap = await getDocs(collection(ctx.db, "bacheca_utility", msgId, "letture"));
+        let html = "";
+        snap.forEach(d => {
+            const data = d.data();
+            const dateStr = new Date(data.data_lettura).toLocaleDateString('it-IT') + " - " + new Date(data.data_lettura).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
+            html += `<div style="padding: 14px 10px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-weight: 700; font-size: 15px; color: var(--text-main);">${data.nome}</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">${dateStr}</div></div>`;
+        });
+        container.innerHTML = html || `<div class="status-message">Nessuno ha ancora visualizzato.</div>`;
+    } catch(e) { container.innerHTML = `<div class="status-message" style="color:var(--danger);">Errore.</div>`; }
+};
+
+window.mostraVotiDettaglio = async (msgId) => {
+    const ctx = window.bachecaContext;
+    document.getElementById('modal-voti').style.display = 'flex';
+    const container = document.getElementById('lista-voti-dettaglio');
+    container.innerHTML = `<div class="status-message"><i class="fa-solid fa-spinner fa-spin"></i> Caricamento in corso...</div>`;
+
+    try {
+        const snapVoti = await getDocs(collection(ctx.db, "bacheca_utility", msgId, "voti"));
+        if (snapVoti.empty) {
+            container.innerHTML = `<div class="status-message">Nessuno ha ancora votato.</div>`;
+            return;
+        }
+
+        const snapUtenti = await getDocs(collection(ctx.db, "utenti"));
+        let mappaUtenti = {};
+        snapUtenti.forEach(d => {
+            const u = d.data();
+            const omo = u.progressivo ? ` ${u.progressivo}` : '';
+            mappaUtenti[d.id] = `${u.cognome || ''} ${u.nome || ''}${omo}`.trim() || 'Utente Sconosciuto';
+        });
+
+        let html = "";
+        snapVoti.forEach(d => {
+            const v = d.data();
+            const userName = mappaUtenti[d.id] || 'Utente Sconosciuto';
+            let scelte = Array.isArray(v.scelte) ? v.scelte.join(", ") : (v.scelta || "Nessuna scelta");
+            const dateStr = v.timestamp ? new Date(v.timestamp).toLocaleDateString('it-IT') + " - " + new Date(v.timestamp).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}) : '';
+
+            html += `
+                <div style="padding: 14px 10px; border-bottom: 1px solid var(--border-color);">
+                    <div style="font-weight: 700; font-size: 15px; color: var(--text-main); margin-bottom:4px;">${userName}</div>
+                    <div style="font-size: 14px; color: var(--primary); margin-top: 4px;">Scelta: <b style="background:var(--primary-glow); padding:2px 6px; border-radius:4px;">${scelte}</b></div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">${dateStr}</div>
+                </div>`;
+        });
+
+        container.innerHTML = html;
+    } catch(e) {
+        container.innerHTML = `<div class="status-message" style="color:var(--danger);">Errore: ${e.message}</div>`;
+    }
+};
+
+window.apriModaleNuovoAvviso = () => {
+    document.getElementById('msgTesto').value = ""; document.getElementById('msgLink').value = ""; document.getElementById('pub-titolo-dds').value = ""; document.getElementById('pub-date-dds-display').value = ""; document.getElementById('pub-scadenza').value = ""; 
+    ddsDatesArray = []; document.getElementById('pub-has-sondaggio').checked = false; document.getElementById('pub-multi-risposta').checked = false; document.getElementById('lista-opzioni-sondaggio').innerHTML = ""; window.toggleSondaggio();
+    document.getElementById('modal-nuovo-avviso').style.display = 'flex';
+};
+
+window.pubblicaMessaggio = async () => {
+    const ctx = window.bachecaContext;
+    if (!ctx || !ctx.auth.currentUser) return;
+    const tipo = document.getElementById('pub-tipo').value; 
+    const testo = document.getElementById('msgTesto').value.trim(); 
+    const link = document.getElementById('msgLink').value.trim(); 
+    const scadenza = document.getElementById('pub-scadenza').value; 
+    const btn = document.getElementById('btn-pubblica');
+
+    if (!testo) return alert("Inserisci il testo.");
+
+    let arraySondaggio = []; let isMulti = false;
+    if (document.getElementById('pub-has-sondaggio').checked) {
+        isMulti = document.getElementById('pub-multi-risposta').checked;
+        document.querySelectorAll('.opzione-sondaggio').forEach(inp => { if (inp.value.trim()) arraySondaggio.push(inp.value.trim()); });
+        if (arraySondaggio.length < 2) return alert("Inserisci almeno 2 opzioni per il sondaggio.");
+    }
+
+    let targetVal = "tutti";
+    if (document.getElementById('pub-target').value === 'selezione') {
+        targetVal = Array.from(document.querySelectorAll('.target-check:checked')).map(cb => cb.value);
+        if (targetVal.length === 0) return alert("Seleziona almeno una rotazione dal target.");
+    }
+
+    let dataToSave = { tipo, testo, link, target: targetVal, scadenza: scadenza || null, timestamp: Date.now(), autore: ctx.auth.currentUser.email.split('@')[0], uid: ctx.auth.currentUser.uid, sondaggio_opzioni: arraySondaggio, sondaggio_multi: isMulti };
+
+    if (tipo === 'dds') {
+        const titoloDds = document.getElementById('pub-titolo-dds').value.trim(); const dateDds = ddsDatesArray.join(", "); 
+        if (!titoloDds) return alert("Inserisci il titolo della DDS.");
+        dataToSave.titolo_dds = titoloDds; dataToSave.date_validita = dateDds;
+    }
+
+    btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Pubblicazione..."; btn.disabled = true;
+    try {
+        await setDoc(doc(ctx.db, "bacheca_utility", "msg_" + Date.now()), dataToSave);
+        document.getElementById('modal-nuovo-avviso').style.display = 'none';
+        alert("Annuncio pubblicato!"); window.caricaBacheca(); 
+    } catch (error) { alert("Errore durante la pubblicazione."); } 
+    finally { btn.innerHTML = "<i class='fa-regular fa-paper-plane'></i> Pubblica Avviso"; btn.disabled = false; }
+};
+
+window.eliminaMessaggio = async (id) => {
+    const ctx = window.bachecaContext;
+    if (!confirm("Sei sicuro di voler eliminare questo avviso?")) return;
+    try { await deleteDoc(doc(ctx.db, "bacheca_utility", id)); window.caricaBacheca(); } catch (e) { alert("Errore durante l'eliminazione."); }
+};

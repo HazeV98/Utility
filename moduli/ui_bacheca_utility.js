@@ -1,5 +1,6 @@
 export function initUIBachecaUtility() {
     const uiHTML = `
+    <!-- MODALI BACHECA UTILITY -->
     <div id="modal-bacheca-utility-main" class="modal-overlay" onclick="window.chiudiSuSfondo(event, 'modal-bacheca-utility-main')">
         <div class="modal-content" style="max-width: 440px; height: 85vh; display: flex; flex-direction: column; padding: 20px;">
             <i class="fa-solid fa-xmark close-modal" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted); transition: 0.2s;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--text-muted)'" onclick="window.chiudiModal('modal-bacheca-utility-main')"></i>
@@ -9,6 +10,7 @@ export function initUIBachecaUtility() {
             </h3>
 
             <div style="flex: 1; overflow-y: auto; padding-right: 5px; display: flex; flex-direction: column;">
+                <button id="btn-attiva-notifiche-bacheca" class="btn-action btn-info" style="display: none; margin-top: 0; margin-bottom: 16px;" onclick="window.attivaNotificheBacheca()"><i class="fa-solid fa-bell"></i> Attiva Notifiche Avvisi e DDS</button>
                 <button id="btn-admin-add-bacheca" class="btn-action" style="display: none; margin-top: 0; margin-bottom: 16px;" onclick="window.apriModaleNuovoAvviso()"><i class="fa-solid fa-plus"></i> Pubblica Avviso</button>
                 <div id="lista-messaggi"></div>
             </div>
@@ -135,4 +137,4 @@ export function initUIBachecaUtility() {
     </div>
     `;
     document.body.insertAdjacentHTML('beforeend', uiHTML);
-}
+} 

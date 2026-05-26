@@ -353,8 +353,10 @@ window.avviaMotoreAdminDaIndex = () => {
 window.controllaBacheca = async () => {
     if (!auth.currentUser) return;
     try {
-        let ultimoAccesso = window.currentUserData?.ultimo_accesso_bacheca || localStorage.getItem('ultimo_accesso_bacheca') || 0;
-        ultimoAccesso = parseInt(ultimoAccesso);
+        // CORREZIONE 1: Scegliamo SEMPRE il timestamp più recente tra quello scaricato dal DB e quello nel telefono.
+        let fbAccess = parseInt(window.currentUserData?.ultimo_accesso_bacheca || 0);
+        let localAccess = parseInt(localStorage.getItem('ultimo_accesso_bacheca') || 0);
+        let ultimoAccesso = Math.max(fbAccess, localAccess);
 
         const stateApp = JSON.parse(localStorage.getItem('myTurniApp')) || {};
         const pid = stateApp.profiloAttivoId || 'default';
@@ -378,7 +380,11 @@ window.controllaBacheca = async () => {
                 if (!rotazioneUtente || !m.target.includes(rotazioneUtente)) return;
             }
 
-            if (m.timestamp > ultimoAccesso) {
+            // CORREZIONE 2: Assicuriamoci che il singolo messaggio non sia mai stato già visualizzato localmente
+            const giaLetto = localStorage.getItem('letto_' + d.id);
+
+            // Aggiungiamo il !giaLetto alla condizione
+            if (m.timestamp > ultimoAccesso && !giaLetto) {
                 if (m.tipo === "dds") avvisiDDS.push(m.titolo_dds);
                 else avvisiNormali++;
             }
@@ -386,24 +392,30 @@ window.controllaBacheca = async () => {
 
         let totali = avvisiNormali + avvisiDDS.length;
 
-        if (totali > 0) {
-            const badge = document.getElementById('badge-messaggi');
-            if (badge) { badge.innerText = totali; badge.style.display = 'flex'; }
+        // CORREZIONE 3: Obblighiamo il sistema a nascondere fisicamente banner e badge se il totale calcolato è zero
+        const badge = document.getElementById('badge-messaggi');
+        if (badge) { 
+            if (totali > 0) { badge.innerText = totali; badge.style.display = 'flex'; }
+            else { badge.style.display = 'none'; }
+        }
 
-            if (avvisiNormali > 0) {
-                const bannerNormal = document.getElementById('banner-nuovo-messaggio');
-                if (bannerNormal) bannerNormal.style.display = 'flex';
-            }
-            
+        const bannerNormal = document.getElementById('banner-nuovo-messaggio');
+        if (bannerNormal) {
+            if (avvisiNormali > 0) bannerNormal.style.display = 'flex';
+            else bannerNormal.style.display = 'none';
+        }
+        
+        const bannerDDS = document.getElementById('banner-dds-alert');
+        const textDDS = document.getElementById('titolo-dds-text');
+        if (bannerDDS && textDDS) {
             if (avvisiDDS.length > 0) {
-                const bannerDDS = document.getElementById('banner-dds-alert');
-                const textDDS = document.getElementById('titolo-dds-text');
-                if (bannerDDS && textDDS) {
-                    textDDS.innerText = avvisiDDS[0] + (avvisiDDS.length > 1 ? ` (+${avvisiDDS.length - 1})` : '');
-                    bannerDDS.style.display = 'flex';
-                }
+                textDDS.innerText = avvisiDDS[0] + (avvisiDDS.length > 1 ? ` (+${avvisiDDS.length - 1})` : '');
+                bannerDDS.style.display = 'flex';
+            } else {
+                bannerDDS.style.display = 'none';
             }
         }
+        
     } catch(e) { console.error("Errore check bacheca:", e); }
 };
 

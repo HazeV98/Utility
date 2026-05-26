@@ -15,23 +15,16 @@ export function avviaMotoreBachecaUtility(appInstance, dbInstance, authInstance,
     const user = authInstance.currentUser;
     if (!user) return;
 
-    if (Notification.permission !== 'denied') {
-        const btnNotif = document.getElementById('btn-attiva-notifiche-bacheca');
-        if (btnNotif) btnNotif.style.display = 'block';
-    }
-
     if (isPrivileged) {
         const btnAdd = document.getElementById('btn-admin-add-bacheca');
         if (btnAdd) btnAdd.style.display = 'block';
     }
 
     // --- INIZIO AGGIUNTA: Rimozione avviso dal menù ---
-    // Sostituisci 'ID_DEL_TUO_BADGE_MENU' con l'id reale dell'icona/pallino rosso che hai nel menù HTML
     const badgeAvvisoMenu = document.getElementById('ID_DEL_TUO_BADGE_MENU');
     if (badgeAvvisoMenu) {
         badgeAvvisoMenu.style.display = 'none'; 
     }
-    // Emettiamo anche un evento globale nel caso il tuo menù sia gestito da un altro script in ascolto
     window.dispatchEvent(new Event('bacheca-utility-letta'));
     // --- FINE AGGIUNTA ---
 
@@ -43,6 +36,8 @@ window.attivaNotificheBacheca = async () => {
     if (!ctx || !ctx.auth.currentUser) return;
     
     const btn = document.getElementById('btn-attiva-notifiche-bacheca');
+    if (!btn) return;
+
     const testoOriginale = btn.innerHTML;
 
     btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Attivazione in corso...";
@@ -113,21 +108,51 @@ window.toggleSondaggio = () => {
 
 window.aggiungiOpzioneSondaggio = (valoreDefault = "") => {
     const div = document.createElement('input');
-    div.type = 'text'; div.className = 'input-field opzione-sondaggio';
+    div.type = 'text'; 
+    div.className = 'input-field opzione-sondaggio';
     div.placeholder = 'Testo opzione (es. Sì, No, Forse)';
-    div.style.marginBottom = '10px'; div.style.textTransform = 'none'; div.value = valoreDefault;
+    div.style.marginBottom = '10px'; 
+    div.style.textTransform = 'none'; 
+    div.value = valoreDefault;
     document.getElementById('lista-opzioni-sondaggio').appendChild(div);
 };
 
-window.apriDatePickerAvviso = () => { document.getElementById('modal-date-picker-avviso').style.display = 'flex'; window.aggiornaUI_DatePicker(); };
-window.chiudiDatePickerAvviso = () => { document.getElementById('modal-date-picker-avviso').style.display = 'none'; document.getElementById('pub-date-dds-display').value = ddsDatesArray.length === 0 ? "" : ddsDatesArray.join(", "); };
-window.aggiungiDataSingola = () => { const val = document.getElementById('input-date-single').value; if (!val) return; if (!ddsDatesArray.includes(val)) { ddsDatesArray.push(val); ddsDatesArray.sort(); window.aggiornaUI_DatePicker(); } document.getElementById('input-date-single').value = ""; };
-window.rimuoviDataSingola = (dateStr) => { ddsDatesArray = ddsDatesArray.filter(d => d !== dateStr); window.aggiornaUI_DatePicker(); };
+window.apriDatePickerAvviso = () => { 
+    document.getElementById('modal-date-picker-avviso').style.display = 'flex'; 
+    window.aggiornaUI_DatePicker(); 
+};
+
+window.chiudiDatePickerAvviso = () => { 
+    document.getElementById('modal-date-picker-avviso').style.display = 'none'; 
+    document.getElementById('pub-date-dds-display').value = ddsDatesArray.length === 0 ? "" : ddsDatesArray.join(", "); 
+};
+
+window.aggiungiDataSingola = () => { 
+    const val = document.getElementById('input-date-single').value; 
+    if (!val) return; 
+    if (!ddsDatesArray.includes(val)) { 
+        ddsDatesArray.push(val); 
+        ddsDatesArray.sort(); 
+        window.aggiornaUI_DatePicker(); 
+    } 
+    document.getElementById('input-date-single').value = ""; 
+};
+
+window.rimuoviDataSingola = (dateStr) => { 
+    ddsDatesArray = ddsDatesArray.filter(d => d !== dateStr); 
+    window.aggiornaUI_DatePicker(); 
+};
+
 window.aggiornaUI_DatePicker = () => {
     const container = document.getElementById('date-tags-container');
     container.innerHTML = "";
-    if(ddsDatesArray.length === 0) { container.innerHTML = `<span style="color:var(--text-muted); font-size: 13px;">Nessuna data aggiunta.</span>`; } 
-    else { ddsDatesArray.forEach(d => { container.innerHTML += `<div class="date-tag">${d} <span class="date-tag-remove" onclick="window.rimuoviDataSingola('${d}')"><i class="fa-solid fa-xmark"></i></span></div>`; }); }
+    if(ddsDatesArray.length === 0) { 
+        container.innerHTML = `<span style="color:var(--text-muted); font-size: 13px;">Nessuna data aggiunta.</span>`; 
+    } else { 
+        ddsDatesArray.forEach(d => { 
+            container.innerHTML += `<div class="date-tag">${d} <span class="date-tag-remove" onclick="window.rimuoviDataSingola('${d}')"><i class="fa-solid fa-xmark"></i></span></div>`; 
+        }); 
+    }
 };
 
 window.segnaComeLetto = async (msgId) => {
@@ -139,7 +164,9 @@ window.segnaComeLetto = async (msgId) => {
         const readRef = doc(ctx.db, "bacheca_utility", msgId, "letture", ctx.auth.currentUser.uid);
         await setDoc(readRef, { nome: ctx.currentUserFullName, data_lettura: Date.now() }, { merge: true });
         localStorage.setItem(key, 'true');
-    } catch(e) { console.log("Impossibile salvare la lettura"); }
+    } catch(e) { 
+        console.log("Impossibile salvare la lettura"); 
+    }
 };
 
 window.caricaBacheca = async () => {
@@ -182,14 +209,18 @@ window.caricaBacheca = async () => {
             if (m.tipo === "dds") {
                 cardClass += " card-dds";
                 extraHTML += `<div class="msg-title-dds"><i class="fa-solid fa-triangle-exclamation"></i> DDS: ${m.titolo_dds}</div>`;
-                if (m.date_validita) extraHTML += `<div style="font-size: 14px; color: var(--danger); margin-bottom: 12px; font-weight: 600;"><i class="fa-regular fa-calendar-check"></i> Date valide: <b>${m.date_validita}</b></div>`;
+                if (m.date_validita) {
+                    extraHTML += `<div style="font-size: 14px; color: var(--danger); margin-bottom: 12px; font-weight: 600;"><i class="fa-regular fa-calendar-check"></i> Date valide: <b>${m.date_validita}</b></div>`;
+                }
             }
 
             if (m.target && m.target !== "tutti" && ctx.isPrivilegedUser) {
                 extraHTML += `<div style="font-size: 11px; background: var(--primary-glow); color: var(--primary); display: inline-flex; align-items:center; gap:6px; padding: 4px 8px; border-radius: 6px; margin-bottom: 12px; font-weight:600;"><i class="fa-solid fa-bullseye"></i> Mirato a specifiche rotazioni</div><br>`;
             }
 
-            if (m.link) extraHTML += `<a href="${m.link}" target="_blank" class="msg-link"><i class="fa-solid fa-arrow-up-right-from-square"></i> Apri Link Esterno</a>`;
+            if (m.link) {
+                extraHTML += `<a href="${m.link}" target="_blank" class="msg-link"><i class="fa-solid fa-arrow-up-right-from-square"></i> Apri Link Esterno</a>`;
+            }
 
             let sondaggioHTML = "";
             if (m.sondaggio_opzioni && m.sondaggio_opzioni.length > 0) {
@@ -199,8 +230,10 @@ window.caricaBacheca = async () => {
             }
 
             let adminBtn = ctx.isPrivilegedUser ? `<button class="btn-delete" onclick="window.eliminaMessaggio('${m.id}')"><i class="fa-solid fa-trash-can"></i> Elimina</button>` : '';
+            
+            let topPosVisite = ctx.isPrivilegedUser ? '52px' : '16px';
             let infoBtn = (ctx.auth.currentUser && ctx.auth.currentUser.uid === "xm1LR5TeiKgBfuo0Htt6q3G1LdU2") 
-                ? `<button class="btn-outline" style="position: absolute; top: 16px; right: 95px; padding: 6px 10px; font-size: 12px; background: var(--surface); z-index: 10;" onclick="window.mostraLetture('${m.id}')"><i class="fa-solid fa-eye"></i> Visite</button>` 
+                ? `<button class="btn-outline" style="position: absolute; top: ${topPosVisite}; right: 16px; padding: 6px 10px; font-size: 12px; background: var(--surface); z-index: 10;" onclick="window.mostraLetture('${m.id}')"><i class="fa-solid fa-eye"></i> Visite</button>` 
                 : '';
 
             container.innerHTML += `
@@ -215,8 +248,12 @@ window.caricaBacheca = async () => {
             `;
         });
 
-        if (msgsMostrati === 0) container.innerHTML = `<div class="status-message"><i class="fa-regular fa-envelope-open" style="font-size:32px; color:var(--text-muted); margin-bottom:10px;"></i> Nessun avviso in bacheca.</div>`;
-    } catch (e) { container.innerHTML = `<div class="status-message" style="color:var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Errore caricamento: ${e.message}</div>`; }
+        if (msgsMostrati === 0) {
+            container.innerHTML = `<div class="status-message"><i class="fa-regular fa-envelope-open" style="font-size:32px; color:var(--text-muted); margin-bottom:10px;"></i> Nessun avviso in bacheca.</div>`;
+        }
+    } catch (e) { 
+        container.innerHTML = `<div class="status-message" style="color:var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Errore caricamento: ${e.message}</div>`; 
+    }
 };
 
 window.calcolaSondaggio = async (msgId, opzioni, isMulti) => {
@@ -227,14 +264,17 @@ window.calcolaSondaggio = async (msgId, opzioni, isMulti) => {
         let conteggi = {};
         opzioni.forEach(opt => conteggi[opt] = 0);
         
-        let mieScelte = []; let totPartecipanti = 0; 
+        let mieScelte = []; 
+        let totPartecipanti = 0; 
 
         snap.forEach(d => {
             const v = d.data();
             let scelteUtente = Array.isArray(v.scelte) ? v.scelte : (v.scelta ? [v.scelta] : []);
             if (scelteUtente.length > 0) {
                 totPartecipanti++;
-                scelteUtente.forEach(s => { if (conteggi[s] !== undefined) conteggi[s]++; });
+                scelteUtente.forEach(s => { 
+                    if (conteggi[s] !== undefined) conteggi[s]++; 
+                });
             }
             if (d.id === ctx.auth.currentUser.uid) mieScelte = scelteUtente;
         });
@@ -269,7 +309,9 @@ window.calcolaSondaggio = async (msgId, opzioni, isMulti) => {
         });
         html += `</div>`;
         document.getElementById(`sondaggio-${msgId}`).innerHTML = html;
-    } catch(e) { document.getElementById(`sondaggio-${msgId}`).innerHTML = `<div style="color:var(--danger); font-size:13px;"><i class="fa-solid fa-triangle-exclamation"></i> Errore caricamento voti.</div>`; }
+    } catch(e) { 
+        document.getElementById(`sondaggio-${msgId}`).innerHTML = `<div style="color:var(--danger); font-size:13px;"><i class="fa-solid fa-triangle-exclamation"></i> Errore caricamento voti.</div>`; 
+    }
 };
 
 window.inviaVotoSondaggio = async (msgId, scelta, isMulti) => {
@@ -286,7 +328,9 @@ window.inviaVotoSondaggio = async (msgId, scelta, isMulti) => {
             await setDoc(votoRef, { scelte: [scelta], timestamp: Date.now() }, { merge: true });
         }
         window.caricaBacheca(); 
-    } catch(e) { alert("Errore durante la votazione."); }
+    } catch(e) { 
+        alert("Errore durante la votazione."); 
+    }
 };
 
 window.mostraLetture = async (msgId) => {
@@ -305,7 +349,9 @@ window.mostraLetture = async (msgId) => {
                     <div style="font-size: 12px; color: var(--text-muted);">${dateStr}</div></div>`;
         });
         container.innerHTML = html || `<div class="status-message">Nessuno ha ancora visualizzato.</div>`;
-    } catch(e) { container.innerHTML = `<div class="status-message" style="color:var(--danger);">Errore.</div>`; }
+    } catch(e) { 
+        container.innerHTML = `<div class="status-message" style="color:var(--danger);">Errore.</div>`; 
+    }
 };
 
 window.mostraVotiDettaglio = async (msgId) => {
@@ -351,8 +397,16 @@ window.mostraVotiDettaglio = async (msgId) => {
 };
 
 window.apriModaleNuovoAvviso = () => {
-    document.getElementById('msgTesto').value = ""; document.getElementById('msgLink').value = ""; document.getElementById('pub-titolo-dds').value = ""; document.getElementById('pub-date-dds-display').value = ""; document.getElementById('pub-scadenza').value = ""; 
-    ddsDatesArray = []; document.getElementById('pub-has-sondaggio').checked = false; document.getElementById('pub-multi-risposta').checked = false; document.getElementById('lista-opzioni-sondaggio').innerHTML = ""; window.toggleSondaggio();
+    document.getElementById('msgTesto').value = ""; 
+    document.getElementById('msgLink').value = ""; 
+    document.getElementById('pub-titolo-dds').value = ""; 
+    document.getElementById('pub-date-dds-display').value = ""; 
+    document.getElementById('pub-scadenza').value = ""; 
+    ddsDatesArray = []; 
+    document.getElementById('pub-has-sondaggio').checked = false; 
+    document.getElementById('pub-multi-risposta').checked = false; 
+    document.getElementById('lista-opzioni-sondaggio').innerHTML = ""; 
+    window.toggleSondaggio();
     document.getElementById('modal-nuovo-avviso').style.display = 'flex';
 };
 
@@ -367,10 +421,13 @@ window.pubblicaMessaggio = async () => {
 
     if (!testo) return alert("Inserisci il testo.");
 
-    let arraySondaggio = []; let isMulti = false;
+    let arraySondaggio = []; 
+    let isMulti = false;
     if (document.getElementById('pub-has-sondaggio').checked) {
         isMulti = document.getElementById('pub-multi-risposta').checked;
-        document.querySelectorAll('.opzione-sondaggio').forEach(inp => { if (inp.value.trim()) arraySondaggio.push(inp.value.trim()); });
+        document.querySelectorAll('.opzione-sondaggio').forEach(inp => { 
+            if (inp.value.trim()) arraySondaggio.push(inp.value.trim()); 
+        });
         if (arraySondaggio.length < 2) return alert("Inserisci almeno 2 opzioni per il sondaggio.");
     }
 
@@ -380,25 +437,51 @@ window.pubblicaMessaggio = async () => {
         if (targetVal.length === 0) return alert("Seleziona almeno una rotazione dal target.");
     }
 
-    let dataToSave = { tipo, testo, link, target: targetVal, scadenza: scadenza || null, timestamp: Date.now(), autore: ctx.auth.currentUser.email.split('@')[0], uid: ctx.auth.currentUser.uid, sondaggio_opzioni: arraySondaggio, sondaggio_multi: isMulti };
+    let dataToSave = { 
+        tipo, 
+        testo, 
+        link, 
+        target: targetVal, 
+        scadenza: scadenza || null, 
+        timestamp: Date.now(), 
+        autore: ctx.auth.currentUser.email.split('@')[0], 
+        uid: ctx.auth.currentUser.uid, 
+        sondaggio_opzioni: arraySondaggio, 
+        sondaggio_multi: isMulti 
+    };
 
     if (tipo === 'dds') {
-        const titoloDds = document.getElementById('pub-titolo-dds').value.trim(); const dateDds = ddsDatesArray.join(", "); 
+        const titoloDds = document.getElementById('pub-titolo-dds').value.trim(); 
+        const dateDds = ddsDatesArray.join(", "); 
         if (!titoloDds) return alert("Inserisci il titolo della DDS.");
-        dataToSave.titolo_dds = titoloDds; dataToSave.date_validita = dateDds;
+        dataToSave.titolo_dds = titoloDds; 
+        dataToSave.date_validita = dateDds;
     }
 
-    btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Pubblicazione..."; btn.disabled = true;
+    btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Pubblicazione..."; 
+    btn.disabled = true;
     try {
         await setDoc(doc(ctx.db, "bacheca_utility", "msg_" + Date.now()), dataToSave);
         document.getElementById('modal-nuovo-avviso').style.display = 'none';
-        alert("Annuncio pubblicato!"); window.caricaBacheca(); 
-    } catch (error) { alert("Errore durante la pubblicazione."); } 
-    finally { btn.innerHTML = "<i class='fa-regular fa-paper-plane'></i> Pubblica Avviso"; btn.disabled = false; }
+        alert("Annuncio pubblicato!"); 
+        window.caricaBacheca(); 
+    } catch (error) { 
+        alert("Errore durante la pubblicazione."); 
+    } finally { 
+        btn.innerHTML = "<i class='fa-regular fa-paper-plane'></i> Pubblica Avviso"; 
+        btn.disabled = false; 
+    }
 };
 
 window.eliminaMessaggio = async (id) => {
     const ctx = window.bachecaContext;
     if (!confirm("Sei sicuro di voler eliminare questo avviso?")) return;
-    try { await deleteDoc(doc(ctx.db, "bacheca_utility", id)); window.caricaBacheca(); } catch (e) { alert("Errore durante l'eliminazione."); }
+    try { 
+        await deleteDoc(doc(ctx.db, "bacheca_utility", id)); 
+        window.caricaBacheca(); 
+    } catch (e) { 
+        alert("Errore durante l'eliminazione."); 
+    }
 };
+
+console.log("Bacheca Utility: file caricato e pronto all'uso.");

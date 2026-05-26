@@ -181,11 +181,11 @@ window.cercaEApriDaRisultato = (codiceTurno) => {
 };
 
 // --- LOGICA RICERCA CORSE ---
-window.chiudiSeSfondoSearch = (event) => { if (event.target.id === 'searchCorseModal') { window.chiudiSearchCorseModal(); } };
-window.chiudiSearchCorseModal = () => { document.getElementById('searchCorseModal').style.display = 'none'; };
+window.chiudiSeSfondoSearch = (event) => { if (event.target.id === 'modal-cerca-corse') { window.chiudiSearchCorseModal(); } };
+window.chiudiSearchCorseModal = () => { document.getElementById('modal-cerca-corse').style.display = 'none'; };
 
 window.apriRicercaCorse = async (pdfName, dirName) => {
-    document.getElementById('searchCorseModal').style.display = 'flex';
+    document.getElementById('modal-cerca-corse').style.display = 'flex';
     document.getElementById('sc-form').style.display = 'none'; document.getElementById('sc-risultato').style.display = 'none';
     const statusEl = document.getElementById('sc-status');
     

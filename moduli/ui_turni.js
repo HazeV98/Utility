@@ -45,21 +45,24 @@ export function initUITurni() {
                 </div>
                 <input type="hidden" id="sc-tipo" value="partenza">
 
-                <div id="sc-rest-form">
-                    <div class="sc-form-group">
-                        <label id="label-luogo">Luogo:</label>
-                        <select id="sc-luogo" onchange="window.aggiornaSuggerimentiOrario()"></select>
+                <div id="sc-status" style="display:none; margin-top: 18px; color: var(--text-main); font-size: 14px;"></div>
+                <div id="sc-form" style="display:none;">
+                    <div id="sc-rest-form">
+                        <div class="sc-form-group">
+                            <label id="label-luogo">Luogo:</label>
+                            <select id="sc-luogo" onchange="window.aggiornaSuggerimentiOrario()"></select>
+                        </div>
+                        <div class="sc-form-group">
+                            <label>Giorno (Opz. per rotazioni):</label>
+                            <input type="date" id="sc-giorno">
+                        </div>
+                        <div class="sc-form-group" style="position: relative;">
+                            <label id="label-orario">Orario:</label>
+                            <input type="text" id="sc-orario" inputmode="numeric" placeholder="es. 07.30" oninput="window.formattaOrario(event)" autocomplete="off">
+                            <div id="sc-suggestions"></div>
+                        </div>
+                        <button class="btn-action" style="margin-top: 10px;" onclick="window.eseguiRicercaCorsa()"><i class="fa-solid fa-magnifying-glass"></i> Trova Turno</button>
                     </div>
-                    <div class="sc-form-group">
-                        <label>Giorno (Opz. per rotazioni):</label>
-                        <input type="date" id="sc-giorno">
-                    </div>
-                    <div class="sc-form-group" style="position: relative;">
-                        <label id="label-orario">Orario:</label>
-                        <input type="text" id="sc-orario" inputmode="numeric" placeholder="es. 07.30" oninput="window.formattaOrario(event)" autocomplete="off">
-                        <div id="sc-suggestions"></div>
-                    </div>
-                    <button class="btn-action" style="margin-top: 10px;" onclick="window.eseguiRicercaCorsa()"><i class="fa-solid fa-magnifying-glass"></i> Trova Turno</button>
                 </div>
 
                 <div id="sc-risultato" class="risultato-box" style="display:none;"></div>

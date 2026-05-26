@@ -408,9 +408,10 @@ window.controllaBacheca = async () => {
 };
 
 // ============================================================================
-// --- INIZIO AGGIUNTA: GESTIONE RIMOZIONE AVVISI VISIVI ALL'APERTURA DELLA BACHECA ---
+// --- INIZIO AGGIUNTA: GESTIONE RIMOZIONE E SALVATAGGIO AVVISI VISIVI ALL'APERTURA DELLA BACHECA ---
 // ============================================================================
-window.addEventListener('bacheca-utility-letta', () => {
+window.addEventListener('bacheca-utility-letta', async () => {
+    // 1. Nascondiamo visivamente gli elementi
     const badge = document.getElementById('badge-messaggi');
     if (badge) badge.style.display = 'none';
     
@@ -419,6 +420,22 @@ window.addEventListener('bacheca-utility-letta', () => {
     
     const bannerDDS = document.getElementById('banner-dds-alert');
     if (bannerDDS) bannerDDS.style.display = 'none';
+
+    // 2. Salviamo il nuovo timestamp per impedire che ricompaiano al refresh della pagina
+    const now = Date.now();
+    localStorage.setItem('ultimo_accesso_bacheca', now);
+    
+    if (window.currentUserData) {
+        window.currentUserData.ultimo_accesso_bacheca = now;
+    }
+    
+    if (auth.currentUser) {
+        try {
+            await setDoc(doc(db, "utenti", auth.currentUser.uid), { ultimo_accesso_bacheca: now }, { merge: true });
+        } catch(e) {
+            console.error("Errore salvataggio ultimo accesso bacheca:", e);
+        }
+    }
 });
 // ============================================================================
 // --- FINE AGGIUNTA ---

@@ -25,6 +25,16 @@ export function avviaMotoreBachecaUtility(appInstance, dbInstance, authInstance,
         if (btnAdd) btnAdd.style.display = 'block';
     }
 
+    // --- INIZIO AGGIUNTA: Rimozione avviso dal menù ---
+    // Sostituisci 'ID_DEL_TUO_BADGE_MENU' con l'id reale dell'icona/pallino rosso che hai nel menù HTML
+    const badgeAvvisoMenu = document.getElementById('ID_DEL_TUO_BADGE_MENU');
+    if (badgeAvvisoMenu) {
+        badgeAvvisoMenu.style.display = 'none'; 
+    }
+    // Emettiamo anche un evento globale nel caso il tuo menù sia gestito da un altro script in ascolto
+    window.dispatchEvent(new Event('bacheca-utility-letta'));
+    // --- FINE AGGIUNTA ---
+
     window.caricaBacheca();
 }
 
@@ -391,4 +401,4 @@ window.eliminaMessaggio = async (id) => {
     const ctx = window.bachecaContext;
     if (!confirm("Sei sicuro di voler eliminare questo avviso?")) return;
     try { await deleteDoc(doc(ctx.db, "bacheca_utility", id)); window.caricaBacheca(); } catch (e) { alert("Errore durante l'eliminazione."); }
-}; 
+};

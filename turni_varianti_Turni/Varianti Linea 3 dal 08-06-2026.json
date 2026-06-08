@@ -1,0 +1,40 @@
+{
+  "3P07_LUN-SAB": [
+    {
+      "partenza_luogo": "P.ROMA",
+      "partenza_ora": "7:48",
+      "arrivo_luogo": "P.ROMA",
+      "arrivo_ora": "7:51"
+    },
+    {
+      "partenza_luogo": "P.ROMA",
+      "partenza_ora": "7:51",
+      "arrivo_luogo": "P.ROMA",
+      "arrivo_ora": "8:48"
+    },
+    {
+      "partenza_luogo": "P.ROMA",
+      "partenza_ora": "9:48",
+      "arrivo_luogo": "P.ROMA",
+      "arrivo_ora": "9:51"
+    },
+    {
+      "partenza_luogo": "P.ROMA",
+      "partenza_ora": "9:51",
+      "arrivo_luogo": "P.ROMA",
+      "arrivo_ora": "10:48"
+    },
+    {
+      "partenza_luogo": "P.ROMA",
+      "partenza_ora": "11:06",
+      "arrivo_luogo": "LIDO",
+      "arrivo_ora": "11:58"
+    },
+    {
+      "partenza_luogo": "LIDO",
+      "partenza_ora": "12:00",
+      "arrivo_luogo": "P.ROMA",
+      "arrivo_ora": "12:52"
+    }
+  ]
+}

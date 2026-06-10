@@ -87,8 +87,7 @@ export function avviaMotoreRotazioni(db, auth) {
         const pendSect = document.getElementById('rot-pending-section');
         const contSect = document.getElementById('rot-content-section');
         
-        // Sicurezza UI: Nascondiamo tutto di default per evitare sovrapposizioni
-        if(authSect) authSect.style.display = 'none';
+        // Pulizia iniziale: nascondiamo i sottomenù
         if(warnLog) warnLog.style.display = 'none';
         if(reqSect) reqSect.style.display = 'none';
         if(pendSect) pendSect.style.display = 'none';
@@ -111,11 +110,14 @@ export function avviaMotoreRotazioni(db, auth) {
             currentUserDoc = { ...uData, ...pData }; 
             isCollab = (uData.ruolo === 'collaborator');
             
-            // BYPASS ADMIN O UTENTE APPROVATO (Gestisce anche inserimenti manuali in FB)
+            // BYPASS ADMIN O UTENTE APPROVATO
             if (isAdmin || pData.abilitato_rotazioni === true || pData.stato_richiesta === 'approved') {
                 if (isAdmin) currentUserDoc.abilitato_rotazioni = true; 
                 
+                // Se ha accesso, nascondiamo tutto il blocco auth e mostriamo i contenuti
+                if(authSect) authSect.style.display = 'none'; 
                 if(contSect) contSect.style.display = 'flex';
+                
                 let btnMieiDati = document.getElementById('rot-btn-miei-dati');
                 if (btnMieiDati) btnMieiDati.style.display = 'flex';
                 
@@ -130,15 +132,22 @@ export function avviaMotoreRotazioni(db, auth) {
                 window.caricaRotazioniMain();
                 
             } else if (pData.stato_richiesta === 'pending') {
+                // In attesa di approvazione: mostra contenitore auth e messaggio
+                if(authSect) authSect.style.display = 'block';
                 if(pendSect) pendSect.style.display = 'block';
             } else {
+                // Nessun accesso: mostra contenitore auth e modulo di richiesta
+                if(authSect) authSect.style.display = 'block';
                 if(reqSect) reqSect.style.display = 'block';
+                
                 if(document.getElementById('rot-req-nome')) document.getElementById('rot-req-nome').value = uData.nome || '';
                 if(document.getElementById('rot-req-cognome')) document.getElementById('rot-req-cognome').value = uData.cognome || '';
                 if(document.getElementById('rot-req-matricola')) document.getElementById('rot-req-matricola').value = uData.matricola || '';
                 if(document.getElementById('rot-req-omonimia')) document.getElementById('rot-req-omonimia').value = uData.progressivo || '';
             }
         } else { 
+            // Non loggato: mostra avviso
+            if(authSect) authSect.style.display = 'block';
             if(warnLog) warnLog.style.display = 'block'; 
         }
     };

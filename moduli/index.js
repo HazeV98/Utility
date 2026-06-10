@@ -456,21 +456,35 @@ window.addEventListener('bacheca-utility-letta', async () => {
 window.controllaRichiesteSospese = async () => {
     if (!globalIsAdmin && !globalIsCollab) return;
     try {
-        const q = query(collection(db, "utenti"), where("stato_richiesta", "==", "pending"));
+        // Se l'utente è un collaboratore, recupero prima i suoi permessi_gestione dalla nuova raccolta
+        let permessiGestione = [];
+        if (globalIsCollab && auth.currentUser) {
+            const myPermsSnap = await getDoc(doc(db, "permessi_rotazioni", auth.currentUser.uid));
+            if (myPermsSnap.exists() && myPermsSnap.data().permessi_gestione) {
+                permessiGestione = myPermsSnap.data().permessi_gestione;
+            }
+        }
+
+        const q = query(collection(db, "permessi_rotazioni"), where("stato_richiesta", "==", "pending"));
         const snap = await getDocs(q);
         let count = 0;
+        
         snap.forEach(d => {
-            const u = d.data();
-            if (globalIsAdmin) count++;
-            else if (globalIsCollab && (window.currentUserData?.permessi_gestione || []).includes(u.rotazione_richiesta)) count++;
+            const p = d.data();
+            if (globalIsAdmin) {
+                count++;
+            } else if (globalIsCollab && permessiGestione.includes(p.rotazione_richiesta)) {
+                count++;
+            }
         });
+        
         const btnRot = document.getElementById('btn-rotazioni');
         if (btnRot) {
             let b = btnRot.querySelector('.badge-notif');
             if (b) b.remove();
             if (count > 0) btnRot.insertAdjacentHTML('beforeend', `<div class="badge-notif">${count}</div>`);
         }
-    } catch(e) {}
+    } catch(e) { console.error("Errore check richieste rotazioni:", e); }
 };
 
 window.controllaPromemoria = async () => {

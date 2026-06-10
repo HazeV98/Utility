@@ -105,7 +105,10 @@ export function avviaMotoreRotazioni(db, auth) {
                 currentUserDoc = { ...uData, ...pData }; 
                 isCollab = (uData.ruolo === 'collaborator');
                 
-                if (pData.abilitato_rotazioni === true) {
+                // BYPASS ADMIN: Se è admin entra sempre
+                if (isAdmin || pData.abilitato_rotazioni === true) {
+                    if (isAdmin) currentUserDoc.abilitato_rotazioni = true; // Forzatura logica in memoria
+                    
                     authSect.style.display = 'none'; 
                     contSect.style.display = 'flex';
                     document.getElementById('rot-btn-miei-dati').style.display = 'flex';

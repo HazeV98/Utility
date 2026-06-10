@@ -1,4 +1,4 @@
-import { doc, getDoc, collection, getDocs, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { doc, getDoc, collection, getDocs, updateDoc, setDoc, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 export function avviaMotoreRotazioni(db, auth) {
     const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2";
@@ -90,14 +90,22 @@ export function avviaMotoreRotazioni(db, auth) {
         if (user) {
             currentUserId = user.uid; 
             isAdmin = (user.uid === ADMIN_UID);
+            
+            // Lettura parallela da utenti e permessi_rotazioni
             const docRef = doc(db, "utenti", user.uid); 
-            const docSnap = await getDoc(docRef);
+            const permRef = doc(db, "permessi_rotazioni", user.uid);
+            
+            const [docSnap, permSnap] = await Promise.all([getDoc(docRef), getDoc(permRef)]);
             
             if (docSnap.exists()) {
-                currentUserDoc = docSnap.data(); 
-                isCollab = (currentUserDoc.ruolo === 'collaborator');
+                const uData = docSnap.data();
+                const pData = permSnap.exists() ? permSnap.data() : {};
                 
-                if (currentUserDoc.abilitato_rotazioni === true) {
+                // Merge in memoria per compatibilità con il resto dell'interfaccia
+                currentUserDoc = { ...uData, ...pData }; 
+                isCollab = (uData.ruolo === 'collaborator');
+                
+                if (pData.abilitato_rotazioni === true) {
                     authSect.style.display = 'none'; 
                     contSect.style.display = 'flex';
                     document.getElementById('rot-btn-miei-dati').style.display = 'flex';
@@ -108,14 +116,14 @@ export function avviaMotoreRotazioni(db, auth) {
                     window.initPanzoomRotazioni(); 
                     window.caricaDatiTurniSilenziosoRot(); 
                     window.caricaRotazioniMain();
-                } else if (currentUserDoc.stato_richiesta === 'pending') {
+                } else if (pData.stato_richiesta === 'pending') {
                     warnLog.style.display = 'none'; reqSect.style.display = 'none'; pendSect.style.display = 'block';
                 } else {
                     warnLog.style.display = 'none'; pendSect.style.display = 'none'; reqSect.style.display = 'block';
-                    document.getElementById('rot-req-nome').value = currentUserDoc.nome || '';
-                    document.getElementById('rot-req-cognome').value = currentUserDoc.cognome || '';
-                    document.getElementById('rot-req-matricola').value = currentUserDoc.matricola || '';
-                    document.getElementById('rot-req-omonimia').value = currentUserDoc.progressivo || '';
+                    document.getElementById('rot-req-nome').value = uData.nome || '';
+                    document.getElementById('rot-req-cognome').value = uData.cognome || '';
+                    document.getElementById('rot-req-matricola').value = uData.matricola || '';
+                    document.getElementById('rot-req-omonimia').value = uData.progressivo || '';
                 }
             } else reqSect.style.display = 'block';
         } else { 
@@ -128,7 +136,7 @@ export function avviaMotoreRotazioni(db, auth) {
         document.getElementById('rot-form-request').style.display = 'block';
     };
 
-    // Event listeners per le select rotazioni (Richiesta e Edit)
+    // Event listeners per le select rotazioni
     document.getElementById('rot-req-rotazione').addEventListener('change', function() {
         let isDisp = this.value.startsWith('disp_');
         document.getElementById('rot-div-data-riposo-req').style.display = isDisp ? 'block' : 'none';
@@ -179,11 +187,21 @@ export function avviaMotoreRotazioni(db, auth) {
         return pulito.charAt(0).toUpperCase() + pulito.slice(1);
     }
 
+    // Aggiornata per leggere da permessi_rotazioni e unire i dati utente
     window.getUtentiAbilitatiFirebaseRot = async () => {
-        const q = query(collection(db, "utenti"), where("abilitato_rotazioni", "==", true));
-        const snap = await getDocs(q);
+        const q = query(collection(db, "permessi_rotazioni"), where("abilitato_rotazioni", "==", true));
+        const permSnap = await getDocs(q);
+        
+        const utentiSnap = await getDocs(collection(db, "utenti"));
+        let utentiBase = {};
+        utentiSnap.forEach(d => utentiBase[d.id] = d.data());
+
         let arr = [];
-        snap.forEach(d => arr.push(d.data()));
+        permSnap.forEach(d => {
+            let pData = d.data();
+            let uData = utentiBase[d.id] || {};
+            arr.push({ ...uData, ...pData });
+        });
         return arr;
     };
 
@@ -972,13 +990,17 @@ export function avviaMotoreRotazioni(db, auth) {
         btn.disabled = true;
         
         try {
-            let p = { 
-                nome: n, cognome: c, matricola: m, progressivo: omo,
+            // Profilo in UTENTI (manteniamo updateDoc come richiesto, l'utente esiste già per l'app base)
+            let pUtenti = { nome: n, cognome: c, matricola: m, progressivo: omo };
+            await updateDoc(doc(db, "utenti", currentUserId), pUtenti);
+            
+            // Permessi in PERMESSI_ROTAZIONI
+            let pRotazioni = {
                 stato_richiesta: 'pending', rotazione_richiesta: rot, 
                 data_riposo_singolo: dRip || null, mansione: rot.startsWith('disp_') ? man : null
             };
-            await updateDoc(doc(db, "utenti", currentUserId), p);
-            // SPA Upgrade
+            await setDoc(doc(db, "permessi_rotazioni", currentUserId), pRotazioni, { merge: true });
+            
             window.initRotazioniState();
         } catch(e) { 
             err.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> Errore durante l'invio. Riprova."; 
@@ -1037,17 +1059,21 @@ export function avviaMotoreRotazioni(db, auth) {
         btn.disabled = true;
         
         try {
-            let p = { 
-                nome: n, cognome: c, matricola: m, progressivo: omo,
+            // Aggiorna profilo in utenti
+            let pUtenti = { nome: n, cognome: c, matricola: m, progressivo: omo };
+            await updateDoc(doc(db, "utenti", currentUserId), pUtenti);
+            
+            // Aggiorna permessi in permessi_rotazioni
+            let pRotazioni = { 
                 rotazione_richiesta: rot, data_riposo_singolo: dRip || null,
                 mansione: rot.startsWith('disp_') ? man : null
             };
-            await updateDoc(doc(db, "utenti", currentUserId), p);
+            await setDoc(doc(db, "permessi_rotazioni", currentUserId), pRotazioni, { merge: true });
             
             currentUserDoc.nome = n; currentUserDoc.cognome = c; currentUserDoc.matricola = m; 
             currentUserDoc.progressivo = omo; currentUserDoc.rotazione_richiesta = rot;
-            currentUserDoc.data_riposo_singolo = p.data_riposo_singolo;
-            currentUserDoc.mansione = p.mansione;
+            currentUserDoc.data_riposo_singolo = pRotazioni.data_riposo_singolo;
+            currentUserDoc.mansione = pRotazioni.mansione;
             
             alert("Dati aggiornati con successo!");
             window.chiudiModalRotazioni('rot-modal-miei-dati');
@@ -1106,7 +1132,7 @@ export function avviaMotoreRotazioni(db, auth) {
     window.aggiornaBadgeRichiesteRotazioni = async () => {
         if (!isAdmin && !isCollab) return;
         try {
-            const q = query(collection(db, "utenti"), where("stato_richiesta", "==", "pending"));
+            const q = query(collection(db, "permessi_rotazioni"), where("stato_richiesta", "==", "pending"));
             const snap = await getDocs(q);
             let count = 0;
             snap.forEach(d => {
@@ -1133,17 +1159,25 @@ export function avviaMotoreRotazioni(db, auth) {
         const cont = document.getElementById('rot-lista-utenti-abilitati');
         cont.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);"><i class="fa-solid fa-circle-notch fa-spin" style="font-size:24px;"></i> Caricamento...</div>`;
         
-        const snap = await getDocs(collection(db, "utenti")); 
+        // Fetch combinato (utenti + permessi_rotazioni)
+        const permSnap = await getDocs(collection(db, "permessi_rotazioni")); 
+        const utentiSnap = await getDocs(collection(db, "utenti")); 
+        
+        let utentiBase = {};
+        utentiSnap.forEach(d => utentiBase[d.id] = d.data());
+
         window.utentiMap = {}; 
         let utentiArr = [];
         
-        snap.forEach(d => {
-            const u = d.data();
-            if (u.abilitato_rotazioni === true) {
+        permSnap.forEach(d => {
+            const pData = d.data();
+            if (pData.abilitato_rotazioni === true) {
+                const uData = utentiBase[d.id] || {};
+                const u = { ...uData, ...pData, uid: d.id }; // Merge
+                
                 let isLegacy = (u.rotazione_richiesta === 'legacy_code' || (u.rotazione_richiesta && u.rotazione_richiesta.length > 50));
                 if (isCollab && !isAdmin && !isLegacy && !(currentUserDoc.permessi_gestione || []).includes(u.rotazione_richiesta)) return;
                 
-                u.uid = d.id; 
                 window.utentiMap[d.id] = u;
                 utentiArr.push(u);
             }
@@ -1192,7 +1226,7 @@ export function avviaMotoreRotazioni(db, auth) {
 
     window.revocaAccessoRot = async (uid) => {
         if(confirm("Vuoi revocare l'accesso a questo utente? Dovrà rifare la richiesta.")) { 
-            await updateDoc(doc(db, "utenti", uid), { abilitato_rotazioni: false, stato_richiesta: 'rejected' }); 
+            await setDoc(doc(db, "permessi_rotazioni", uid), { abilitato_rotazioni: false, stato_richiesta: 'rejected' }, { merge: true }); 
             window.apriGestioneAccessiModalRot(); 
         }
     };
@@ -1214,16 +1248,25 @@ export function avviaMotoreRotazioni(db, auth) {
         const cont = document.getElementById('rot-lista-richieste'); 
         cont.innerHTML = `<div style="text-align:center; padding:20px; color:var(--info);"><i class="fa-solid fa-circle-notch fa-spin" style="font-size:24px;"></i> Ricerca richieste...</div>`;
         
-        const snap = await getDocs(collection(db, "utenti")); 
+        // Fetch combinato
+        const permSnap = await getDocs(collection(db, "permessi_rotazioni"));
+        const utentiSnap = await getDocs(collection(db, "utenti")); 
+        
+        let utentiBase = {};
+        utentiSnap.forEach(d => utentiBase[d.id] = d.data());
+
         let groupedRequests = {}; let count = 0;
         window.utentiMap = {}; 
         
-        snap.forEach(d => {
-            const u = d.data();
-            u.uid = d.id;
-            window.utentiMap[d.id] = u;
+        permSnap.forEach(d => {
+            const pData = d.data();
             
-            if (u.stato_richiesta === 'pending') {
+            if (pData.stato_richiesta === 'pending') {
+                const uData = utentiBase[d.id] || {};
+                const u = { ...uData, ...pData, uid: d.id }; // Merge
+                
+                window.utentiMap[d.id] = u;
+                
                 if (isCollab && !isAdmin && !(currentUserDoc.permessi_gestione || []).includes(u.rotazione_richiesta)) return;
                 let rotKey = u.rotazione_richiesta || 'Sconosciuta';
                 if (!groupedRequests[rotKey]) groupedRequests[rotKey] = [];
@@ -1271,10 +1314,10 @@ export function avviaMotoreRotazioni(db, auth) {
     window.gestisciRichiestaRot = async (uid, ok, btnElem) => {
         try {
             if (btnElem) { btnElem.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i>"; btnElem.disabled = true; }
-            await updateDoc(doc(db, "utenti", uid), { 
+            await setDoc(doc(db, "permessi_rotazioni", uid), { 
                 abilitato_rotazioni: ok, 
                 stato_richiesta: ok ? 'approved' : 'rejected' 
-            });
+            }, { merge: true });
             window.aggiornaBadgeRichiesteRotazioni();
             window.apriGestioneRichiesteRot();
         } catch(e) {
@@ -1290,16 +1333,25 @@ export function avviaMotoreRotazioni(db, auth) {
         const cont = document.getElementById('rot-lista-collaboratori'); 
         cont.innerHTML = `<div style="text-align:center; padding:20px; color:#9c27b0;"><i class="fa-solid fa-circle-notch fa-spin" style="font-size:24px;"></i> Caricamento...</div>`;
         
-        const snap = await getDocs(collection(db, "utenti")); let html = "";
-        snap.forEach(d => {
+        const utentiSnap = await getDocs(collection(db, "utenti")); 
+        const permSnap = await getDocs(collection(db, "permessi_rotazioni"));
+        
+        let permBase = {};
+        permSnap.forEach(d => permBase[d.id] = d.data());
+        
+        let html = "";
+        utentiSnap.forEach(d => {
             const u = d.data();
             if (u.ruolo === 'collaborator') {
+                const p = permBase[d.id] || {};
+                const permGestione = p.permessi_gestione || [];
+                
                 html += `<div class="rot-utente-row" style="border-left: 4px solid #9c27b0;">
                     <div>
                         <strong style="font-size:15px; color:var(--text-main);">${u.cognome||''} ${u.nome||''}</strong><br>
-                        <span style="font-size:12px; color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-key"></i> Permessi: ${(u.permessi_gestione||[]).length} aree</span>
+                        <span style="font-size:12px; color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-key"></i> Permessi: ${permGestione.length} aree</span>
                     </div>
-                    <button class="rot-btn" style="width:auto; padding:8px 12px; background:#9c27b0; margin:0; box-shadow:none;" onclick='window.apriPermessiCollabRot("${d.id}", "${u.nome}", ${JSON.stringify(u.permessi_gestione||[])})'><i class="fa-solid fa-pen-to-square"></i> Modifica</button>
+                    <button class="rot-btn" style="width:auto; padding:8px 12px; background:#9c27b0; margin:0; box-shadow:none;" onclick='window.apriPermessiCollabRot("${d.id}", "${u.nome}", ${JSON.stringify(permGestione)})'><i class="fa-solid fa-pen-to-square"></i> Modifica</button>
                 </div>`;
             }
         });
@@ -1328,7 +1380,7 @@ export function avviaMotoreRotazioni(db, auth) {
         
         const nP = Array.from(document.querySelectorAll('.rot-collab-perm-check:checked')).map(c => c.value);
         try {
-            await updateDoc(doc(db, "utenti", uid), { permessi_gestione: nP });
+            await setDoc(doc(db, "permessi_rotazioni", uid), { permessi_gestione: nP }, { merge: true });
             alert("Permessi aggiornati con successo.");
             window.chiudiModalRotazioni('rot-modal-permessi-collaboratore'); 
             window.apriGestioneCollaboratoriRot();

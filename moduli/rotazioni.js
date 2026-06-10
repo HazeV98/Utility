@@ -87,6 +87,13 @@ export function avviaMotoreRotazioni(db, auth) {
         const pendSect = document.getElementById('rot-pending-section');
         const contSect = document.getElementById('rot-content-section');
         
+        // Sicurezza UI: Nascondiamo tutto di default per evitare sovrapposizioni
+        if(authSect) authSect.style.display = 'none';
+        if(warnLog) warnLog.style.display = 'none';
+        if(reqSect) reqSect.style.display = 'none';
+        if(pendSect) pendSect.style.display = 'none';
+        if(contSect) contSect.style.display = 'none';
+
         if (user) {
             currentUserId = user.uid; 
             isAdmin = (user.uid === ADMIN_UID);
@@ -97,40 +104,42 @@ export function avviaMotoreRotazioni(db, auth) {
             
             const [docSnap, permSnap] = await Promise.all([getDoc(docRef), getDoc(permRef)]);
             
-            if (docSnap.exists()) {
-                const uData = docSnap.data();
-                const pData = permSnap.exists() ? permSnap.data() : {};
+            const uData = docSnap.exists() ? docSnap.data() : {};
+            const pData = permSnap.exists() ? permSnap.data() : {};
+            
+            // Merge in memoria per compatibilità con il resto dell'interfaccia
+            currentUserDoc = { ...uData, ...pData }; 
+            isCollab = (uData.ruolo === 'collaborator');
+            
+            // BYPASS ADMIN O UTENTE APPROVATO (Gestisce anche inserimenti manuali in FB)
+            if (isAdmin || pData.abilitato_rotazioni === true || pData.stato_richiesta === 'approved') {
+                if (isAdmin) currentUserDoc.abilitato_rotazioni = true; 
                 
-                // Merge in memoria per compatibilità con il resto dell'interfaccia
-                currentUserDoc = { ...uData, ...pData }; 
-                isCollab = (uData.ruolo === 'collaborator');
+                if(contSect) contSect.style.display = 'flex';
+                let btnMieiDati = document.getElementById('rot-btn-miei-dati');
+                if (btnMieiDati) btnMieiDati.style.display = 'flex';
                 
-                // BYPASS ADMIN: Se è admin entra sempre
-                if (isAdmin || pData.abilitato_rotazioni === true) {
-                    if (isAdmin) currentUserDoc.abilitato_rotazioni = true; // Forzatura logica in memoria
-                    
-                    authSect.style.display = 'none'; 
-                    contSect.style.display = 'flex';
-                    document.getElementById('rot-btn-miei-dati').style.display = 'flex';
-                    if (isAdmin || isCollab) {
-                        document.getElementById('rot-btn-gestione-accessi').style.display = 'flex';
-                        window.aggiornaBadgeRichiesteRotazioni();
-                    }
-                    window.initPanzoomRotazioni(); 
-                    window.caricaDatiTurniSilenziosoRot(); 
-                    window.caricaRotazioniMain();
-                } else if (pData.stato_richiesta === 'pending') {
-                    warnLog.style.display = 'none'; reqSect.style.display = 'none'; pendSect.style.display = 'block';
-                } else {
-                    warnLog.style.display = 'none'; pendSect.style.display = 'none'; reqSect.style.display = 'block';
-                    document.getElementById('rot-req-nome').value = uData.nome || '';
-                    document.getElementById('rot-req-cognome').value = uData.cognome || '';
-                    document.getElementById('rot-req-matricola').value = uData.matricola || '';
-                    document.getElementById('rot-req-omonimia').value = uData.progressivo || '';
+                let btnGestAccessi = document.getElementById('rot-btn-gestione-accessi');
+                if (isAdmin || isCollab) {
+                    if (btnGestAccessi) btnGestAccessi.style.display = 'flex';
+                    window.aggiornaBadgeRichiesteRotazioni();
                 }
-            } else reqSect.style.display = 'block';
+                
+                window.initPanzoomRotazioni(); 
+                window.caricaDatiTurniSilenziosoRot(); 
+                window.caricaRotazioniMain();
+                
+            } else if (pData.stato_richiesta === 'pending') {
+                if(pendSect) pendSect.style.display = 'block';
+            } else {
+                if(reqSect) reqSect.style.display = 'block';
+                if(document.getElementById('rot-req-nome')) document.getElementById('rot-req-nome').value = uData.nome || '';
+                if(document.getElementById('rot-req-cognome')) document.getElementById('rot-req-cognome').value = uData.cognome || '';
+                if(document.getElementById('rot-req-matricola')) document.getElementById('rot-req-matricola').value = uData.matricola || '';
+                if(document.getElementById('rot-req-omonimia')) document.getElementById('rot-req-omonimia').value = uData.progressivo || '';
+            }
         } else { 
-            warnLog.style.display = 'block'; 
+            if(warnLog) warnLog.style.display = 'block'; 
         }
     };
 

@@ -145,7 +145,7 @@ const DEFAULT_APPS = [
     { id: "promemoria", label: "Promemoria", onclick: "window.apriModalePromemoria()", defaultColor: "#0dcaf0" },
     { id: "dds", label: "Archivio\nDDS", onclick: "window.apriModaleDDS()", defaultColor: "#5856d6" },
     
-    { id: "report", label: "Segnalazioni", onclick: "window.apriMainModaleSegnalazioni()", defaultColor: "#0088ff" },
+    { id: "report", label: "Assistenza\nApp", onclick: "window.apriMainModaleSegnalazioni()", defaultColor: "#0088ff" },
     { id: "impostazioni", label: "Impostazioni", onclick: "window.apriModal('settingsModal')", defaultColor: "#8e8e93" },
     { id: "spriss", label: "Spriss", image: "icone_app/iconspriss.png", href: "https://spriss.avmspa.it/" },
     

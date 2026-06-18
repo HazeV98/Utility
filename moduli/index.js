@@ -125,7 +125,7 @@ const DEFAULT_APPS = [
     { id: "oggi", label: "Oggi", href: "calendario.html?oggi=true", defaultColor: "#28a745" },
     { id: "calendario", label: "Calendario", href: "calendario.html", defaultColor: "#0066cc" },
     
-    { id: "statistiche", label: "Statistiche", onclick: "window.apriModaleStatistiche()", defaultColor: "#6f42c1" },
+    { id: "statistiche", label: "Statistiche\nCalendario", onclick: "window.apriModaleStatistiche()", defaultColor: "#6f42c1" },
     { id: "rotazioni", label: "Rotazioni", onclick: "window.apriModaleRotazioni()", defaultColor: "#fd7e14" },
     
     { id: "turni", label: "Turni", onclick: "window.apriModaleTurni()", defaultColor: "#20c997" },
@@ -135,7 +135,7 @@ const DEFAULT_APPS = [
     
     { id: "ferie", label: "Rotazione\nFerie", onclick: "window.apriModaleRotazioneFerie()", defaultColor: "#ffc107" },
     
-    { id: "orari", label: "Orari\nNavigaz.", onclick: "window.apriModaleOrari()", defaultColor: "#17a2b8" },
+    { id: "orari", label: "Orari\nNavigazione", onclick: "window.apriModaleOrari()", defaultColor: "#17a2b8" },
     { id: "chebateo", label: "CheBateo", image: "icone_app/iconcb.png", href: "https://m.chebateo.it/" },
     { id: "documenti", label: "Documenti", onclick: "window.apriModaleDocumenti()", defaultColor: "#6c757d" },
     { id: "link", label: "Link", onclick: "window.apriModaleLink()", defaultColor: "#495057" },

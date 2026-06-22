@@ -16,7 +16,7 @@ export function initUISegnalazioni() {
 
     <div id="modal-nuova-segnalazione" class="modal-overlay" style="z-index: 7500;">
         <div class="modal-content">
-            <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:15px; text-align:center;"><i class="fa-solid fa-paper-plane" style="color:var(--info);"></i> Invia Segnalazione</h3>
+            <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:15px; text-align:center;"><i class="fa-solid fa-paper-plane" style="color:var(--info);"></i> Invia Domanda</h3>
             <div class="float-wrapper">
                 <textarea id="rep-messaggio" rows="4" class="input-field" placeholder=" " style="resize: vertical;"></textarea>
                 <label style="top: 20px;">Messaggio / Problema</label>

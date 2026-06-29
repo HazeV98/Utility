@@ -3,11 +3,46 @@ import { getAuth, onAuthStateChanged, GoogleAuthProvider } from "https://www.gst
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getMessaging, getToken, deleteToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
 
-// Importiamo il sistema di lazy loading
-import { ModuliLazyLoader } from './moduli-lazy-loader.js';
-
-// Solo auth viene importato staticamente (sempre necessario)
+// Importiamo tutti i sottomoduli della SPA
 import { avviaMotoreAuth } from './auth.js';
+import { avviaMotoreSegnalazioni } from './report.js';
+import { avviaMotoreTurni } from './turni.js';
+import { avviaMotoreOrari } from './orari.js';
+import { avviaMotoreLink } from './link.js';
+import { avviaMotoreDocumenti } from './documenti.js';
+import { avviaMotoreContatti } from './contatti.js';
+import { avviaMotoreBachecaUtility } from './bacheca_utility.js';
+import { avviaMotoreRubrica } from './rubrica.js';
+import { avviaMotoreBachecaTurni } from './bacheca_turni.js';
+import { avviaMotoreBarcadvisor } from './barcadvisor.js';
+import { avviaMotoreBuoniPasto } from './buoni_pasto.js';
+import { avviaMotoreStatistiche } from './statistiche.js';
+import { avviaMotoreRotazioni } from './rotazioni.js';
+import { avviaMotoreRotazioneFerie } from './rotazione_ferie.js';
+import { avviaMotorePromemoria } from './promemoria.js';
+import { avviaMotoreDDS } from './dds.js';
+import { avviaMotoreGuida } from './guida.js';
+import { avviaMotoreAdmin } from './admin.js';
+
+// Importiamo tutte le interfacce UI estratte
+import { initUIBuoniPasto } from './ui_buoniPasto.js';
+import { initUITurni } from './ui_turni.js';
+import { initUIBachecaTurni } from './ui_bacheca_turni.js';
+import { initUIBarcadvisor } from './ui_barcadvisor.js';
+import { initUIBachecaUtility } from './ui_bacheca_utility.js';
+import { initUIContatti } from './ui_contatti.js';
+import { initUIDocumenti } from './ui_documenti.js';
+import { initUILink } from './ui_link.js';
+import { initUIOrari } from './ui_orari.js';
+import { initUISegnalazioni } from './ui_report.js';
+import { initUIRubrica } from './ui_rubrica.js';
+import { initUIStatistiche } from './ui_statistiche.js';
+import { initUIRotazioni } from './ui_rotazioni.js';
+import { initUIRotazioneFerie } from './ui_rotazione_ferie.js';
+import { initUIPromemoria } from './ui_promemoria.js';
+import { initUIDDS } from './ui_dds.js';
+import { initUIGuida } from './ui_guida.js';
+import { initUIAdmin } from './ui_admin.js';
 
 
 const firebaseConfig = { 
@@ -24,7 +59,29 @@ const auth = getAuth(app);
 const db = getFirestore(app); 
 const provider = new GoogleAuthProvider();
 
-// Inizializziamo il sottomodulo di Autenticazione (sempre necessario)
+// Inizializziamo le UI nel DOM
+initUIBuoniPasto();
+initUITurni();
+initUIBachecaTurni();
+initUIBarcadvisor();
+initUIBachecaUtility();
+initUIContatti();
+initUIDocumenti();
+initUILink();
+initUIOrari();
+initUISegnalazioni();
+initUIRubrica();
+
+// INIZIALIZZAZIONE NUOVE UI
+initUIStatistiche();
+initUIRotazioni();
+initUIRotazioneFerie();
+initUIPromemoria();
+initUIDDS();
+initUIGuida();
+initUIAdmin();
+
+// Inizializziamo il sottomodulo di Autenticazione e Profilo
 avviaMotoreAuth(auth, db, provider);
 
 const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2"; 
@@ -107,17 +164,14 @@ window.chiudiMenuLaterale = () => {
     const o = document.getElementById('sidebar-overlay'); if(o) o.style.display = 'none'; 
 };
 
-window.apriMainModaleSegnalazioni = async () => {
+window.apriMainModaleSegnalazioni = () => {
     window.apriModal('modal-segnalazioni-main');
     if (auth.currentUser) {
-        const modulo = await ModuliLazyLoader.avviaMotore('report');
-        if (modulo) {
-            modulo(db, auth, auth.currentUser.uid, globalIsAdmin);
-        }
+        avviaMotoreSegnalazioni(db, auth, auth.currentUser.uid, globalIsAdmin);
     }
 };
 
-window.avviaMotoreTurniDaIndex = async () => {
+window.avviaMotoreTurniDaIndex = () => {
     if (!auth.currentUser) { alert("Devi effettuare il login per accedere ai turni."); return; }
     if (window.currentUserData) {
         if (window.currentUserData.turni_banned === true) {
@@ -128,8 +182,7 @@ window.avviaMotoreTurniDaIndex = async () => {
             window.apriModal('profileModal'); return;
         }
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('turni');
-    if (modulo) modulo();
+    avviaMotoreTurni();
     const oggiStr = new Date().toISOString().split('T')[0];
     if (window.currentUserData && (window.currentUserData.turni_access !== true || window.currentUserData.last_turni_access !== oggiStr)) {
         setDoc(doc(db, "utenti", auth.currentUser.uid), { turni_access: true, last_turni_access: oggiStr }, { merge: true });
@@ -137,12 +190,11 @@ window.avviaMotoreTurniDaIndex = async () => {
     }
 };
 
-window.avviaMotoreOrariDaIndex = async () => {
-    const modulo = await ModuliLazyLoader.avviaMotore('orari');
-    if (modulo) modulo();
+window.avviaMotoreOrariDaIndex = () => {
+    avviaMotoreOrari();
 };
 
-window.avviaMotoreLinkDaIndex = async () => {
+window.avviaMotoreLinkDaIndex = () => {
     if (!auth.currentUser) { alert("Devi effettuare il login per accedere ai link aziendali."); return; }
     if (window.currentUserData) {
         if (window.currentUserData.link_banned === true) {
@@ -153,8 +205,7 @@ window.avviaMotoreLinkDaIndex = async () => {
             window.apriModal('profileModal'); return;
         }
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('link');
-    if (modulo) modulo();
+    avviaMotoreLink();
     const oggiStr = new Date().toISOString().split('T')[0];
     if (window.currentUserData && (window.currentUserData.link_access !== true || window.currentUserData.last_link_access !== oggiStr)) {
         setDoc(doc(db, "utenti", auth.currentUser.uid), { link_access: true, last_link_access: oggiStr }, { merge: true });
@@ -162,7 +213,7 @@ window.avviaMotoreLinkDaIndex = async () => {
     }
 };
 
-window.avviaMotoreDocumentiDaIndex = async () => {
+window.avviaMotoreDocumentiDaIndex = () => {
     if (!auth.currentUser) { alert("Devi effettuare il login per accedere ai documenti."); return; }
     if (window.currentUserData) {
         if (window.currentUserData.documenti_banned === true) {
@@ -173,8 +224,7 @@ window.avviaMotoreDocumentiDaIndex = async () => {
             window.apriModal('profileModal'); return;
         }
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('documenti');
-    if (modulo) modulo();
+    avviaMotoreDocumenti();
     const oggiStr = new Date().toISOString().split('T')[0];
     if (window.currentUserData && (window.currentUserData.documenti_access !== true || window.currentUserData.last_documenti_access !== oggiStr)) {
         setDoc(doc(db, "utenti", auth.currentUser.uid), { documenti_access: true, last_documenti_access: oggiStr }, { merge: true });
@@ -182,7 +232,7 @@ window.avviaMotoreDocumentiDaIndex = async () => {
     }
 };
 
-window.avviaMotoreContattiDaIndex = async () => {
+window.avviaMotoreContattiDaIndex = () => {
     if (!auth.currentUser) { alert("Devi effettuare il login per accedere ai contatti aziendali."); return; }
     if (window.currentUserData) {
         if (window.currentUserData.contatti_banned === true) {
@@ -193,8 +243,7 @@ window.avviaMotoreContattiDaIndex = async () => {
             window.apriModal('profileModal'); return;
         }
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('contatti');
-    if (modulo) modulo();
+    avviaMotoreContatti();
     const oggiStr = new Date().toISOString().split('T')[0];
     if (window.currentUserData && (window.currentUserData.contatti_access !== true || window.currentUserData.last_contatti_access !== oggiStr)) {
         setDoc(doc(db, "utenti", auth.currentUser.uid), { contatti_access: true, last_contatti_access: oggiStr }, { merge: true });
@@ -202,113 +251,101 @@ window.avviaMotoreContattiDaIndex = async () => {
     }
 };
 
-window.avviaMotoreBachecaUtilityDaIndex = async () => {
+window.avviaMotoreBachecaUtilityDaIndex = () => {
     const fullName = `${window.currentUserData?.nome || ''} ${window.currentUserData?.cognome || ''}`.trim();
-    const modulo = await ModuliLazyLoader.avviaMotore('bacheca_utility');
-    if (modulo) modulo(app, db, auth, globalIsAdmin || globalIsCollab, fullName);
+    avviaMotoreBachecaUtility(app, db, auth, globalIsAdmin || globalIsCollab, fullName);
 };
 
-window.avviaMotoreRubricaDaIndex = async () => {
+window.avviaMotoreRubricaDaIndex = () => {
     if (window.currentUserData && window.currentUserData.app_banned === true) {
         alert("L'accesso alle funzioni ti è stato revocato."); 
         return;
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('rubrica');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
+    avviaMotoreRubrica(db, auth, window.currentUserData, globalIsAdmin);
 };
 
-window.avviaMotoreBachecaTurniDaIndex = async () => {
+window.avviaMotoreBachecaTurniDaIndex = () => {
     if (window.currentUserData && window.currentUserData.app_banned === true) {
         alert("L'accesso alle funzioni ti è stato revocato."); 
         return;
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('bacheca_turni');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
+    avviaMotoreBachecaTurni(db, auth, window.currentUserData, globalIsAdmin);
 };
 
-window.avviaMotoreBarcadvisorDaIndex = async () => {
+window.avviaMotoreBarcadvisorDaIndex = () => {
     if (window.currentUserData && window.currentUserData.app_banned === true) {
         alert("L'accesso alle funzioni ti è stato revocato."); 
         return;
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('barcadvisor');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
+    avviaMotoreBarcadvisor(db, auth, window.currentUserData, globalIsAdmin);
 };
 
-window.avviaMotoreBuoniPastoDaIndex = async () => {
+window.avviaMotoreBuoniPastoDaIndex = () => {
     if (window.currentUserData && window.currentUserData.app_banned === true) {
         alert("L'accesso alle funzioni ti è stato revocato."); 
         return;
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('buoni_pasto');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
+    avviaMotoreBuoniPasto(db, auth, window.currentUserData, globalIsAdmin);
 };
 
 // ============================================================================
-// NUOVE FUNZIONI PONTE AGGIUNTE (CON LAZY LOADING)
+// NUOVE FUNZIONI PONTE AGGIUNTE
 // ============================================================================
 
-window.avviaMotoreStatisticheDaIndex = async () => {
+window.avviaMotoreStatisticheDaIndex = () => {
     if (window.currentUserData && window.currentUserData.app_banned === true) {
         alert("L'accesso alle funzioni ti è stato revocato."); 
         return;
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('statistiche');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
+    avviaMotoreStatistiche(db, auth, window.currentUserData, globalIsAdmin);
 };
 
-window.avviaMotoreRotazioniDaIndex = async () => {
+window.avviaMotoreRotazioniDaIndex = () => {
     if (window.currentUserData && window.currentUserData.app_banned === true) {
         alert("L'accesso alle funzioni ti è stato revocato."); 
         return;
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('rotazioni');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
+    avviaMotoreRotazioni(db, auth, window.currentUserData, globalIsAdmin);
 };
 
-window.avviaMotoreRotazioneFerieDaIndex = async () => {
+window.avviaMotoreRotazioneFerieDaIndex = () => {
     if (window.currentUserData && window.currentUserData.app_banned === true) {
         alert("L'accesso alle funzioni ti è stato revocato."); 
         return;
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('rotazione_ferie');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
+    avviaMotoreRotazioneFerie(db, auth, window.currentUserData, globalIsAdmin);
 };
 
-window.avviaMotorePromemoriaDaIndex = async () => {
+window.avviaMotorePromemoriaDaIndex = () => {
     if (window.currentUserData && window.currentUserData.app_banned === true) {
         alert("L'accesso alle funzioni ti è stato revocato."); 
         return;
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('promemoria');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
+    avviaMotorePromemoria(db, auth, window.currentUserData, globalIsAdmin);
 };
 
-window.avviaMotoreDDSDaIndex = async () => {
+window.avviaMotoreDDSDaIndex = () => {
     if (window.currentUserData && window.currentUserData.app_banned === true) {
         alert("L'accesso alle funzioni ti è stato revocato."); 
         return;
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('dds');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
+    avviaMotoreDDS(db, auth, window.currentUserData, globalIsAdmin);
 };
 
-window.avviaMotoreGuidaDaIndex = async () => {
+window.avviaMotoreGuidaDaIndex = () => {
     if (window.currentUserData && window.currentUserData.app_banned === true) {
         alert("L'accesso alle funzioni ti è stato revocato."); 
         return;
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('guida');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
+    avviaMotoreGuida(db, auth, window.currentUserData, globalIsAdmin);
 };
 
-window.avviaMotoreAdminDaIndex = async () => {
+window.avviaMotoreAdminDaIndex = () => {
     if (!globalIsAdmin) {
         alert("Accesso negato. Solo gli amministratori possono accedere a questa sezione."); 
         return;
     }
-    const modulo = await ModuliLazyLoader.avviaMotore('admin');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
+    avviaMotoreAdmin(db, auth, window.currentUserData, globalIsAdmin);
 };
 // ============================================================================
 
@@ -1136,22 +1173,3 @@ if (!isStandalone) {
 } else {
     if(installBtn) installBtn.style.display = 'none';
 }
-
-// ============================================================================
-// LAZY LOADING: INIZIALIZZAZIONE E PRECARIO MODULI FREQUENTI
-// ============================================================================
-
-// Rendi il loader disponibile globalmente per debug
-window.ModuliLazyLoader = ModuliLazyLoader;
-
-// Precario i moduli frequenti quando la pagina ha finito di caricarsi
-// Questo massimizza la performance: il menu appare subito, poi carica i moduli in background
-document.addEventListener('DOMContentLoaded', () => {
-    // Precaria i 4 moduli più usati dopo 2 secondi dal caricamento della pagina
-    ModuliLazyLoader.precarica(['turni', 'rotazioni', 'statistiche', 'orari']);
-    
-    console.log('✅ Lazy Loading System inizializzato');
-    console.log('📱 Menu principale ottimizzato - Moduli caricati su richiesta');
-});
-
-// ============================================================================

@@ -1,3 +1,5 @@
+let datiContattiCache = null; // Memorizza i dati per la ricerca senza rifare la chiamata di rete
+
 export async function avviaMotoreContatti() {
     const area = document.getElementById('contatti-content-area');
     if (!area) return;
@@ -13,58 +15,151 @@ export async function avviaMotoreContatti() {
             return;
         }
 
-        const dati = await response.json();
-        area.innerHTML = "";
-
-        if (!dati.contatti || dati.contatti.length === 0) {
-            area.innerHTML = `<div class="status-message"><i class="fa-regular fa-folder-open" style="font-size:24px;"></i> Nessun contatto presente.</div>`;
-            return;
+        datiContattiCache = await response.json();
+        
+        // Collega la barra di ricerca
+        const searchInput = document.getElementById('ricerca-contatti');
+        if (searchInput) {
+            searchInput.value = ""; // Resetta la ricerca all'apertura
+            searchInput.oninput = (e) => {
+                renderizzaContatti(e.target.value);
+            };
         }
 
-        dati.contatti.forEach(categoriaObj => {
-            const block = document.createElement('div');
-            block.className = "category-block";
+        // Render iniziale di tutti i contatti
+        renderizzaContatti("");
 
-            const titolo = document.createElement('div');
-            titolo.className = "category-title";
-            titolo.innerHTML = `<i class="fa-solid fa-folder-open" style="color:var(--primary); margin-right:8px; font-size:14px;"></i>${categoriaObj.categoria}`;
-            block.appendChild(titolo);
-
-            categoriaObj.elementi.forEach((contatto, index) => {
-                const row = document.createElement('div');
-                row.className = "contact-row";
-                row.style.animationDelay = `${index * 0.05}s`;
-
-                const btn = document.createElement('a');
-                btn.className = "link-btn";
-                
-                if (contatto.tipo === "email") {
-                    btn.href = `mailto:${contatto.valore}`;
-                    btn.innerHTML = `<span style="display:flex; align-items:center; gap:10px;"><i class="fa-solid fa-envelope" style="color:var(--text-muted); font-size:16px;"></i> ${contatto.nome}</span>`;
-                } else {
-                    const numeroPulito = contatto.valore.replace(/\s+/g, '');
-                    btn.href = `tel:${numeroPulito}`;
-                    btn.innerHTML = `<span style="display:flex; align-items:center; gap:10px;"><i class="fa-solid fa-phone" style="color:var(--text-muted); font-size:16px;"></i> ${contatto.nome}</span>`;
-                }
-                
-                const copyBtn = document.createElement('div');
-                copyBtn.className = "copy-btn";
-                copyBtn.innerHTML = "<i class='fa-regular fa-copy'></i>";
-                copyBtn.title = "Copia";
-                copyBtn.onclick = (e) => {
-                    e.preventDefault(); 
-                    window.copiaTestoContatto(contatto.valore, copyBtn);
-                };
-
-                row.appendChild(btn);
-                row.appendChild(copyBtn);
-                block.appendChild(row);
-            });
-
-            area.appendChild(block);
-        });
     } catch (error) {
         area.innerHTML = `<div class="status-message"><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger); font-size:24px;"></i> Errore nel caricamento dei dati.</div>`;
+    }
+}
+
+// Nuova funzione per gestire il render in base al testo cercato
+function renderizzaContatti(filtroTestuale) {
+    const area = document.getElementById('contatti-content-area');
+    if (!area || !datiContattiCache) return;
+
+    area.innerHTML = "";
+
+    if (!datiContattiCache.contatti || datiContattiCache.contatti.length === 0) {
+        area.innerHTML = `<div class="status-message"><i class="fa-regular fa-folder-open" style="font-size:24px;"></i> Nessun contatto presente.</div>`;
+        return;
+    }
+
+    const termineRicerca = filtroTestuale.toLowerCase().trim();
+    // Versione senza spazi per permettere di cercare numeri formattati diversamente
+    const termineSenzaSpazi = termineRicerca.replace(/\s+/g, '');
+    let contattiTrovati = 0;
+
+    datiContattiCache.contatti.forEach(categoriaObj => {
+        // Filtra in base al nome o al valore (numero/email)
+        const elementiFiltrati = categoriaObj.elementi.filter(contatto => {
+            if (!termineRicerca) return true;
+            
+            const matchNome = contatto.nome.toLowerCase().includes(termineRicerca);
+            // Tolgo gli spazi anche dal valore in rubrica per un confronto corretto
+            const valoreSenzaSpazi = contatto.valore.toLowerCase().replace(/\s+/g, '');
+            const matchValore = valoreSenzaSpazi.includes(termineSenzaSpazi);
+            
+            return matchNome || matchValore;
+        });
+
+        if (elementiFiltrati.length === 0) return; // Salta la categoria se vuota dopo il filtro
+        
+        contattiTrovati += elementiFiltrati.length;
+
+        const block = document.createElement('div');
+        block.className = "category-block";
+
+        const titolo = document.createElement('div');
+        titolo.className = "category-title";
+        titolo.innerHTML = `<i class="fa-solid fa-folder-open" style="color:var(--primary); margin-right:8px; font-size:14px;"></i>${categoriaObj.categoria}`;
+        block.appendChild(titolo);
+
+        elementiFiltrati.forEach((contatto, index) => {
+            const row = document.createElement('div');
+            row.className = "contact-row";
+            row.style.animationDelay = `${index * 0.05}s`;
+            
+            // Layout a colonna: Nome sopra, poi contenitore flex per Numero + Bottoni
+            row.style.display = "flex";
+            row.style.flexDirection = "column";
+            row.style.gap = "6px";
+
+            // --- Riga 1: Nome (libero di andare a capo, non tagliato) ---
+            const nomeEl = document.createElement('div');
+            nomeEl.style.fontWeight = "bold";
+            nomeEl.style.color = "var(--text-color)";
+            nomeEl.style.fontSize = "15px";
+            nomeEl.textContent = contatto.nome;
+
+            // --- Riga 2: Valore e Azioni ---
+            const bottomRow = document.createElement('div');
+            bottomRow.style.display = "flex";
+            bottomRow.style.justifyContent = "space-between";
+            bottomRow.style.alignItems = "center";
+
+            const valoreEl = document.createElement('div');
+            valoreEl.style.color = "var(--text-muted)";
+            valoreEl.style.fontSize = "14px";
+            valoreEl.textContent = contatto.valore;
+
+            // --- Blocco Azioni (Bottoni a destra) ---
+            const actionContainer = document.createElement('div');
+            actionContainer.style.display = "flex";
+            actionContainer.style.gap = "8px";
+
+            const btn = document.createElement('a');
+            btn.className = "link-btn";
+            // Rendiamo compatti i bottoni
+            btn.style.padding = "8px 12px";
+            btn.style.margin = "0";
+            btn.style.display = "flex";
+            btn.style.alignItems = "center";
+            btn.style.justifyContent = "center";
+            btn.title = contatto.tipo === "email" ? "Invia Email" : "Chiama";
+            
+            if (contatto.tipo === "email") {
+                btn.href = `mailto:${contatto.valore}`;
+                btn.innerHTML = `<i class="fa-solid fa-envelope" style="font-size:16px;"></i>`;
+            } else {
+                const numeroPulito = contatto.valore.replace(/\s+/g, '');
+                btn.href = `tel:${numeroPulito}`;
+                btn.innerHTML = `<i class="fa-solid fa-phone" style="font-size:16px;"></i>`;
+            }
+            
+            const copyBtn = document.createElement('div');
+            copyBtn.className = "copy-btn";
+            copyBtn.style.padding = "8px 12px";
+            copyBtn.style.margin = "0";
+            copyBtn.style.display = "flex";
+            copyBtn.style.alignItems = "center";
+            copyBtn.style.justifyContent = "center";
+            copyBtn.innerHTML = "<i class='fa-regular fa-copy'></i>";
+            copyBtn.title = "Copia";
+            copyBtn.onclick = (e) => {
+                e.preventDefault(); 
+                window.copiaTestoContatto(contatto.valore, copyBtn);
+            };
+
+            actionContainer.appendChild(btn);
+            actionContainer.appendChild(copyBtn);
+
+            // Composizione
+            bottomRow.appendChild(valoreEl);
+            bottomRow.appendChild(actionContainer);
+
+            row.appendChild(nomeEl);
+            row.appendChild(bottomRow);
+            block.appendChild(row);
+        });
+
+        area.appendChild(block);
+    });
+
+    // Mostra messaggio se non ci sono risultati per la ricerca
+    if (contattiTrovati === 0) {
+        area.innerHTML = `<div class="status-message" style="text-align:center; padding:20px; color:var(--text-muted);">Nessun risultato per "<b>${filtroTestuale}</b>"</div>`;
     }
 }
 

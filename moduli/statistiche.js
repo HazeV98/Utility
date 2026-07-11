@@ -122,6 +122,95 @@ export function avviaMotoreStatistiche(db, auth) {
     };
 
     // ==========================================
+    // FUNZIONE PER CALCOLO TOTALE MALATTIA (Ultimi 42 mesi)
+    // ==========================================
+    window.getTotaleMalattiaCalendario = () => {
+        let state = JSON.parse(localStorage.getItem('myTurniApp')) || {};
+        let totaleMalattia = 0;
+        
+        let dataOggi = new Date();
+        dataOggi.setHours(23, 59, 59, 999); 
+        
+        let dataLimite = new Date();
+        dataLimite.setMonth(dataLimite.getMonth() - 42);
+        dataLimite.setHours(0, 0, 0, 0); 
+
+        if (state.variazioni) {
+            for (const [dateString, varTurno] of Object.entries(state.variazioni)) {
+                let v = varTurno.toUpperCase();
+                if (v.includes("KMAL") || v === "MALATTIA") {
+                    // Fix Fuso orario: scompone la stringa YYYY-MM-DD per creare una data locale esatta
+                    let parts = dateString.split('-');
+                    if (parts.length === 3) {
+                        let dataRegistrata = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                        if (dataRegistrata >= dataLimite && dataRegistrata <= dataOggi) {
+                            totaleMalattia++;
+                        }
+                    }
+                }
+            }
+        }
+        return totaleMalattia;
+    };
+
+    // ==========================================
+    // FUNZIONE PER RICERCA TURNI SPECIFICI (Con Date)
+    // ==========================================
+    window.cercaTurnoManuale = () => {
+        let testoRicerca = document.getElementById('inputRicercaTurno').value.trim().toUpperCase();
+        let startStr = document.getElementById('dateStartRicerca').value;
+        let endStr = document.getElementById('dateEndRicerca').value;
+        let boxRisultato = document.getElementById('risultatoRicercaTurno');
+        
+        if (!testoRicerca) {
+            boxRisultato.innerHTML = '<span style="color: var(--danger);">Inserisci un testo da cercare.</span>';
+            return;
+        }
+
+        if ((startStr && !endStr) || (!startStr && endStr)) {
+            alert("Seleziona entrambe le date, oppure lasciale entrambe vuote per cercare in tutto il calendario.");
+            return;
+        }
+
+        if (startStr && endStr && startStr > endStr) {
+            alert("La data d'inizio deve essere precedente alla fine!");
+            return;
+        }
+
+        let state = JSON.parse(localStorage.getItem('myTurniApp')) || {};
+        let conteggio = 0;
+
+        if (state.variazioni) {
+            for (const [dateStr, varTurno] of Object.entries(state.variazioni)) {
+                if (varTurno.toUpperCase().includes(testoRicerca)) {
+                    let matchesDate = true;
+                    // Confronto stringhe YYYY-MM-DD (sicuro e veloce)
+                    if (startStr && endStr) {
+                        if (dateStr < startStr || dateStr > endStr) {
+                            matchesDate = false;
+                        }
+                    }
+                    if (matchesDate) {
+                        conteggio++;
+                    }
+                }
+            }
+        }
+        
+        // Formattazione del testo per il risultato
+        let periodoTesto = "";
+        if (startStr && endStr) {
+            let sDate = startStr.split('-').reverse().join('/');
+            let eDate = endStr.split('-').reverse().join('/');
+            periodoTesto = `dal ${sDate} al ${eDate}`;
+        } else {
+            periodoTesto = `nel calendario`;
+        }
+        
+        boxRisultato.innerHTML = `Il turno <strong>${testoRicerca}</strong> è stato trovato <strong style="font-size:18px; color:var(--primary);">${conteggio}</strong> volte ${periodoTesto}.`;
+    };
+
+    // ==========================================
     // SYNC DATI FIREBASE (Avviato automaticamente)
     // ==========================================
     const eseguiSincronizzazione = async () => {
@@ -134,14 +223,12 @@ export function avviaMotoreStatistiche(db, auth) {
                     let datiCloud = docSnap.data();
                     let datiLocali = JSON.parse(localStorage.getItem('myTurniApp')) || {};
                     
-                    // Fonde i dati per mantenere sincronizzate le statistiche in tempo reale
                     let stateAggiornato = { ...datiLocali, ...datiCloud }; 
                     localStorage.setItem('myTurniApp', JSON.stringify(stateAggiornato)); 
                 }
             } catch(e) { console.error("Errore Sync Cloud Statistiche:", e); }
         }
         
-        // Calcola istantaneamente appena la modale viene avviata
         setTimeout(() => {
             if (typeof window.calcolaStatistiche === 'function') {
                 window.calcolaStatistiche(true);
@@ -150,4 +237,4 @@ export function avviaMotoreStatistiche(db, auth) {
     };
 
     eseguiSincronizzazione();
-} 
+}

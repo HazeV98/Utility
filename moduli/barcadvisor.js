@@ -88,18 +88,26 @@ export function avviaMotoreBarcadvisor(db, auth, userDataPrivate, isAdmin) {
                 return a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' });
             } else if (sortValue === 'name_desc') {
                 return b.id.localeCompare(a.id, undefined, { numeric: true, sensitivity: 'base' });
-            } else if (sortValue === 'rating_desc') {
+            } else {
                 const vA = parseFloat(a.mediaVoto) || 0;
                 const vB = parseFloat(b.mediaVoto) || 0;
-                if (vB !== vA) return vB - vA;
-                return a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' });
-            } else if (sortValue === 'rating_asc') {
-                const vA = parseFloat(a.mediaVoto) || 0;
-                const vB = parseFloat(b.mediaVoto) || 0;
-                if (vA !== vB) return vA - vB;
+                
+                const unratedA = vA === 0;
+                const unratedB = vB === 0;
+
+                // Spingi le unità senza voto sempre in fondo alla lista
+                if (unratedA && !unratedB) return 1;
+                if (!unratedA && unratedB) return -1;
+
+                if (sortValue === 'rating_desc') {
+                    if (vB !== vA) return vB - vA;
+                } else if (sortValue === 'rating_asc') {
+                    if (vA !== vB) return vA - vB;
+                }
+                
+                // A parità di voti o se entrambe non sono votate, usa l'ordine alfabetico
                 return a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' });
             }
-            return 0;
         }).forEach(unit => {
             const displayId = unit.id.replace(/_/g, '/');
             let cat = "Altre Unità";
@@ -256,7 +264,7 @@ export function avviaMotoreBarcadvisor(db, auth, userDataPrivate, isAdmin) {
                             </div>
                         `;
                     } else {
-                        // SEGNALAZIONI IN CRONOLOGIA (RISOLTE) - Tolto il text-decoration: line-through;
+                        // SEGNALAZIONI IN CRONOLOGIA (RISOLTE)
                         histCount++;
                         if(historyList) {
                             historyList.innerHTML += `

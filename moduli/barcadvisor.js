@@ -54,6 +54,10 @@ export function avviaMotoreBarcadvisor(db, auth, userDataPrivate, isAdmin) {
 
         const searchInput = document.getElementById('ba-searchInput');
         const search = searchInput ? searchInput.value.toLowerCase() : "";
+        
+        const sortSelect = document.getElementById('ba-sortSelect');
+        const sortValue = sortSelect ? sortSelect.value : 'name_asc';
+
         container.innerHTML = '';
 
         const filtered = allUnits.filter(u => {
@@ -78,8 +82,25 @@ export function avviaMotoreBarcadvisor(db, auth, userDataPrivate, isAdmin) {
 
         const orderCats = ["Motoscafi", "Motobattelli", "Motobattelli foranei", "Motonavi", "Motozattere", "Altre Unità"];
 
-        // Suddivide le unità filtrate nei gruppi
-        filtered.sort((a,b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' })).forEach(unit => {
+        // Suddivide le unità filtrate nei gruppi e applica il filtro scelto
+        filtered.sort((a, b) => {
+            if (sortValue === 'name_asc') {
+                return a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' });
+            } else if (sortValue === 'name_desc') {
+                return b.id.localeCompare(a.id, undefined, { numeric: true, sensitivity: 'base' });
+            } else if (sortValue === 'rating_desc') {
+                const vA = parseFloat(a.mediaVoto) || 0;
+                const vB = parseFloat(b.mediaVoto) || 0;
+                if (vB !== vA) return vB - vA;
+                return a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' });
+            } else if (sortValue === 'rating_asc') {
+                const vA = parseFloat(a.mediaVoto) || 0;
+                const vB = parseFloat(b.mediaVoto) || 0;
+                if (vA !== vB) return vA - vB;
+                return a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' });
+            }
+            return 0;
+        }).forEach(unit => {
             const displayId = unit.id.replace(/_/g, '/');
             let cat = "Altre Unità";
             

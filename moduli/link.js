@@ -150,19 +150,12 @@ function renderizzaLink(filtroTestuale) {
             let urlClean = l.url;
             if (!urlClean.startsWith('http')) urlClean = 'https://' + urlClean;
             
-            let domain = "";
-            try { domain = new URL(urlClean).hostname; } catch(e) {}
-            
-            // LOGICA FALLBACK: Prova DuckDuckGo -> se fallisce (404) carica Iniziali Colorate!
-            let fallbackLetter = encodeURIComponent(l.nome.substring(0, 2)); // Prende fino a 2 lettere
-            let avatarUrl = `https://ui-avatars.com/api/?name=${fallbackLetter}&background=random&color=fff&size=64&bold=true`;
-            let faviconHtml = `<img src="https://icons.duckduckgo.com/ip3/${domain}.ico" 
-                                    onerror="this.onerror=null; this.src='${avatarUrl}';" 
-                                    style="width:24px; height:24px; border-radius:6px; background:white; object-fit:cover;">`;
+            // LA VERA API GOOGLE V2: Passiamo l'URL INTERO codificato, non solo il dominio!
+            let googleFaviconV2 = `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(urlClean)}&size=64`;
 
             row.innerHTML = `
                 <div style="display:flex; align-items:center; justify-content:center; width:32px; height:32px; background:var(--surface); border-radius:8px; box-shadow:var(--shadow-sm); border:1px solid var(--border-color); flex-shrink:0;">
-                    ${faviconHtml}
+                    <img src="${googleFaviconV2}" style="width:24px; height:24px; border-radius:6px; background:white; object-fit:cover;">
                 </div>
                 <div style="font-weight:700; font-size:14px; color:var(--text-main); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${l.nome}</div>
                 <i class="fa-solid fa-chevron-right" style="color:var(--text-muted); font-size:12px; opacity:0.5; flex-shrink:0;"></i>
@@ -188,15 +181,9 @@ function renderizzaLink(filtroTestuale) {
 
 window.apriSchedaLink = (id, nome, categoria, url) => {
     
-    let domain = "";
-    try { domain = new URL(url).hostname; } catch(e) {}
-    
-    // Stessa logica di fallback ma più grande (128px) per la modale
-    let fallbackLetter = encodeURIComponent(nome.substring(0, 2));
-    let avatarUrl = `https://ui-avatars.com/api/?name=${fallbackLetter}&background=random&color=fff&size=128&bold=true`;
-    let faviconHtml = `<img src="https://icons.duckduckgo.com/ip3/${domain}.ico" 
-                            onerror="this.onerror=null; this.src='${avatarUrl}';" 
-                            style="width:40px; height:40px; border-radius:8px; background:white; object-fit:cover;">`;
+    // Icona in alta risoluzione per la modale con Google V2
+    let googleFaviconV2 = `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(url)}&size=128`;
+    let faviconHtml = `<img src="${googleFaviconV2}" style="width:40px; height:40px; border-radius:8px; background:white; object-fit:cover;">`;
 
     document.getElementById('scheda-link-icona').innerHTML = faviconHtml;
     document.getElementById('scheda-link-nome').textContent = nome;

@@ -356,7 +356,8 @@ window.avviaMotoreContattiDaIndex = async () => {
         }
     }
     const modulo = await ModuliLazyLoader.avviaMotore('contatti');
-    if (modulo) modulo();
+    if (modulo) modulo(db, auth); // PASSIAMO DB E AUTH AL MODULO
+    
     const oggiStr = new Date().toISOString().split('T')[0];
     if (window.currentUserData && (window.currentUserData.contatti_access !== true || window.currentUserData.last_contatti_access !== oggiStr)) {
         setDoc(doc(db, "utenti", auth.currentUser.uid), { contatti_access: true, last_contatti_access: oggiStr }, { merge: true });
@@ -1383,16 +1384,3 @@ if (!isStandalone) {
 } else {
     if(installBtn) installBtn.style.display = 'none';
 }
-
-// ============================================================================
-// LAZY LOADING: INIZIALIZZAZIONE E PRECARICO MODULI
-// ============================================================================
-
-window.ModuliLazyLoader = ModuliLazyLoader;
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Chiamando precarica() vuoto, scaricherà in background TUTTI i moduli
-    ModuliLazyLoader.precarica();
-    console.log('✅ Lazy Loading System inizializzato per tutti i moduli');
-});
-// ============================================================================

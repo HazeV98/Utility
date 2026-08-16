@@ -89,7 +89,6 @@ function renderizzaLink(filtroTestuale) {
         if (elementiFiltrati.length === 0) return; 
         linkTrovati += elementiFiltrati.length;
 
-        // Blocco Categoria Collassabile
         const block = document.createElement('div');
         block.className = "category-block";
         block.style.flexShrink = "0"; 
@@ -151,15 +150,22 @@ function renderizzaLink(filtroTestuale) {
             let urlClean = l.url;
             if (!urlClean.startsWith('http')) urlClean = 'https://' + urlClean;
             
-            // NUOVO MOTORE: API Favicon V2 (legge l'intero URL e fornisce fallback grafici)
-            let faviconHtml = `<img src="https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(urlClean)}&size=64" style="width:24px; height:24px; border-radius:6px; background:white;">`;
+            let domain = "";
+            try { domain = new URL(urlClean).hostname; } catch(e) {}
+            
+            // LOGICA FALLBACK: Prova DuckDuckGo -> se fallisce (404) carica Iniziali Colorate!
+            let fallbackLetter = encodeURIComponent(l.nome.substring(0, 2)); // Prende fino a 2 lettere
+            let avatarUrl = `https://ui-avatars.com/api/?name=${fallbackLetter}&background=random&color=fff&size=64&bold=true`;
+            let faviconHtml = `<img src="https://icons.duckduckgo.com/ip3/${domain}.ico" 
+                                    onerror="this.onerror=null; this.src='${avatarUrl}';" 
+                                    style="width:24px; height:24px; border-radius:6px; background:white; object-fit:cover;">`;
 
             row.innerHTML = `
-                <div style="display:flex; align-items:center; justify-content:center; width:32px; height:32px; background:var(--surface); border-radius:8px; box-shadow:var(--shadow-sm); border:1px solid var(--border-color);">
+                <div style="display:flex; align-items:center; justify-content:center; width:32px; height:32px; background:var(--surface); border-radius:8px; box-shadow:var(--shadow-sm); border:1px solid var(--border-color); flex-shrink:0;">
                     ${faviconHtml}
                 </div>
                 <div style="font-weight:700; font-size:14px; color:var(--text-main); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${l.nome}</div>
-                <i class="fa-solid fa-chevron-right" style="color:var(--text-muted); font-size:12px; opacity:0.5;"></i>
+                <i class="fa-solid fa-chevron-right" style="color:var(--text-muted); font-size:12px; opacity:0.5; flex-shrink:0;"></i>
             `;
 
             row.onclick = () => window.apriSchedaLink(l.id, l.nome, categoriaObj.categoria, urlClean);
@@ -182,27 +188,30 @@ function renderizzaLink(filtroTestuale) {
 
 window.apriSchedaLink = (id, nome, categoria, url) => {
     
-    // NUOVO MOTORE: Icona grande per la scheda modale
-    let faviconHtml = `<img src="https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(url)}&size=128" style="width:40px; height:40px; border-radius:8px; background:white;">`;
+    let domain = "";
+    try { domain = new URL(url).hostname; } catch(e) {}
+    
+    // Stessa logica di fallback ma più grande (128px) per la modale
+    let fallbackLetter = encodeURIComponent(nome.substring(0, 2));
+    let avatarUrl = `https://ui-avatars.com/api/?name=${fallbackLetter}&background=random&color=fff&size=128&bold=true`;
+    let faviconHtml = `<img src="https://icons.duckduckgo.com/ip3/${domain}.ico" 
+                            onerror="this.onerror=null; this.src='${avatarUrl}';" 
+                            style="width:40px; height:40px; border-radius:8px; background:white; object-fit:cover;">`;
 
     document.getElementById('scheda-link-icona').innerHTML = faviconHtml;
     document.getElementById('scheda-link-nome').textContent = nome;
     document.getElementById('scheda-link-url').textContent = url;
 
-    // Assegna il link al bottone "Apri"
     document.getElementById('btn-scheda-apri').href = url;
 
-    // Gestione Copia
     const btnCopia = document.getElementById('btn-scheda-copia');
     btnCopia.onclick = (e) => { 
         e.preventDefault(); 
         window.copiaTestoPulsante(url, btnCopia, "<i class='fa-regular fa-copy'></i> Copia"); 
     };
 
-    // Gestione QR
     document.getElementById('btn-scheda-qr').onclick = () => window.mostraQR(url);
 
-    // Gestione Edit per Admin
     const btnModifica = document.getElementById('btn-scheda-modifica');
     if (isAdminSession) {
         btnModifica.style.display = "flex";
@@ -217,7 +226,6 @@ window.apriSchedaLink = (id, nome, categoria, url) => {
     window.apriModal('modal-scheda-link');
 };
 
-// Funzione helper per il tasto copia della scheda
 window.copiaTestoPulsante = (testo, btn, htmlOriginale) => {
     navigator.clipboard.writeText(testo).then(() => {
         btn.innerHTML = "<i class='fa-solid fa-check'></i> Copiato!"; 

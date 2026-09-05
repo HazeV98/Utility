@@ -1,0 +1,280 @@
+[
+    {
+        "id": "oggi",
+        "label": "Oggi",
+        "icon": "fa-solid fa-bullseye",
+        "defaultColor": "#28a745",
+        "href": "calendario.html?oggi=true",
+        "conditions": [
+            "tutti"
+        ]
+    },
+    {
+        "id": "calendario",
+        "label": "Calendario",
+        "icon": "fa-solid fa-calendar-days",
+        "defaultColor": "#0066cc",
+        "href": "calendario.html",
+        "conditions": [
+            "tutti"
+        ]
+    },
+    {
+        "id": "statistiche",
+        "label": "Statistiche Calendario",
+        "icon": "fa-solid fa-chart-simple",
+        "defaultColor": "#6f42c1",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "statistiche",
+        "moduleName": "statistiche",
+        "splitModule": true
+    },
+    {
+        "id": "rotazioni",
+        "label": "Rotazioni",
+        "icon": "fa-solid fa-users",
+        "defaultColor": "#fd7e14",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "rotazioni",
+        "moduleName": "rotazioni",
+        "splitModule": true
+    },
+    {
+        "id": "turni",
+        "label": "Turni",
+        "icon": "fa-solid fa-rotate",
+        "defaultColor": "#20c997",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "turni",
+        "moduleName": "turni",
+        "splitModule": true
+    },
+    {
+        "id": "bachecaturni",
+        "label": "Bacheca Turni",
+        "icon": "fa-solid fa-handshake-angle",
+        "defaultColor": "#e83e8c",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "bachecaturni",
+        "moduleName": "bacheca_turni",
+        "splitModule": true
+    },
+    {
+        "id": "barcadvisor",
+        "label": "BarcAdvisor",
+        "icon": "fa-solid fa-sailboat",
+        "defaultColor": "#ff9800",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "barcadvisor",
+        "moduleName": "barcadvisor",
+        "splitModule": true
+    },
+    {
+        "id": "rubrica",
+        "label": "Rubrica",
+        "icon": "fa-solid fa-address-book",
+        "defaultColor": "#343a40",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "rubrica",
+        "moduleName": "rubrica",
+        "splitModule": true
+    },
+    {
+        "id": "ferie",
+        "label": "Rotazione Ferie",
+        "icon": "fa-solid fa-umbrella-beach",
+        "defaultColor": "#ffc107",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "ferie",
+        "moduleName": "rotazione_ferie",
+        "splitModule": true
+    },
+    {
+        "id": "orari",
+        "label": "Orari Navigazione",
+        "icon": "fa-regular fa-clock",
+        "defaultColor": "#17a2b8",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "orari",
+        "moduleName": "orari",
+        "splitModule": true
+    },
+    {
+        "id": "chebateo",
+        "label": "CheBateo",
+        "icon": "fa-solid fa-water",
+        "defaultColor": "#0066cc",
+        "href": "https://m.chebateo.it/",
+        "conditions": [
+            "tutti"
+        ]
+    },
+    {
+        "id": "documenti",
+        "label": "Documenti",
+        "icon": "fa-solid fa-file-lines",
+        "defaultColor": "#6c757d",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "documenti",
+        "moduleName": "documenti",
+        "splitModule": true
+    },
+    {
+        "id": "vademecum",
+        "label": "Vademecum",
+        "icon": "fa-solid fa-book",
+        "defaultColor": "#8e8e93",
+        "conditions": [
+            "admin"
+        ],
+        "href": "vademecum.html"
+    },
+    {
+        "id": "link",
+        "label": "Link",
+        "icon": "fa-solid fa-link",
+        "defaultColor": "#495057",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "link",
+        "moduleName": "link",
+        "splitModule": true
+    },
+    {
+        "id": "contatti",
+        "label": "Contatti",
+        "icon": "fa-solid fa-id-card",
+        "defaultColor": "#2c3e50",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "contatti",
+        "moduleName": "contatti",
+        "splitModule": true
+    },
+    {
+        "id": "buoni",
+        "label": "Buoni Pasto",
+        "icon": "fa-solid fa-utensils",
+        "defaultColor": "#d63384",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "buoni",
+        "moduleName": "buoni_pasto",
+        "splitModule": true
+    },
+    {
+        "id": "promemoria",
+        "label": "Promemoria",
+        "icon": "fa-solid fa-stopwatch",
+        "defaultColor": "#0dcaf0",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "promemoria",
+        "moduleName": "promemoria",
+        "splitModule": true
+    },
+    {
+        "id": "dds",
+        "label": "Archivio DDS",
+        "icon": "fa-solid fa-box-archive",
+        "defaultColor": "#5856d6",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "dds",
+        "moduleName": "dds",
+        "splitModule": true
+    },
+    {
+        "id": "report",
+        "label": "Assistenza App",
+        "icon": "fa-solid fa-headset",
+        "defaultColor": "#0088ff",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "report",
+        "moduleName": "report",
+        "splitModule": true
+    },
+    {
+        "id": "spriss",
+        "label": "Spriss",
+        "icon": "fa-solid fa-martini-glass",
+        "defaultColor": "#dc3545",
+        "href": "https://spriss.avmspa.it/",
+        "conditions": [
+            "tutti"
+        ]
+    },
+    {
+        "id": "bateolive",
+        "label": "BateoLive",
+        "icon": "fa-solid fa-map-location-dot",
+        "defaultColor": "#0066cc",
+        "conditions": [
+            "admin"
+        ],
+        "href": "https://bateolive.tailec23c3.ts.net/"
+    },
+    {
+        "id": "admin",
+        "label": "Admin",
+        "icon": "fa-solid fa-lock",
+        "defaultColor": "#ff3b30",
+        "conditions": [
+            "admin"
+        ],
+        "isModule": true,
+        "moduleId": "admin",
+        "moduleName": "admin",
+        "splitModule": true
+    },
+    {
+        "id": "accessi",
+        "label": "Accessi",
+        "icon": "fa-solid fa-users-gear",
+        "defaultColor": "#1c1c1e",
+        "onclick": "window.apriGestioneAccessi()",
+        "conditions": [
+            "admin"
+        ]
+    }
+]

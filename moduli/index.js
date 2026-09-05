@@ -1,188 +1,59 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { getMessaging, getToken, deleteToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// Solo auth viene importato staticamente (sempre necessario)
 import { avviaMotoreAuth } from './auth.js';
 
 // ============================================================================
-// SISTEMA DI LAZY LOADING INTEGRATO
+// SISTEMA DI LAZY LOADING OTTIMIZZATO E CORRETTO
 // ============================================================================
 const ModuliLazyLoader = {
-    // Cache per memorizzare i moduli già caricati
     cache: new Map(),
-    
-    // Set dei moduli UI già inizializzati
     initializedUIs: new Set(),
     
-    // Map dei moduli disponibili
-    moduli: {
-        turni: { motore: './turni.js', ui: './ui_turni.js', exports: ['avviaMotoreTurni', 'initUITurni'] },
-        orari: { motore: './orari.js', ui: './ui_orari.js', exports: ['avviaMotoreOrari', 'initUIOrari'] },
-        link: { motore: './link.js', ui: './ui_link.js', exports: ['avviaMotoreLink', 'initUILink'] },
-        documenti: { motore: './documenti.js', ui: './ui_documenti.js', exports: ['avviaMotoreDocumenti', 'initUIDocumenti'] },
-        contatti: { motore: './contatti.js', ui: './ui_contatti.js', exports: ['avviaMotoreContatti', 'initUIContatti'] },
-        bacheca_utility: { motore: './bacheca_utility.js', ui: './ui_bacheca_utility.js', exports: ['avviaMotoreBachecaUtility', 'initUIBachecaUtility'] },
-        rubrica: { motore: './rubrica.js', ui: './ui_rubrica.js', exports: ['avviaMotoreRubrica', 'initUIRubrica'] },
-        bacheca_turni: { motore: './bacheca_turni.js', ui: './ui_bacheca_turni.js', exports: ['avviaMotoreBachecaTurni', 'initUIBachecaTurni'] },
-        barcadvisor: { motore: './barcadvisor.js', ui: './ui_barcadvisor.js', exports: ['avviaMotoreBarcadvisor', 'initUIBarcadvisor'] },
-        buoni_pasto: { motore: './buoni_pasto.js', ui: './ui_buoniPasto.js', exports: ['avviaMotoreBuoniPasto', 'initUIBuoniPasto'] },
-        statistiche: { motore: './statistiche.js', ui: './ui_statistiche.js', exports: ['avviaMotoreStatistiche', 'initUIStatistiche'] },
-        rotazioni: { motore: './rotazioni.js', ui: './ui_rotazioni.js', exports: ['avviaMotoreRotazioni', 'initUIRotazioni'] },
-        rotazione_ferie: { motore: './rotazione_ferie.js', ui: './ui_rotazione_ferie.js', exports: ['avviaMotoreRotazioneFerie', 'initUIRotazioneFerie'] },
-        promemoria: { motore: './promemoria.js', ui: './ui_promemoria.js', exports: ['avviaMotorePromemoria', 'initUIPromemoria'] },
-        dds: { motore: './dds.js', ui: './ui_dds.js', exports: ['avviaMotoreDDS', 'initUIDDS'] },
-        guida: { motore: './guida.js', ui: './ui_guida.js', exports: ['avviaMotoreGuida', 'initUIGuida'] },
-        admin: { motore: './admin.js', ui: './ui_admin.js', exports: ['avviaMotoreAdmin', 'initUIAdmin'] },
-        report: { motore: './report.js', ui: './ui_report.js', exports: ['avviaMotoreSegnalazioni', 'initUISegnalazioni'] }
-    },
-    
-    /**
-     * Carica un modulo specifico (motore + UI)
-     * @param {string} nomeModulo - Nome del modulo (es: 'turni')
-     * @returns {Promise<Object>} Oggetto con le funzioni esportate dal modulo
-     */
-    async caricaModulo(nomeModulo) {
-        const config = this.moduli[nomeModulo];
-        if (!config) {
-            console.error(`✗ Modulo '${nomeModulo}' non trovato`);
-            return null;
-        }
-
-        // Controlla se il modulo è già in cache
-        if (this.cache.has(nomeModulo)) {
-            const cached = this.cache.get(nomeModulo);
-            if (config.exports.some(f => f.startsWith('initUI')) && !this.initializedUIs.has(nomeModulo)) {
-                const initFunc = config.exports.find(f => f.startsWith('initUI'));
-                if (cached[initFunc]) {
-                    try {
-                        cached[initFunc]();
-                        this.initializedUIs.add(nomeModulo);
-                    } catch (initError) {
-                        console.warn(`⚠️ Errore init UI cached '${nomeModulo}':`, initError);
-                    }
-                }
-            }
-            console.log(`✓ Modulo '${nomeModulo}' caricato da cache`);
-            return cached;
-        }
+    async caricaModulo(nomeModulo, isSplit = false) {
+        if (!nomeModulo) return null;
+        if (this.cache.has(nomeModulo)) return this.cache.get(nomeModulo);
         
         try {
-            console.log(`⏳ Caricamento modulo '${nomeModulo}'...`);
+            let esporta = {};
             
-            // Carica il modulo motore
-            const motoreModule = await import(config.motore);
-            
-            // Carica l'interfaccia UI
-            const uiModule = await import(config.ui);
-            
-            // Estrai le funzioni richieste
-            const esporta = {};
-            config.exports.forEach(funz => {
-                if (motoreModule[funz]) esporta[funz] = motoreModule[funz];
-                if (uiModule[funz]) esporta[funz] = uiModule[funz];
-            });
-            
-            // Salva in cache
-            this.cache.set(nomeModulo, esporta);
-
-            // Inizializza l'interfaccia UI una sola volta
-            const initFunc = config.exports.find(f => f.startsWith('initUI'));
-            if (initFunc && esporta[initFunc] && !this.initializedUIs.has(nomeModulo)) {
-                try {
-                    esporta[initFunc]();
-                    this.initializedUIs.add(nomeModulo);
-                } catch (initError) {
-                    console.warn(`⚠️ Errore init UI '${nomeModulo}':`, initError);
-                }
+            if (isSplit) {
+                // index.js è già in /moduli/, quindi ./ punta direttamente alla cartella corretta
+                const [motoreRes, uiRes] = await Promise.all([
+                    import(`./${nomeModulo}.js`),
+                    import(`./ui_${nomeModulo}.js`).catch(() => ({})) 
+                ]);
+                esporta = { ...motoreRes, ...uiRes };
+            } else {
+                // Carica solo il file unificato
+                esporta = await import(`./${nomeModulo}.js`);
             }
             
-            console.log(`✓ Modulo '${nomeModulo}' caricato con successo`);
+            this.cache.set(nomeModulo, esporta);
             
+            const initFuncKey = Object.keys(esporta).find(k => k.startsWith('initUI'));
+            if (initFuncKey && typeof esporta[initFuncKey] === 'function' && !this.initializedUIs.has(nomeModulo)) {
+                try {
+                    esporta[initFuncKey]();
+                    this.initializedUIs.add(nomeModulo);
+                } catch(err) { console.warn(`Errore durante initUI di ${nomeModulo}:`, err); }
+            }
             return esporta;
         } catch (errore) {
             console.error(`✗ Errore caricamento modulo '${nomeModulo}':`, errore);
+            alert(`Impossibile trovare il modulo: ${nomeModulo}. Assicurati che esista e sia configurato correttamente.`);
             return null;
         }
     },
     
-    /**
-     * Carica e inizializza solo la UI di un modulo
-     * @param {string} nomeModulo - Nome del modulo
-     * @returns {Promise<Function|null>} La funzione initUI del modulo
-     */
-    async inizializzaUI(nomeModulo) {
-        const modulo = await this.caricaModulo(nomeModulo);
+    async avviaMotore(nomeModulo, isSplit) {
+        const modulo = await this.caricaModulo(nomeModulo, isSplit);
         if (!modulo) return null;
-        
-        const config = this.moduli[nomeModulo];
-        const initFunc = config.exports.find(f => f.startsWith('initUI'));
-        
-        return modulo[initFunc] || null;
-    },
-    
-    /**
-     * Carica e avvia il motore di un modulo
-     * @param {string} nomeModulo - Nome del modulo
-     * @returns {Promise<Function|null>} La funzione avviaMotore del modulo
-     */
-    async avviaMotore(nomeModulo) {
-        const modulo = await this.caricaModulo(nomeModulo);
-        if (!modulo) return null;
-        
-        const config = this.moduli[nomeModulo];
-        const motoreFunc = config.exports.find(f => f.startsWith('avviaMotore'));
-        
-        return modulo[motoreFunc] || null;
-    },
-    
-    /**
-     * Precarica uno o più moduli in background (senza bloccare l'UI)
-     * Utile per precaricamento preventivo
-     * @param {Array<string>} nomiModuli - Array di nomi moduli da precaricare
-     */
-    async precarica(nomiModuli = []) {
-        // Se non vengono specificati moduli, li ottiene TUTTI dall'oggetto 'moduli'
-        const daPrecaricare = nomiModuli.length > 0 ? nomiModuli : Object.keys(this.moduli);
-        
-        console.log(`⏳ Precarico ${daPrecaricare.length} moduli in background...`);
-        
-        // Usa requestIdleCallback se disponibile, altrimenti setTimeout
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(() => {
-                daPrecaricare.forEach(nome => {
-                    this.caricaModulo(nome).catch(e => console.warn(`Errore precaricamento ${nome}:`, e));
-                });
-            }, { timeout: 3000 });
-        } else {
-            setTimeout(() => {
-                daPrecaricare.forEach(nome => {
-                    this.caricaModulo(nome).catch(e => console.warn(`Errore precaricamento ${nome}:`, e));
-                });
-            }, 2000);
-        }
-    },
-    
-    /**
-     * Svuota la cache (utile per forza il ricaricamento di moduli)
-     */
-    svuotaCache() {
-        this.cache.clear();
-        console.log('✓ Cache svuotata');
-    },
-    
-    /**
-     * Mostra statistiche di caricamento
-     */
-    mostraStatistiche() {
-        console.log('📊 Statistiche Lazy Loading:');
-        console.log(`   Moduli in cache: ${this.cache.size}`);
-        this.cache.forEach((val, key) => console.log(`   - ${key}`));
+        const motoreFuncKey = Object.keys(modulo).find(k => k.startsWith('avviaMotore'));
+        return motoreFuncKey ? modulo[motoreFuncKey] : (modulo.default || modulo);
     }
 };
-// ============================================================================
-
 
 const firebaseConfig = { 
     apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4", 
@@ -198,750 +69,152 @@ const auth = getAuth(app);
 const db = getFirestore(app); 
 const provider = new GoogleAuthProvider();
 
-// Inizializziamo il sottomodulo di Autenticazione (sempre necessario)
 avviaMotoreAuth(auth, db, provider);
 
 const ADMIN_UID = "xm1LR5TeiKgBfuo0Htt6q3G1LdU2"; 
-const COLLABORATORE_UIDS = ["INSERISCI_QUI_UID_1", "INSERISCI_QUI_UID_2"]; 
-
 let globalIsAdmin = false; 
 let globalIsCollab = false;
+let globalIsVip = false;
 window.currentUserData = {}; 
 window.utentiMap = {};
 window.utentiArrayCache = [];
+window.DYNAMIC_APPS = [];
 
-window.ROTAZIONI_MAP = {
-    "disp_5_1": "Disponibile 5-1", "disp_6_2_6_1": "Disponibile 6-2-6-1",
-    "rot_fnove": "Rotazione F.Nove", "spez_fnove": "Spezzati F.Nove", "tc_spez_fnove": "T.C. Spezzati F.Nove",
-    "rot_proma": "Rotazione P.Roma", "spez_proma": "Spezzati P.Roma", "ris_proma": "Riserva P.Roma",
-    "rot_szaccaria": "Rotazione S.Zaccaria", "spez_szaccaria": "Spezzati S.Zaccaria", "tc_spez_szaccaria": "T.C. Spezzati S.Zaccaria",
-    "rot_lido": "Rotazione Lido", "spez_lido": "Spezzati Lido", "tc_spez_lido": "T.C. Spezzati Lido",
-    "rot_linea12": "Rotazione Linea 12", "rot_linea13": "Rotazione Linea 13", "rot_linea14": "Rotazione Linea 14 M/N",
-    "rot_linea14_mb": "Rotazione Linea 14 M/B", "rot_17sn": "Rotazione Linea 17 S. Nicolò", "tc_rot_17sn": "T.C. Rotazione 17 S. Nicolò",
-    "rot_17tr": "Rotazione Linea 17 Tron.", "tc_rot_17tr": "T.C. Rotazione Linea 17 Tronc."
+window.caricaAppsConfig = async () => {
+    try {
+        const r = await fetch('./assets/apps.json?v=' + Date.now());
+        if(r.ok) { window.DYNAMIC_APPS = await r.json(); }
+        else { window.DYNAMIC_APPS = []; }
+    } catch(e) { window.DYNAMIC_APPS = []; }
 };
-
-const ICON_MAP = {
-    oggi: "fa-solid fa-bullseye", calendario: "fa-solid fa-calendar-days", statistiche: "fa-solid fa-chart-simple",
-    rotazioni: "fa-solid fa-users", turni: "fa-solid fa-rotate", bachecaturni: "fa-solid fa-handshake-angle",
-    rubrica: "fa-solid fa-address-book", ferie: "fa-solid fa-umbrella-beach", orari: "fa-regular fa-clock",
-    documenti: "fa-solid fa-file-lines", link: "fa-solid fa-link", contatti: "fa-solid fa-id-card",
-    buoni: "fa-solid fa-utensils", promemoria: "fa-solid fa-stopwatch", dds: "fa-solid fa-box-archive",
-    report: "fa-solid fa-headset", impostazioni: "fa-solid fa-gear", admin: "fa-solid fa-lock", accessi: "fa-solid fa-users-gear"
-};
-
-const EMOJI_MAP = {
-    oggi: "🎯", calendario: "📅", statistiche: "📊", rotazioni: "👥", turni: "🔄",
-    bachecaturni: "🤝", rubrica: "📒", ferie: "⛱️", orari: "🕒", documenti: "📄",
-    link: "🔗", contatti: "🪪", buoni: "🍽️", promemoria: "⏱️", dds: "🗃️",
-    report: "🎧", impostazioni: "⚙️", admin: "🔒", accessi: "👨‍💻"
-};
-
-const DEFAULT_APPS = [
-    { id: "oggi", label: "Oggi", href: "calendario.html?oggi=true", defaultColor: "#28a745" },
-    { id: "calendario", label: "Calendario", href: "calendario.html", defaultColor: "#0066cc" },
-    
-    { id: "statistiche", label: "Statistiche\nCalendario", onclick: "window.apriModaleStatistiche()", defaultColor: "#6f42c1" },
-    { id: "rotazioni", label: "Rotazioni", onclick: "window.apriModaleRotazioni()", defaultColor: "#fd7e14" },
-    
-    { id: "turni", label: "Turni", onclick: "window.apriModaleTurni()", defaultColor: "#20c997" },
-    { id: "bachecaturni", label: "Bacheca\nTurni", onclick: "window.apriModaleBachecaTurni()", defaultColor: "#e83e8c" },
-    { id: "barcadvisor", label: "BarcAdvisor", image: "icone_app/iconba.png", onclick: "window.apriModaleBarcadvisor()" },
-    { id: "rubrica", label: "Rubrica", onclick: "window.apriModaleRubrica()", defaultColor: "#343a40" },
-    
-    { id: "ferie", label: "Rotazione\nFerie", onclick: "window.apriModaleRotazioneFerie()", defaultColor: "#ffc107" },
-    
-    { id: "orari", label: "Orari\nNavigazione", onclick: "window.apriModaleOrari()", defaultColor: "#17a2b8" },
-    { id: "chebateo", label: "CheBateo", image: "icone_app/iconcb.png", href: "https://m.chebateo.it/" },
-    { id: "documenti", label: "Documenti", onclick: "window.apriModaleDocumenti()", defaultColor: "#6c757d" },
-    { id: "link", label: "Link", onclick: "window.apriModaleLink()", defaultColor: "#495057" },
-    { id: "contatti", label: "Contatti", onclick: "window.apriModaleContatti()", defaultColor: "#2c3e50" },
-    { id: "buoni", label: "Buoni\nPasto", onclick: "window.apriModaleBuoniPasto()", defaultColor: "#d63384" },
-    
-    { id: "promemoria", label: "Promemoria", onclick: "window.apriModalePromemoria()", defaultColor: "#0dcaf0" },
-    { id: "dds", label: "Archivio\nDDS", onclick: "window.apriModaleDDS()", defaultColor: "#5856d6" },
-    
-    { id: "report", label: "Assistenza\nApp", onclick: "window.avviaMotoreSegnalazioniDaIndex()", defaultColor: "#0088ff" },
-    { id: "impostazioni", label: "Impostazioni", onclick: "window.apriModal('settingsModal')", defaultColor: "#8e8e93" },
-    { id: "spriss", label: "Spriss", image: "icone_app/iconspriss.png", href: "https://spriss.avmspa.it/" },
-    
-    { id: "admin", label: "Admin", onclick: "window.apriModaleAdmin()", condition: "admin", defaultColor: "#ff3b30" },
-    
-    { id: "accessi", label: "Accessi", onclick: "window.apriGestioneAccessi()", condition: "admin", defaultColor: "#1c1c1e" }
-];
-
-window.apriMenuLaterale = () => { 
-    const s = document.getElementById('sidebar'); if(s) s.classList.add('open'); 
-    const o = document.getElementById('sidebar-overlay'); if(o) o.style.display = 'block'; 
-};
-window.chiudiMenuLaterale = () => { 
-    const s = document.getElementById('sidebar'); if(s) s.classList.remove('open'); 
-    const o = document.getElementById('sidebar-overlay'); if(o) o.style.display = 'none'; 
-};
-
-window.avviaMotoreTurniDaIndex = async () => {
-    if (!auth.currentUser) { alert("Devi effettuare il login per accedere ai turni."); return; }
-    if (window.currentUserData) {
-        if (window.currentUserData.turni_banned === true) {
-            alert("Il tuo accesso alla pagina Turni è stato temporaneamente revocato."); return;
-        }
-        if (!window.currentUserData.nome || !window.currentUserData.cognome || window.currentUserData.matricola === undefined || window.currentUserData.matricola === "") {
-            alert("Devi prima completare il tuo profilo (Nome, Cognome e Matricola) per visualizzare i turni.");
-            window.apriModal('profileModal'); return;
-        }
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('turni');
-    if (modulo) modulo();
-    const oggiStr = new Date().toISOString().split('T')[0];
-    if (window.currentUserData && (window.currentUserData.turni_access !== true || window.currentUserData.last_turni_access !== oggiStr)) {
-        setDoc(doc(db, "utenti", auth.currentUser.uid), { turni_access: true, last_turni_access: oggiStr }, { merge: true });
-        window.currentUserData.turni_access = true; window.currentUserData.last_turni_access = oggiStr;
-    }
-};
-
-window.avviaMotoreOrariDaIndex = async () => {
-    const modulo = await ModuliLazyLoader.avviaMotore('orari');
-    if (modulo) modulo();
-};
-
-window.avviaMotoreLinkDaIndex = async () => {
-    if (!auth.currentUser) { alert("Devi effettuare il login per accedere ai link aziendali."); return; }
-    if (window.currentUserData) {
-        if (window.currentUserData.link_banned === true) {
-            alert("L'accesso ai Link ti è stato revocato da un Amministratore."); return;
-        }
-        if (!window.currentUserData.nome || !window.currentUserData.cognome || window.currentUserData.matricola === undefined) {
-            alert("Devi prima completare il tuo profilo (Nome, Cognome e Matricola) per accedere.");
-            window.apriModal('profileModal'); return;
-        }
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('link');
-    
-    // CORREZIONE QUI: Aggiunti i parametri db e auth!
-    if (modulo) modulo(db, auth); 
-    
-    const oggiStr = new Date().toISOString().split('T')[0];
-    if (window.currentUserData && (window.currentUserData.link_access !== true || window.currentUserData.last_link_access !== oggiStr)) {
-        setDoc(doc(db, "utenti", auth.currentUser.uid), { link_access: true, last_link_access: oggiStr }, { merge: true });
-        window.currentUserData.link_access = true; window.currentUserData.last_link_access = oggiStr;
-    }
-};
-
-window.avviaMotoreDocumentiDaIndex = async () => {
-    if (!auth.currentUser) { alert("Devi effettuare il login per accedere ai documenti."); return; }
-    if (window.currentUserData) {
-        if (window.currentUserData.documenti_banned === true) {
-            alert("L'accesso ai Documenti ti è stato revocato da un Amministratore."); return;
-        }
-        if (!window.currentUserData.nome || !window.currentUserData.cognome || window.currentUserData.matricola === undefined) {
-            alert("Devi prima completare il tuo profilo (Nome, Cognome e Matricola) per accedere all'archivio.");
-            window.apriModal('profileModal'); return;
-        }
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('documenti');
-    if (modulo) modulo();
-    const oggiStr = new Date().toISOString().split('T')[0];
-    if (window.currentUserData && (window.currentUserData.documenti_access !== true || window.currentUserData.last_documenti_access !== oggiStr)) {
-        setDoc(doc(db, "utenti", auth.currentUser.uid), { documenti_access: true, last_documenti_access: oggiStr }, { merge: true });
-        window.currentUserData.documenti_access = true; window.currentUserData.last_documenti_access = oggiStr;
-    }
-};
-
-window.avviaMotoreContattiDaIndex = async () => {
-    if (!auth.currentUser) { alert("Devi effettuare il login per accedere ai contatti aziendali."); return; }
-    if (window.currentUserData) {
-        if (window.currentUserData.contatti_banned === true) {
-            alert("L'accesso ai Contatti ti è stato revocato da un Amministratore."); return;
-        }
-        if (!window.currentUserData.nome || !window.currentUserData.cognome || window.currentUserData.matricola === undefined) {
-            alert("Devi prima completare il tuo profilo (Nome, Cognome e Matricola) per accedere ai contatti.");
-            window.apriModal('profileModal'); return;
-        }
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('contatti');
-    if (modulo) modulo(db, auth); // PASSIAMO DB E AUTH AL MODULO
-    
-    const oggiStr = new Date().toISOString().split('T')[0];
-    if (window.currentUserData && (window.currentUserData.contatti_access !== true || window.currentUserData.last_contatti_access !== oggiStr)) {
-        setDoc(doc(db, "utenti", auth.currentUser.uid), { contatti_access: true, last_contatti_access: oggiStr }, { merge: true });
-        window.currentUserData.contatti_access = true; window.currentUserData.last_contatti_access = oggiStr;
-    }
-};
-
-window.avviaMotoreBachecaUtilityDaIndex = async () => {
-    const fullName = `${window.currentUserData?.nome || ''} ${window.currentUserData?.cognome || ''}`.trim();
-    const modulo = await ModuliLazyLoader.avviaMotore('bacheca_utility');
-    if (modulo) modulo(app, db, auth, globalIsAdmin || globalIsCollab, fullName);
-};
-
-window.avviaMotoreRubricaDaIndex = async () => {
-    if (window.currentUserData && window.currentUserData.app_banned === true) {
-        alert("L'accesso alle funzioni ti è stato revocato."); 
-        return;
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('rubrica');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
-};
-
-window.avviaMotoreBachecaTurniDaIndex = async () => {
-    if (window.currentUserData && window.currentUserData.app_banned === true) {
-        alert("L'accesso alle funzioni ti è stato revocato."); 
-        return;
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('bacheca_turni');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
-};
-
-window.avviaMotoreBarcadvisorDaIndex = async () => {
-    if (window.currentUserData && window.currentUserData.app_banned === true) {
-        alert("L'accesso alle funzioni ti è stato revocato."); 
-        return;
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('barcadvisor');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
-};
-
-window.avviaMotoreBuoniPastoDaIndex = async () => {
-    if (window.currentUserData && window.currentUserData.app_banned === true) {
-        alert("L'accesso alle funzioni ti è stato revocato."); 
-        return;
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('buoni_pasto');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
-};
-
-window.avviaMotoreStatisticheDaIndex = async () => {
-    if (window.currentUserData && window.currentUserData.app_banned === true) {
-        alert("L'accesso alle funzioni ti è stato revocato."); 
-        return;
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('statistiche');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
-};
-
-window.avviaMotoreRotazioniDaIndex = async () => {
-    if (window.currentUserData && window.currentUserData.app_banned === true) {
-        alert("L'accesso alle funzioni ti è stato revocato."); 
-        return;
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('rotazioni');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
-};
-
-window.avviaMotoreRotazioneFerieDaIndex = async () => {
-    if (window.currentUserData && window.currentUserData.app_banned === true) {
-        alert("L'accesso alle funzioni ti è stato revocato."); 
-        return;
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('rotazione_ferie');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
-};
-
-window.avviaMotorePromemoriaDaIndex = async () => {
-    if (window.currentUserData && window.currentUserData.app_banned === true) {
-        alert("L'accesso alle funzioni ti è stato revocato."); 
-        return;
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('promemoria');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
-};
-
-window.avviaMotoreDDSDaIndex = async () => {
-    if (window.currentUserData && window.currentUserData.app_banned === true) {
-        alert("L'accesso alle funzioni ti è stato revocato."); 
-        return;
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('dds');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
-};
-
-window.avviaMotoreGuidaDaIndex = async () => {
-    if (window.currentUserData && window.currentUserData.app_banned === true) {
-        alert("L'accesso alle funzioni ti è stato revocato."); 
-        return;
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('guida');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
-};
-
-window.avviaMotoreAdminDaIndex = async () => {
-    if (!globalIsAdmin) {
-        alert("Accesso negato. Solo gli amministratori possono accedere a questa sezione."); 
-        return;
-    }
-    const modulo = await ModuliLazyLoader.avviaMotore('admin');
-    if (modulo) modulo(db, auth, window.currentUserData, globalIsAdmin);
-};
-
 
 // ============================================================================
-// AGGIORNATO: GESTIONE DEFINITIVA NOTIFICHE SEGNALAZIONI
+// ROUTER DINAMICO E LANCIATORI NATIVI (Basato su ID, immune a errori JSON)
 // ============================================================================
+window.eseguiAzioneApp = async (appId) => {
+    const appConfig = window.DYNAMIC_APPS.find(a => a.id === appId);
+    if (!appConfig) return;
 
-// Questa è la funzione che scatta quando premi sull'app "Assistenza App"
-window.avviaMotoreSegnalazioniDaIndex = async () => {
-    if (window.currentUserData && window.currentUserData.app_banned === true) {
-        alert("L'accesso alle funzioni ti è stato revocato."); 
+    if (appConfig.href) {
+        window.location.href = appConfig.href;
         return;
     }
-    if (auth.currentUser) {
-        const modulo = await ModuliLazyLoader.avviaMotore('report');
-        if (modulo) {
-            modulo(db, auth, auth.currentUser.uid, globalIsAdmin);
-            
-            // Dopo l'avvio, chiamiamo l'apertura modale
-            if(window.apriModaleSegnalazioni) {
-                window.apriModaleSegnalazioni();
-                
-                // SPEGNE IL BADGE ISTANTANEAMENTE SULL'INTERFACCIA APPENA APRI!
-                const btn = document.getElementById('btn-report');
-                if (btn) {
-                    let b = btn.querySelector('.badge-notif');
-                    if (b) b.remove();
-                }
-                const banner = document.getElementById('banner-segnalazioni-alert');
-                if (banner) banner.style.display = 'none';
-            }
-        }
+
+    // 1. CONTROLLI DI SICUREZZA GLOBALI E SPECIFICI
+    if (!auth.currentUser && appId !== 'orari') {
+        alert("Devi effettuare il login per accedere a questa funzione."); 
+        return;
     }
-};
-
-window.controllaSegnalazioni = async () => {
-    if (!auth.currentUser) return;
-    try {
-        let count = 0;
-        let messaggioBanner = "";
-        
-        if (globalIsAdmin) {
-            // Conta solo i ticket in attesa dove la variabile letta_da_admin è "false"
-            const q = query(collection(db, "segnalazioni"), where("stato", "==", "in_attesa"));
-            const snap = await getDocs(q);
-            snap.forEach(d => {
-                if (d.data().letta_da_admin === false) count++;
-            });
-            if (count > 0) messaggioBanner = count === 1 ? "Hai 1 nuovo messaggio nei ticket!" : `Hai ${count} nuovi messaggi nei ticket!`;
-        } else {
-            // Conta tutti i ticket dell'utente dove letta_da_utente è "false"
-            const q = query(collection(db, "segnalazioni"), where("mittente_uid", "==", auth.currentUser.uid));
-            const snap = await getDocs(q);
-            snap.forEach(d => {
-                if (d.data().letta_da_utente === false) count++;
-            });
-            if (count > 0) messaggioBanner = count === 1 ? "L'Admin ha risposto al tuo ticket!" : `L'Admin ha risposto a ${count} tuoi ticket!`;
-        }
-
-        const banner = document.getElementById('banner-segnalazioni-alert');
-        const btn = document.getElementById('btn-report');
-        
-        if (count > 0) {
-            if (banner) {
-                const testo = document.getElementById('testo-segnalazione-banner');
-                if(testo) testo.innerText = messaggioBanner;
-                banner.style.display = 'flex';
-            }
-            if (btn) {
-                let b = btn.querySelector('.badge-notif');
-                if (b) b.remove();
-                btn.insertAdjacentHTML('beforeend', `<div class="badge-notif" style="background:var(--danger);">${count}</div>`);
-            }
-        } else {
-            if (banner) banner.style.display = 'none';
-            if (btn) {
-                let b = btn.querySelector('.badge-notif');
-                if (b) b.remove();
-            }
-        }
-    } catch(e) { console.error("Errore check segnalazioni:", e); }
-};
-// ============================================================================
-
-
-window.controllaBacheca = async () => {
-    if (!auth.currentUser) return;
-    try {
-        let fbAccess = parseInt(window.currentUserData?.ultimo_accesso_bacheca || 0);
-        let localAccess = parseInt(localStorage.getItem('ultimo_accesso_bacheca') || 0);
-        let ultimoAccesso = Math.max(fbAccess, localAccess);
-
-        const stateApp = JSON.parse(localStorage.getItem('myTurniApp')) || {};
-        const pid = stateApp.profiloAttivoId || 'default';
-        const profileObj = stateApp.profiliSalvati ? stateApp.profiliSalvati[pid] : stateApp;
-        const rotazioneUtente = profileObj ? profileObj.depositoAttivo : null;
-        
-        const formatterDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
-        const oggiStr = formatterDate.format(new Date());
-
-        const q = query(collection(db, "bacheca_utility"), orderBy("timestamp", "desc"));
-        const snap = await getDocs(q);
-
-        let avvisiNormali = 0;
-        let avvisiDDS = [];
-
-        snap.forEach(d => {
-            let m = d.data();
-            if (m.scadenza && m.scadenza < oggiStr) return; 
-            
-            if (!globalIsAdmin && !globalIsCollab && m.target && m.target !== "tutti") {
-                if (!rotazioneUtente || !m.target.includes(rotazioneUtente)) return;
-            }
-
-            const giaLetto = localStorage.getItem('letto_' + d.id);
-
-            if (m.timestamp > ultimoAccesso && !giaLetto) {
-                if (m.tipo === "dds") avvisiDDS.push(m.titolo_dds);
-                else avvisiNormali++;
-            }
-        });
-
-        let totali = avvisiNormali + avvisiDDS.length;
-
-        const badge = document.getElementById('badge-messaggi');
-        if (badge) { 
-            if (totali > 0) { badge.innerText = totali; badge.style.display = 'flex'; }
-            else { badge.style.display = 'none'; }
-        }
-
-        const bannerNormal = document.getElementById('banner-nuovo-messaggio');
-        if (bannerNormal) {
-            if (avvisiNormali > 0) bannerNormal.style.display = 'flex';
-            else bannerNormal.style.display = 'none';
-        }
-        
-        const bannerDDS = document.getElementById('banner-dds-alert');
-        const textDDS = document.getElementById('titolo-dds-text');
-        if (bannerDDS && textDDS) {
-            if (avvisiDDS.length > 0) {
-                textDDS.innerText = avvisiDDS[0] + (avvisiDDS.length > 1 ? ` (+${avvisiDDS.length - 1})` : '');
-                bannerDDS.style.display = 'flex';
-            } else {
-                bannerDDS.style.display = 'none';
-            }
-        }
-        
-    } catch(e) { console.error("Errore check bacheca:", e); }
-};
-
-window.addEventListener('bacheca-utility-letta', async () => {
-    const badge = document.getElementById('badge-messaggi');
-    if (badge) badge.style.display = 'none';
-    
-    const bannerNormal = document.getElementById('banner-nuovo-messaggio');
-    if (bannerNormal) bannerNormal.style.display = 'none';
-    
-    const bannerDDS = document.getElementById('banner-dds-alert');
-    if (bannerDDS) bannerDDS.style.display = 'none';
-
-    const now = Date.now();
-    localStorage.setItem('ultimo_accesso_bacheca', now);
-    
-    if (window.currentUserData) {
-        window.currentUserData.ultimo_accesso_bacheca = now;
+    if (window.currentUserData && window.currentUserData.app_banned) {
+        alert("Accesso all'app revocato dal sistema."); 
+        return; 
     }
-    
-    if (auth.currentUser) {
-        try {
-            await setDoc(doc(db, "utenti", auth.currentUser.uid), { ultimo_accesso_bacheca: now }, { merge: true });
-        } catch(e) {
-            console.error("Errore salvataggio ultimo accesso bacheca:", e);
+
+    if (appId === 'turni') {
+        if (window.currentUserData?.turni_banned) { alert("Accesso alla pagina Turni revocato."); return; }
+        if (!window.currentUserData?.nome || !window.currentUserData?.matricola) {
+            alert("Completa il profilo (Nome e Matricola) per visualizzare i turni.");
+            window.apriModal('profileModal'); return;
         }
+        // Tracking accessi ai turni
+        const oggiStr = new Date().toISOString().split('T')[0];
+        if (window.currentUserData && (window.currentUserData.turni_access !== true || window.currentUserData.last_turni_access !== oggiStr)) {
+            setDoc(doc(db, "utenti", auth.currentUser.uid), { turni_access: true, last_turni_access: oggiStr }, { merge: true });
+            window.currentUserData.turni_access = true; window.currentUserData.last_turni_access = oggiStr;
+        }
+    } else if (appId === 'link' && window.currentUserData?.link_banned) {
+        alert("Accesso ai Link revocato."); return;
+    } else if (appId === 'documenti' && window.currentUserData?.documenti_banned) {
+        alert("Accesso ai Documenti revocato."); return;
     }
-});
 
-window.controllaRichiesteSospese = async () => {
-    if (!globalIsAdmin && !globalIsCollab) return;
-    try {
-        let permessiGestione = [];
-        if (globalIsCollab && auth.currentUser) {
-            const myPermsSnap = await getDoc(doc(db, "permessi_rotazioni", auth.currentUser.uid));
-            if (myPermsSnap.exists() && myPermsSnap.data().permessi_gestione) {
-                permessiGestione = myPermsSnap.data().permessi_gestione;
-            }
-        }
+    // 2. ECCEZIONI NON-MODULARI
+    if (appId === 'accessi') { return window.apriGestioneAccessi(); }
 
-        const q = query(collection(db, "permessi_rotazioni"), where("stato_richiesta", "==", "pending"));
-        const snap = await getDocs(q);
-        let count = 0;
-        
-        snap.forEach(d => {
-            const p = d.data();
-            if (globalIsAdmin) {
-                count++;
-            } else if (globalIsCollab && permessiGestione.includes(p.rotazione_richiesta)) {
-                count++;
-            }
-        });
-        
-        const btnRot = document.getElementById('btn-rotazioni');
-        if (btnRot) {
-            let b = btnRot.querySelector('.badge-notif');
-            if (b) b.remove();
-            if (count > 0) btnRot.insertAdjacentHTML('beforeend', `<div class="badge-notif">${count}</div>`);
-        }
-    } catch(e) { console.error("Errore check richieste rotazioni:", e); }
-};
-
-window.controllaPromemoria = async () => {
-    if (!auth.currentUser) return;
-    try {
-        const formatterDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
-        const oggiStr = formatterDate.format(new Date());
-        
-        const q = query(collection(db, "utenti", auth.currentUser.uid, "promemoria_sync"), where("completato", "==", false));
-        const snap = await getDocs(q);
-        let activeCount = 0;
-
-        snap.forEach(d => {
-            const p = d.data();
-            if (p.date && p.date.includes(oggiStr)) activeCount++;
-        });
-
-        if (activeCount > 0) {
-            const banner = document.getElementById('banner-promemoria-alert');
-            if (banner) {
-                banner.innerHTML = `<i class="fa-solid fa-stopwatch fa-beat"></i> Hai ${activeCount} promemoria per oggi!`;
-                banner.style.display = 'flex';
-            }
-            const btn = document.getElementById('btn-promemoria');
-            if (btn) {
-                let b = btn.querySelector('.badge-notif');
-                if (b) b.remove();
-                btn.insertAdjacentHTML('beforeend', `<div class="badge-notif" style="background:#17a2b8; border-color:var(--bg-color);">${activeCount}</div>`);
-            }
-        }
-    } catch(e) { console.error("Errore check promemoria:", e); }
-};
-
-window.inizializzaNotificheSeNativa = async (userData) => {
-    const isNative = window.Capacitor && window.Capacitor.isNativePlatform() && window.Capacitor.Plugins.PushNotifications;
-    const isWeb = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
-
-    if (isNative || isWeb) {
-        document.getElementById('native-notifications-center').style.display = 'block';
-        
-        const statusText = document.getElementById('notif-status-text');
-        const btn = document.getElementById('btn-attiva-notifiche');
-        const btnDisattiva = document.getElementById('btn-disattiva-notifiche');
-        const prefSection = document.getElementById('notif-preferences-section');
-
-        if (userData && (userData.ruolo === 'admin' || userData.ruolo === 'collaborator' || globalIsAdmin || globalIsCollab)) {
-            document.getElementById('label-notif-rotazioni').style.display = 'flex';
-        }
-
-        if (userData && userData.preferenze_notifiche) {
-            document.getElementById('pref-notif-promemoria').checked = !!userData.preferenze_notifiche.promemoria;
-            document.getElementById('pref-notif-dds').checked = !!userData.preferenze_notifiche.dds;
-            document.getElementById('pref-notif-utility').checked = !!userData.preferenze_notifiche.bacheca_utility;
-            document.getElementById('pref-notif-rotazioni').checked = !!userData.preferenze_notifiche.richieste_rotazioni;
-            document.getElementById('pref-notif-segnalazioni').checked = !!userData.preferenze_notifiche.segnalazioni;
-
-            if (Array.isArray(userData.preferenze_notifiche.mansioni_turni)) {
-                document.querySelectorAll('.pref-mansione').forEach(cb => {
-                    cb.checked = userData.preferenze_notifiche.mansioni_turni.includes(cb.value);
-                });
-            }
-        }
-
-        const aggiornaGraficaPermessi = (isGranted) => {
-            if (isGranted) {
-                statusText.innerHTML = "<i class='fa-solid fa-circle-check'></i> Notifiche app attive";
-                statusText.style.color = "var(--success)";
-                btn.style.display = 'none';
-                if (btnDisattiva) btnDisattiva.style.display = 'flex';
-                prefSection.style.display = 'block';
-            } else {
-                statusText.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> Notifiche bloccate o non attive";
-                statusText.style.color = "#856404";
-                btn.style.display = 'block';
-                if (btnDisattiva) btnDisattiva.style.display = 'none';
-                prefSection.style.display = 'none';
-            }
+    // 3. CARICAMENTO LOGICA MODULO
+    let moduleName = (appConfig.isModule && appConfig.moduleName) ? appConfig.moduleName : null;
+    
+    // Legge la preferenza dal JSON, o applica true di default per le vecchie app legacy non aggiornate
+    let isSplit = appConfig.hasOwnProperty('splitModule') ? appConfig.splitModule : true;
+    
+    if (!moduleName) {
+        const legacyMap = { 
+            'statistiche':'statistiche', 'rotazioni':'rotazioni', 'turni':'turni', 
+            'bachecaturni':'bacheca_turni', 'barcadvisor':'barcadvisor', 'rubrica':'rubrica', 
+            'ferie':'rotazione_ferie', 'orari':'orari', 'documenti':'documenti', 'link':'link', 
+            'contatti':'contatti', 'buoni':'buoni_pasto', 'promemoria':'promemoria', 
+            'dds':'dds', 'report':'report', 'admin':'admin' 
         };
-
-        if (isNative) {
-            const PushNotifications = window.Capacitor.Plugins.PushNotifications;
-            PushNotifications.addListener('registration', async (token) => {
-                if (auth.currentUser) {
-                    await setDoc(doc(db, "utenti", auth.currentUser.uid), {
-                        fcm_token: token.value,
-                        device_type: 'android_app'
-                    }, { merge: true });
-                    aggiornaGraficaPermessi(true);
-                }
-            });
-
-            let permStatus = await PushNotifications.checkPermissions();
-            if (permStatus.receive === 'prompt') { permStatus = await PushNotifications.requestPermissions(); }
-            if (permStatus.receive === 'granted') { PushNotifications.register(); aggiornaGraficaPermessi(true); } 
-            else { aggiornaGraficaPermessi(false); }
-        } else if (isWeb) {
-            if (Notification.permission === 'granted') {
-                aggiornaGraficaPermessi(true);
-                try {
-                    const messaging = getMessaging(app);
-                    const swRegistration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-                    const token = await getToken(messaging, { 
-                        vapidKey: "BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI",
-                        serviceWorkerRegistration: swRegistration
-                    });
-                    if (token && auth.currentUser) {
-                        await setDoc(doc(db, "utenti", auth.currentUser.uid), {
-                            fcm_token: token,
-                            device_type: 'pwa_web'
-                        }, { merge: true });
-                    }
-                } catch (e) { console.warn("Nessun token web ottenuto:", e); }
-            } else {
-                aggiornaGraficaPermessi(false);
-            }
-        }
+        moduleName = legacyMap[appId];
     }
-};
 
-window.gestisciNotificheNative = async () => {
-    const isNative = window.Capacitor && window.Capacitor.isNativePlatform() && window.Capacitor.Plugins.PushNotifications;
-    const isWeb = 'Notification' in window;
-    const statusText = document.getElementById('notif-status-text');
-    const btnDisattiva = document.getElementById('btn-disattiva-notifiche');
-    
-    statusText.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Richiesta permesso in corso...";
-
-    if (isNative) {
-        const PushNotifications = window.Capacitor.Plugins.PushNotifications;
-        let permStatus = await PushNotifications.requestPermissions();
-        if (permStatus.receive === 'granted') { await PushNotifications.register(); } 
-        else {
-            statusText.innerHTML = "<i class='fa-solid fa-xmark'></i> Devi attivarle dalle Impostazioni.";
-            statusText.style.color = "var(--danger)";
-        }
-    } else if (isWeb) {
-        try {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                statusText.innerHTML = "<i class='fa-solid fa-circle-check'></i> Notifiche app attive";
-                statusText.style.color = "var(--success)";
-                document.getElementById('btn-attiva-notifiche').style.display = 'none';
-                if (btnDisattiva) btnDisattiva.style.display = 'flex';
-                document.getElementById('notif-preferences-section').style.display = 'block';
-
-                try {
-                    const messaging = getMessaging(app);
-                    const swRegistration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-                    const token = await getToken(messaging, { 
-                        vapidKey: "BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI",
-                        serviceWorkerRegistration: swRegistration
-                    });
-                    if (token && auth.currentUser) {
-                        await setDoc(doc(db, "utenti", auth.currentUser.uid), {
-                            fcm_token: token,
-                            device_type: 'pwa_web'
-                        }, { merge: true });
-                    }
-                } catch (e) { console.error("Errore recupero token FCM Web:", e); }
-            } else {
-                statusText.innerHTML = "<i class='fa-solid fa-xmark'></i> Devi attivarle dalle Impostazioni del browser.";
-                statusText.style.color = "var(--danger)";
-            }
-        } catch (error) {
-            statusText.innerHTML = "<i class='fa-solid fa-xmark'></i> Errore durante la richiesta.";
-            statusText.style.color = "var(--danger)";
-        }
+    if (moduleName) {
+        // Passa la direttiva isSplit al Lazy Loader
+        const fn = await ModuliLazyLoader.avviaMotore(moduleName, isSplit);
+        if (fn) await fn(db, auth, window.currentUserData, globalIsAdmin);
     }
-};
 
-window.disattivaNotifiche = async () => {
-    if (!confirm("Vuoi disattivare le notifiche e scollegare questo dispositivo?")) return;
-    const statusText = document.getElementById('notif-status-text');
-    statusText.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Disattivazione in corso...";
-    
-    try {
-        if (auth.currentUser) {
-            await setDoc(doc(db, "utenti", auth.currentUser.uid), { fcm_token: null, device_type: null }, { merge: true });
-        }
-        const isWeb = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
-        if (isWeb) {
-            try { const messaging = getMessaging(app); await deleteToken(messaging); } 
-            catch (e) { console.warn("Service worker non presente", e); }
-        }
-
-        statusText.innerHTML = "<i class='fa-solid fa-bell-slash'></i> Notifiche disattivate";
-        statusText.style.color = "var(--text-muted)";
-        document.getElementById('btn-disattiva-notifiche').style.display = 'none';
-        document.getElementById('btn-attiva-notifiche').style.display = 'flex';
-        document.getElementById('notif-preferences-section').style.display = 'none';
-        
-    } catch (error) {
-        statusText.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> Errore disattivazione";
-        statusText.style.color = "var(--danger)";
-    }
-};
-
-window.salvaPreferenzeNotifiche = async () => {
-    if (!auth.currentUser) return;
-    const mansioniSelezionate = Array.from(document.querySelectorAll('.pref-mansione:checked')).map(cb => cb.value);
-    const preferenze_notifiche = {
-        promemoria: document.getElementById('pref-notif-promemoria').checked,
-        dds: document.getElementById('pref-notif-dds').checked,
-        bacheca_utility: document.getElementById('pref-notif-utility').checked,
-        richieste_rotazioni: document.getElementById('pref-notif-rotazioni').checked,
-        segnalazioni: document.getElementById('pref-notif-segnalazioni').checked,
-        mansioni_turni: mansioniSelezionate
+    // 4. AUTO-APERTURA MODAL
+    const legacyModals = { 
+        'bachecaturni': 'modal-bachecaturni-main', 
+        'buoni': 'modal-buoni-main', 
+        'ferie': 'modal-rotazione-ferie-main', 
+        'report': 'modal-segnalazioni-main' 
     };
-    try { await setDoc(doc(db, "utenti", auth.currentUser.uid), { preferenze_notifiche: preferenze_notifiche }, { merge: true }); } 
-    catch (error) { console.error("Errore salvataggio preferenze notifiche:", error); }
+    
+    const modalId = legacyModals[appId] || `modal-${appId}-main`;
+    const modale = document.getElementById(modalId);
+    
+    if (modale) modale.style.display = 'flex';
+    else console.warn(`Interfaccia non trovata: nessun elemento HTML con id "${modalId}"`);
 };
 
+window.controllaBacheca = async () => {};
+window.controllaRichiesteSospese = async () => {};
+window.controllaPromemoria = async () => {};
+window.controllaSegnalazioni = async () => {};
+
+// ============================================================================
+// GESTIONE LAYOUT GRAFICA - DOM NATIVO & EVENT DELEGATION
+// ============================================================================
 window.LayoutEngine = {
-    prefs: { c1: "#a9dfcd", c2: "#ffffff", c3: "#a4c5e3", appBg: "#0066cc", view: "grid", iconStyle: "box", iconType: "minimal", fontSize: 14, theme: "system", apps: [] },
-    isEditMode: false,
-    sortableInstance: null,
-    init: function(firebasePrefsStr) {
+    prefs: { c1: "#a9dfcd", c2: "#ffffff", c3: "#a4c5e3", theme: "system" },
+    _eventsBound: false,
+    init: async function(firebasePrefsStr) {
         let localStr = localStorage.getItem('preferenze_layout_haze');
         let targetStr = firebasePrefsStr || localStr;
         if (targetStr) {
             try { 
                 let parsed = JSON.parse(targetStr);
-                this.prefs = { ...this.prefs, ...parsed };
-                
-                // Rimuove forzatamente l'app "guida" se presente nelle preferenze salvate dagli utenti
-                this.prefs.apps = this.prefs.apps.filter(app => app.id !== 'guida');
-                
-                this.mergeWithDefaults();
+                if (parsed.c1) this.prefs.c1 = parsed.c1;
+                if (parsed.c2) this.prefs.c2 = parsed.c2;
+                if (parsed.c3) this.prefs.c3 = parsed.c3;
+                if (parsed.theme) this.prefs.theme = parsed.theme;
             } catch(e) {}
-        } else { this.prefs.apps = JSON.parse(JSON.stringify(DEFAULT_APPS)); }
+        }
         
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
             if(this.prefs.theme === 'system') this.applicaGrafica();
         });
 
         this.applicaGrafica();
         this.popolaModaleImpostazioni();
+        
+        if (!this._eventsBound) {
+            const gridContainer = document.getElementById('app-container');
+            if (gridContainer) {
+                gridContainer.addEventListener('click', (e) => {
+                    const card = e.target.closest('.app-btn');
+                    if (card && card.dataset.id) {
+                        window.eseguiAzioneApp(card.dataset.id);
+                    }
+                });
+                this._eventsBound = true;
+            }
+        }
+        
+        await window.caricaAppsConfig();
         this.render();
-    },
-    mergeWithDefaults: function() {
-        const defaultIds = DEFAULT_APPS.map(a => a.id);
-        this.prefs.apps = this.prefs.apps.filter(app => app.id.startsWith('custom_') || defaultIds.includes(app.id));
-        this.prefs.apps.forEach(app => {
-            if (!app.id.startsWith('custom_')) {
-                const def = DEFAULT_APPS.find(d => d.id === app.id);
-                if (def) {
-                    if (def.href) app.href = def.href; else delete app.href;
-                    if (def.onclick) app.onclick = def.onclick; else delete app.onclick;
-                    if (def.condition) app.condition = def.condition; else delete app.condition;
-                }
-            }
-        });
-        DEFAULT_APPS.forEach((defApp, defaultIndex) => {
-            let currentIds = this.prefs.apps.map(a => a.id);
-            if(!currentIds.includes(defApp.id)) {
-                let insertIndex = this.prefs.apps.length; 
-                if (defaultIndex > 0) {
-                    let prevAppId = DEFAULT_APPS[defaultIndex - 1].id;
-                    let userIndex = this.prefs.apps.findIndex(a => a.id === prevAppId);
-                    if (userIndex !== -1) insertIndex = userIndex + 1;
-                } else if (defaultIndex === 0) { insertIndex = 0; }
-                this.prefs.apps.splice(insertIndex, 0, JSON.parse(JSON.stringify(defApp)));
-            }
-        });
     },
     isDarkMode: function() {
         if (this.prefs.theme === 'dark') return true;
@@ -950,214 +223,84 @@ window.LayoutEngine = {
     },
     applicaGrafica: function() {
         const themePref = this.prefs.theme || 'system';
-        if(themePref !== 'system') {
-            document.documentElement.setAttribute('data-theme', themePref);
-        } else {
-            document.documentElement.removeAttribute('data-theme');
-        }
+        if(themePref !== 'system') document.documentElement.setAttribute('data-theme', themePref);
+        else document.documentElement.removeAttribute('data-theme');
 
         let isDark = this.isDarkMode();
-        
         let actualC1 = isDark ? "#1a1a1a" : this.prefs.c1;
         let actualC2 = isDark ? "#2d2d2d" : this.prefs.c2;
         let actualC3 = isDark ? "#1a1a1a" : this.prefs.c3;
 
-        const c1 = encodeURIComponent(actualC1); 
-        const c2 = encodeURIComponent(actualC2); 
-        const c3 = encodeURIComponent(actualC3);
-        
+        const c1 = encodeURIComponent(actualC1); const c2 = encodeURIComponent(actualC2); const c3 = encodeURIComponent(actualC3);
         const svg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Crect width='100' height='100' fill='${c3}'/%3E%3Cpath d='M0,60 C35,90 65,30 100,60 L100,0 L0,0 Z' fill='${c2}'/%3E%3Cpath d='M0,45 C35,65 65,25 100,45 L100,0 L0,0 Z' fill='${c1}'/%3E%3C/svg%3E`;
         document.body.style.backgroundImage = `url("${svg}")`;
-        document.documentElement.style.setProperty('--label-size', this.prefs.fontSize + 'px');
-        let baseClass = this.prefs.view === 'list' ? 'app-list' : 'app-grid';
-        if (this.prefs.iconStyle === 'transparent') baseClass += ' transparent-icons';
-        document.getElementById('app-container').className = baseClass;
+        document.documentElement.style.setProperty('--label-size', '14px');
+        document.getElementById('app-container').className = 'app-grid';
     },
     popolaModaleImpostazioni: function() {
-        document.getElementById('set-col1').value = this.prefs.c1 || "#a9dfcd";
-        document.getElementById('set-col2').value = this.prefs.c2 || "#ffffff";
-        document.getElementById('set-col3').value = this.prefs.c3 || "#a4c5e3";
-        document.getElementById('set-appbg').value = this.prefs.appBg || "#0066cc";
-        document.getElementById('set-viewmode').value = this.prefs.view || "grid";
-        document.getElementById('set-iconstyle').value = this.prefs.iconStyle || "box";
-        document.getElementById('set-icontype').value = this.prefs.iconType || "minimal";
-        document.getElementById('set-labelsize').value = this.prefs.fontSize || 14;
-        document.getElementById('set-theme').value = this.prefs.theme || 'system';
+        if(document.getElementById('set-col1')) {
+            document.getElementById('set-col1').value = this.prefs.c1;
+            document.getElementById('set-col2').value = this.prefs.c2;
+            document.getElementById('set-col3').value = this.prefs.c3;
+            document.getElementById('set-theme').value = this.prefs.theme || 'system';
+        }
     },
     render: function() {
         const container = document.getElementById('app-container');
-        container.innerHTML = '';
-        if(this.isEditMode) container.classList.add('wiggle-mode'); else container.classList.remove('wiggle-mode');
+        container.innerHTML = ''; 
         
-        this.prefs.apps.forEach((app, index) => {
-            if (app.condition === 'admin' && !globalIsAdmin) return;
-            if (app.condition === 'collab' && !(globalIsAdmin || globalIsCollab)) return;
-            
-            const finalColor = app.color || app.defaultColor || this.prefs.appBg;
-            const isLink = app.href ? `href="${app.href}"` : `onclick="${app.onclick}"`;
-            const editHandler = this.isEditMode ? `onclick="event.preventDefault(); window.LayoutEngine.apriEditorApp('${app.id}');"` : isLink;
-            const badgeHtml = this.isEditMode ? `<div class="edit-badge"><i class="fa-solid fa-pen"></i></div>` : '';
-            
-            let iconStyle = `background-color: ${finalColor};`;
-            let iconContent = "";
-            let isImagePath = false;
-            let imagePath = "";
-            
-            let currentImage = app.image;
-            let currentIcon = app.icon;
-            let useEmoji = (this.prefs.iconType === "emoji");
+        window.DYNAMIC_APPS.forEach((app, index) => {
+            const cond = app.conditions || [app.condition].filter(Boolean);
+            const isVisibleByCond = () => {
+                if(globalIsAdmin) return true;
+                if(!cond || cond.length === 0) return true; 
+                if(cond.includes('vip') && (globalIsVip || globalIsCollab)) return true;
+                if(cond.includes('collab') && globalIsCollab) return true;
+                if(cond.includes('tutti')) return true;
+                return false;
+            };
 
-            if (app.id === 'barcadvisor') {
-                if (!useEmoji) { currentIcon = "fa-solid fa-sailboat"; currentImage = null; }
-                else { currentImage = "icone_app/iconba.png"; currentIcon = null; }
-            }
-            if (app.id === 'spriss') {
-                if (!useEmoji) { currentIcon = "fa-solid fa-martini-glass"; currentImage = null; }
-                else { currentImage = "icone_app/iconspriss.png"; currentIcon = null; }
-            }
-            if (app.id === 'chebateo') {
-                if (!useEmoji) { currentIcon = "fa-solid fa-water"; currentImage = null; }
-                else { currentImage = "icone_app/iconcb.png"; currentIcon = null; }
-            }
-
-            if (currentImage) {
-                isImagePath = true;
-                imagePath = currentImage;
-            } else if (currentIcon && (currentIcon.includes('.png') || currentIcon.includes('.jpg') || currentIcon.includes('.svg') || currentIcon.includes('icone_app/'))) {
-                isImagePath = true;
-                imagePath = currentIcon;
-            }
-
-            if (isImagePath) { 
-                iconStyle += ` background-image: url('${imagePath}'); background-size: cover; background-position: center; background-repeat: no-repeat;`; 
-                iconContent = ""; 
-            } else if (currentIcon) {
-                if (currentIcon.includes('fa-')) iconContent = `<i class="${currentIcon}"></i>`;
-                else iconContent = currentIcon;
-            } else {
-                if (useEmoji && EMOJI_MAP[app.id]) iconContent = EMOJI_MAP[app.id];
-                else if (!useEmoji && ICON_MAP[app.id]) iconContent = `<i class="${ICON_MAP[app.id]}"></i>`;
-                else iconContent = "🔗"; 
-            }
-
-            let animDelay = this.isEditMode ? "0s" : `${index * 0.04}s`;
+            if(!isVisibleByCond() && !globalIsAdmin) return;
             
-            container.innerHTML += `
-                <a ${editHandler} class="app-btn" id="btn-${app.id}" style="animation-delay: ${animDelay}">
-                    ${badgeHtml}
-                    <div class="app-icon" style="${iconStyle}">${iconContent}</div>
-                    <div class="app-label">${app.label.replace('\n', '<br>')}</div>
-                </a>`;
+            const finalColor = app.defaultColor || "#0066cc";
+            
+            const btn = document.createElement('div');
+            btn.className = 'app-btn';
+            btn.dataset.id = app.id;
+            btn.style.animationDelay = `${index * 0.04}s`;
+            btn.style.cursor = 'pointer';
+            
+            btn.innerHTML = `
+                <div class="app-icon" style="background-color: ${finalColor};"><i class="${app.icon || 'fa-solid fa-link'}"></i></div>
+                <div class="app-label">${app.label.replace(/\n/g, '<br>')}</div>
+            `;
+            
+            container.appendChild(btn);
         });
-
-        setTimeout(() => {
-            if(window.controllaRichiesteSospese) window.controllaRichiesteSospese();
-            if(window.controllaPromemoria) window.controllaPromemoria();
-            if(window.controllaSegnalazioni) window.controllaSegnalazioni();
-            if(window.controllaBacheca) window.controllaBacheca();
-        }, 200);
     },
-    handleImageUpload: function(event, modalType) {
-        const file = event.target.files[0]; if (!file) return;
-        const reader = new FileReader(); reader.onload = function(e) {
-            const img = new Image(); img.onload = function() {
-                const canvas = document.createElement('canvas'); const MAX = 120; let w = img.width; let h = img.height;
-                if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
-                canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
-                const dataUrl = canvas.toDataURL('image/webp', 0.8);
-                document.getElementById(modalType + '-app-img-data').value = dataUrl;
-                document.getElementById(modalType + '-app-img-preview-src').src = dataUrl;
-                document.getElementById(modalType + '-app-img-preview').style.display = 'block';
-                document.getElementById(modalType + '-app-icon').value = ""; 
-            }; img.src = e.target.result;
-        }; reader.readAsDataURL(file);
-    },
-    rimuoviImmagine: function(modalType) { document.getElementById(modalType + '-app-img-data').value = ""; document.getElementById(modalType + '-app-img-preview').style.display = 'none'; },
-    toggleEditMode: function() {
-        this.isEditMode = !this.isEditMode;
-        document.getElementById('btn-salva-layout').style.display = this.isEditMode ? 'flex' : 'none';
-        this.render(); 
-        if(this.isEditMode) {
-            this.sortableInstance = new Sortable(document.getElementById('app-container'), { animation: 250, delay: 150, delayOnTouchOnly: true, ghostClass: "sortable-ghost", onEnd: () => { this.aggiornaOrdineDaDOM(); } });
-        } else { if(this.sortableInstance) this.sortableInstance.destroy(); this.sincronizzaConFirebase(); }
-    },
-    aggiornaOrdineDaDOM: function() {
-        const nuovoOrdine = []; 
-        document.querySelectorAll('#app-container .app-btn').forEach(nodo => {
-            const id = nodo.id.replace('btn-', ''); 
-            const app = this.prefs.apps.find(a => a.id === id); 
-            if (app) { nuovoOrdine.push(app); }
-        });
-        this.prefs.apps.forEach(app => { 
-            if (!nuovoOrdine.find(a => a.id === app.id)) { nuovoOrdine.push(app); }
-        });
-        this.prefs.apps = nuovoOrdine;
-    },
-    apriEditorApp: function(appId) {
-        const app = this.prefs.apps.find(a => a.id === appId); if(!app) return;
-        document.getElementById('edit-app-id').value = app.id;
-        document.getElementById('edit-app-label').value = app.label.replace('\n', ' ');
-        document.getElementById('edit-app-icon').value = app.icon || "";
-        document.getElementById('edit-app-color').value = app.color || app.defaultColor || this.prefs.appBg || "#0066cc";
-        
-        if (app.image) { 
-            document.getElementById('edit-app-img-data').value = app.image; 
-            document.getElementById('edit-app-img-preview-src').src = app.image; 
-            document.getElementById('edit-app-img-preview').style.display = 'block'; 
-        } else { 
-            this.rimuoviImmagine('edit'); 
-        }
-        document.getElementById('btn-elimina-custom').style.display = app.id.startsWith('custom_') ? 'flex' : 'none';
-        window.apriModal('editAppModal');
-    },
-    salvaModificaSingolaApp: function() {
-        const id = document.getElementById('edit-app-id').value; const index = this.prefs.apps.findIndex(a => a.id === id);
-        if(index > -1) {
-            this.prefs.apps[index].label = document.getElementById('edit-app-label').value;
-            this.prefs.apps[index].color = document.getElementById('edit-app-color').value;
-            const imgData = document.getElementById('edit-app-img-data').value;
-            if (imgData) { 
-                this.prefs.apps[index].image = imgData; 
-                this.prefs.apps[index].icon = ""; 
-            } else { 
-                delete this.prefs.apps[index].image; 
-                this.prefs.apps[index].icon = document.getElementById('edit-app-icon').value || "🔗"; 
-            }
-        } 
-        window.chiudiModal('editAppModal'); this.render(); this.sincronizzaConFirebase();
-    },
-    creaAppPersonalizzata: function() {
-        const label = document.getElementById('new-app-label').value.trim(); let url = document.getElementById('new-app-url').value.trim();
-        if(!label || !url) { alert("Dati mancanti"); return; }
-        if(!url.startsWith('http')) url = 'https://' + url;
-        const imgData = document.getElementById('new-app-img-data').value;
-        const newApp = { id: "custom_" + Date.now(), label: label, href: url, color: this.prefs.appBg };
-        if (imgData) newApp.image = imgData; else newApp.icon = document.getElementById('new-app-icon').value || "🔗";
-        this.prefs.apps.push(newApp); window.chiudiModal('customAppModal'); 
-        document.getElementById('new-app-label').value = ""; document.getElementById('new-app-url').value = "";
-        document.getElementById('new-app-icon').value = ""; this.rimuoviImmagine('new');
-        this.sincronizzaConFirebase(); this.render();
-    },
-    eliminaAppCorrente: function() { const id = document.getElementById('edit-app-id').value; this.prefs.apps = this.prefs.apps.filter(a => a.id !== id); window.chiudiModal('editAppModal'); this.render(); this.sincronizzaConFirebase(); },
     salvaPreferenzeGlobali: function() {
-        this.prefs.c1 = document.getElementById('set-col1').value; this.prefs.c2 = document.getElementById('set-col2').value; this.prefs.c3 = document.getElementById('set-col3').value;
-        this.prefs.appBg = document.getElementById('set-appbg').value; this.prefs.view = document.getElementById('set-viewmode').value;
-        this.prefs.iconStyle = document.getElementById('set-iconstyle').value; this.prefs.fontSize = parseInt(document.getElementById('set-labelsize').value);
-        this.prefs.iconType = document.getElementById('set-icontype').value;
-        this.prefs.theme = document.getElementById('set-theme').value;
-        this.applicaGrafica(); this.render(); window.chiudiModal('settingsModal'); this.sincronizzaConFirebase();
+        this.prefs.c1 = document.getElementById('set-col1').value; 
+        this.prefs.c2 = document.getElementById('set-col2').value; 
+        this.prefs.c3 = document.getElementById('set-col3').value;
+        this.prefs.theme = document.getElementById('set-theme').value; 
+        this.applicaGrafica(); 
+        window.chiudiModal('settingsModal'); 
+        this.sincronizzaConFirebase();
     },
     sincronizzaConFirebase: async function() {
-        const str = JSON.stringify(this.prefs); localStorage.setItem('preferenze_layout_haze', str);
+        const str = JSON.stringify(this.prefs); 
+        localStorage.setItem('preferenze_layout_haze', str);
         if (auth.currentUser) await setDoc(doc(db, "utenti", auth.currentUser.uid), { preferenze_layout: str }, { merge: true });
-    },
-    ripristinaPredefiniti: async function() { if(!confirm("Ripristinare tutto?")) return; localStorage.removeItem('preferenze_layout_haze'); if (auth.currentUser) await setDoc(doc(db, "utenti", auth.currentUser.uid), { preferenze_layout: null }, { merge: true }); location.reload(); }
+    }
 };
 
 window.apriModal = (id, authMode) => { document.getElementById(id).style.display = 'flex'; if(id === 'authModal' && authMode) { currentAuthMode = authMode; window.aggiornaUIAuth(); } };
 window.chiudiModal = (id) => { document.getElementById(id).style.display = 'none'; };
 window.chiudiSuSfondo = (e, id) => { if (e.target.id === id) window.chiudiModal(id); };
 
+// ============================================================================
+// GESTIONE ACCESSI E VIP
+// ============================================================================
 window.apriGestioneAccessi = async () => {
     window.apriModal('modal-gestione');
     const container = document.getElementById('lista-utenti-accessi');
@@ -1180,7 +323,8 @@ window.apriGestioneAccessi = async () => {
             window.utentiArrayCache.push(u);
         });
         
-        bTot.innerText = tot; bOggi.innerText = oggi;
+        if (bTot) bTot.innerText = tot; 
+        if (bOggi) bOggi.innerText = oggi;
         window.renderGestioneAccessi();
 
     } catch(e) { container.innerHTML = "<div style='color:var(--danger); text-align:center;'><i class='fa-solid fa-triangle-exclamation'></i> Errore.</div>"; }
@@ -1215,8 +359,14 @@ window.renderGestioneAccessi = () => {
     const buildRiga = (u) => {
         const isOggi = (u.last_app_access === oggiStr); const isBanned = u.app_banned === true; 
         const fullName = `${u.cognome || ''} ${u.nome || ''} ${u.progressivo || ''}`.trim() || 'Sconosciuto';
+        
+        let roleBadge = "";
+        if(u.ruolo === 'admin') roleBadge = " <span style='background:red;color:white;padding:2px 5px;border-radius:4px;font-size:10px;margin-left:5px;'>ADMIN</span>";
+        if(u.ruolo === 'collaborator') roleBadge = " <span style='background:#6f42c1;color:white;padding:2px 5px;border-radius:4px;font-size:10px;margin-left:5px;'>COLLAB</span>";
+        if(u.ruolo === 'vip') roleBadge = " <span style='background:gold;color:black;padding:2px 5px;border-radius:4px;font-size:10px;margin-left:5px;'>VIP</span>";
+
         const dot = isOggi ? `<span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%; margin-left:8px; box-shadow: 0 0 5px rgba(15,157,88,0.5);"></span>` : '';
-        const clickableName = `<span style="font-weight:700; font-size:14px; cursor:pointer; color:var(--primary); text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" onclick="window.apriDettaglioUtente('${u.uid}')">${fullName}</span>`;
+        const clickableName = `<span style="font-weight:700; font-size:14px; cursor:pointer; color:var(--primary); text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" onclick="window.apriDettaglioUtente('${u.uid}')">${fullName}${roleBadge}</span>`;
         const searchData = `${u.cognome || ''} ${u.nome || ''} ${u.matricola || ''}`.toUpperCase();
         
         let accessDisplay = 'Mai';
@@ -1233,11 +383,13 @@ window.renderGestioneAccessi = () => {
 
     let html = dataCopy.map(u => buildRiga(u)).join('');
     container.innerHTML = html;
-    window.filtraUtentiApp();
+    
+    if (window.filtraUtentiApp) window.filtraUtentiApp();
 };
 
 window.filtraUtentiApp = () => {
     let input = document.getElementById('search-utenti-app');
+    if (!input) return;
     let filter = input.value.toUpperCase();
     let rows = document.getElementsByClassName('utente-row-app');
     for (let i = 0; i < rows.length; i++) {
@@ -1247,11 +399,18 @@ window.filtraUtentiApp = () => {
     }
 };
 
-window.toggleAppBan = async (uid, status) => { if(confirm("Confermi l'azione?")) { await setDoc(doc(db, "utenti", uid), { app_banned: status }, { merge: true }); window.apriGestioneAccessi(); } };
+window.toggleAppBan = async (uid, status) => { 
+    if(confirm("Confermi l'azione?")) { 
+        await setDoc(doc(db, "utenti", uid), { app_banned: status }, { merge: true }); 
+        window.apriGestioneAccessi(); 
+    } 
+};
 
 window.apriDettaglioUtente = (uid) => {
     const u = window.utentiMap[uid]; if(!u) return;
     const isCollab = u.ruolo === 'collaborator';
+    const isVip = u.ruolo === 'vip';
+    
     document.getElementById('dettaglio-utente-body').innerHTML = `
         <div style="margin-bottom:10px; display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-user" style="color:var(--primary); width:16px;"></i> <strong>Nome:</strong> ${u.nome || '-'}</div>
         <div style="margin-bottom:10px; display:flex; align-items:center; gap:8px;"><i class="fa-regular fa-user" style="color:var(--primary); width:16px;"></i> <strong>Cognome:</strong> ${u.cognome || '-'}</div>
@@ -1260,130 +419,346 @@ window.apriDettaglioUtente = (uid) => {
         <div style="margin-bottom:10px; display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-envelope" style="color:var(--primary); width:16px;"></i> <strong>Email:</strong> ${u.email || 'Non registrata'}</div>
         <div style="margin-bottom:10px; display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-phone" style="color:var(--primary); width:16px;"></i> <strong>Telefono:</strong> ${u.telefono || 'Non registrato'}</div>
         <div style="margin-bottom:5px; font-size:12px; color:var(--text-muted); word-break: break-all; margin-top:20px; border-top:1px solid var(--border-color); padding-top:10px;"><i class="fa-solid fa-fingerprint"></i> <strong>ID Account:</strong> ${u.uid || '-'}</div>`;
+    
     const btnCollab = document.getElementById('btn-rendi-collab');
-    if (isCollab) { btnCollab.innerHTML = "<i class='fa-solid fa-user-minus'></i> Revoca Collaboratore"; btnCollab.style.background = "transparent"; btnCollab.style.color = "var(--danger)"; btnCollab.style.border = "2px solid var(--danger)"; btnCollab.onclick = () => window.cambiaRuoloUtente(uid, 'user'); }
-    else { btnCollab.innerHTML = "<i class='fa-solid fa-user-shield'></i> Rendi Collaboratore"; btnCollab.style.background = "#6f42c1"; btnCollab.style.color = "white"; btnCollab.style.border = "none"; btnCollab.onclick = () => window.cambiaRuoloUtente(uid, 'collaborator'); }
+    if (btnCollab) {
+        if (isCollab) { 
+            btnCollab.innerHTML = "<i class='fa-solid fa-user-minus'></i> Revoca Collaboratore"; btnCollab.style.background = "transparent"; btnCollab.style.color = "var(--danger)"; btnCollab.style.border = "2px solid var(--danger)"; btnCollab.onclick = () => window.cambiaRuoloUtente(uid, 'user'); 
+        } else { 
+            btnCollab.innerHTML = "<i class='fa-solid fa-user-shield'></i> Rendi Collaboratore"; btnCollab.style.background = "#6f42c1"; btnCollab.style.color = "white"; btnCollab.style.border = "none"; btnCollab.onclick = () => window.cambiaRuoloUtente(uid, 'collaborator'); 
+        }
+    }
+
+    document.getElementById('dettaglio-utente-body').insertAdjacentHTML('beforeend', `
+        <button class="btn-modal" style="background:${isVip?'transparent':'gold'}; color:${isVip?'var(--danger)':'black'}; border:1px solid ${isVip?'var(--danger)':'gold'}; margin-top:15px; margin-bottom:5px; display:flex; align-items:center; justify-content:center; gap:6px; width: 100%;" onclick="window.cambiaRuoloUtente('${uid}', '${isVip?'user':'vip'}')"><i class="fa-solid fa-star"></i> ${isVip?'Revoca VIP':'Rendi VIP'}</button>
+        <button class="btn-modal" style="background: #ff9800; color: white; margin-top:5px; margin-bottom:5px; display:flex; align-items:center; justify-content:center; gap:6px; width: 100%;" onclick="window.apriEditorAdminUtente('${uid}')"><i class="fa-solid fa-pen"></i> Correggi Dati Utente</button>
+    `);
+    
     window.apriModal('modal-dettaglio-utente');
 };
 
-window.cambiaRuoloUtente = async (uid, nuovoRuolo) => { if(!confirm("Sei sicuro?")) return; try { await setDoc(doc(db, "utenti", uid), { ruolo: nuovoRuolo }, { merge: true }); window.utentiMap[uid].ruolo = nuovoRuolo; window.chiudiModal('modal-dettaglio-utente'); alert("Ruolo aggiornato!"); } catch(e) { alert("Errore."); } };
+window.apriEditorAdminUtente = (uid) => {
+    const u = window.utentiMap[uid]; if(!u) return;
+    document.getElementById('dettaglio-utente-body').innerHTML = `
+        <div class="float-wrapper"><input type="text" id="adm-edit-nome" class="input-field" value="${u.nome || ''}"><label style="top:12px; font-size:11px; color:var(--primary); font-weight:700;">Nome</label></div>
+        <div class="float-wrapper"><input type="text" id="adm-edit-cognome" class="input-field" value="${u.cognome || ''}"><label style="top:12px; font-size:11px; color:var(--primary); font-weight:700;">Cognome</label></div>
+        <div class="float-wrapper"><input type="text" id="adm-edit-matricola" class="input-field" value="${u.matricola || ''}"><label style="top:12px; font-size:11px; color:var(--primary); font-weight:700;">Matricola</label></div>
+        <div class="float-wrapper"><input type="text" id="adm-edit-prog" class="input-field" value="${u.progressivo || ''}"><label style="top:12px; font-size:11px; color:var(--primary); font-weight:700;">Omonimia</label></div>
+        <div class="float-wrapper"><input type="text" id="adm-edit-tel" class="input-field" value="${u.telefono || ''}"><label style="top:12px; font-size:11px; color:var(--primary); font-weight:700;">Telefono</label></div>
+        <button class="btn-modal" style="background: var(--success); color: white;" onclick="window.salvaEditorAdminUtente('${uid}')"><i class="fa-solid fa-floppy-disk"></i> Salva Dati Corretti</button>
+    `;
+};
 
+window.salvaEditorAdminUtente = async (uid) => {
+    if(!confirm("Confermi la modifica dei dati di questo utente?")) return;
+    const datiAggiornati = {
+        nome: document.getElementById('adm-edit-nome').value.trim(),
+        cognome: document.getElementById('adm-edit-cognome').value.trim(),
+        matricola: document.getElementById('adm-edit-matricola').value.trim(),
+        progressivo: document.getElementById('adm-edit-prog').value.trim(),
+        telefono: document.getElementById('adm-edit-tel').value.trim()
+    };
+    try {
+        await setDoc(doc(db, "utenti", uid), datiAggiornati, { merge: true });
+        window.utentiMap[uid] = { ...window.utentiMap[uid], ...datiAggiornati };
+        window.apriDettaglioUtente(uid);
+        window.renderGestioneAccessi();
+    } catch(e) { alert("Errore nel salvataggio su Firebase."); }
+};
+
+window.cambiaRuoloUtente = async (uid, nuovoRuolo) => { 
+    if(!confirm("Confermi il cambio ruolo?")) return; 
+    try { 
+        await setDoc(doc(db, "utenti", uid), { ruolo: nuovoRuolo }, { merge: true }); 
+        window.utentiMap[uid].ruolo = nuovoRuolo; 
+        window.chiudiModal('modal-dettaglio-utente'); 
+        alert("Ruolo aggiornato!"); 
+        window.renderGestioneAccessi();
+    } catch(e) { alert("Errore."); } 
+};
+
+
+// ============================================================================
+// SISTEMA GESTIONE LAYOUT ADMIN / GITHUB
+// ============================================================================
+window.injectAdminConfigTools = () => {
+    if(!document.getElementById('admin-settings-panel')) {
+        const modal = document.querySelector('#settingsModal .modal-content');
+        if(modal) {
+            modal.insertAdjacentHTML('beforeend', `
+            <div id="admin-settings-panel" style="display:none; margin-top:20px; padding-top:15px; border-top:1px solid var(--border-color);">
+                <h3 style="font-size:14px; color:var(--danger); margin-bottom:10px;"><i class="fa-solid fa-code"></i> Modalità Sviluppatore</h3>
+                <div style="background:var(--surface-hover); padding:10px; border-radius:8px;">
+                    <label style="font-size:11px;">GitHub PAT:</label><input type="password" id="gh-pat" class="input-field" style="margin-bottom:5px;">
+                    <label style="font-size:11px;">Repo (utente/repo):</label><input type="text" id="gh-repo" class="input-field" style="margin-bottom:10px;">
+                    <button class="btn-modal" style="background:var(--success); color:white; padding:6px; font-size:12px;" onclick="window.salvaGHCreds()">Salva Credenziali GH</button>
+                    
+                    <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
+                        <button title="Aggiungi Icona" class="btn-modal" style="width:50px; background:#0066cc; color:white; padding:10px; font-size:16px;" onclick="window.apriModalAddApp()"><i class="fa-solid fa-plus"></i></button>
+                        <button title="Modifica Icone" class="btn-modal" style="width:50px; background:#6f42c1; color:white; padding:10px; font-size:16px;" onclick="window.apriModalEditListApp()"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button title="Riordina Layout" class="btn-modal" style="width:50px; background:#fd7e14; color:white; padding:10px; font-size:16px;" onclick="window.apriModalReorderApp()"><i class="fa-solid fa-arrows-up-down"></i></button>
+                    </div>
+                </div>
+            </div>`);
+            
+            document.body.insertAdjacentHTML('beforeend', `
+            <div id="modal-add-app" class="modal-overlay" onclick="window.chiudiSuSfondo(event, 'modal-add-app')">
+                <div class="modal-content">
+                    <h2 id="modal-app-title">Aggiungi Icona</h2>
+                    <input type="hidden" id="edit-original-id">
+                    <input type="text" id="add-id" class="input-field" placeholder="ID univoco (es. mappa)" style="margin-bottom:10px;">
+                    <input type="text" id="add-label" class="input-field" placeholder="Nome App" style="margin-bottom:10px;">
+                    <input type="text" id="add-icon" class="input-field" placeholder="Classe FontAwesome (es. fa-solid fa-map)" style="margin-bottom:10px;">
+                    
+                    <div style="display:flex; gap:5px; margin-bottom:5px;">
+                        <input type="color" id="add-color" value="#0066cc" style="flex:1; height:40px; border:none;">
+                        <input type="text" id="add-color-hex" class="input-field" value="#0066cc" style="flex:2; text-align:center;" oninput="document.getElementById('add-color').value=this.value">
+                    </div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">Accesso rapido colori: 
+                        <span onclick="window.impostaColorePreset('#28a745')" style="background:#28a745; width:15px; height:15px; display:inline-block; border-radius:50%; cursor:pointer; margin-left:4px;"></span>
+                        <span onclick="window.impostaColorePreset('#0066cc')" style="background:#0066cc; width:15px; height:15px; display:inline-block; border-radius:50%; cursor:pointer; margin-left:4px;"></span>
+                        <span onclick="window.impostaColorePreset('#6f42c1')" style="background:#6f42c1; width:15px; height:15px; display:inline-block; border-radius:50%; cursor:pointer; margin-left:4px;"></span>
+                        <span onclick="window.impostaColorePreset('#fd7e14')" style="background:#fd7e14; width:15px; height:15px; display:inline-block; border-radius:50%; cursor:pointer; margin-left:4px;"></span>
+                        <span onclick="window.impostaColorePreset('#e83e8c')" style="background:#e83e8c; width:15px; height:15px; display:inline-block; border-radius:50%; cursor:pointer; margin-left:4px;"></span>
+                        <span onclick="window.impostaColorePreset('#dc3545')" style="background:#dc3545; width:15px; height:15px; display:inline-block; border-radius:50%; cursor:pointer; margin-left:4px;"></span>
+                    </div>
+
+                    <select id="add-type" class="input-field" style="margin-bottom:10px;" onchange="document.getElementById('add-module-opts').style.display = this.value==='module'?'block':'none'">
+                        <option value="link">Link Esterno / URL</option>
+                        <option value="onclick">Funzione personalizzata (JS)</option>
+                        <option value="module">Modulo Interno Dinamico</option>
+                    </select>
+                    
+                    <input type="text" id="add-link-val" class="input-field" placeholder="URL o stringa JS o Nome Modulo" style="margin-bottom:10px;">
+
+                    <div id="add-module-opts" style="display:none; margin-bottom:10px;">
+                        <label><input type="checkbox" id="add-split"> Diviso in modulo.js e ui_modulo.js?</label>
+                    </div>
+
+                    <div style="background:var(--surface-hover); padding:10px; border-radius:8px; margin-bottom:15px;">
+                        <label style="font-size:12px; font-weight:700; display:block; margin-bottom:5px;">Visibilità:</label>
+                        <label style="display:block; font-size:13px; margin-bottom:4px;"><input type="checkbox" class="chk-cond" value="admin"> Solo Admin</label>
+                        <label style="display:block; font-size:13px; margin-bottom:4px;"><input type="checkbox" class="chk-cond" value="vip"> VIP</label>
+                        <label style="display:block; font-size:13px; margin-bottom:4px;"><input type="checkbox" class="chk-cond" value="collab"> Collaboratori</label>
+                        <label style="display:block; font-size:13px;"><input type="checkbox" class="chk-cond" value="tutti"> Tutti (Pubblica)</label>
+                    </div>
+
+
+                    <button class="btn-modal" style="background:var(--success); color:white;" onclick="window.salvaAppConfig()"><i class="fa-solid fa-cloud-arrow-up"></i> Salva su GitHub</button>
+                </div>
+            </div>
+
+            <div id="modal-edit-list" class="modal-overlay" onclick="window.chiudiSuSfondo(event, 'modal-edit-list')">
+                <div class="modal-content">
+                    <h2>Modifica / Elimina Icone</h2>
+                    <div id="edit-list-container" style="max-height:60vh; overflow-y:auto; margin-bottom:20px;"></div>
+                </div>
+            </div>
+            
+            <div id="modal-reorder-app" class="modal-overlay" onclick="window.chiudiSuSfondo(event, 'modal-reorder-app')">
+                <div class="modal-content">
+                    <h2>Riordina Layout</h2>
+                    <div id="reorder-list" style="max-height:60vh; overflow-y:auto; margin-bottom:20px;"></div>
+                    <button class="btn-modal" style="background:var(--success); color:white;" onclick="window.salvaRiordinoGitHub()"><i class="fa-solid fa-cloud-arrow-up"></i> Salva Layout su GitHub</button>
+                </div>
+            </div>`);
+        }
+    }
+    document.getElementById('gh-pat').value = localStorage.getItem('gh_pat') || '';
+    document.getElementById('gh-repo').value = localStorage.getItem('gh_repo') || '';
+    document.getElementById('admin-settings-panel').style.display = 'block';
+};
+
+window.salvaGHCreds = () => {
+    localStorage.setItem('gh_pat', document.getElementById('gh-pat').value);
+    localStorage.setItem('gh_repo', document.getElementById('gh-repo').value);
+    alert("Credenziali salvate in locale.");
+};
+
+window.pushToGitHub = async (dataArray) => {
+    const pat = localStorage.getItem('gh_pat'); const repo = localStorage.getItem('gh_repo');
+    if(!pat || !repo) { alert("Inserisci prima PAT e Repo nelle impostazioni."); return false; }
+    
+    const url = `https://api.github.com/repos/${repo}/contents/assets/apps.json`;
+    let sha = null;
+    try {
+        const r = await fetch(url, { headers: { "Authorization": `token ${pat}` } });
+        if(r.ok) { const d = await r.json(); sha = d.sha; }
+    } catch(e) {}
+
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(dataArray, null, 4))));
+    const body = { message: "Update apps.json via App Admin", content: content, branch: "main" };
+    if(sha) body.sha = sha;
+
+    try {
+        const p = await fetch(url, { method: "PUT", headers: { "Authorization": `token ${pat}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        if(p.ok) { alert("Salvataggio completato! Riavvia l'app per vedere i cambiamenti."); return true; }
+        else { alert("Errore durante il caricamento su GitHub."); return false; }
+    } catch(e) { alert("Errore di rete."); return false; }
+};
+
+window.impostaColorePreset = (hex) => {
+    document.getElementById('add-color').value = hex;
+    document.getElementById('add-color-hex').value = hex;
+};
+
+window.apriModalAddApp = () => {
+    document.getElementById('modal-app-title').innerText = "Aggiungi Icona";
+    document.getElementById('edit-original-id').value = "";
+    document.getElementById('add-id').value = "";
+    document.getElementById('add-label').value = "";
+    document.getElementById('add-icon').value = "";
+    document.getElementById('add-color').value = "#0066cc";
+    document.getElementById('add-color-hex').value = "#0066cc";
+    document.getElementById('add-type').value = "link";
+    document.getElementById('add-link-val').value = "";
+    document.getElementById('add-split').checked = false;
+    document.querySelectorAll('.chk-cond').forEach(c => c.checked = false);
+    document.getElementById('add-module-opts').style.display = 'none';
+    window.apriModal('modal-add-app');
+};
+
+window.apriModalEditApp = (appId) => {
+    const app = window.DYNAMIC_APPS.find(a => a.id === appId);
+    if(!app) return;
+    document.getElementById('modal-app-title').innerText = "Modifica Icona";
+    document.getElementById('edit-original-id').value = app.id;
+    document.getElementById('add-id').value = app.id;
+    document.getElementById('add-label').value = app.label;
+    document.getElementById('add-icon').value = app.icon || '';
+    const col = app.defaultColor || '#0066cc';
+    document.getElementById('add-color').value = col;
+    document.getElementById('add-color-hex').value = col;
+    
+    if(app.href) { document.getElementById('add-type').value = 'link'; document.getElementById('add-link-val').value = app.href; }
+    else if(app.onclick) { document.getElementById('add-type').value = 'onclick'; document.getElementById('add-link-val').value = app.onclick; }
+    else if(app.isModule) { document.getElementById('add-type').value = 'module'; document.getElementById('add-link-val').value = app.moduleName; document.getElementById('add-split').checked = !!app.splitModule; }
+    
+    document.getElementById('add-module-opts').style.display = (app.isModule?'block':'none');
+    
+    const conds = app.conditions || [app.condition].filter(Boolean);
+    document.querySelectorAll('.chk-cond').forEach(c => { c.checked = conds.includes(c.value); });
+    
+    window.chiudiModal('modal-edit-list');
+    window.apriModal('modal-add-app');
+};
+
+window.apriModalEditListApp = () => {
+    const cont = document.getElementById('edit-list-container');
+    cont.innerHTML = window.DYNAMIC_APPS.map((a, i) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--surface-hover); border-radius:8px; margin-bottom:5px;">
+            <span><i class="${a.icon}" style="color:${a.defaultColor}; margin-right:10px;"></i> ${a.label}</span>
+            <div style="display:flex; gap:5px;">
+                <button class="btn-modal" style="background:#0066cc; color:white; padding:5px 10px; font-size:12px;" onclick="window.apriModalEditApp('${a.id}')"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn-modal" style="background:var(--danger); color:white; padding:5px 10px; font-size:12px;" onclick="window.eliminaApp('${a.id}')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </div>
+    `).join('');
+    window.apriModal('modal-edit-list');
+};
+
+window.eliminaApp = async (appId) => {
+    if(!confirm("Confermi l'eliminazione di questa icona?")) return;
+    let currentApps = [...window.DYNAMIC_APPS].filter(a => a.id !== appId);
+    if(await window.pushToGitHub(currentApps)) window.chiudiModal('modal-edit-list');
+};
+
+window.salvaAppConfig = async () => {
+    const originalId = document.getElementById('edit-original-id').value;
+    const id = document.getElementById('add-id').value.trim();
+    if(!id) return alert("Inserisci un ID univoco.");
+    
+    const checkedConds = Array.from(document.querySelectorAll('.chk-cond:checked')).map(c => c.value);
+    
+    let appObj = {
+        id: id,
+        label: document.getElementById('add-label').value,
+        icon: document.getElementById('add-icon').value,
+        defaultColor: document.getElementById('add-color').value,
+        conditions: checkedConds
+    };
+    
+    const type = document.getElementById('add-type').value;
+    const val = document.getElementById('add-link-val').value;
+    if(type === 'link') appObj.href = val;
+    else if(type === 'onclick') appObj.onclick = val;
+    else if(type === 'module') {
+        appObj.isModule = true;
+        appObj.moduleId = id;
+        appObj.moduleName = val;
+        appObj.splitModule = document.getElementById('add-split').checked;
+    }
+    
+    let currentApps = [...window.DYNAMIC_APPS];
+    if(originalId) {
+        const idx = currentApps.findIndex(a => a.id === originalId);
+        if(idx !== -1) currentApps[idx] = appObj;
+        else currentApps.push(appObj);
+    } else {
+        currentApps.push(appObj);
+    }
+    
+    if(await window.pushToGitHub(currentApps)) window.chiudiModal('modal-add-app');
+};
+
+window.apriModalReorderApp = () => {
+    const cont = document.getElementById('reorder-list');
+    cont.innerHTML = window.DYNAMIC_APPS.map((a, i) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--surface-hover); border-radius:8px; margin-bottom:5px;">
+            <span><i class="${a.icon}" style="color:${a.defaultColor}; margin-right:10px;"></i> ${a.label}</span>
+            <div style="display:flex; gap:5px;">
+                <button onclick="window.spostaApp(${i}, -1)" style="padding:5px 10px; border-radius:4px; background:var(--surface); border:1px solid gray;">▲</button>
+                <button onclick="window.spostaApp(${i}, 1)" style="padding:5px 10px; border-radius:4px; background:var(--surface); border:1px solid gray;">▼</button>
+            </div>
+        </div>
+    `).join('');
+    window.apriModal('modal-reorder-app');
+};
+
+window.spostaApp = (index, dir) => {
+    if(index + dir < 0 || index + dir >= window.DYNAMIC_APPS.length) return;
+    let temp = window.DYNAMIC_APPS[index];
+    window.DYNAMIC_APPS[index] = window.DYNAMIC_APPS[index+dir];
+    window.DYNAMIC_APPS[index+dir] = temp;
+    window.apriModalReorderApp();
+};
+
+window.salvaRiordinoGitHub = async () => { if(await window.pushToGitHub(window.DYNAMIC_APPS)) window.chiudiModal('modal-reorder-app'); };
+
+// ============================================================================
+// AUTH E START
+// ============================================================================
 onAuthStateChanged(auth, async (user) => {
-    const vLoad = document.getElementById('view-loading'); const vGuest = document.getElementById('view-guest'); const vApp = document.getElementById('view-app'); const vBanned = document.getElementById('view-banned');
+    const vLoad = document.getElementById('view-loading'); const vGuest = document.getElementById('view-guest'); const vApp = document.getElementById('view-app');
     
     if (user) {
-        // ====================================================================
-        // 1. CARICAMENTO ISTANTANEO DALLA CACHE LOCALE (Zero attese)
-        // ====================================================================
-        vLoad.style.display = 'none';
-        vGuest.style.display = 'none';
-        vApp.style.display = 'flex';
-        vBanned.style.display = 'none';
+        vLoad.style.display = 'none'; vGuest.style.display = 'none'; vApp.style.display = 'flex';
         document.getElementById('btnOpenLogin').style.display = 'none'; 
         document.getElementById('btnOpenProfile').style.display = 'flex';
-        document.getElementById('profileEmail').value = user.email;
 
-        // Recupera dati utente in cache se esistono
-        let cachedData = {};
-        try { cachedData = JSON.parse(localStorage.getItem('userDataCache_haze')) || {}; } catch(e) {}
-        window.currentUserData = cachedData;
+        let cachedData = {}; try { cachedData = JSON.parse(localStorage.getItem('userDataCache_haze')) || {}; } catch(e) {}
         
         globalIsAdmin = (user.uid === ADMIN_UID); 
         globalIsCollab = cachedData.ruolo === 'collaborator';
-        if(globalIsAdmin) { document.getElementById('adminBadge').style.display = 'block'; document.getElementById('menu-admin').style.display = 'flex'; }
+        globalIsVip = cachedData.ruolo === 'vip';
+        
+        if(globalIsAdmin) { 
+            document.getElementById('adminBadge').style.display = 'block'; 
+            document.getElementById('menu-admin').style.display = 'flex'; 
+            window.injectAdminConfigTools();
+        }
 
-        // Inizializza la griglia istantaneamente
         window.LayoutEngine.init();
 
-        // ====================================================================
-        // 2. SINCRONIZZAZIONE SILENZIOSA E FIX DEL BUG "DATI MANCANTI"
-        // ====================================================================
         try {
             const docSnap = await getDoc(doc(db, "utenti", user.uid)); 
-            let data = docSnap.exists() ? docSnap.data() : {};
-            
-            // FIX BUG: Uniamo i dati freschi di Firebase con quelli in cache. 
-            // Se la rete fa le bizze, i dati locali ci salvano ed evitano la modale.
-            let safeData = { ...cachedData, ...data };
-            
-            // Aggiorniamo la cache sul telefono solo se il fetch è andato a buon fine
-            if (docSnap.exists()) {
-                localStorage.setItem('userDataCache_haze', JSON.stringify(safeData));
-            }
-            
+            let safeData = { ...cachedData, ...(docSnap.exists() ? docSnap.data() : {}) };
             window.currentUserData = safeData; 
-            
-            // Controllo del Ban
-            if (safeData.app_banned === true) { 
-                document.body.style.backgroundImage = 'none'; document.body.style.backgroundColor = "var(--bg-color)"; 
-                vApp.style.display = 'none'; vBanned.style.display = 'flex'; 
-                return; 
-            }
-            
-            // Mostra la modale SOLO se i dati mancano sia su Firebase che nella memoria locale
-            if (!safeData.nome || !safeData.cognome || !safeData.matricola) {
-                document.getElementById('modal-dati-obbligatori').style.display = 'flex';
-            }
-            
             globalIsCollab = safeData.ruolo === 'collaborator';
-            
-            const oggiLog = new Date();
-            const formatterDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
-            const oggiLogStr = formatterDate.format(oggiLog);
-            
-            if (safeData.last_app_access !== oggiLogStr || !safeData.email) { 
-                setDoc(doc(db, "utenti", user.uid), { last_app_access: oggiLogStr, last_access_full: oggiLog.toISOString(), email: user.email }, { merge: true }); 
-            }
-            
-            // Aggiorna il layout in tempo reale se su Firebase è diverso da quello locale
-            if (safeData.preferenze_layout && safeData.preferenze_layout !== localStorage.getItem('preferenze_layout_haze')) {
-                window.LayoutEngine.init(safeData.preferenze_layout);
-            }
-            
-            if(window.inizializzaNotificheSeNativa) window.inizializzaNotificheSeNativa(safeData);
-
-            // Popola i campi del profilo in background
-            document.getElementById('profileNome').value = safeData.nome || ''; 
-            document.getElementById('profileCognome').value = safeData.cognome || '';
-            document.getElementById('profileMatricola').value = safeData.matricola || ''; 
-            document.getElementById('profileProgressivo').value = safeData.progressivo || '';
-            document.getElementById('profileSoprannome').value = safeData.soprannome || '';
-            document.getElementById('profileTelefono').value = safeData.telefono || '';
-            document.getElementById('profileMansione').value = safeData.mansione || '';
-            
-        } catch(e) { 
-            console.error("Errore aggiornamento dati in background:", e); 
-        }
+            globalIsVip = safeData.ruolo === 'vip';
+            localStorage.setItem('userDataCache_haze', JSON.stringify(safeData));
+        } catch(e) {}
     } else { 
-        vLoad.style.display = 'none'; window.LayoutEngine.init(); vGuest.style.display = 'flex'; vApp.style.display = 'none'; vBanned.style.display = 'none'; 
+        vLoad.style.display = 'none'; window.LayoutEngine.init(); vGuest.style.display = 'flex'; vApp.style.display = 'none';
     }
 });
-
-let deferredPrompt;
-const installBtn = document.getElementById('install-btn');
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-
-if (!isStandalone) {
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        if(installBtn) installBtn.style.display = 'flex';
-    });
-
-    if(installBtn) {
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt !== null) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') { deferredPrompt = null; installBtn.style.display = 'none'; }
-            }
-        });
-    }
-
-    window.addEventListener('appinstalled', () => {
-        if(installBtn) installBtn.style.display = 'none';
-        deferredPrompt = null;
-    });
-} else {
-    if(installBtn) installBtn.style.display = 'none';
-}

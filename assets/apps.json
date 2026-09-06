@@ -64,7 +64,7 @@
         "icon": "fa-solid fa-list-ul",
         "defaultColor": "#a1a1a1",
         "conditions": [
-            "tutti"
+            "admin"
         ],
         "isModule": true,
         "moduleId": "varianti",

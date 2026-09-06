@@ -1,0 +1,453 @@
+{
+  "livelli": [
+    {
+      "nome": "M/S serie 10",
+      "imgUrl": "assets/planimetrie/planimetria_1787755298886_L1787755364011.jpg",
+      "pins": [
+        {
+          "id": "pin_1787935058601",
+          "lat": 1620.6600206353326,
+          "lng": 1252.7958453373171,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787620125458",
+              "qta": 8
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935076280",
+          "lat": 1391.0513718529867,
+          "lng": 1248.3164888517315,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787669917757",
+              "qta": 9
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935103657",
+          "lat": 755.6533167621923,
+          "lng": 981.2657641867834,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787675092715",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935121568",
+          "lat": 622.1264158518443,
+          "lng": 974.9708081781155,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787675092715",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935138614",
+          "lat": 694.2647809999163,
+          "lng": 671.4243458635883,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787675092715",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935150601",
+          "lat": 694.2416108597733,
+          "lng": 428.4619453553385,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787675092715",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935175744",
+          "lat": 753.4264151784695,
+          "lng": 1259.7623778693835,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787676748007",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935189156",
+          "lat": 782.4566539795132,
+          "lng": 1113.8218187693276,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787676748007",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935213908",
+          "lat": 600.2991555081719,
+          "lng": 1115.2322325532812,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787676748007",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935235516",
+          "lat": 1457.244298852575,
+          "lng": 1760.4662977817127,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787676748007",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935267505",
+          "lat": 1631.5748085474825,
+          "lng": 1427.8980997700342,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787674856978",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935282738",
+          "lat": 1376.0941939334662,
+          "lng": 1459.8404885589127,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787674677619",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935294787",
+          "lat": 1499.7536719041236,
+          "lng": 433.85224727090656,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787674939701",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935377836",
+          "lat": 1509.3041186704063,
+          "lng": 2579.362158239819,
+          "tipo": "contenitore",
+          "nomeContenitore": "Contenitore Multiplo",
+          "elementi": [
+            {
+              "schedaId": "sch_1787701617488",
+              "qta": 1
+            },
+            {
+              "schedaId": "sch_1787701658851",
+              "qta": 1
+            },
+            {
+              "schedaId": "sch_1787619908832",
+              "qta": 2
+            },
+            {
+              "schedaId": "sch_1787620125458",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935427902",
+          "lat": 1461.840681317838,
+          "lng": 1848.4086592260655,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787701418631",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935467013",
+          "lat": 1476.536030092766,
+          "lng": 1949.5102273639857,
+          "tipo": "contenitore",
+          "nomeContenitore": "Contenitore Multiplo",
+          "elementi": [
+            {
+              "schedaId": "sch_1787701275794",
+              "qta": 1
+            },
+            {
+              "schedaId": "sch_1787701346064",
+              "qta": 1
+            },
+            {
+              "schedaId": "sch_1787701387420",
+              "qta": 1
+            },
+            {
+              "schedaId": "sch_1787867726632",
+              "qta": 1
+            },
+            {
+              "schedaId": "sch_1787934225094",
+              "qta": 2
+            },
+            {
+              "schedaId": "sch_1787959844517",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935492174",
+          "lat": 1555.069989081552,
+          "lng": 1945.5849976023349,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619101438",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935523908",
+          "lat": 2042.3621915984436,
+          "lng": 1598.3067161145161,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619497012",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935539148",
+          "lat": 1955.4152396904717,
+          "lng": 1593.358448821048,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619647777",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935554777",
+          "lat": 1626.6849161994007,
+          "lng": 1510.837375189301,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619787142",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935571017",
+          "lat": 1553.925882744528,
+          "lng": 1824.3844620183877,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787618714454",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935585981",
+          "lat": 1650.7054825491477,
+          "lng": 1322.5567790928797,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619303916",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935600118",
+          "lat": 1355.522192828769,
+          "lng": 1319.0430212294564,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619303916",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        },
+        {
+          "id": "pin_1787935615854",
+          "lat": 1457.5775133527766,
+          "lng": 2531.460652304264,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619303916",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        }
+      ]
+    }
+  ],
+  "schedeNave": [
+    "sch_1787618714454",
+    "sch_1787619101438",
+    "sch_1787619303916",
+    "sch_1787619497012",
+    "sch_1787619647777",
+    "sch_1787619787142",
+    "sch_1787701617488",
+    "sch_1787701658851",
+    "sch_1787701418631",
+    "sch_1787619908832",
+    "sch_1787620125458",
+    "sch_1787669917757",
+    "sch_1787675092715",
+    "sch_1787676671378",
+    "sch_1787676748007",
+    "sch_1787674677619",
+    "sch_1787674856978",
+    "sch_1787674939701",
+    "sch_1787701275794",
+    "sch_1787701346064",
+    "sch_1787701387420",
+    "sch_1787867726632",
+    "sch_1787934225094",
+    "sch_1787959844517"
+  ],
+  "infoTesto": "La serie 10 dei motoscafi comprende le unità dal M/S 266 al M/S 283"
+}

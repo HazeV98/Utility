@@ -1,0 +1,437 @@
+{
+  "livelli": [
+    {
+      "nome": "M/S serie 8",
+      "imgUrl": "assets/planimetrie/planimetria_1787613329300_L1787663284150.png",
+      "pins": [
+        {
+          "id": "pin_1787663326736",
+          "lat": 1599.0281785865573,
+          "lng": 2328.183488942298,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787618714454",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787663347909",
+          "lat": 1723.389933667466,
+          "lng": 1792.022401111623,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619303916",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787663360260",
+          "lat": 1364.5101682604775,
+          "lng": 1801.5231148948537,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619303916",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787663372996",
+          "lat": 1568.616049111135,
+          "lng": 3277.6355228545203,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619303916",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787663403838",
+          "lat": 1603.148055646962,
+          "lng": 2403.171091580851,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619101438",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787663426142",
+          "lat": 2257.19621621488,
+          "lng": 2248.70611413409,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619497012",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787663444874",
+          "lat": 2178.1046683479212,
+          "lng": 2244.301712165448,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619647777",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787663497165",
+          "lat": 1743.9175215886403,
+          "lng": 1975.1837989735425,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619787142",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787664347591",
+          "lat": 1725.0662688026748,
+          "lng": 1683.0331149219737,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787620125458",
+              "qta": 8
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787669977498",
+          "lat": 1377.3908452836704,
+          "lng": 1674.8282189020474,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787669917757",
+              "qta": 8
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787674823120",
+          "lat": 1361.529268527329,
+          "lng": 1951.6201373171325,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787674677619",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787674904258",
+          "lat": 1744.1450772638532,
+          "lng": 1914.1962926515819,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787674856978",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787675026995",
+          "lat": 1556.3999099868754,
+          "lng": 512.6895661128048,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787674939701",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787675171917",
+          "lat": 750.625307846539,
+          "lng": 1416.7603005486126,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787675092715",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787675186821",
+          "lat": 540.4140237710232,
+          "lng": 1417.2897890872425,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787675092715",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787676657887",
+          "lat": 661.9589311837568,
+          "lng": 369.08792655781383,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787675092715",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787676709255",
+          "lat": 722.9892746169525,
+          "lng": 3502.759629717431,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787676671378",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787676721800",
+          "lat": 488.40224591975345,
+          "lng": 1622.662368100764,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787676671378",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787676822442",
+          "lat": 817.9690805746316,
+          "lng": 1728.4064093849636,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787676748007",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787676832418",
+          "lat": 763.9660619468535,
+          "lng": 1616.8617235757486,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787676748007",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787676844727",
+          "lat": 755.7481819347839,
+          "lng": 839.36312627631,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787676748007",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787676853607",
+          "lat": 567.4339771327574,
+          "lng": 840.2464347618061,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787676748007",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787701470167",
+          "lat": 1473.1756804979948,
+          "lng": 2389.82178073752,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787701418631",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787701502215",
+          "lat": 1472.3386374398015,
+          "lng": 2317.195235961769,
+          "tipo": "contenitore",
+          "nomeContenitore": "Cassetta dotazioni",
+          "elementi": [
+            {
+              "schedaId": "sch_1787701275794",
+              "qta": 1
+            },
+            {
+              "schedaId": "sch_1787701346064",
+              "qta": 1
+            },
+            {
+              "schedaId": "sch_1787701387420",
+              "qta": 1
+            },
+            {
+              "schedaId": "sch_1787867726632",
+              "qta": 1
+            },
+            {
+              "schedaId": "sch_1787934225094",
+              "qta": 2
+            },
+            {
+              "schedaId": "sch_1787959844517",
+              "qta": 1
+            }
+          ],
+          "size": 10,
+          "immagineContenitore": null,
+          "iconaContenitore": "fa-solid fa-box-open"
+        },
+        {
+          "id": "pin_1787701765481",
+          "lat": 1642.6751004186901,
+          "lng": 3346.104797120477,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787701617488",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787701785210",
+          "lat": 1461.5490090979133,
+          "lng": 3345.135607882337,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787701658851",
+              "qta": 1
+            }
+          ],
+          "size": 10
+        },
+        {
+          "id": "pin_1787701805801",
+          "lat": 1509.000209625319,
+          "lng": 3339.7068035850393,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787619908832",
+              "qta": 2
+            }
+          ],
+          "size": 10
+        }
+      ]
+    }
+  ],
+  "schedeNave": [
+    "sch_1787618714454",
+    "sch_1787619101438",
+    "sch_1787619303916",
+    "sch_1787619497012",
+    "sch_1787619647777",
+    "sch_1787619787142",
+    "sch_1787619908832",
+    "sch_1787620125458",
+    "sch_1787669917757",
+    "sch_1787674677619",
+    "sch_1787674856978",
+    "sch_1787674939701",
+    "sch_1787675092715",
+    "sch_1787676671378",
+    "sch_1787676748007",
+    "sch_1787701275794",
+    "sch_1787701346064",
+    "sch_1787701387420",
+    "sch_1787701418631",
+    "sch_1787701617488",
+    "sch_1787701658851",
+    "sch_1787867726632",
+    "sch_1787934225094",
+    "sch_1787959844517"
+  ],
+  "infoTesto": "La serie 8 dei motoscafi comprende le unità dal M/S 190 al M/S 225"
+}

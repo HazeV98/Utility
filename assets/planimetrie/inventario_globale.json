@@ -1,0 +1,274 @@
+{
+  "categorie": [
+    "Sicurezza",
+    "Antincendio",
+    "Nautica",
+    "Primo Soccorso",
+    "Altro",
+    "Allarmi",
+    "Salvataggio",
+    "Impianti",
+    "Dotazioni"
+  ],
+  "schede": {
+    "sch_1787592024172": {
+      "nome": "Pressione olio motore",
+      "icona": "fa-solid fa-gear",
+      "colore": "#8a8a8a",
+      "categoria": "Allarmi",
+      "testo_html": "I valori normali si attestano fra 1,5 bar e 5 bar. Spia e allarme acustico quando la pressione non supera 0,8 bar",
+      "media": []
+    },
+    "sch_1787603175363": {
+      "nome": "Alta temperatura acqua",
+      "icona": "fa-solid fa-gear",
+      "colore": "#8a8a8a",
+      "categoria": "Allarmi",
+      "testo_html": "Spia e allarme acustico quando la temperatura supera i 108°C&nbsp;",
+      "media": []
+    },
+    "sch_1787603718098": {
+      "nome": "Basso livello cassa compenso",
+      "icona": "fa-solid fa-location-dot",
+      "colore": "#8a8a8a",
+      "categoria": "Allarmi",
+      "testo_html": "Spia e allarme acustico quando il livello del fluido di raffreddamento nella cassa compenso è molto basso.&nbsp;",
+      "media": []
+    },
+    "sch_1787604086080": {
+      "nome": "Avaria alternatore",
+      "icona": "fa-solid fa-location-dot",
+      "colore": "#8a8a8a",
+      "categoria": "Allarmi",
+      "testo_html": "Spia e allarme acustico quando è presente gasolio nella vaschetta che raccoglie la perdita di tubi di iniezione o quasto a questo sensore",
+      "media": []
+    },
+    "sch_1787609002378": {
+      "nome": "Rottura tubi iniezione",
+      "icona": "fa-solid fa-location-dot",
+      "colore": "#8a8a8a",
+      "categoria": "Allarmi",
+      "testo_html": "Spia e allarme acustico quando è presente gasolio nella vaschetta che raccoglie la perdita di tubi di iniezione o quasto a questo sensore",
+      "media": []
+    },
+    "sch_1787609072649": {
+      "nome": "Scadenza manutenzione",
+      "icona": "fa-solid fa-settings",
+      "colore": "#8a8a8a",
+      "categoria": "Allarmi",
+      "testo_html": "Non attivo",
+      "media": []
+    },
+    "sch_1787618714454": {
+      "nome": "Estintore CO2",
+      "icona": "fa-solid fa-fire-extinguisher",
+      "colore": "#ff0000",
+      "categoria": "Antincendio",
+      "testo_html": "<h3>Estintore a CO2 da 5kg.</h3><div><b>Utilizzo</b>: Idoneo per fuochi di Classe B (liquidi infiammabili) e apparecchiature elettriche sotto tensione.</div><div>​<b>Limiti</b>: ​Efficacia ridotta su fuochi di Classe A (solidi combustibili) e all'aperto in presenza di vento.</div><div><br></div><h3>Modalità d'uso</h3><div><br></div><div>​- <b>Sblocco</b>: Sfilare la spina di sicurezza e spezzare il sigillo.</div><div>- ​<b>Impugnatura</b>: Mettersi a distanza di sicurezza (1,5 - 2 metri) e impugnare l'estintore esclusivamente dall'apposita maniglia e dal cono/diffusore termoisolato (evitare il contatto diretto con la canna metallica per prevenire ustioni da freddo).</div><div>​-<b>Puntamento</b>: Dirigere il cono verso la base delle fiamme.</div><div>​-<b>Erogazione</b>: Premere la leva azionando il getto a cerniera, procedendo con movimenti a ventaglio da sinistra a destra e dal basso verso l'alto.</div><div>-<b>Avvertenze</b>:&nbsp;In caso di utilizzo in locali chiusi o poco ventilati, abbandonare immediatamente l'ambiente subito dopo l'erogazione e aerare abbondantemente i locali prima di rientrare.&nbsp;</div>",
+      "media": [
+        "assets/media_vademecum/plan_1787844219668.jpg"
+      ]
+    },
+    "sch_1787619101438": {
+      "nome": "Comando scarico CO2",
+      "icona": "fa-solid fa-c",
+      "colore": "#ff0000",
+      "categoria": "Antincendio",
+      "testo_html": "Comando per scaricare la CO2 dall'impianto fisso in LAM, da utilizzare in caso di incendio in LAM solo dopo aver chiuso le serrande.",
+      "media": [
+        "assets/media_vademecum/plan_1787864914110.jpg"
+      ]
+    },
+    "sch_1787619303916": {
+      "nome": "Estintore a polvere",
+      "icona": "fa-solid fa-fire-extinguisher",
+      "colore": "#ff0000",
+      "categoria": "Antincendio",
+      "testo_html": "<h3>Estintore a Polvere ABC da 6 kg</h3><h3>​Campi di utilizzo</h3><div>- ​<b>Inquadramento</b>: Polivalente, idoneo per fuochi di Classe A (solidi combustibili), Classe B (liquidi infiammabili) e Classe C (gas infiammabili).</div><div>- ​<b>Uso elettrico</b>: Utilizzabile su apparecchiature elettriche sotto tensione fino a 1000 V mantenendo la distanza minima di sicurezza (1 metro).</div><div>- ​<b>Limiti</b>: L'erogazione genera una densa nube di polvere che riduce drasticamente la visibilità e lascia residui corrosivi/inquinanti su schede ed apparati elettronici delicati.</div><h3>​Come usarli</h3><div>-​&nbsp;<b>Sblocco</b>: Rimuovere il sigillo di garanzia e sfilare la spina di sicurezza.</div><div>​Impugnatura e puntamento: Impugnare saldamente il tubo e dirigere l'ugello verso la base del fuoco da una distanza di sicurezza di circa 2-3 metri.</div><div>- ​<b>Erogazione</b>: Premere a fondo la leva azionando il getto a cerniera, procedendo con movimento a ventaglio e avanzando progressivamente man mano che le fiamme si spengono.</div><h3>​Avvertenze</h3><div>- ​<b>Visibilità e respirazione</b>: L'uso in spazi ristretti riduce la visibilità e può causare irritazione alle vie respiratorie; evacuare l'area non appena completato lo spegnimento.</div><div>- <b>​Effetto corrosivo</b>: Rimuovere tempestivamente la polvere residua dai macchinari per evitare danni da corrosione o usura meccano-chimica.</div><div>- ​<b>Rischi all'aperto</b>: In spazi aperti agire sempre a favore di vento per non venire investiti dalla polvere o dalle fiamme di ritorno.&nbsp;</div>",
+      "media": []
+    },
+    "sch_1787619497012": {
+      "nome": "Erogatore impianto CO2",
+      "icona": "fa-solid fa-shower",
+      "colore": "#ff0000",
+      "categoria": "Antincendio",
+      "testo_html": "Erogatore da cui viene scaricata la CO2 utilizzando il comando in plancia.",
+      "media": []
+    },
+    "sch_1787619647777": {
+      "nome": "Sirena CO2",
+      "icona": "fa-solid fa-bullhorn",
+      "colore": "#ff0000",
+      "categoria": "Antincendio",
+      "testo_html": "Sirena che avvisa eventuale personale in LAM che sta per essere scaricata la CO2 per l'estinzione dell'incendio.",
+      "media": []
+    },
+    "sch_1787619787142": {
+      "nome": "Bombole impianto CO2",
+      "icona": "fa-solid fa-c",
+      "colore": "#ff0000",
+      "categoria": "Antincendio",
+      "testo_html": "Bombole che contengono la CO2 dell'impianto di estinzione fisso. Vengono scaricate in LAM tramite un comanando presente in plancia.",
+      "media": []
+    },
+    "sch_1787619908832": {
+      "nome": "Giubbotto salvagente equipaggio",
+      "icona": "fa-solid fa-vest",
+      "colore": "#ff9100",
+      "categoria": "Salvataggio",
+      "testo_html": "Salvagenti destinati all'uso da parte dell'equipaggio.",
+      "media": []
+    },
+    "sch_1787620125458": {
+      "nome": "Giubbotto salvagente",
+      "icona": "fa-solid fa-vest",
+      "colore": "#ff9100",
+      "categoria": "Salvataggio",
+      "testo_html": "Giubbotto salvagente destinato all'uso da parte di un adulto.",
+      "media": []
+    },
+    "sch_1787669917757": {
+      "nome": "Giubbotto salvagente bambini",
+      "icona": "fa-solid fa-vest",
+      "colore": "#ff9100",
+      "categoria": "Salvataggio",
+      "testo_html": "Giubbotto salvagente destinato all'utilizzo da parte di un bambino",
+      "media": []
+    },
+    "sch_1787674677619": {
+      "nome": "Cassa compenso",
+      "icona": "fa-solid fa-water",
+      "colore": "#a3a3a3",
+      "categoria": "Impianti",
+      "testo_html": "Cassa contenente il liquido di raffreddamento del motore.",
+      "media": []
+    },
+    "sch_1787674856978": {
+      "nome": "Batterie",
+      "icona": "fa-solid fa-car-battery",
+      "colore": "#a3a3a3",
+      "categoria": "Impianti",
+      "testo_html": "Pacco batterie dell'unità",
+      "media": []
+    },
+    "sch_1787674939701": {
+      "nome": "Locale agghiaccio",
+      "icona": "fa-solid fa-gear",
+      "colore": "#a3a3a3",
+      "categoria": "Impianti",
+      "testo_html": "Locale in cui si trova l'impianto di movimento del timone, qui si può escludere la pompa timone per utilizzare la barra di fortuna.",
+      "media": []
+    },
+    "sch_1787675092715": {
+      "nome": "Atollo",
+      "icona": "fa-solid fa-life-ring",
+      "colore": "#ff9100",
+      "categoria": "Salvataggio",
+      "testo_html": "Dotazione di salvataggio per 12 persone.&nbsp;",
+      "media": []
+    },
+    "sch_1787676671378": {
+      "nome": "Salvagente anulare",
+      "icona": "fa-solid fa-life-ring",
+      "colore": "#ff9100",
+      "categoria": "Salvataggio",
+      "testo_html": "",
+      "media": []
+    },
+    "sch_1787676748007": {
+      "nome": "Salvagente anulare con boetta",
+      "icona": "fa-solid fa-life-ring",
+      "colore": "#ff9100",
+      "categoria": "Salvataggio",
+      "testo_html": "Salvagente anulare con sagola e boetta luminosa.&nbsp;",
+      "media": []
+    },
+    "sch_1787701275794": {
+      "nome": "Bugliolo",
+      "icona": "fa-solid fa-bucket",
+      "colore": "#ffeb12",
+      "categoria": "Dotazioni",
+      "testo_html": "<h3>Bugliolo (Secchio di bordo)</h3><h3>​Campi di utilizzo</h3><div>- ​<b>Inquadramento</b>: Attrezzatura manuale di emergenza ed uso generale, idonea per il pescaggio d'acqua e l'intervento rapido su piccoli focolai di Classe A (solidi combustibili come carta, legno o tessuti).</div><div>- ​<b>Impieghi secondari</b>: Utilizzato per operazioni di svuotamento/esaurimento di piccole quantità d'acqua, pulizia di coperta e recupero di materiali.</div><div>- ​<b>Limiti</b>: Severamente vietato l'uso su fuochi di Classe B (liquidi infiammabili, petrolio, carburanti) e su apparecchiature o quadri elettrici sotto tensione.</div><h3>​Come usarlo</h3><div>- ​<b>Pescaggio</b>: Assicurare saldamente la sagola (sagola di ritegno) e calare il bugliolo fuoribordo fino al completo riempimento, prestando attenzione al moto della nave o alla corrente.</div><div>- ​<b>Recupero</b>: Sollevare il secchio mantenendo la presa sulla sagola o sull'idoneo manico.</div><div>- ​<b>Lancio</b>: Scagliare l'acqua energicamente e direttamente alla base delle fiamme (solo per fuochi di Classe A).</div><h3>​Avvertenze</h3><div>- ​<b>Tensione elettrica</b>: Non utilizzare mai su impianti o apparecchi elettrici per il rischio di folgorazione del personale.</div><div>- ​<b>Sicurezza al lancio/pescaggio</b>: Durante la fase di pescaggio con nave in movimento, non avvolgersi mai la sagola attorno alle mani o ai polsi per evitare di venire trascinati in acqua in caso di strattone improvviso.</div>",
+      "media": [
+        "assets/media_vademecum/plan_1787959835078.jpg"
+      ]
+    },
+    "sch_1787701346064": {
+      "nome": "Guanti in cuoio",
+      "icona": "fa-solid fa-hand",
+      "colore": "#ffeb12",
+      "categoria": "Dotazioni",
+      "testo_html": "<p>Dettagli...</p>",
+      "media": []
+    },
+    "sch_1787701387420": {
+      "nome": "Boetta fumogena",
+      "icona": "fa-solid fa-smog",
+      "colore": "#ffeb12",
+      "categoria": "Dotazioni",
+      "testo_html": "<p>Dettagli...</p>",
+      "media": []
+    },
+    "sch_1787701418631": {
+      "nome": "Cassetta pronto soccorso",
+      "icona": "fa-solid fa-suitcase-medical",
+      "colore": "#00c717",
+      "categoria": "Primo Soccorso",
+      "testo_html": "Cassetta pronto soccorso protetta da un vetro frangibile, contiene:<div>-</div>",
+      "media": [
+        "assets/media_vademecum/plan_1787844296840.jpg"
+      ]
+    },
+    "sch_1787701617488": {
+      "nome": "Cima di rispetto",
+      "icona": "fa-solid fa-c",
+      "colore": "#00bbff",
+      "categoria": "Nautica",
+      "testo_html": "<p>Dettagli...</p>",
+      "media": []
+    },
+    "sch_1787701658851": {
+      "nome": "Scandaglio a mano",
+      "icona": "fa-solid fa-ruler-vertical",
+      "colore": "#00bbff",
+      "categoria": "Nautica",
+      "testo_html": "<p>Dettagli...</p>",
+      "media": []
+    },
+    "sch_1787867726632": {
+      "nome": "Coperta isotermica",
+      "icona": "fa-solid fa-minus",
+      "colore": "#ffeb12",
+      "categoria": "Dotazioni",
+      "testo_html": "<h3>Coperta Isotermica</h3><h3>​Campi di utilizzo</h3><div>- ​<b>Inquadramento</b>: Presidio medico di emergenza impiegato nel primo soccorso per il controllo della temperatura corporea di feriti, naufraghi o soggetti in stato di shock, ipotermia o colpo di calore.</div><div>- ​<b>Funzionamento duale</b>: Realizzata in materiale metallizzato riflettente che trattiene il calore corporeo o respinge l'irraggiamento solare esterno a seconda del verso di applicazione.</div><h3>​Come usarla</h3><div>- ​<b>Protezione dal freddo / ipotermia</b>: Avvolgere completamente il soggetto con la faccia dorata rivolta all'esterno e la faccia d'argento a contatto con il corpo (il lato argentato riflette circa il 90% del calore corporeo verso l'interno).</div><div>- ​<b>Protezione dal caldo / colpo di calore</b>: Coprire il soggetto con la faccia d'argento rivolta all'esterno e la faccia dorata a contatto con il corpo (il lato argentato riflette i raggi solari verso l'esterno).</div><div>- ​<b>Fissaggio</b>: Assicurarsi di coprire bene il tronco e la testa lasciando libero il viso, facendola aderire senza stringere eccessivamente per evitare strappi.&nbsp;</div><h3>Avvertenze</h3><div>- ​<b>Resistenza al calore e fiamme libere</b>: Non è un presidio antincendio ignifugo. Evitare il contatto diretto con fiamme libere o superfici roventi per prevenire la fusione del materiale plastico (PET).</div><div>- ​<b>Rischio elettrico</b>: Materiale conduttivo; non utilizzare in prossimità di linee ad alta tensione o durante l'uso di defibrillatori automatici (DAE).</div><div>- ​<b>Isolamento dal suolo</b>: Non isola per conduzione; in caso di suolo bagnato o ghiacciato, interporre un ulteriore strato isolante sotto la vittima.</div>",
+      "media": []
+    },
+    "sch_1787934225094": {
+      "nome": "Stelle di seganlazione",
+      "icona": "fa-solid fa-star",
+      "colore": "#ffeb12",
+      "categoria": "Dotazioni",
+      "testo_html": "<h3>Segnale di Soccorso a Due Stelle Rosse</h3><h3>​Campi di utilizzo</h3><div>- ​<b>Inquadramento</b>: Dispositivo pirotecnico di segnalazione di emergenza per la navigazione entro le 3 miglia (e battelli da salvataggio).</div><div>- ​<b>Funzione</b>: Spara due distinte stelle luminose di colore rosso intenso in sequenza per richiamare l'attenzione a breve/media distanza.</div><div>- ​<b>Limiti</b>: Dispositivo monouso; inefficace se bagnato internamente o usato in presenza di forte nebbia fitta.</div><div>​Come usarlo</div><h3>Utilizzo</h3><div>- ​<b>Puntatore e orientamento</b>: Verificare la direzione del vento e sporgersi fuoribordo. Orientare il dispositivo in verticale spingendo la freccia \"LATO ALTO / TOP\" verso il cielo.</div><div>- ​<b>Prima stella</b>: Impugnare saldamente il corpo arancione, tirare il primo pomello verso il basso fino al punto di fermo e rilasciarlo.</div><div>- ​<b>Seconda stella</b>: Ripetere la medesima operazione azionando il secondo pomello per lanciare la seconda stella di segnalazione.</div><h3>​Avvertenze</h3><div>- ​<b>Traiettoria e sicurezza</b>: Non orientare mai il dispositivo verso il corpo, altre persone o la struttura dell'imbarcazione durante il lancio.</div><div>- ​<b>Residui e ustioni</b>: Tenere l'estremità superiore lontana da viso e mani: l'espulsione produce fiamme ed elevate temperature.</div><div>- ​<b>Impiego e conservazione</b>: Usare esclusivamente in caso di reale pericolo; verificare la data di scadenza riportata sull'etichetta e conservare al riparo da umidità e fonti di calore.&nbsp;</div>",
+      "media": [
+        "assets/media_vademecum/plan_1787934767316.webp"
+      ]
+    },
+    "sch_1787959844517": {
+      "nome": "Torcia",
+      "icona": "fa-regular fa-lightbulb",
+      "colore": "#ffeb12",
+      "categoria": "Dotazioni",
+      "testo_html": "",
+      "media": []
+    }
+  },
+  "coloriCat": {
+    "Allarmi": "#8a8a8a",
+    "Antincendio": "#ff0000",
+    "Salvataggio": "#ff9100",
+    "Impianti": "#a3a3a3",
+    "Dotazioni": "#ffeb12",
+    "Primo Soccorso": "#00c717",
+    "Nautica": "#00bbff"
+  }
+}

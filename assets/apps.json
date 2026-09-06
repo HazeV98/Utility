@@ -294,7 +294,7 @@
         "id": "varianti",
         "label": "Varianti",
         "icon": "fa-solid fa-list-ul",
-        "defaultColor": "#0066cc",
+        "defaultColor": "#a1a1a1",
         "conditions": [
             "admin"
         ],

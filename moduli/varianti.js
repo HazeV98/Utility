@@ -434,7 +434,7 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
     window.annullaCondivisioneVarianti = async function() {
         if(document.getElementById('var-dropdown-menu')) document.getElementById('var-dropdown-menu').style.display = 'none';
         
-        const msg = "ATTENZIONE: Per evitare che qualcuno approfitti della funzione dando la condivisione solo per spiare i turni altrui e poi toglierla, puoi annullare la condivisione al massimo 2 volte.\n\nSe annulli per la seconda volta, l'accesso alla pagina ti sarà BLOCCATO definitivamente.\n\nSei sicuro di voler annullare la condivisione?";
+        const msg = "ATTENZIONE: Per evitare che qualcuno approfitti della funzione dando la condivisione solo per spiare i turni altrui e poi toglierla, puoi annullare la condivisione al massimo una volta.\n\nSe annulli per la seconda volta, l'accesso alla pagina ti sarà BLOCCATO definitivamente.\n\nSei sicuro di voler annullare la condivisione?";
         if (!confirm(msg)) return;
         
         mostraVista('view-var-loading');

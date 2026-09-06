@@ -364,7 +364,7 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         }
     };
 
-    window.cercaVariantiGiorno = async function() {
+        window.cercaVariantiGiorno = async function() {
         const dataScelta = document.getElementById('data-ricerca-varianti').value;
         const listDiv = document.getElementById('varianti-list');
         listDiv.innerHTML = "<div style='text-align:center; margin-top:20px;'><i class='fa-solid fa-spinner fa-spin' style='color:var(--primary); font-size:24px;'></i></div>";
@@ -382,14 +382,18 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
             
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                if (data.cognomePubblico && doc.id !== currentUser.uid) { // Escludo me stesso
+                
+                // Rimosso il blocco per escludere il proprio utente, così puoi vederti nei test
+                if (data.cognomePubblico) { 
                     
                     let turnoManuale = data.variazioni && data.variazioni[dataScelta] ? data.variazioni[dataScelta] : null;
                     let turnoOriginaleBase = calcolaTurnoBase(dataScelta, data);
                     let isModificato = turnoManuale !== null;
                     let turnoDaMostrare = isModificato ? turnoManuale : turnoOriginaleBase;
                     
-                    let isMate = compagniPossibili.includes(turnoDaMostrare.toUpperCase().replace(/\s+/g, ''));
+                    // Se l'utente in elaborazione sei tu, non segnarti come "compagno" di te stesso
+                    let isMate = (doc.id !== currentUser.uid) && compagniPossibili.includes(turnoDaMostrare.toUpperCase().replace(/\s+/g, ''));
+                    
                     let turnoSchermato = applicaFiltroPrivacy(turnoDaMostrare);
                     let originaleSchermato = isModificato ? applicaFiltroPrivacy(turnoOriginaleBase) : "";
 
@@ -415,9 +419,11 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
             
             disegnaVarianti(turniCondivisi);
         } catch (error) { 
+            console.error(error);
             listDiv.innerHTML = "<div style='color:var(--danger); text-align:center;'>Errore di caricamento.</div>"; 
         }
     };
+
 
     window.filtraVarianti = function() {
         let filter = document.getElementById('search-varianti').value.toUpperCase();

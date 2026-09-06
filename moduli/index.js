@@ -131,13 +131,14 @@ window.eseguiAzioneApp = async (appId) => {
     
     if (!moduleName) {
         const legacyMap = { 
-            'bacheca_utility': 'bacheca_utility', 'guida': 'guida',
-            'statistiche':'statistiche', 'rotazioni':'rotazioni', 'turni':'turni', 
-            'bachecaturni':'bacheca_turni', 'barcadvisor':'barcadvisor', 'rubrica':'rubrica', 
-            'ferie':'rotazione_ferie', 'orari':'orari', 'documenti':'documenti', 'link':'link', 
-            'contatti':'contatti', 'buoni':'buoni_pasto', 'promemoria':'promemoria', 
-            'dds':'dds', 'report':'report', 'admin':'admin' 
-        };
+    'bacheca_utility': 'bacheca_utility', 'guida': 'guida',
+    'statistiche':'statistiche', 'rotazioni':'rotazioni', 'turni':'turni', 
+    'bachecaturni':'bacheca_turni', 'barcadvisor':'barcadvisor', 'rubrica':'rubrica', 
+    'ferie':'rotazione_ferie', 'orari':'orari', 'documenti':'documenti', 'link':'link', 
+    'contatti':'contatti', 'buoni':'buoni_pasto', 'buoni_pasto':'buoni_pasto', 'promemoria':'promemoria', 
+    'dds':'dds', 'report':'report', 'admin':'admin' 
+};
+
         moduleName = legacyMap[appId];
     }
 
@@ -147,11 +148,13 @@ window.eseguiAzioneApp = async (appId) => {
     }
 
     const legacyModals = { 
-        'bachecaturni': 'modal-bachecaturni-main', 
-        'buoni': 'modal-buoni-main', 
-        'ferie': 'modal-rotazione-ferie-main', 
-        'report': 'modal-segnalazioni-main' 
-    };
+    'bachecaturni': 'modal-bachecaturni-main', 
+    'buoni': 'modal-buoni-main', 
+    'buoni_pasto': 'modal-buoni-main',
+    'ferie': 'modal-rotazione-ferie-main', 
+    'report': 'modal-segnalazioni-main' 
+};
+
     
     const modalId = legacyModals[appId] || `modal-${appId}-main`;
     const modale = document.getElementById(modalId);

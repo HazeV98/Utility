@@ -1,4 +1,4 @@
-import { doc, getDoc, updateDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { doc, getDoc, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // ==========================================
 // 1. INIEZIONE UI (Gestita dal LazyLoader)
@@ -8,15 +8,14 @@ export function initUIVariantiAdmin() {
     
     const uiHTML = `
     <style>
-        .contact-item-admin { background: var(--surface); padding: 16px; border-radius: var(--radius-md); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-sm); border-left: 5px solid var(--primary); border: 1px solid var(--border-color); border-left-width: 5px; text-align: left;}
+        .contact-item-admin { background: var(--surface); padding: 16px; border-radius: var(--radius-md); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-sm); border-left: 5px solid var(--danger); border: 1px solid var(--border-color); border-left-width: 5px; text-align: left;}
         .contact-item-admin.is-mate { border-left-color: var(--success); background: rgba(40, 167, 69, 0.05); }
         .contact-info-admin { text-align: left; flex: 1; }
         .contact-name-admin { font-weight: 700; font-size: 16px; color: var(--text-main); margin-bottom: 4px; text-transform: capitalize; }
         .contact-detail-admin { font-size: 13px; color: var(--text-muted); font-weight: 500; }
-        .turno-badge-admin { font-size: 16px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; justify-content: flex-end;}
-        .turno-badge-admin.npl { color: var(--danger); }
+        .turno-badge-admin { font-size: 16px; font-weight: 800; color: var(--danger); display: flex; align-items: center; gap: 8px; justify-content: flex-end;}
         .turno-originale-admin { font-size: 12px; color: var(--text-muted); font-weight: normal; display: block; margin-top: 6px; text-align: right; background: var(--surface-hover); padding: 4px 8px; border-radius: 6px;}
-        .clickable-turn-admin { cursor: pointer; color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+        .clickable-turn-admin { cursor: pointer; color: var(--danger); text-decoration: underline; text-underline-offset: 3px; }
     </style>
 
     <div id="modal-varianti-admin-main" class="modal-overlay" onclick="if(event.target.id === 'modal-varianti-admin-main') this.style.display='none'">
@@ -24,7 +23,7 @@ export function initUIVariantiAdmin() {
             <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-varianti-admin-main').style.display='none'"></i>
             
             <h3 style="margin-top: 0; color: var(--danger); font-weight: 800; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
-                <i class="fa-solid fa-user-shield"></i> Varianti (MODALITÀ ADMIN)
+                <i class="fa-solid fa-user-shield"></i> Varianti ADMIN
             </h3>
 
             <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; width: 100%;">
@@ -32,12 +31,6 @@ export function initUIVariantiAdmin() {
                 <div id="view-var-admin-no-auth" style="display: none; flex-direction: column; align-items: center; text-align: center; margin-top: 20px;">
                     <i class="fa-solid fa-lock" style="font-size: 48px; color: var(--text-muted); margin-bottom: 16px;"></i>
                     <h3 style="color: var(--danger); margin-top: 0;">Accesso Richiesto</h3>
-                </div>
-
-                <div id="view-var-admin-no-setup" style="display: none; flex-direction: column; align-items: center; text-align: center; margin-top: 20px;">
-                    <i class="fa-solid fa-calendar-xmark" style="font-size: 48px; color: var(--warning); margin-bottom: 16px;"></i>
-                    <h3 style="color: var(--warning); margin-top: 0;">Calendario non configurato</h3>
-                    <p style="color: var(--text-muted);">Configura la rotazione nel calendario prima di visualizzare i turni.</p>
                 </div>
 
                 <div id="view-var-admin-main" style="display: none; flex-direction: column; width: 100%;">
@@ -54,7 +47,7 @@ export function initUIVariantiAdmin() {
                 </div>
 
                 <div id="view-var-admin-loading" style="display: none; flex-direction: column; align-items: center; justify-content: center; margin-top: 40px;">
-                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 24px; color: var(--primary);"></i>
+                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 24px; color: var(--danger);"></i>
                 </div>
 
             </div>
@@ -66,15 +59,30 @@ export function initUIVariantiAdmin() {
         <div id="imageFlexContainerVarianteAdmin" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative;">
             <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 30px; cursor: pointer; color: white; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));" onclick="window.chiudiImageModalVariantiAdmin()"></i>
             <img id="img-variante-turno-admin" style="max-width: 100%; max-height: 100vh; object-fit: contain; transition: transform 0.2s;" src="">
-            <button onclick="window.scaricaImmagineVarianteAdmin()" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 20px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 10; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-download"></i> Scarica</button>
+            <button onclick="window.scaricaImmagineVarianteAdmin()" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--danger); color: white; border: none; padding: 12px 24px; border-radius: 20px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 10; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-download"></i> Scarica</button>
         </div>
     </div>
     `;
     document.body.insertAdjacentHTML('beforeend', uiHTML);
+
+    // FUNZIONE GLOBALE PER APRIRE IL MODULO
+    window.apriVariantiAdmin = function() {
+        const modal = document.getElementById('modal-varianti-admin-main');
+        if (modal) {
+            modal.style.display = 'flex';
+            const dataInput = document.getElementById('data-ricerca-varianti-admin');
+            if (!dataInput.value) {
+                dataInput.value = new Date().toISOString().split('T')[0];
+            }
+            if (typeof window.cercaVariantiGiornoAdmin === 'function') {
+                window.cercaVariantiGiornoAdmin();
+            }
+        }
+    };
 }
 
 // ==========================================
-// 2. MOTORE LOGICO E FILTRI
+// 2. MOTORE LOGICO E FILTRI ADMIN
 // ==========================================
 export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
     const currentUser = auth.currentUser;
@@ -297,34 +305,32 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
                 }
                 await Promise.all(fetchPromises);
             }
-        } catch (e) { console.error("Errore download mappe", e); }
+        } catch (e) { console.error("Errore download mappe admin", e); }
     }
 
     function mostraVistaAdmin(idVista) {
-        ['view-var-admin-no-auth', 'view-var-admin-no-setup', 'view-var-admin-main'].forEach(id => {
+        ['view-var-admin-no-auth', 'view-var-admin-main'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = (id === idVista) ? 'flex' : 'none';
         });
     }
 
-    function applicaFiltroPrivacyAdmin(turnoStr) {
-        if (!turnoStr) return "";
-        let t = turnoStr.toUpperCase().trim();
-        const codiciSensibili = ["KMAL", "KNOP", "AVIS", "KINF", "FER", "FEP", "FES", "PRT"];
-        let isSensibile = codiciSensibili.some(codice => {
-            let regex = new RegExp(`\\b${codice}\\b`);
-            return regex.test(t);
-        });
-        return isSensibile ? "NPL" : t;
+    // ADMIN PRIVILEGE: Nessun filtro NPL per le assenze
+    function formattazioneSiglaAdmin(turnoStr) {
+        return turnoStr ? turnoStr.toUpperCase().trim() : "";
     }
 
     async function caricaStatoVariantiAdmin() {
-        let state = JSON.parse(localStorage.getItem('myTurniApp')) || {};
-        if (!state.depositoAttivo) { mostraVistaAdmin('view-var-admin-no-setup'); return; }
-
+        mostraVistaAdmin('view-var-admin-loading');
         try {
             await initCachesAdmin(); 
             mostraVistaAdmin('view-var-admin-main');
+            
+            // Forza l'apertura se non avviene automaticamente
+            if (document.getElementById('modal-varianti-admin-main').style.display !== 'flex') {
+                document.getElementById('modal-varianti-admin-main').style.display = 'flex';
+            }
+
             const dataInput = document.getElementById('data-ricerca-varianti-admin');
             if (!dataInput.value) dataInput.value = new Date().toISOString().split('T')[0];
             window.cercaVariantiGiornoAdmin();
@@ -336,7 +342,7 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
     window.cercaVariantiGiornoAdmin = async function() {
         const dataScelta = document.getElementById('data-ricerca-varianti-admin').value;
         const listDiv = document.getElementById('varianti-list-admin');
-        listDiv.innerHTML = "<div style='text-align:center; margin-top:20px;'><i class='fa-solid fa-spinner fa-spin' style='color:var(--primary); font-size:24px;'></i></div>";
+        listDiv.innerHTML = "<div style='text-align:center; margin-top:20px;'><i class='fa-solid fa-spinner fa-spin' style='color:var(--danger); font-size:24px;'></i></div>";
         document.getElementById('search-varianti-admin').value = ""; 
         
         try {
@@ -344,11 +350,15 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
             let mioTurnoOggi = state.variazioni && state.variazioni[dataScelta] ? state.variazioni[dataScelta] : calcolaTurnoBase(dataScelta, state);
             let compagniPossibili = calcolaCompagniPossibili(mioTurnoOggi);
 
+            // ADMIN QUERY: Nessun filtro 'where', scarica l'intera collezione
             const querySnapshot = await getDocs(collection(db, "calendario"));
             let turniCondivisi = [];
             
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
+                
+                // Ignora i documenti cancellati logicamente
+                if (data.deleted === true) return;
                 
                 let nomeMostrato = data.nomePubblico || "Utente";
                 let cognomeMostrato = data.cognomePubblico || `(${doc.id.substring(0,4)}) Sconosciuto`;
@@ -361,8 +371,10 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
                 let turnoDaMostrare = isModificato ? turnoManuale : turnoOriginaleBase;
                 
                 let isMate = (doc.id !== currentUser.uid) && compagniPossibili.includes(turnoDaMostrare.toUpperCase().replace(/\s+/g, ''));
-                let turnoSchermato = applicaFiltroPrivacyAdmin(turnoDaMostrare);
-                let originaleSchermato = isModificato ? applicaFiltroPrivacyAdmin(turnoOriginaleBase) : "";
+                
+                // Mostra il turno crudo senza censure
+                let turnoSchermato = formattazioneSiglaAdmin(turnoDaMostrare);
+                let originaleSchermato = isModificato ? formattazioneSiglaAdmin(turnoOriginaleBase) : "";
 
                 turniCondivisi.push({
                     nome: nomeMostrato,
@@ -399,7 +411,7 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
     };
 
     window.apriImmagineVarianteAdmin = function(turno, dateStr) {
-        if (!turno || turno === "NPL" || turno === "DISP" || turno === "RI" || turno === "RIPOSO" || turno === "AL") return;
+        if (!turno || turno === "DISP" || turno === "RI" || turno === "RIPOSO" || turno === "AL") return;
         
         let dSelezionata = stringToNum(dateStr);
         let dateChiavi = Object.keys(globalDbCacheAdmin || {}).sort();
@@ -473,12 +485,11 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
             item.className = "contact-item-admin" + (c.isMate ? " is-mate" : "");
             const prog = c.omonimia ? ` (${c.omonimia})` : "";
             
-            let classeNpl = c.turnoStr === "NPL" ? "npl" : "";
             let bloccoIcona = "";
             let textOriginale = "";
             let pinIcon = c.isMate ? `<i class="fa-solid fa-thumbtack" style="color:var(--success); margin-right:6px;" title="Tuo compagno di turno"></i>` : "";
             
-            let canViewImg = (c.turnoStr !== "NPL" && c.turnoStr !== "DISP" && c.turnoStr !== "RI" && c.turnoStr !== "RIPOSO" && c.turnoStr !== "AL");
+            let canViewImg = (c.turnoStr !== "DISP" && c.turnoStr !== "RI" && c.turnoStr !== "RIPOSO" && c.turnoStr !== "AL" && !["MAL", "FER", "FEP", "FES", "PRT", "KINF"].includes(c.turnoStr));
             let spanClass = canViewImg ? `class="clickable-turn-admin" onclick="window.apriImmagineVarianteAdmin('${c.turnoStr}', '${dataScelta}')"` : "";
 
             if (c.modificato) {
@@ -492,7 +503,7 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
                     <div class="contact-detail-admin">Mat: ${c.matricola}</div>
                 </div>
                 <div>
-                    <div class="turno-badge-admin ${classeNpl}">
+                    <div class="turno-badge-admin">
                         <span ${spanClass}>${c.turnoStr}</span> ${bloccoIcona}
                     </div>
                     ${textOriginale}

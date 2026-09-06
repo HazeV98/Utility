@@ -183,7 +183,7 @@
         "splitModule": true
     },
     {
-        "id": "buoni_pasto",
+        "id": "buoni",
         "label": "Buoni Pasto",
         "icon": "fa-solid fa-utensils",
         "defaultColor": "#d63384",
@@ -191,7 +191,7 @@
             "tutti"
         ],
         "isModule": true,
-        "moduleId": "buoni_pasto",
+        "moduleId": "buoni",
         "moduleName": "buoni_pasto",
         "splitModule": true
     },

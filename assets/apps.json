@@ -59,6 +59,19 @@
         "splitModule": true
     },
     {
+        "id": "varianti",
+        "label": "Varianti",
+        "icon": "fa-solid fa-list-ul",
+        "defaultColor": "#a1a1a1",
+        "conditions": [
+            "admin"
+        ],
+        "isModule": true,
+        "moduleId": "varianti",
+        "moduleName": "varianti",
+        "splitModule": false
+    },
+    {
         "id": "bachecaturni",
         "label": "Bacheca Turni",
         "icon": "fa-solid fa-handshake-angle",
@@ -288,19 +301,6 @@
         "isModule": true,
         "moduleId": "varianti_admin",
         "moduleName": "varianti_admin",
-        "splitModule": false
-    },
-    {
-        "id": "varianti",
-        "label": "Varianti",
-        "icon": "fa-solid fa-list-ul",
-        "defaultColor": "#a1a1a1",
-        "conditions": [
-            "admin"
-        ],
-        "isModule": true,
-        "moduleId": "varianti",
-        "moduleName": "varianti",
         "splitModule": false
     }
 ]

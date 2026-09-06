@@ -3,25 +3,25 @@ import { doc, getDoc, updateDoc, collection, getDocs, query, where } from "https
 // ==========================================
 // 1. INIEZIONE UI (Gestita dal LazyLoader)
 // ==========================================
-export function initUIVarianti() {
-    if (document.getElementById('modal-varianti-main')) return;
+export function initUIVariantiAdmin() {
+    if (document.getElementById('modal-varianti-admin-main')) return;
     
     const uiHTML = `
     <style>
-        .contact-item { background: var(--surface); padding: 16px; border-radius: var(--radius-md); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-sm); border-left: 5px solid var(--primary); border: 1px solid var(--border-color); border-left-width: 5px; text-align: left;}
-        .contact-item.is-mate { border-left-color: var(--success); background: rgba(40, 167, 69, 0.05); }
-        .contact-info { text-align: left; flex: 1; }
-        .contact-name { font-weight: 700; font-size: 16px; color: var(--text-main); margin-bottom: 4px; text-transform: capitalize; }
-        .contact-detail { font-size: 13px; color: var(--text-muted); font-weight: 500; }
-        .turno-badge { font-size: 16px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; justify-content: flex-end;}
-        .turno-badge.npl { color: var(--danger); }
-        .turno-originale { font-size: 12px; color: var(--text-muted); font-weight: normal; display: block; margin-top: 6px; text-align: right; background: var(--surface-hover); padding: 4px 8px; border-radius: 6px;}
-        .clickable-turn { cursor: pointer; color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+        .contact-item-admin { background: var(--surface); padding: 16px; border-radius: var(--radius-md); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-sm); border-left: 5px solid var(--primary); border: 1px solid var(--border-color); border-left-width: 5px; text-align: left;}
+        .contact-item-admin.is-mate { border-left-color: var(--success); background: rgba(40, 167, 69, 0.05); }
+        .contact-info-admin { text-align: left; flex: 1; }
+        .contact-name-admin { font-weight: 700; font-size: 16px; color: var(--text-main); margin-bottom: 4px; text-transform: capitalize; }
+        .contact-detail-admin { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+        .turno-badge-admin { font-size: 16px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; justify-content: flex-end;}
+        .turno-badge-admin.npl { color: var(--danger); }
+        .turno-originale-admin { font-size: 12px; color: var(--text-muted); font-weight: normal; display: block; margin-top: 6px; text-align: right; background: var(--surface-hover); padding: 4px 8px; border-radius: 6px;}
+        .clickable-turn-admin { cursor: pointer; color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
     </style>
 
-    <div id="modal-varianti-main" class="modal-overlay" onclick="window.chiudiSuSfondo(event, 'modal-varianti-main')">
+    <div id="modal-varianti-admin-main" class="modal-overlay" onclick="if(event.target.id === 'modal-varianti-admin-main') this.style.display='none'">
         <div class="modal-content" style="max-width: 440px; height: 85vh; display: flex; flex-direction: column; padding: 20px;">
-            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-varianti-main').style.display='none'"></i>
+            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-varianti-admin-main').style.display='none'"></i>
             
             <h3 style="margin-top: 0; color: var(--danger); font-weight: 800; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
                 <i class="fa-solid fa-user-shield"></i> Varianti (MODALITÀ ADMIN)
@@ -29,31 +29,31 @@ export function initUIVarianti() {
 
             <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; width: 100%;">
                 
-                <div id="view-var-no-auth" style="display: none; flex-direction: column; align-items: center; text-align: center; margin-top: 20px;">
+                <div id="view-var-admin-no-auth" style="display: none; flex-direction: column; align-items: center; text-align: center; margin-top: 20px;">
                     <i class="fa-solid fa-lock" style="font-size: 48px; color: var(--text-muted); margin-bottom: 16px;"></i>
                     <h3 style="color: var(--danger); margin-top: 0;">Accesso Richiesto</h3>
                 </div>
 
-                <div id="view-var-no-setup" style="display: none; flex-direction: column; align-items: center; text-align: center; margin-top: 20px;">
+                <div id="view-var-admin-no-setup" style="display: none; flex-direction: column; align-items: center; text-align: center; margin-top: 20px;">
                     <i class="fa-solid fa-calendar-xmark" style="font-size: 48px; color: var(--warning); margin-bottom: 16px;"></i>
                     <h3 style="color: var(--warning); margin-top: 0;">Calendario non configurato</h3>
-                    <p style="color: var(--text-muted);">Configura la rotazione nel calendario prima di condividere i turni.</p>
+                    <p style="color: var(--text-muted);">Configura la rotazione nel calendario prima di visualizzare i turni.</p>
                 </div>
 
-                <div id="view-var-main" style="display: none; flex-direction: column; width: 100%;">
+                <div id="view-var-admin-main" style="display: none; flex-direction: column; width: 100%;">
                     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <input type="date" id="data-ricerca-varianti" class="input-field" style="margin-bottom: 0; flex: 1;" onchange="window.cercaVariantiGiorno()">
+                        <input type="date" id="data-ricerca-varianti-admin" class="input-field" style="margin-bottom: 0; flex: 1;" onchange="window.cercaVariantiGiornoAdmin()">
                     </div>
                     
                     <div style="position: relative; width: 100%; margin-bottom: 15px;">
                         <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 16px; top: 13px; color: var(--text-muted);"></i>
-                        <input type="text" id="search-varianti" class="input-field" style="padding-left: 45px; margin-bottom: 0;" placeholder="Cerca nome o turno..." oninput="window.filtraVarianti()">
+                        <input type="text" id="search-varianti-admin" class="input-field" style="padding-left: 45px; margin-bottom: 0;" placeholder="Cerca nome o turno..." oninput="window.filtraVariantiAdmin()">
                     </div>
 
-                    <div id="varianti-list" style="width: 100%;"></div>
+                    <div id="varianti-list-admin" style="width: 100%;"></div>
                 </div>
 
-                <div id="view-var-loading" style="display: none; flex-direction: column; align-items: center; justify-content: center; margin-top: 40px;">
+                <div id="view-var-admin-loading" style="display: none; flex-direction: column; align-items: center; justify-content: center; margin-top: 40px;">
                     <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 24px; color: var(--primary);"></i>
                 </div>
 
@@ -61,12 +61,12 @@ export function initUIVarianti() {
         </div>
     </div>
 
-    <!-- Modale Visualizzatore Immagini -->
-    <div id="modal-image-variante" class="modal-overlay" style="z-index: 9999; display: none; background: rgba(0,0,0,0.9);" onclick="window.chiudiImageModalVariantiSeSfondo(event)">
-        <div id="imageFlexContainerVariante" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative;">
-            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 30px; cursor: pointer; color: white; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));" onclick="window.chiudiImageModalVarianti()"></i>
-            <img id="img-variante-turno" style="max-width: 100%; max-height: 100vh; object-fit: contain; transition: transform 0.2s;" src="">
-            <button onclick="window.scaricaImmagineVariante()" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 20px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 10; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-download"></i> Scarica</button>
+    <!-- Modale Visualizzatore Immagini Admin -->
+    <div id="modal-image-variante-admin" class="modal-overlay" style="z-index: 9999; display: none; background: rgba(0,0,0,0.9);" onclick="window.chiudiImageModalVariantiSeSfondoAdmin(event)">
+        <div id="imageFlexContainerVarianteAdmin" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative;">
+            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 30px; cursor: pointer; color: white; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));" onclick="window.chiudiImageModalVariantiAdmin()"></i>
+            <img id="img-variante-turno-admin" style="max-width: 100%; max-height: 100vh; object-fit: contain; transition: transform 0.2s;" src="">
+            <button onclick="window.scaricaImmagineVarianteAdmin()" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 20px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 10; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-download"></i> Scarica</button>
         </div>
     </div>
     `;
@@ -76,42 +76,42 @@ export function initUIVarianti() {
 // ==========================================
 // 2. MOTORE LOGICO E FILTRI
 // ==========================================
-export function avviaMotoreVarianti(db, auth, userDataPrivate) {
+export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
     const currentUser = auth.currentUser;
-    let globalRotCache = null;
-    let globalDbCache = null;
+    let globalRotCacheAdmin = null;
+    let globalDbCacheAdmin = null;
     const DATA_INIZIO_NUOVI_TURNI = "2026-06-01"; 
 
-    let pzVariante = null;
-    let currentImagePathVar = "";
-    let imgBaseFallbackVar = "";
+    let pzVarianteAdmin = null;
+    let currentImagePathVarAdmin = "";
+    let imgBaseFallbackVarAdmin = "";
 
     if (!currentUser) {
-        mostraVista('view-var-no-auth');
+        mostraVistaAdmin('view-var-admin-no-auth');
         return;
     }
 
-    const imgElem = document.getElementById('img-variante-turno');
-    if (typeof Panzoom !== 'undefined' && !pzVariante) {
-        pzVariante = Panzoom(imgElem, { maxScale: 5, minScale: 1 });
-        document.getElementById('imageFlexContainerVariante').addEventListener('wheel', pzVariante.zoomWithWheel);
+    const imgElemAdmin = document.getElementById('img-variante-turno-admin');
+    if (typeof Panzoom !== 'undefined' && !pzVarianteAdmin) {
+        pzVarianteAdmin = Panzoom(imgElemAdmin, { maxScale: 5, minScale: 1 });
+        document.getElementById('imageFlexContainerVarianteAdmin').addEventListener('wheel', pzVarianteAdmin.zoomWithWheel);
         
-        function eseguiZoomToggle(e) {
-            if (!pzVariante) return;
-            let currentScale = pzVariante.getScale();
-            if (currentScale < 1.1) { pzVariante.zoom(1.75, { animate: true }); } 
-            else { pzVariante.reset({ animate: true }); }
+        function eseguiZoomToggleAdmin(e) {
+            if (!pzVarianteAdmin) return;
+            let currentScale = pzVarianteAdmin.getScale();
+            if (currentScale < 1.1) { pzVarianteAdmin.zoom(1.75, { animate: true }); } 
+            else { pzVarianteAdmin.reset({ animate: true }); }
         }
         
-        let lastTap = 0; let isPinching = false;
-        imgElem.addEventListener('touchstart', function(e) { if (e.touches.length > 1) { isPinching = true; } });
-        imgElem.addEventListener('touchend', function(e) {
-            if (isPinching) { if (e.touches.length === 0) { setTimeout(() => isPinching = false, 300); } return; }
-            let currentTime = new Date().getTime(); let tapLength = currentTime - lastTap;
-            if (tapLength < 300 && tapLength > 0) { eseguiZoomToggle(e); if (e.cancelable) e.preventDefault(); }
-            lastTap = currentTime;
+        let lastTapAdmin = 0; let isPinchingAdmin = false;
+        imgElemAdmin.addEventListener('touchstart', function(e) { if (e.touches.length > 1) { isPinchingAdmin = true; } });
+        imgElemAdmin.addEventListener('touchend', function(e) {
+            if (isPinchingAdmin) { if (e.touches.length === 0) { setTimeout(() => isPinchingAdmin = false, 300); } return; }
+            let currentTime = new Date().getTime(); let tapLength = currentTime - lastTapAdmin;
+            if (tapLength < 300 && tapLength > 0) { eseguiZoomToggleAdmin(e); if (e.cancelable) e.preventDefault(); }
+            lastTapAdmin = currentTime;
         });
-        imgElem.addEventListener('dblclick', function(e) { eseguiZoomToggle(e); });
+        imgElemAdmin.addEventListener('dblclick', function(e) { eseguiZoomToggleAdmin(e); });
     }
 
     function stringToNum(s) { 
@@ -130,15 +130,15 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         return (pos === 6 || pos === 13 || pos === 14); 
     }
 
-    function trovaChiaveEsatta(db, codiceBase, dateStr) {
-        if (!db || !codiceBase) return codiceBase;
+    function trovaChiaveEsatta(dbLocal, codiceBase, dateStr) {
+        if (!dbLocal || !codiceBase) return codiceBase;
         let codiciDaCercare = [codiceBase];
         let matchB = codiceBase.match(/^([1-9])B(\d{2})$/);
         if (matchB) {
             let linea = matchB[1]; let finale = matchB[2];
             let letteraPilota = (linea === '1' || linea === '2') ? 'C' : 'P';
             let regex = new RegExp(`^${linea}[A-Z]${finale}$`);
-            let trovati = Object.keys(db).filter(k => regex.test(k));
+            let trovati = Object.keys(dbLocal).filter(k => regex.test(k));
             if (trovati.length > 0) codiciDaCercare.push(...trovati);
             else codiciDaCercare.push(`${linea}${letteraPilota}${finale}`);
         } else {
@@ -153,7 +153,7 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         const dayMap = { "LUN": 1, "MAR": 2, "MER": 3, "GIO": 4, "VEN": 5, "SAB": 6, "DOM": 7 };
 
         for (let codCercato of codiciDaCercare) {
-            let keys = Object.keys(db).filter(k => k === codCercato || k.startsWith(codCercato + "_"));
+            let keys = Object.keys(dbLocal).filter(k => k === codCercato || k.startsWith(codCercato + "_"));
             let exactMatch = null; let genericMatch = null;
             for (let k of keys) {
                 if (k === codCercato) { genericMatch = k; continue; }
@@ -205,11 +205,11 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
             let offset = [1, 3, 5, 8, 10, 12].includes(startPos) ? 1 : 0;
             
             let rotList = [];
-            if (globalRotCache) {
-                const dateChiavi = Object.keys(globalRotCache).sort();
-                let rotCorrente = dateChiavi.length > 0 ? globalRotCache[dateChiavi[0]] : null; 
+            if (globalRotCacheAdmin) {
+                const dateChiavi = Object.keys(globalRotCacheAdmin).sort();
+                let rotCorrente = dateChiavi.length > 0 ? globalRotCacheAdmin[dateChiavi[0]] : null; 
                 for (let i = dateChiavi.length - 1; i >= 0; i--) { 
-                    if (curr >= stringToNum(dateChiavi[i])) { rotCorrente = globalRotCache[dateChiavi[i]]; break; } 
+                    if (curr >= stringToNum(dateChiavi[i])) { rotCorrente = globalRotCacheAdmin[dateChiavi[i]]; break; } 
                 }
                 if (rotCorrente && rotCorrente[cfgBase.depositoAttivo]) { rotList = rotCorrente[cfgBase.depositoAttivo]; }
             }
@@ -277,9 +277,9 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         return mates;
     }
 
-    async function initCaches() {
-        if (globalRotCache && globalDbCache) return;
-        globalRotCache = {}; globalDbCache = {};
+    async function initCachesAdmin() {
+        if (globalRotCacheAdmin && globalDbCacheAdmin) return;
+        globalRotCacheAdmin = {}; globalDbCacheAdmin = {};
         try {
             const resMap = await fetch("mappa_file.json?v=" + Date.now());
             if (resMap.ok) {
@@ -290,9 +290,9 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
                     const dateMatch = file.match(/\d{4}-\d{2}-\d{2}/);
                     if (!dateMatch) continue;
                     if (file.startsWith("rotazioni_")) {
-                        fetchPromises.push(fetch(file + "?v=" + Date.now()).then(r => r.json()).then(d => globalRotCache[dateMatch[0]] = d).catch(()=>{}));
+                        fetchPromises.push(fetch(file + "?v=" + Date.now()).then(r => r.json()).then(d => globalRotCacheAdmin[dateMatch[0]] = d).catch(()=>{}));
                     } else if (file.startsWith("info_turni_")) {
-                        fetchPromises.push(fetch(file + "?v=" + Date.now()).then(r => r.json()).then(d => globalDbCache[dateMatch[0]] = d).catch(()=>{}));
+                        fetchPromises.push(fetch(file + "?v=" + Date.now()).then(r => r.json()).then(d => globalDbCacheAdmin[dateMatch[0]] = d).catch(()=>{}));
                     }
                 }
                 await Promise.all(fetchPromises);
@@ -300,14 +300,14 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         } catch (e) { console.error("Errore download mappe", e); }
     }
 
-    function mostraVista(idVista) {
-        ['view-var-no-auth', 'view-var-no-setup', 'view-var-main'].forEach(id => {
+    function mostraVistaAdmin(idVista) {
+        ['view-var-admin-no-auth', 'view-var-admin-no-setup', 'view-var-admin-main'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = (id === idVista) ? 'flex' : 'none';
         });
     }
 
-    function applicaFiltroPrivacy(turnoStr) {
+    function applicaFiltroPrivacyAdmin(turnoStr) {
         if (!turnoStr) return "";
         let t = turnoStr.toUpperCase().trim();
         const codiciSensibili = ["KMAL", "KNOP", "AVIS", "KINF", "FER", "FEP", "FES", "PRT"];
@@ -318,26 +318,26 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         return isSensibile ? "NPL" : t;
     }
 
-    async function caricaStatoVarianti() {
+    async function caricaStatoVariantiAdmin() {
         let state = JSON.parse(localStorage.getItem('myTurniApp')) || {};
-        if (!state.depositoAttivo) { mostraVista('view-var-no-setup'); return; }
+        if (!state.depositoAttivo) { mostraVistaAdmin('view-var-admin-no-setup'); return; }
 
         try {
-            await initCaches(); 
-            mostraVista('view-var-main');
-            const dataInput = document.getElementById('data-ricerca-varianti');
+            await initCachesAdmin(); 
+            mostraVistaAdmin('view-var-admin-main');
+            const dataInput = document.getElementById('data-ricerca-varianti-admin');
             if (!dataInput.value) dataInput.value = new Date().toISOString().split('T')[0];
-            window.cercaVariantiGiorno();
+            window.cercaVariantiGiornoAdmin();
         } catch (error) { 
             console.error("Errore caricamento admin", error); 
         }
     }
 
-    window.cercaVariantiGiorno = async function() {
-        const dataScelta = document.getElementById('data-ricerca-varianti').value;
-        const listDiv = document.getElementById('varianti-list');
+    window.cercaVariantiGiornoAdmin = async function() {
+        const dataScelta = document.getElementById('data-ricerca-varianti-admin').value;
+        const listDiv = document.getElementById('varianti-list-admin');
         listDiv.innerHTML = "<div style='text-align:center; margin-top:20px;'><i class='fa-solid fa-spinner fa-spin' style='color:var(--primary); font-size:24px;'></i></div>";
-        document.getElementById('search-varianti').value = ""; 
+        document.getElementById('search-varianti-admin').value = ""; 
         
         try {
             let state = JSON.parse(localStorage.getItem('myTurniApp')) || {};
@@ -361,8 +361,8 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
                 let turnoDaMostrare = isModificato ? turnoManuale : turnoOriginaleBase;
                 
                 let isMate = (doc.id !== currentUser.uid) && compagniPossibili.includes(turnoDaMostrare.toUpperCase().replace(/\s+/g, ''));
-                let turnoSchermato = applicaFiltroPrivacy(turnoDaMostrare);
-                let originaleSchermato = isModificato ? applicaFiltroPrivacy(turnoOriginaleBase) : "";
+                let turnoSchermato = applicaFiltroPrivacyAdmin(turnoDaMostrare);
+                let originaleSchermato = isModificato ? applicaFiltroPrivacyAdmin(turnoOriginaleBase) : "";
 
                 turniCondivisi.push({
                     nome: nomeMostrato,
@@ -382,83 +382,83 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
                 return a.turnoStr.localeCompare(b.turnoStr, undefined, {numeric: true});
             });
             
-            disegnaVarianti(turniCondivisi);
+            disegnaVariantiAdmin(turniCondivisi);
         } catch (error) { 
             console.error(error);
             listDiv.innerHTML = "<div style='color:var(--danger); text-align:center;'>Errore di caricamento.</div>"; 
         }
     };
 
-    window.filtraVarianti = function() {
-        let filter = document.getElementById('search-varianti').value.toUpperCase();
-        let items = document.querySelectorAll('#varianti-list .contact-item');
+    window.filtraVariantiAdmin = function() {
+        let filter = document.getElementById('search-varianti-admin').value.toUpperCase();
+        let items = document.querySelectorAll('#varianti-list-admin .contact-item-admin');
         items.forEach(item => {
             let text = item.innerText.toUpperCase();
             item.style.display = text.includes(filter) ? 'flex' : 'none';
         });
     };
 
-    window.apriImmagineVariante = function(turno, dateStr) {
+    window.apriImmagineVarianteAdmin = function(turno, dateStr) {
         if (!turno || turno === "NPL" || turno === "DISP" || turno === "RI" || turno === "RIPOSO" || turno === "AL") return;
         
         let dSelezionata = stringToNum(dateStr);
-        let dateChiavi = Object.keys(globalDbCache || {}).sort();
+        let dateChiavi = Object.keys(globalDbCacheAdmin || {}).sort();
         let dbCorrente = {}; 
         let dataAttiva = dateChiavi.length > 0 ? dateChiavi[0] : "2026-03-02";
         
         for (let i = dateChiavi.length - 1; i >= 0; i--) { 
             if (dSelezionata >= stringToNum(dateChiavi[i])) { 
-                dbCorrente = globalDbCache[dateChiavi[i]]; dataAttiva = dateChiavi[i]; break; 
+                dbCorrente = globalDbCacheAdmin[dateChiavi[i]]; dataAttiva = dateChiavi[i]; break; 
             } 
         }
 
         let chiaveTrovata = trovaChiaveEsatta(dbCorrente, turno, dateStr); 
-        currentImagePathVar = `turni_${dataAttiva}/${chiaveTrovata}.jpg`; 
-        imgBaseFallbackVar = `turni_${dataAttiva}/${turno}.jpg`; 
+        currentImagePathVarAdmin = `turni_${dataAttiva}/${chiaveTrovata}.jpg`; 
+        imgBaseFallbackVarAdmin = `turni_${dataAttiva}/${turno}.jpg`; 
         
-        let imgElement = document.getElementById('img-variante-turno');
+        let imgElement = document.getElementById('img-variante-turno-admin');
         
         imgElement.onerror = function() {
-            if (imgBaseFallbackVar) {
-                currentImagePathVar = imgBaseFallbackVar;
-                imgElement.src = imgBaseFallbackVar;
-                imgBaseFallbackVar = "";
+            if (imgBaseFallbackVarAdmin) {
+                currentImagePathVarAdmin = imgBaseFallbackVarAdmin;
+                imgElement.src = imgBaseFallbackVarAdmin;
+                imgBaseFallbackVarAdmin = "";
             } else {
                 imgElement.onerror = null;
                 alert("L'immagine oraria per questo turno non è al momento disponibile sul server.");
-                window.chiudiImageModalVarianti();
+                window.chiudiImageModalVariantiAdmin();
             }
         };
 
-        imgElement.src = currentImagePathVar;
-        document.getElementById('modal-image-variante').style.display = 'flex';
-        if (pzVariante) { pzVariante.reset(); }
+        imgElement.src = currentImagePathVarAdmin;
+        document.getElementById('modal-image-variante-admin').style.display = 'flex';
+        if (pzVarianteAdmin) { pzVarianteAdmin.reset(); }
     };
 
-    window.chiudiImageModalVarianti = function() {
-        document.getElementById('modal-image-variante').style.display = 'none';
-        document.getElementById('img-variante-turno').removeAttribute('src');
-        if (pzVariante) { pzVariante.reset(); }
+    window.chiudiImageModalVariantiAdmin = function() {
+        document.getElementById('modal-image-variante-admin').style.display = 'none';
+        document.getElementById('img-variante-turno-admin').removeAttribute('src');
+        if (pzVarianteAdmin) { pzVarianteAdmin.reset(); }
     };
 
-    window.chiudiImageModalVariantiSeSfondo = function(event) {
-        if (event.target.id === 'modal-image-variante' || event.target.id === 'imageFlexContainerVariante') {
-            window.chiudiImageModalVarianti();
+    window.chiudiImageModalVariantiSeSfondoAdmin = function(event) {
+        if (event.target.id === 'modal-image-variante-admin' || event.target.id === 'imageFlexContainerVarianteAdmin') {
+            window.chiudiImageModalVariantiAdmin();
         }
     };
 
-    window.scaricaImmagineVariante = function() {
-        if (!currentImagePathVar) return; 
+    window.scaricaImmagineVarianteAdmin = function() {
+        if (!currentImagePathVarAdmin) return; 
         const a = document.createElement('a'); 
-        a.href = currentImagePathVar; 
-        a.download = currentImagePathVar.split('/').pop(); 
+        a.href = currentImagePathVarAdmin; 
+        a.download = currentImagePathVarAdmin.split('/').pop(); 
         document.body.appendChild(a); 
         a.click(); 
         document.body.removeChild(a); 
     };
 
-    function disegnaVarianti(array) {
-        const listDiv = document.getElementById('varianti-list');
+    function disegnaVariantiAdmin(array) {
+        const listDiv = document.getElementById('varianti-list-admin');
         listDiv.innerHTML = "";
         
         if (array.length === 0) {
@@ -466,11 +466,11 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
             return;
         }
         
-        const dataScelta = document.getElementById('data-ricerca-varianti').value;
+        const dataScelta = document.getElementById('data-ricerca-varianti-admin').value;
 
         array.forEach(c => {
             const item = document.createElement('div'); 
-            item.className = "contact-item" + (c.isMate ? " is-mate" : "");
+            item.className = "contact-item-admin" + (c.isMate ? " is-mate" : "");
             const prog = c.omonimia ? ` (${c.omonimia})` : "";
             
             let classeNpl = c.turnoStr === "NPL" ? "npl" : "";
@@ -479,20 +479,20 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
             let pinIcon = c.isMate ? `<i class="fa-solid fa-thumbtack" style="color:var(--success); margin-right:6px;" title="Tuo compagno di turno"></i>` : "";
             
             let canViewImg = (c.turnoStr !== "NPL" && c.turnoStr !== "DISP" && c.turnoStr !== "RI" && c.turnoStr !== "RIPOSO" && c.turnoStr !== "AL");
-            let spanClass = canViewImg ? `class="clickable-turn" onclick="window.apriImmagineVariante('${c.turnoStr}', '${dataScelta}')"` : "";
+            let spanClass = canViewImg ? `class="clickable-turn-admin" onclick="window.apriImmagineVarianteAdmin('${c.turnoStr}', '${dataScelta}')"` : "";
 
             if (c.modificato) {
                 bloccoIcona = `<i class="fa-solid fa-pen-to-square" style="color:var(--warning); cursor:pointer;" onclick="this.parentElement.nextElementSibling.style.display = this.parentElement.nextElementSibling.style.display === 'none' ? 'block' : 'none'"></i>`;
-                textOriginale = `<div class="turno-originale" style="display:none;"><i class="fa-solid fa-clock-rotate-left"></i> Strutturale Base: <b>${c.originaleStr}</b></div>`;
+                textOriginale = `<div class="turno-originale-admin" style="display:none;"><i class="fa-solid fa-clock-rotate-left"></i> Strutturale Base: <b>${c.originaleStr}</b></div>`;
             }
             
             item.innerHTML = `
-                <div class="contact-info">
-                    <div class="contact-name">${pinIcon}${c.cognome} ${c.nome}${prog}</div>
-                    <div class="contact-detail">Mat: ${c.matricola}</div>
+                <div class="contact-info-admin">
+                    <div class="contact-name-admin">${pinIcon}${c.cognome} ${c.nome}${prog}</div>
+                    <div class="contact-detail-admin">Mat: ${c.matricola}</div>
                 </div>
                 <div>
-                    <div class="turno-badge ${classeNpl}">
+                    <div class="turno-badge-admin ${classeNpl}">
                         <span ${spanClass}>${c.turnoStr}</span> ${bloccoIcona}
                     </div>
                     ${textOriginale}
@@ -502,6 +502,5 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         });
     }
 
-    caricaStatoVarianti();
+    caricaStatoVariantiAdmin();
 }
-

@@ -276,5 +276,15 @@
         "conditions": [
             "admin"
         ]
+    },
+    {
+        "id": "varianti_admin",
+        "label": "Varianti Admin",
+        "icon": "fa-solid fa-list-ul",
+        "defaultColor": "#dc3545",
+        "conditions": [
+            "admin"
+        ],
+        "onclick": "onclick=\"window.apriVariantiAdmin()\""
     }
 ]

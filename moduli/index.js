@@ -590,7 +590,7 @@ window.injectAdminConfigTools = () => {
                 <h3 style="font-size:14px; color:var(--danger); margin-bottom:10px;"><i class="fa-solid fa-code"></i> Modalità Sviluppatore</h3>
                 <div style="background:var(--surface-hover); padding:10px; border-radius:8px;">
                     <label style="font-size:11px;">GitHub PAT:</label><input type="password" id="gh-pat" class="input-field" style="margin-bottom:5px;">
-                    <label style="font-size:11px;">Repo (utente/repo):</label><input type="text" id="gh-repo" class="input-field" style="margin-bottom:10px;">
+                    <label style="font-size:11px;">Repo (utente/repo):</label><input type="text" id="dev-gh-repo" class="input-field" style="margin-bottom:10px;">
                     <button class="btn-modal" style="background:var(--success); color:white; padding:6px; font-size:12px;" onclick="window.salvaGHCreds()">Salva Credenziali GH</button>
                     
                     <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
@@ -665,13 +665,13 @@ window.injectAdminConfigTools = () => {
         }
     }
     document.getElementById('gh-pat').value = localStorage.getItem('gh_pat') || '';
-    document.getElementById('gh-repo').value = localStorage.getItem('gh_repo') || '';
+    document.getElementById('dev-gh-repo').value = localStorage.getItem('gh_repo') || '';
     document.getElementById('admin-settings-panel').style.display = 'block';
 };
 
 window.salvaGHCreds = () => {
     localStorage.setItem('gh_pat', document.getElementById('gh-pat').value);
-    localStorage.setItem('gh_repo', document.getElementById('gh-repo').value);
+    localStorage.setItem('gh_repo', document.getElementById('dev-gh-repo').value);
     alert("Credenziali salvate in locale.");
 };
 

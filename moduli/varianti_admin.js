@@ -339,7 +339,7 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
         }
     }
 
-    window.cercaVariantiGiornoAdmin = async function() {
+        window.cercaVariantiGiornoAdmin = async function() {
         const dataScelta = document.getElementById('data-ricerca-varianti-admin').value;
         const listDiv = document.getElementById('varianti-list-admin');
         listDiv.innerHTML = "<div style='text-align:center; margin-top:20px;'><i class='fa-solid fa-spinner fa-spin' style='color:var(--danger); font-size:24px;'></i></div>";
@@ -350,7 +350,14 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
             let mioTurnoOggi = state.variazioni && state.variazioni[dataScelta] ? state.variazioni[dataScelta] : calcolaTurnoBase(dataScelta, state);
             let compagniPossibili = calcolaCompagniPossibili(mioTurnoOggi);
 
-            // ADMIN QUERY: Nessun filtro 'where', scarica l'intera collezione
+            // 1. Scarica la mappa degli utenti per incrociare i dati reali (Admin Privilege)
+            const utentiSnapshot = await getDocs(collection(db, "utenti"));
+            const utentiMap = {};
+            utentiSnapshot.forEach(doc => {
+                utentiMap[doc.id] = doc.data();
+            });
+
+            // 2. Scarica la collezione calendario
             const querySnapshot = await getDocs(collection(db, "calendario"));
             let turniCondivisi = [];
             
@@ -360,10 +367,13 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
                 // Ignora i documenti cancellati logicamente
                 if (data.deleted === true) return;
                 
-                let nomeMostrato = data.nomePubblico || "Utente";
-                let cognomeMostrato = data.cognomePubblico || `(${doc.id.substring(0,4)}) Sconosciuto`;
-                let matricolaMostrata = data.matricolaPubblico || "N/D";
-                let omonimiaMostrata = data.omonimiaPubblico || "";
+                // INCROCIO DATI: Prende il profilo da "utenti" usando l'ID del calendario
+                const utenteData = utentiMap[doc.id] || {};
+                
+                let nomeMostrato = utenteData.nome || data.nomePubblico || "Utente";
+                let cognomeMostrato = utenteData.cognome || data.cognomePubblico || `(${doc.id.substring(0,4)}) Sconosciuto`;
+                let matricolaMostrata = utenteData.matricola || data.matricolaPubblico || "N/D";
+                let omonimiaMostrata = utenteData.progressivo || data.omonimiaPubblico || "";
                 
                 let turnoManuale = data.variazioni && data.variazioni[dataScelta] ? data.variazioni[dataScelta] : null;
                 let turnoOriginaleBase = calcolaTurnoBase(dataScelta, data);
@@ -400,6 +410,7 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
             listDiv.innerHTML = "<div style='color:var(--danger); text-align:center;'>Errore di caricamento.</div>"; 
         }
     };
+
 
     window.filtraVariantiAdmin = function() {
         let filter = document.getElementById('search-varianti-admin').value.toUpperCase();

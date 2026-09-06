@@ -20,8 +20,15 @@ export function initUIVarianti() {
     </style>
 
     <div id="modal-varianti-main" class="modal-overlay" onclick="window.chiudiSuSfondo(event, 'modal-varianti-main')">
-        <div class="modal-content" style="max-width: 440px; height: 85vh; display: flex; flex-direction: column; padding: 20px;">
-            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-varianti-main').style.display='none'"></i>
+        <div class="modal-content" style="max-width: 440px; height: 85vh; display: flex; flex-direction: column; padding: 20px; position: relative;">
+            <i id="btn-var-menu" class="fa-solid fa-ellipsis-vertical" style="position: absolute; right: 60px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted); display: none; padding: 0 10px;" onclick="document.getElementById('var-dropdown-menu').style.display = document.getElementById('var-dropdown-menu').style.display === 'block' ? 'none' : 'block'"></i>
+            <div id="var-dropdown-menu" style="display: none; position: absolute; right: 50px; top: 50px; background: var(--surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 100; min-width: 200px;">
+                <div style="padding: 12px; color: var(--danger); cursor: pointer; font-weight: bold; font-size: 14px; text-align: center;" onclick="window.annullaCondivisioneVarianti()">
+                    <i class="fa-solid fa-user-slash"></i> Annulla Condivisione
+                </div>
+            </div>
+            
+            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-varianti-main').style.display='none'; if(document.getElementById('var-dropdown-menu')) document.getElementById('var-dropdown-menu').style.display='none';"></i>
             
             <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
                 <i class="fa-solid fa-calendar-users"></i> Varianti Servizio
@@ -45,6 +52,12 @@ export function initUIVarianti() {
                     <h3 style="color: var(--primary); margin-top: 0;">Condividi i Turni</h3>
                     <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 13.5px; line-height: 1.5; text-align: justify;">In questa sezione puoi trovare un calendario in cui giorno per giorno puoi vedere la lista di colleghi che hanno accettato di condividere i propri turni e il turno che fanno, si potranno vedere anche i cambi turno salvati sul calendario. Le sigle di assenza (KMAL, KNOP, AVIS, KINF, FER, FEP, FES, PRT) non verranno visualizzate, saranno sostituite da NPL. Entrando accetti di condividere i tuoi turni con gli altri. A chi entra si chiede di tenere aggiornato il calendario con assenze e cambi per avere sempre dati accurati.</p>
                     <button class="btn-action" onclick="window.attivaCondivisioneVarianti()"><i class="fa-solid fa-share-nodes"></i> Accetta e Condividi</button>
+                </div>
+                
+                <div id="view-var-banned" style="display: none; flex-direction: column; align-items: center; text-align: center; margin-top: 20px;">
+                    <i class="fa-solid fa-ban" style="font-size: 48px; color: var(--danger); margin-bottom: 16px;"></i>
+                    <h3 style="color: var(--danger); margin-top: 0;">Accesso Bloccato</h3>
+                    <p style="color: var(--text-muted); font-size: 14px; text-align: center;">Hai annullato la condivisione per due volte. Per evitare l'abuso di questa funzionalità il tuo accesso alla pagina è stato bloccato.</p>
                 </div>
 
                 <div id="view-var-main" style="display: none; flex-direction: column; width: 100%;">
@@ -296,7 +309,7 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
     function calcolaCompagniPossibili(mioTurnoStr) {
         let mates = [];
         if (!mioTurnoStr) return mates;
-        let tClean = mioTurnoStr.toUpperCase().replace(/\s+/g, '');
+        let tClean = String(mioTurnoStr).toUpperCase().replace(/\s+/g, '');
         
         let matchB = tClean.match(/^([1-9])B(\d{2})$/);
         if (matchB) {
@@ -345,7 +358,7 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
     }
 
     function mostraVista(idVista) {
-        ['view-var-no-auth', 'view-var-no-setup', 'view-var-opt-in', 'view-var-loading', 'view-var-main'].forEach(id => {
+        ['view-var-no-auth', 'view-var-no-setup', 'view-var-opt-in', 'view-var-loading', 'view-var-main', 'view-var-banned'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = (id === idVista) ? 'flex' : 'none';
         });
@@ -353,7 +366,7 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
 
     function applicaFiltroPrivacy(turnoStr) {
         if (!turnoStr) return "";
-        let t = turnoStr.toUpperCase().trim();
+        let t = String(turnoStr).toUpperCase().trim();
         const codiciSensibili = ["KMAL", "KNOP", "AVIS", "KINF", "FER", "FEP", "FES", "PRT"];
         let isSensibile = codiciSensibili.some(codice => {
             let regex = new RegExp(`\\b${codice}\\b`);
@@ -372,11 +385,25 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
             const calRef = doc(db, "calendario", currentUser.uid);
             const calSnap = await getDoc(calRef);
             
-            if (calSnap.exists() && calSnap.data().condivisioneVarianti === true) {
-                mostraVista('view-var-main');
-                const dataInput = document.getElementById('data-ricerca-varianti');
-                if (!dataInput.value) dataInput.value = new Date().toISOString().split('T')[0];
-                window.cercaVariantiGiorno();
+            if (calSnap.exists()) {
+                const data = calSnap.data();
+                
+                if (data.bannatoVarianti) {
+                    mostraVista('view-var-banned');
+                    if (document.getElementById('btn-var-menu')) document.getElementById('btn-var-menu').style.display = 'none';
+                    return;
+                }
+                
+                if (data.condivisioneVarianti === true) {
+                    if (document.getElementById('btn-var-menu')) document.getElementById('btn-var-menu').style.display = 'block';
+                    mostraVista('view-var-main');
+                    const dataInput = document.getElementById('data-ricerca-varianti');
+                    if (!dataInput.value) dataInput.value = new Date().toISOString().split('T')[0];
+                    window.cercaVariantiGiorno();
+                } else {
+                    if (document.getElementById('btn-var-menu')) document.getElementById('btn-var-menu').style.display = 'none';
+                    mostraVista('view-var-opt-in');
+                }
             } else {
                 mostraVista('view-var-opt-in');
             }
@@ -403,6 +430,44 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
             mostraVista('view-var-opt-in');
         }
     };
+    
+    window.annullaCondivisioneVarianti = async function() {
+        if(document.getElementById('var-dropdown-menu')) document.getElementById('var-dropdown-menu').style.display = 'none';
+        
+        const msg = "ATTENZIONE: Per evitare che qualcuno approfitti della funzione dando la condivisione solo per spiare i turni altrui e poi toglierla, puoi annullare la condivisione al massimo 2 volte.\n\nSe annulli per la seconda volta, l'accesso alla pagina ti sarà BLOCCATO definitivamente.\n\nSei sicuro di voler annullare la condivisione?";
+        if (!confirm(msg)) return;
+        
+        mostraVista('view-var-loading');
+        if (document.getElementById('btn-var-menu')) document.getElementById('btn-var-menu').style.display = 'none';
+        
+        try {
+            const calRef = doc(db, "calendario", currentUser.uid);
+            const calSnap = await getDoc(calRef);
+            
+            let revoche = 0;
+            if (calSnap.exists() && calSnap.data().revocheCondivisione) {
+                revoche = calSnap.data().revocheCondivisione;
+            }
+            
+            revoche++;
+            let payload = {
+                condivisioneVarianti: false,
+                revocheCondivisione: revoche
+            };
+            
+            if (revoche >= 2) {
+                payload.bannatoVarianti = true;
+            }
+            
+            await updateDoc(calRef, payload);
+            caricaStatoVarianti();
+            
+        } catch (error) {
+            console.error("Errore disattivazione:", error);
+            alert("Si è verificato un errore.");
+            caricaStatoVarianti();
+        }
+    };
 
     window.cercaVariantiGiorno = async function() {
         const dataScelta = document.getElementById('data-ricerca-varianti').value;
@@ -423,12 +488,13 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
                 const data = doc.data();
                 if (data.cognomePubblico) { 
                     
-                    let turnoManuale = data.variazioni && data.variazioni[dataScelta] ? data.variazioni[dataScelta] : null;
-                    let turnoOriginaleBase = calcolaTurnoBase(dataScelta, data);
+                    let turnoManuale = data.variazioni && data.variazioni[dataScelta] ? String(data.variazioni[dataScelta]) : null;
+                    let turnoOriginaleBase = String(calcolaTurnoBase(dataScelta, data) || "N/D");
                     let isModificato = turnoManuale !== null;
                     let turnoDaMostrare = isModificato ? turnoManuale : turnoOriginaleBase;
                     
-                    let isMate = (doc.id !== currentUser.uid) && compagniPossibili.includes(turnoDaMostrare.toUpperCase().replace(/\s+/g, ''));
+                    let stringaSicuraTurno = String(turnoDaMostrare || "").toUpperCase().replace(/\s+/g, '');
+                    let isMate = (doc.id !== currentUser.uid) && compagniPossibili.includes(stringaSicuraTurno);
                     let turnoSchermato = applicaFiltroPrivacy(turnoDaMostrare);
                     let originaleSchermato = isModificato ? applicaFiltroPrivacy(turnoOriginaleBase) : "";
 
@@ -553,7 +619,7 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
 
             if (c.modificato) {
                 bloccoIcona = `<i class="fa-solid fa-pen-to-square" style="color:var(--warning); cursor:pointer;" onclick="this.parentElement.nextElementSibling.style.display = this.parentElement.nextElementSibling.style.display === 'none' ? 'block' : 'none'"></i>`;
-                textOriginale = `<div class="turno-originale" style="display:none;"><i class="fa-solid fa-clock-rotate-left"></i> Strutturale Base: <b>${c.originaleStr}</b></div>`;
+                textOriginale = `<div class="turno-originale" style="display:none;"><i class="fa-solid fa-clock-rotate-left"></i> Assegnato: <b>${c.originaleStr}</b></div>`;
             }
             
             item.innerHTML = `

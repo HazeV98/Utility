@@ -278,19 +278,6 @@
         ]
     },
     {
-        "id": "varianti",
-        "label": "Varianti",
-        "icon": "fa-solid fa-list-ul",
-        "defaultColor": "#0066cc",
-        "conditions": [
-            "admin"
-        ],
-        "isModule": true,
-        "moduleId": "varianti",
-        "moduleName": "varianti",
-        "splitModule": false
-    },
-    {
         "id": "varianti_admin",
         "label": "Varianti admin",
         "icon": "fa-solid fa-list-ul",

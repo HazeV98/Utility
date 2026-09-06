@@ -285,6 +285,9 @@
         "conditions": [
             "admin"
         ],
-        "onclick": "onclick=\"window.apriVariantiAdmin()\""
+        "isModule": true,
+        "moduleId": "varianti_admin",
+        "moduleName": "varianti_admin",
+        "splitModule": false
     }
 ]

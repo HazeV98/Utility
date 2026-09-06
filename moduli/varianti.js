@@ -1,7 +1,9 @@
 import { doc, getDoc, updateDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// --- INIEZIONE INTERFACCIA UTENTE ---
-function injectUIVarianti() {
+// ==========================================
+// 1. INIEZIONE UI (Gestita dal LazyLoader)
+// ==========================================
+export function initUIVarianti() {
     if (document.getElementById('modal-varianti-main')) return;
     
     const uiHTML = `
@@ -39,7 +41,7 @@ function injectUIVarianti() {
                 <div id="view-var-opt-in" style="display: none; text-align: center; margin-top: 20px;">
                     <i class="fa-solid fa-handshake-simple" style="font-size: 48px; color: var(--primary); margin-bottom: 16px;"></i>
                     <h3 style="color: var(--primary); margin-top: 0;">Condividi i Turni</h3>
-                    <p style="color: var(--text-muted); margin-bottom: 24px;">Entrando accetti di condividere il tuo calendario con i colleghi. Le motivazioni di assenza sensibili (Ferie, Malattia, ecc.) verranno nascoste automaticamente.</p>
+                    <p style="color: var(--text-muted); margin-bottom: 24px;">Entrando accetti di condividere il tuo calendario con i colleghi. Le motivazioni di assenza sensibili verranno nascoste automaticamente.</p>
                     <button class="btn-action" onclick="window.attivaCondivisioneVarianti()"><i class="fa-solid fa-share-nodes"></i> Accetta e Condividi</button>
                 </div>
 
@@ -59,9 +61,10 @@ function injectUIVarianti() {
     document.body.insertAdjacentHTML('beforeend', uiHTML);
 }
 
-// --- LOGICA E FILTRI ---
+// ==========================================
+// 2. MOTORE LOGICO E FILTRI
+// ==========================================
 export function avviaMotoreVarianti(db, auth, userDataPrivate) {
-    injectUIVarianti();
     const currentUser = auth.currentUser;
 
     if (!currentUser) {
@@ -69,19 +72,20 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         return;
     }
 
+    // Gestore Viste Interno
     function mostraVista(idVista) {
         ['view-var-no-auth', 'view-var-no-setup', 'view-var-opt-in', 'view-var-loading', 'view-var-main'].forEach(id => {
-            document.getElementById(id).style.display = (id === idVista) ? 'flex' : 'none';
+            const el = document.getElementById(id);
+            if (el) el.style.display = (id === idVista) ? 'flex' : 'none';
         });
     }
 
-    // FILTRO PRIVACY
+    // Filtro Privacy per dati sensibili
     function applicaFiltroPrivacy(turnoStr) {
         if (!turnoStr) return "";
         let t = turnoStr.toUpperCase().trim();
         const codiciSensibili = ["FER", "FEP", "FES", "FERIE", "KMAL", "MALATTIA", "PRT", "KNOP", "AVIS", "KINF"];
         
-        // Verifica se il turno contiene la sigla sensibile come parola intera
         let isSensibile = codiciSensibili.some(codice => {
             let regex = new RegExp(`\\b${codice}\\b`);
             return regex.test(t);
@@ -90,8 +94,8 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         return isSensibile ? "NPL" : t;
     }
 
-    window.apriVarianti = async function() {
-        document.getElementById('modal-varianti-main').style.display = 'flex';
+    // Caricamento Stato Iniziale (Eseguito subito al lancio)
+    async function caricaStatoVarianti() {
         mostraVista('view-var-loading');
 
         let state = JSON.parse(localStorage.getItem('myTurniApp')) || {};
@@ -106,16 +110,21 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
             
             if (calSnap.exists() && calSnap.data().condivisioneVarianti === true) {
                 mostraVista('view-var-main');
-                document.getElementById('data-ricerca-varianti').value = new Date().toISOString().split('T')[0];
+                const dataInput = document.getElementById('data-ricerca-varianti');
+                if (!dataInput.value) dataInput.value = new Date().toISOString().split('T')[0];
                 window.cercaVariantiGiorno();
             } else {
                 mostraVista('view-var-opt-in');
             }
-        } catch (error) { console.error("Errore lettura varianti", error); }
-    };
+        } catch (error) { 
+            console.error("Errore lettura varianti", error); 
+        }
+    }
 
+    // Accettazione Opt-In
     window.attivaCondivisioneVarianti = async function() {
         if (!confirm("Confermi di voler condividere i tuoi turni giornalieri con gli altri colleghi?")) return;
+        mostraVista('view-var-loading');
         
         try {
             const calRef = doc(db, "calendario", currentUser.uid);
@@ -126,10 +135,14 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
                 omonimiaPubblico: userDataPrivate.progressivo || "",
                 matricolaPubblico: userDataPrivate.matricola || ""
             });
-            window.apriVarianti(); // Ricarica la vista
-        } catch (e) { alert("Errore durante l'attivazione della condivisione."); }
+            caricaStatoVarianti(); 
+        } catch (e) { 
+            alert("Errore durante l'attivazione della condivisione."); 
+            mostraVista('view-var-opt-in');
+        }
     };
 
+    // Ricerca turni nel Database
     window.cercaVariantiGiorno = async function() {
         const dataScelta = document.getElementById('data-ricerca-varianti').value;
         const listDiv = document.getElementById('varianti-list');
@@ -144,16 +157,12 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
                 const data = doc.data();
                 if (data.cognomePubblico) {
                     
-                    // 1. Estrazione del turno modificato (se presente)
                     let turnoManuale = data.variazioni && data.variazioni[dataScelta] ? data.variazioni[dataScelta] : null;
-                    
-                    // 2. Simulazione rapida Turno Originale (Da affinare in futuro con l'algoritmo rotazione completo se necessario)
-                    let turnoOriginaleBase = "Turno Base"; 
+                    let turnoOriginaleBase = "Turno Base"; // Placeholder per integrazione rotazione futura
                     
                     let isModificato = turnoManuale !== null;
                     let turnoDaMostrare = isModificato ? turnoManuale : turnoOriginaleBase;
                     
-                    // 3. APPLICAZIONE FILTRI PRIVACY SU ENTRAMBI I DATI
                     let turnoSchermato = applicaFiltroPrivacy(turnoDaMostrare);
                     let originaleSchermato = isModificato ? applicaFiltroPrivacy(turnoOriginaleBase) : "";
 
@@ -176,12 +185,13 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         }
     };
 
+    // Rendering Lista
     function disegnaVarianti(array) {
         const listDiv = document.getElementById('varianti-list');
         listDiv.innerHTML = "";
         
         if (array.length === 0) {
-            listDiv.innerHTML = "<div style='text-align:center; color:var(--text-muted);'>Nessun collega ha condiviso i turni per questa data.</div>";
+            listDiv.innerHTML = "<div style='text-align:center; color:var(--text-muted); padding:20px;'>Nessun collega ha condiviso i turni per questa data.</div>";
             return;
         }
         
@@ -191,8 +201,6 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
             const prog = c.omonimia ? ` (${c.omonimia})` : "";
             
             let classeNpl = c.turnoStr === "NPL" ? "npl" : "";
-            
-            // Icona interattiva solo se c'è stata una modifica
             let bloccoIcona = "";
             let textOriginale = "";
             
@@ -216,5 +224,7 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
             listDiv.appendChild(item);
         });
     }
+
+    // PARTENZA AUTOMATICA DEL MOTORE
+    caricaStatoVarianti();
 }
- 

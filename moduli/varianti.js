@@ -68,14 +68,12 @@ export function initUIVarianti() {
         </div>
     </div>
 
-    <!-- Modale Visualizzatore Immagini -->
-    <div id="modal-image-variante" class="modal-overlay" onclick="window.chiudiSuSfondo(event, 'modal-image-variante')" style="z-index: 9999;">
-        <div class="modal-content" style="max-width: 95vw; padding: 15px; background: var(--surface);">
-            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted); z-index: 10;" onclick="document.getElementById('modal-image-variante').style.display='none'"></i>
-            <h4 id="titolo-immagine-variante" style="margin-top: 0; color: var(--primary); font-weight: 800; text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px;">Turno</h4>
-            <div id="imageFlexContainerVariante" style="width: 100%; overflow: hidden; display: flex; justify-content: center; align-items: center; border-radius: 8px;">
-                <img id="img-variante-turno" style="max-width: 100%; height: auto; border-radius: 8px;" src="">
-            </div>
+    <!-- Modale Visualizzatore Immagini (Stile Calendario) -->
+    <div id="modal-image-variante" class="modal-overlay" style="z-index: 9999; display: none; background: rgba(0,0,0,0.9);" onclick="window.chiudiImageModalVariantiSeSfondo(event)">
+        <div id="imageFlexContainerVariante" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative;">
+            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 30px; cursor: pointer; color: white; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));" onclick="window.chiudiImageModalVarianti()"></i>
+            <img id="img-variante-turno" style="max-width: 100%; max-height: 100vh; object-fit: contain; transition: transform 0.2s;" src="">
+            <button onclick="window.scaricaImmagineVariante()" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 20px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 10; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-download"></i> Scarica</button>
         </div>
     </div>
     `;
@@ -91,9 +89,51 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
     let globalDbCache = null;
     const DATA_INIZIO_NUOVI_TURNI = "2026-06-01"; 
 
+    // Variabili per visualizzatore immagini
+    let pzVariante = null;
+    let currentImagePathVar = "";
+    let imgBaseFallbackVar = "";
+
     if (!currentUser) {
         mostraVista('view-var-no-auth');
         return;
+    }
+
+    // --- SETUP PANZOOM IDENTICO AL CALENDARIO ---
+    const imgElem = document.getElementById('img-variante-turno');
+    if (typeof Panzoom !== 'undefined' && !pzVariante) {
+        pzVariante = Panzoom(imgElem, { maxScale: 5, minScale: 1 });
+        document.getElementById('imageFlexContainerVariante').addEventListener('wheel', pzVariante.zoomWithWheel);
+        
+        function eseguiZoomToggle(e) {
+            if (!pzVariante) return;
+            let currentScale = pzVariante.getScale();
+            if (currentScale < 1.1) { 
+                pzVariante.zoom(1.75, { animate: true }); 
+            } else { 
+                pzVariante.reset({ animate: true }); 
+            }
+        }
+        
+        let lastTap = 0; 
+        let isPinching = false;
+        imgElem.addEventListener('touchstart', function(e) { 
+            if (e.touches.length > 1) { isPinching = true; } 
+        });
+        imgElem.addEventListener('touchend', function(e) {
+            if (isPinching) { 
+                if (e.touches.length === 0) { setTimeout(() => isPinching = false, 300); } 
+                return; 
+            }
+            let currentTime = new Date().getTime(); 
+            let tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0) { 
+                eseguiZoomToggle(e); 
+                if (e.cancelable) e.preventDefault(); 
+            }
+            lastTap = currentTime;
+        });
+        imgElem.addEventListener('dblclick', function(e) { eseguiZoomToggle(e); });
     }
 
     // --- HELPER MATEMATICI ---
@@ -364,14 +404,13 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         }
     };
 
-        window.cercaVariantiGiorno = async function() {
+    window.cercaVariantiGiorno = async function() {
         const dataScelta = document.getElementById('data-ricerca-varianti').value;
         const listDiv = document.getElementById('varianti-list');
         listDiv.innerHTML = "<div style='text-align:center; margin-top:20px;'><i class='fa-solid fa-spinner fa-spin' style='color:var(--primary); font-size:24px;'></i></div>";
         document.getElementById('search-varianti').value = ""; // Resetta la ricerca testuale
         
         try {
-            // Ottieni il tuo turno di oggi per trovare il compagno
             let state = JSON.parse(localStorage.getItem('myTurniApp')) || {};
             let mioTurnoOggi = state.variazioni && state.variazioni[dataScelta] ? state.variazioni[dataScelta] : calcolaTurnoBase(dataScelta, state);
             let compagniPossibili = calcolaCompagniPossibili(mioTurnoOggi);
@@ -382,8 +421,6 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
             
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                
-                // Rimosso il blocco per escludere il proprio utente, così puoi vederti nei test
                 if (data.cognomePubblico) { 
                     
                     let turnoManuale = data.variazioni && data.variazioni[dataScelta] ? data.variazioni[dataScelta] : null;
@@ -391,9 +428,7 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
                     let isModificato = turnoManuale !== null;
                     let turnoDaMostrare = isModificato ? turnoManuale : turnoOriginaleBase;
                     
-                    // Se l'utente in elaborazione sei tu, non segnarti come "compagno" di te stesso
                     let isMate = (doc.id !== currentUser.uid) && compagniPossibili.includes(turnoDaMostrare.toUpperCase().replace(/\s+/g, ''));
-                    
                     let turnoSchermato = applicaFiltroPrivacy(turnoDaMostrare);
                     let originaleSchermato = isModificato ? applicaFiltroPrivacy(turnoOriginaleBase) : "";
 
@@ -410,7 +445,6 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
                 }
             });
             
-            // Ordinamento: Prima i compagni di turno, poi in ordine alfabetico per Sigla Turno
             turniCondivisi.sort((a, b) => {
                 if (a.isMate && !b.isMate) return -1;
                 if (!a.isMate && b.isMate) return 1;
@@ -424,7 +458,6 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         }
     };
 
-
     window.filtraVarianti = function() {
         let filter = document.getElementById('search-varianti').value.toUpperCase();
         let items = document.querySelectorAll('#varianti-list .contact-item');
@@ -434,6 +467,7 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         });
     };
 
+    // --- LOGICA INTERATTIVA IMMAGINI ---
     window.apriImmagineVariante = function(turno, dateStr) {
         if (!turno || turno === "NPL" || turno === "DISP" || turno === "RI" || turno === "RIPOSO" || turno === "AL") return;
         
@@ -449,31 +483,48 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         }
 
         let chiaveTrovata = trovaChiaveEsatta(dbCorrente, turno, dateStr); 
-        let currentImagePath = `turni_${dataAttiva}/${chiaveTrovata}.jpg`; 
-        let imgBaseFallback = `turni_${dataAttiva}/${turno}.jpg`; 
+        currentImagePathVar = `turni_${dataAttiva}/${chiaveTrovata}.jpg`; 
+        imgBaseFallbackVar = `turni_${dataAttiva}/${turno}.jpg`; 
         
         let imgElement = document.getElementById('img-variante-turno');
         
         imgElement.onerror = function() {
-            if (imgBaseFallback) {
-                this.src = imgBaseFallback;
-                imgBaseFallback = "";
+            if (imgBaseFallbackVar) {
+                currentImagePathVar = imgBaseFallbackVar;
+                imgElement.src = imgBaseFallbackVar;
+                imgBaseFallbackVar = "";
             } else {
-                this.onerror = null;
+                imgElement.onerror = null;
                 alert("L'immagine oraria per questo turno non è al momento disponibile sul server.");
-                document.getElementById('modal-image-variante').style.display = 'none';
+                window.chiudiImageModalVarianti();
             }
         };
 
-        imgElement.src = currentImagePath;
-        document.getElementById('titolo-immagine-variante').innerText = "Turno " + turno;
+        imgElement.src = currentImagePathVar;
         document.getElementById('modal-image-variante').style.display = 'flex';
-        
-        if (typeof Panzoom !== 'undefined') {
-            if (window.pzVariante) window.pzVariante.destroy();
-            window.pzVariante = Panzoom(imgElement, { maxScale: 5, minScale: 1 });
-            imgElement.parentElement.addEventListener('wheel', window.pzVariante.zoomWithWheel);
+        if (pzVariante) { pzVariante.reset(); }
+    };
+
+    window.chiudiImageModalVarianti = function() {
+        document.getElementById('modal-image-variante').style.display = 'none';
+        document.getElementById('img-variante-turno').removeAttribute('src');
+        if (pzVariante) { pzVariante.reset(); }
+    };
+
+    window.chiudiImageModalVariantiSeSfondo = function(event) {
+        if (event.target.id === 'modal-image-variante' || event.target.id === 'imageFlexContainerVariante') {
+            window.chiudiImageModalVarianti();
         }
+    };
+
+    window.scaricaImmagineVariante = function() {
+        if (!currentImagePathVar) return; 
+        const a = document.createElement('a'); 
+        a.href = currentImagePathVar; 
+        a.download = currentImagePathVar.split('/').pop(); 
+        document.body.appendChild(a); 
+        a.click(); 
+        document.body.removeChild(a); 
     };
 
     function disegnaVarianti(array) {
@@ -497,7 +548,6 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
             let textOriginale = "";
             let pinIcon = c.isMate ? `<i class="fa-solid fa-thumbtack" style="color:var(--success); margin-right:6px;" title="Tuo compagno di turno"></i>` : "";
             
-            // Logica interattiva icona e visualizzatore
             let canViewImg = (c.turnoStr !== "NPL" && c.turnoStr !== "DISP" && c.turnoStr !== "RI" && c.turnoStr !== "RIPOSO" && c.turnoStr !== "AL");
             let spanClass = canViewImg ? `class="clickable-turn" onclick="window.apriImmagineVariante('${c.turnoStr}', '${dataScelta}')"` : "";
 

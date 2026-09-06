@@ -289,5 +289,18 @@
         "moduleId": "varianti",
         "moduleName": "varianti",
         "splitModule": false
+    },
+    {
+        "id": "varianti_admin",
+        "label": "Varianti admin",
+        "icon": "fa-solid fa-list-ul",
+        "defaultColor": "#dc3545",
+        "conditions": [
+            "admin"
+        ],
+        "isModule": true,
+        "moduleId": "varianti_admin",
+        "moduleName": "varianti_admin",
+        "splitModule": false
     }
 ]

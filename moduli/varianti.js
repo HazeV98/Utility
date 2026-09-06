@@ -9,12 +9,14 @@ export function initUIVarianti() {
     const uiHTML = `
     <style>
         .contact-item { background: var(--surface); padding: 16px; border-radius: var(--radius-md); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-sm); border-left: 5px solid var(--primary); border: 1px solid var(--border-color); border-left-width: 5px; text-align: left;}
+        .contact-item.is-mate { border-left-color: var(--success); background: rgba(40, 167, 69, 0.05); }
         .contact-info { text-align: left; flex: 1; }
         .contact-name { font-weight: 700; font-size: 16px; color: var(--text-main); margin-bottom: 4px; text-transform: capitalize; }
         .contact-detail { font-size: 13px; color: var(--text-muted); font-weight: 500; }
-        .turno-badge { font-size: 16px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .turno-badge { font-size: 16px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; justify-content: flex-end;}
         .turno-badge.npl { color: var(--danger); }
-        .turno-originale { font-size: 11px; color: var(--text-muted); font-weight: normal; display: block; margin-top: 4px; text-align: right;}
+        .turno-originale { font-size: 12px; color: var(--text-muted); font-weight: normal; display: block; margin-top: 6px; text-align: right; background: var(--surface-hover); padding: 4px 8px; border-radius: 6px;}
+        .clickable-turn { cursor: pointer; color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
     </style>
 
     <div id="modal-varianti-main" class="modal-overlay" onclick="window.chiudiSuSfondo(event, 'modal-varianti-main')">
@@ -46,7 +48,15 @@ export function initUIVarianti() {
                 </div>
 
                 <div id="view-var-main" style="display: none; flex-direction: column; width: 100%;">
-                    <input type="date" id="data-ricerca-varianti" class="input-field" style="margin-bottom: 15px;" onchange="window.cercaVariantiGiorno()">
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <input type="date" id="data-ricerca-varianti" class="input-field" style="margin-bottom: 0; flex: 1;" onchange="window.cercaVariantiGiorno()">
+                    </div>
+                    
+                    <div style="position: relative; width: 100%; margin-bottom: 15px;">
+                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 16px; top: 13px; color: var(--text-muted);"></i>
+                        <input type="text" id="search-varianti" class="input-field" style="padding-left: 45px; margin-bottom: 0;" placeholder="Cerca nome o turno..." oninput="window.filtraVarianti()">
+                    </div>
+
                     <div id="varianti-list" style="width: 100%;"></div>
                 </div>
 
@@ -54,6 +64,17 @@ export function initUIVarianti() {
                     <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 24px; color: var(--primary);"></i>
                 </div>
 
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale Visualizzatore Immagini -->
+    <div id="modal-image-variante" class="modal-overlay" onclick="window.chiudiSuSfondo(event, 'modal-image-variante')" style="z-index: 9999;">
+        <div class="modal-content" style="max-width: 95vw; padding: 15px; background: var(--surface);">
+            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted); z-index: 10;" onclick="document.getElementById('modal-image-variante').style.display='none'"></i>
+            <h4 id="titolo-immagine-variante" style="margin-top: 0; color: var(--primary); font-weight: 800; text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px;">Turno</h4>
+            <div id="imageFlexContainerVariante" style="width: 100%; overflow: hidden; display: flex; justify-content: center; align-items: center; border-radius: 8px;">
+                <img id="img-variante-turno" style="max-width: 100%; height: auto; border-radius: 8px;" src="">
             </div>
         </div>
     </div>
@@ -67,6 +88,7 @@ export function initUIVarianti() {
 export function avviaMotoreVarianti(db, auth, userDataPrivate) {
     const currentUser = auth.currentUser;
     let globalRotCache = null;
+    let globalDbCache = null;
     const DATA_INIZIO_NUOVI_TURNI = "2026-06-01"; 
 
     if (!currentUser) {
@@ -74,11 +96,17 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         return;
     }
 
-    // --- HELPER MATEMATICI PER IL CALCOLO TURNI ---
+    // --- HELPER MATEMATICI ---
     function stringToNum(s) { 
         if(!s) return 0; 
         let p = s.split('-'); 
         return Math.floor(Date.UTC(p[0], p[1]-1, p[2]) / 86400000); 
+    }
+
+    function creaDataSicura(dataStr) { 
+        if(!dataStr) return new Date(); 
+        let p = dataStr.split('-'); 
+        return new Date(p[0], p[1] - 1, p[2], 12, 0, 0); 
     }
 
     function isGiornoRiposoBase(curr, cfg) { 
@@ -89,10 +117,57 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         return (pos === 6 || pos === 13 || pos === 14); 
     }
 
-    // Ricostruisce il turno originale per un determinato utente in una certa data
+    // Ricerca della chiave turno specifica per le immagini
+    function trovaChiaveEsatta(db, codiceBase, dateStr) {
+        if (!db || !codiceBase) return codiceBase;
+        let codiciDaCercare = [codiceBase];
+        
+        let matchB = codiceBase.match(/^([1-9])B(\d{2})$/);
+        if (matchB) {
+            let linea = matchB[1]; let finale = matchB[2];
+            let letteraPilota = (linea === '1' || linea === '2') ? 'C' : 'P';
+            let regex = new RegExp(`^${linea}[A-Z]${finale}$`);
+            let trovati = Object.keys(db).filter(k => regex.test(k));
+            if (trovati.length > 0) codiciDaCercare.push(...trovati);
+            else codiciDaCercare.push(`${linea}${letteraPilota}${finale}`);
+        } else {
+            let match50 = codiceBase.match(/^([A-Z0-9]+?)(\d{2})$/);
+            if (match50) {
+                let pref = match50[1]; let num = parseInt(match50[2], 10);
+                if (num >= 50) codiciDaCercare.push(pref + String(num - 50).padStart(2, '0'));
+            }
+        }
+
+        let giornoIdx = creaDataSicura(dateStr).getDay(); 
+        let targetDay = giornoIdx === 0 ? 7 : giornoIdx; 
+        const dayMap = { "LUN": 1, "MAR": 2, "MER": 3, "GIO": 4, "VEN": 5, "SAB": 6, "DOM": 7 };
+
+        for (let codCercato of codiciDaCercare) {
+            let keys = Object.keys(db).filter(k => k === codCercato || k.startsWith(codCercato + "_"));
+            let exactMatch = null; let genericMatch = null;
+            for (let k of keys) {
+                if (k === codCercato) { genericMatch = k; continue; }
+                let suffix = k.substring(codCercato.length + 1); 
+                if (suffix.includes("-")) {
+                    let parts = suffix.split("-");
+                    if (parts.length === 2 && dayMap[parts[0]] && dayMap[parts[1]]) {
+                        let start = dayMap[parts[0]]; let end = dayMap[parts[1]];
+                        if (start <= end) { if (targetDay >= start && targetDay <= end) exactMatch = k; } 
+                        else { if (targetDay >= start || targetDay <= end) exactMatch = k; }
+                    }
+                } else {
+                    if (dayMap[suffix] && dayMap[suffix] === targetDay) exactMatch = k;
+                }
+            }
+            if (exactMatch) return exactMatch;
+            if (genericMatch) return genericMatch;
+        }
+        return codiceBase; 
+    }
+
+    // Ricostruisce il turno originale per qualsiasi utente
     function calcolaTurnoBase(dStr, cfgData) {
         if (!cfgData || !cfgData.depositoAttivo || !cfgData.riposoStart) return "N/D";
-        
         let curr = stringToNum(dStr);
         let isPastUpdate = (cfgData.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI)); 
         let cfgBase = isPastUpdate ? cfgData.history : cfgData;
@@ -115,18 +190,13 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
                 : { start: cfgBase.rotazioneStart, idx: cfgBase.turnoIndex, tcPattern: cfgBase.tcPattern };
             
             let refRot = stringToNum(activeCfg.start), w = 0; 
-            
-            if (curr >= refRot) { 
-                for (let j = refRot; j < curr; j++) { if (!isGiornoRiposoBase(j, cfgBase)) w++; } 
-            } else { 
-                for (let j = refRot; j > curr; j--) { if (!isGiornoRiposoBase(j, cfgBase)) w--; } 
-            }
+            if (curr >= refRot) { for (let j = refRot; j < curr; j++) { if (!isGiornoRiposoBase(j, cfgBase)) w++; } } 
+            else { for (let j = refRot; j > curr; j--) { if (!isGiornoRiposoBase(j, cfgBase)) w--; } }
             
             let refRip = stringToNum(cfgBase.riposoStart); 
             let startPos = ((refRot - refRip + 6) % 15 + 15) % 15; 
             let offset = [1, 3, 5, 8, 10, 12].includes(startPos) ? 1 : 0;
             
-            // Trova la rotazione giusta nel tempo
             let rotList = [];
             if (globalRotCache) {
                 const dateChiavi = Object.keys(globalRotCache).sort();
@@ -147,10 +217,8 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
                     let patternDopoSingolo = activeCfg.tcPattern || cfgBase.tcPattern || 'doppio'; 
                     let isAlternato = (patternDopoSingolo === 'disp') ? isBlock2 : !isBlock2;
                     let idx = Math.floor(k / 2); 
-                    
                     if (idx >= rotList.length) idx = rotList.length - 1; 
                     let t = rotList[idx].toUpperCase();
-                    
                     if (isAlternato) { 
                         let dispOnEven = (cfgBase.depositoAttivo === 'tc_spez_lido'); 
                         if (dispOnEven && k % 2 === 0) t = "DISP"; 
@@ -184,31 +252,58 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         return "N/D";
     }
 
-    // --- CARICAMENTO DATI STRUTTURALI (ROT CACHE) ---
-    async function initRotCache() {
-        if (globalRotCache) return;
-        globalRotCache = {};
+    // Identifica le sigle complementari per accoppiare gli equipaggi
+    function calcolaCompagniPossibili(mioTurnoStr) {
+        let mates = [];
+        if (!mioTurnoStr) return mates;
+        let tClean = mioTurnoStr.toUpperCase().replace(/\s+/g, '');
+        
+        let matchB = tClean.match(/^([1-9])B(\d{2})$/);
+        if (matchB) {
+            let l = matchB[1]; let f = matchB[2];
+            let letPilota = (l === '1' || l === '2') ? 'C' : 'P';
+            mates.push(`${l}${letPilota}${f}`);
+        } else {
+            let matchP = tClean.match(/^([1-9])[CP](\d{2})$/);
+            if (matchP) {
+                mates.push(`${matchP[1]}B${matchP[2]}`);
+            } else {
+                let match50 = tClean.match(/^([A-Z0-9]+?)(\d{2})$/);
+                if (match50) {
+                    let p = match50[1]; let n = parseInt(match50[2], 10);
+                    if (n >= 50) mates.push(p + String(n - 50).padStart(2, '0'));
+                    else mates.push(p + String(n + 50).padStart(2, '0'));
+                }
+            }
+        }
+        return mates;
+    }
+
+    // --- CARICAMENTO DATI STRUTTURALI (CACHE) ---
+    async function initCaches() {
+        if (globalRotCache && globalDbCache) return;
+        globalRotCache = {}; globalDbCache = {};
         try {
             const resMap = await fetch("mappa_file.json?v=" + Date.now());
             if (resMap.ok) {
                 const mappa = await resMap.json();
                 const albero = mappa.albero || [];
+                const fetchPromises = [];
+                
                 for (let file of albero) {
+                    const dateMatch = file.match(/\d{4}-\d{2}-\d{2}/);
+                    if (!dateMatch) continue;
                     if (file.startsWith("rotazioni_")) {
-                        const dateMatch = file.match(/\d{4}-\d{2}-\d{2}/);
-                        if (dateMatch) {
-                            const res = await fetch(file + "?v=" + Date.now());
-                            if (res.ok) {
-                                globalRotCache[dateMatch[0]] = await res.json();
-                            }
-                        }
+                        fetchPromises.push(fetch(file + "?v=" + Date.now()).then(r => r.json()).then(d => globalRotCache[dateMatch[0]] = d).catch(()=>{}));
+                    } else if (file.startsWith("info_turni_")) {
+                        fetchPromises.push(fetch(file + "?v=" + Date.now()).then(r => r.json()).then(d => globalDbCache[dateMatch[0]] = d).catch(()=>{}));
                     }
                 }
+                await Promise.all(fetchPromises);
             }
-        } catch (e) { console.error("Errore download mappe rotazioni", e); }
+        } catch (e) { console.error("Errore download mappe", e); }
     }
 
-    // Gestore Viste Interno
     function mostraVista(idVista) {
         ['view-var-no-auth', 'view-var-no-setup', 'view-var-opt-in', 'view-var-loading', 'view-var-main'].forEach(id => {
             const el = document.getElementById(id);
@@ -216,33 +311,24 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         });
     }
 
-    // Filtro Privacy per dati sensibili (Sigle aggiornate come da richiesta)
     function applicaFiltroPrivacy(turnoStr) {
         if (!turnoStr) return "";
         let t = turnoStr.toUpperCase().trim();
         const codiciSensibili = ["KMAL", "KNOP", "AVIS", "KINF", "FER", "FEP", "FES", "PRT"];
-        
         let isSensibile = codiciSensibili.some(codice => {
             let regex = new RegExp(`\\b${codice}\\b`);
             return regex.test(t);
         });
-        
         return isSensibile ? "NPL" : t;
     }
 
-    // Caricamento Stato Iniziale (Eseguito subito al lancio)
     async function caricaStatoVarianti() {
         mostraVista('view-var-loading');
-
         let state = JSON.parse(localStorage.getItem('myTurniApp')) || {};
-        if (!state.depositoAttivo) {
-            mostraVista('view-var-no-setup');
-            return;
-        }
+        if (!state.depositoAttivo) { mostraVista('view-var-no-setup'); return; }
 
         try {
-            await initRotCache(); // Carica le rotazioni per calcolare i turni degli altri
-
+            await initCaches(); 
             const calRef = doc(db, "calendario", currentUser.uid);
             const calSnap = await getDoc(calRef);
             
@@ -260,10 +346,8 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         }
     }
 
-    // Accettazione Opt-In
     window.attivaCondivisioneVarianti = async function() {
         mostraVista('view-var-loading');
-        
         try {
             const calRef = doc(db, "calendario", currentUser.uid);
             await updateDoc(calRef, {
@@ -280,29 +364,32 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         }
     };
 
-    // Ricerca turni nel Database per il giorno selezionato
     window.cercaVariantiGiorno = async function() {
         const dataScelta = document.getElementById('data-ricerca-varianti').value;
         const listDiv = document.getElementById('varianti-list');
         listDiv.innerHTML = "<div style='text-align:center; margin-top:20px;'><i class='fa-solid fa-spinner fa-spin' style='color:var(--primary); font-size:24px;'></i></div>";
+        document.getElementById('search-varianti').value = ""; // Resetta la ricerca testuale
         
         try {
+            // Ottieni il tuo turno di oggi per trovare il compagno
+            let state = JSON.parse(localStorage.getItem('myTurniApp')) || {};
+            let mioTurnoOggi = state.variazioni && state.variazioni[dataScelta] ? state.variazioni[dataScelta] : calcolaTurnoBase(dataScelta, state);
+            let compagniPossibili = calcolaCompagniPossibili(mioTurnoOggi);
+
             const q = query(collection(db, "calendario"), where("condivisioneVarianti", "==", true));
             const querySnapshot = await getDocs(q);
             let turniCondivisi = [];
             
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                if (data.cognomePubblico) {
+                if (data.cognomePubblico && doc.id !== currentUser.uid) { // Escludo me stesso
                     
                     let turnoManuale = data.variazioni && data.variazioni[dataScelta] ? data.variazioni[dataScelta] : null;
-                    
-                    // Utilizza il motore copiato per calcolare il turno strutturale dell'utente
                     let turnoOriginaleBase = calcolaTurnoBase(dataScelta, data);
-                    
                     let isModificato = turnoManuale !== null;
                     let turnoDaMostrare = isModificato ? turnoManuale : turnoOriginaleBase;
                     
+                    let isMate = compagniPossibili.includes(turnoDaMostrare.toUpperCase().replace(/\s+/g, ''));
                     let turnoSchermato = applicaFiltroPrivacy(turnoDaMostrare);
                     let originaleSchermato = isModificato ? applicaFiltroPrivacy(turnoOriginaleBase) : "";
 
@@ -313,19 +400,76 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
                         matricola: data.matricolaPubblico,
                         turnoStr: turnoSchermato,
                         originaleStr: originaleSchermato,
-                        modificato: isModificato
+                        modificato: isModificato,
+                        isMate: isMate
                     });
                 }
             });
             
-            turniCondivisi.sort((a, b) => a.cognome.localeCompare(b.cognome));
+            // Ordinamento: Prima i compagni di turno, poi in ordine alfabetico per Sigla Turno
+            turniCondivisi.sort((a, b) => {
+                if (a.isMate && !b.isMate) return -1;
+                if (!a.isMate && b.isMate) return 1;
+                return a.turnoStr.localeCompare(b.turnoStr, undefined, {numeric: true});
+            });
+            
             disegnaVarianti(turniCondivisi);
         } catch (error) { 
             listDiv.innerHTML = "<div style='color:var(--danger); text-align:center;'>Errore di caricamento.</div>"; 
         }
     };
 
-    // Rendering Lista
+    window.filtraVarianti = function() {
+        let filter = document.getElementById('search-varianti').value.toUpperCase();
+        let items = document.querySelectorAll('#varianti-list .contact-item');
+        items.forEach(item => {
+            let text = item.innerText.toUpperCase();
+            item.style.display = text.includes(filter) ? 'flex' : 'none';
+        });
+    };
+
+    window.apriImmagineVariante = function(turno, dateStr) {
+        if (!turno || turno === "NPL" || turno === "DISP" || turno === "RI" || turno === "RIPOSO" || turno === "AL") return;
+        
+        let dSelezionata = stringToNum(dateStr);
+        let dateChiavi = Object.keys(globalDbCache || {}).sort();
+        let dbCorrente = {}; 
+        let dataAttiva = dateChiavi.length > 0 ? dateChiavi[0] : "2026-03-02";
+        
+        for (let i = dateChiavi.length - 1; i >= 0; i--) { 
+            if (dSelezionata >= stringToNum(dateChiavi[i])) { 
+                dbCorrente = globalDbCache[dateChiavi[i]]; dataAttiva = dateChiavi[i]; break; 
+            } 
+        }
+
+        let chiaveTrovata = trovaChiaveEsatta(dbCorrente, turno, dateStr); 
+        let currentImagePath = `turni_${dataAttiva}/${chiaveTrovata}.jpg`; 
+        let imgBaseFallback = `turni_${dataAttiva}/${turno}.jpg`; 
+        
+        let imgElement = document.getElementById('img-variante-turno');
+        
+        imgElement.onerror = function() {
+            if (imgBaseFallback) {
+                this.src = imgBaseFallback;
+                imgBaseFallback = "";
+            } else {
+                this.onerror = null;
+                alert("L'immagine oraria per questo turno non è al momento disponibile sul server.");
+                document.getElementById('modal-image-variante').style.display = 'none';
+            }
+        };
+
+        imgElement.src = currentImagePath;
+        document.getElementById('titolo-immagine-variante').innerText = "Turno " + turno;
+        document.getElementById('modal-image-variante').style.display = 'flex';
+        
+        if (typeof Panzoom !== 'undefined') {
+            if (window.pzVariante) window.pzVariante.destroy();
+            window.pzVariante = Panzoom(imgElement, { maxScale: 5, minScale: 1 });
+            imgElement.parentElement.addEventListener('wheel', window.pzVariante.zoomWithWheel);
+        }
+    };
+
     function disegnaVarianti(array) {
         const listDiv = document.getElementById('varianti-list');
         listDiv.innerHTML = "";
@@ -335,28 +479,35 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
             return;
         }
         
+        const dataScelta = document.getElementById('data-ricerca-varianti').value;
+
         array.forEach(c => {
             const item = document.createElement('div'); 
-            item.className = "contact-item";
+            item.className = "contact-item" + (c.isMate ? " is-mate" : "");
             const prog = c.omonimia ? ` (${c.omonimia})` : "";
             
             let classeNpl = c.turnoStr === "NPL" ? "npl" : "";
             let bloccoIcona = "";
             let textOriginale = "";
+            let pinIcon = c.isMate ? `<i class="fa-solid fa-thumbtack" style="color:var(--success); margin-right:6px;" title="Tuo compagno di turno"></i>` : "";
             
+            // Logica interattiva icona e visualizzatore
+            let canViewImg = (c.turnoStr !== "NPL" && c.turnoStr !== "DISP" && c.turnoStr !== "RI" && c.turnoStr !== "RIPOSO" && c.turnoStr !== "AL");
+            let spanClass = canViewImg ? `class="clickable-turn" onclick="window.apriImmagineVariante('${c.turnoStr}', '${dataScelta}')"` : "";
+
             if (c.modificato) {
-                bloccoIcona = `<i class="fa-solid fa-pen-to-square" style="color:var(--warning); cursor:pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'"></i>`;
-                textOriginale = `<span class="turno-originale" style="display:none;">Originale: ${c.originaleStr}</span>`;
+                bloccoIcona = `<i class="fa-solid fa-pen-to-square" style="color:var(--warning); cursor:pointer;" onclick="this.parentElement.nextElementSibling.style.display = this.parentElement.nextElementSibling.style.display === 'none' ? 'block' : 'none'"></i>`;
+                textOriginale = `<div class="turno-originale" style="display:none;"><i class="fa-solid fa-clock-rotate-left"></i> Strutturale Base: <b>${c.originaleStr}</b></div>`;
             }
             
             item.innerHTML = `
                 <div class="contact-info">
-                    <div class="contact-name">${c.cognome} ${c.nome}${prog}</div>
+                    <div class="contact-name">${pinIcon}${c.cognome} ${c.nome}${prog}</div>
                     <div class="contact-detail">Mat: ${c.matricola}</div>
                 </div>
                 <div>
                     <div class="turno-badge ${classeNpl}">
-                        ${c.turnoStr} ${bloccoIcona}
+                        <span ${spanClass}>${c.turnoStr}</span> ${bloccoIcona}
                     </div>
                     ${textOriginale}
                 </div>
@@ -365,6 +516,5 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         });
     }
 
-    // PARTENZA AUTOMATICA DEL MOTORE
     caricaStatoVarianti();
 }

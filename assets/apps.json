@@ -13,16 +13,6 @@
         "splitModule": false
     },
     {
-        "id": "oggi",
-        "label": "Oggi",
-        "icon": "fa-solid fa-bullseye",
-        "defaultColor": "#28a745",
-        "href": "calendario.html?oggi=true",
-        "conditions": [
-            "tutti"
-        ]
-    },
-    {
         "id": "calendario",
         "label": "Calendario",
         "icon": "fa-solid fa-calendar-days",

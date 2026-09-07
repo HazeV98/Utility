@@ -306,7 +306,7 @@
     {
         "id": "dashboard",
         "label": "Dashboard",
-        "icon": "fa-solid fa-list",
+        "icon": "fa-solid fa-chart-bar",
         "defaultColor": "#0066cc",
         "conditions": [
             "admin"

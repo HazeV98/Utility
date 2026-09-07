@@ -1,5 +1,18 @@
 [
     {
+        "id": "dashboard",
+        "label": "Dashboard",
+        "icon": "fa-solid fa-chart-bar",
+        "defaultColor": "#28a745",
+        "conditions": [
+            "admin"
+        ],
+        "isModule": true,
+        "moduleId": "dashboard",
+        "moduleName": "dashboard",
+        "splitModule": false
+    },
+    {
         "id": "oggi",
         "label": "Oggi",
         "icon": "fa-solid fa-bullseye",
@@ -301,19 +314,6 @@
         "isModule": true,
         "moduleId": "varianti_admin",
         "moduleName": "varianti_admin",
-        "splitModule": false
-    },
-    {
-        "id": "dashboard",
-        "label": "Dashboard",
-        "icon": "fa-solid fa-chart-bar",
-        "defaultColor": "#28a745",
-        "conditions": [
-            "admin"
-        ],
-        "isModule": true,
-        "moduleId": "dashboard",
-        "moduleName": "dashboard",
         "splitModule": false
     }
 ]

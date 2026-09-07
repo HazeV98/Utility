@@ -5,7 +5,7 @@
         "icon": "fa-solid fa-chart-bar",
         "defaultColor": "#28a745",
         "conditions": [
-            "admin"
+            "tutti"
         ],
         "isModule": true,
         "moduleId": "dashboard",

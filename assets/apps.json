@@ -302,5 +302,18 @@
         "moduleId": "varianti_admin",
         "moduleName": "varianti_admin",
         "splitModule": false
+    },
+    {
+        "id": "dashboard",
+        "label": "Dashboard",
+        "icon": "fa-solid fa-list",
+        "defaultColor": "#0066cc",
+        "conditions": [
+            "admin"
+        ],
+        "isModule": true,
+        "moduleId": "dashboard",
+        "moduleName": "dashboard",
+        "splitModule": false
     }
 ]

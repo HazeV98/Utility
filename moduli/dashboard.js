@@ -8,7 +8,7 @@ export function initUIDashboard() {
     
     const uiHTML = `
     <style>
-        .dash-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
+        .dash-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; }
         .dash-date { text-align: center; flex: 1; }
         .dash-date-dayname { font-weight: 800; color: var(--primary); font-size: 18px; text-transform: uppercase; }
         .dash-date-fulldate { font-size: 14px; color: var(--text-muted); }
@@ -18,7 +18,9 @@ export function initUIDashboard() {
         .dash-turno-title { font-size: 14px; color: var(--text-muted); margin-bottom: 5px; font-weight: bold; }
         .dash-turno-value { font-size: 36px; font-weight: 900; color: var(--primary); margin-bottom: 15px; }
         
-        .dash-meteo-alert { display: none; background: rgba(220, 53, 69, 0.1); border-left: 5px solid var(--danger); padding: 15px; border-radius: var(--radius-sm); margin-bottom: 15px; text-align: left; align-items: center; gap: 12px; color: var(--danger); font-weight: bold; font-size: 15px; }
+        .dash-alert { display: none; padding: 15px; border-radius: var(--radius-sm); margin-bottom: 15px; text-align: left; align-items: center; gap: 12px; font-weight: bold; font-size: 14px; line-height: 1.4; }
+        .dash-alert-danger { background: rgba(220, 53, 69, 0.1); border-left: 5px solid var(--danger); color: var(--danger); }
+        .dash-alert-warning { background: rgba(255, 193, 7, 0.1); border-left: 5px solid #ffc107; color: #856404; }
         
         .dash-mate { display: none; background: rgba(40, 167, 69, 0.1); border-left: 5px solid var(--success); padding: 15px; border-radius: var(--radius-sm); margin-bottom: 15px; text-align: left; }
         
@@ -48,22 +50,30 @@ export function initUIDashboard() {
 
             <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; width: 100%;">
                 
+                <div id="dash-alert-varianti" class="dash-alert dash-alert-warning">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 24px; color: #ffc107;"></i>
+                    <span id="dash-varianti-text"></span>
+                </div>
+
                 <div class="dash-card">
                     <div class="dash-turno-title">TURNO DI OGGI</div>
                     <div id="dash-turno-val" class="dash-turno-value">
                         <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--primary);"></i>
                     </div>
                     <button id="dash-btn-vedi-turno" class="btn-action" style="width: 100%; display: none;"><i class="fa-solid fa-image"></i> Vedi Turno</button>
+                    <div id="dash-avviso-vedi-turno" style="display: none; background: rgba(255, 193, 7, 0.1); border: 1px solid #ffc107; padding: 10px; border-radius: var(--radius-sm); color: #856404; font-size: 13px; font-weight: bold;">
+                        <i class="fa-solid fa-circle-exclamation"></i> Variante in corso: vedi il turno corretto nella sezione turni.
+                    </div>
                 </div>
 
-                <div id="dash-alert-pioggia" class="dash-meteo-alert">
-                    <i class="fa-solid fa-cloud-showers-heavy" style="font-size: 28px;"></i>
+                <div id="dash-alert-pioggia" class="dash-alert dash-alert-danger">
+                    <i class="fa-solid fa-cloud-showers-heavy" style="font-size: 24px;"></i>
                     <span>Prepara la cerata, oggi è prevista pioggia!</span>
                 </div>
 
                 <div id="dash-mate-container" class="dash-mate">
                     <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 5px;"><i class="fa-solid fa-users"></i> Oggi lavorerai con:</div>
-                    <div id="dash-mate-name" style="font-weight: bold; font-size: 18px; color: var(--text-main);">--</div>
+                    <div id="dash-mate-name" style="font-weight: bold; font-size: 17px; color: var(--text-main);">--</div>
                 </div>
 
                 <div class="dash-card" style="text-align: left;">
@@ -94,14 +104,13 @@ export function avviaMotoreDashboard(db, auth) {
     let dataCorrente = new Date();
     let globalRotCache = null;
     let globalDbCache = null;
+    let globalVariantiCache = null;
     const DATA_INIZIO_NUOVI_TURNI = "2026-06-01"; 
 
-    // Variabili visualizzatore
     let pzDashboard = null;
     let currentImagePathDash = "";
     let imgBaseFallbackDash = "";
 
-    // --- SETUP PANZOOM ---
     const imgElem = document.getElementById('img-dashboard-turno');
     if (typeof Panzoom !== 'undefined' && !pzDashboard) {
         pzDashboard = Panzoom(imgElem, { maxScale: 5, minScale: 1 });
@@ -126,7 +135,6 @@ export function avviaMotoreDashboard(db, auth) {
         imgElem.addEventListener('dblclick', eseguiZoomToggle);
     }
 
-    // --- FUNZIONI DI BASE INDIPENDENTI ---
     function stringToNum(s) { 
         if(!s) return 0; 
         let p = s.split('-'); 
@@ -139,9 +147,14 @@ export function avviaMotoreDashboard(db, auth) {
         return new Date(p[0], p[1] - 1, p[2], 12, 0, 0); 
     }
 
+    function capitalizzaIniziali(str) {
+        if (!str) return "";
+        return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    }
+
     async function initCaches() {
-        if (globalRotCache && globalDbCache) return;
-        globalRotCache = {}; globalDbCache = {};
+        if (globalRotCache && globalDbCache && globalVariantiCache) return;
+        globalRotCache = {}; globalDbCache = {}; globalVariantiCache = {};
         try {
             const resMap = await fetch("mappa_file.json?v=" + Date.now());
             if (resMap.ok) {
@@ -149,12 +162,14 @@ export function avviaMotoreDashboard(db, auth) {
                 const fetchPromises = [];
                 for (let file of mappa.albero || []) {
                     const dateMatch = file.match(/\d{4}-\d{2}-\d{2}/);
-                    if (!dateMatch) continue;
-                    if (file.startsWith("rotazioni_")) {
+                    if (file.startsWith("rotazioni_") && dateMatch) {
                         fetchPromises.push(fetch(file + "?v=" + Date.now()).then(r => r.json()).then(d => globalRotCache[dateMatch[0]] = d).catch(()=>{}));
-                    } else if (file.startsWith("info_turni_")) {
+                    } else if (file.startsWith("info_turni_") && dateMatch) {
                         fetchPromises.push(fetch(file + "?v=" + Date.now()).then(r => r.json()).then(d => globalDbCache[dateMatch[0]] = d).catch(()=>{}));
                     }
+                }
+                if (mappa.albero && mappa.albero.includes("presenza_varianti.json")) {
+                    fetchPromises.push(fetch("presenza_varianti.json?v=" + Date.now()).then(r => r.json()).then(d => globalVariantiCache = d).catch(()=>{}));
                 }
                 await Promise.all(fetchPromises);
             }
@@ -336,11 +351,46 @@ export function avviaMotoreDashboard(db, auth) {
         
         document.getElementById('dash-turno-val').textContent = mioTurno || "N/D";
         
+        // Alert Varianti DDS
+        const alertVar = document.getElementById('dash-alert-varianti');
+        const alertVarText = document.getElementById('dash-varianti-text');
+        alertVar.style.display = 'none';
+        
+        let haVarianti = false;
+
+        if (globalVariantiCache && globalVariantiCache[dStr]) {
+            haVarianti = true;
+            let lineeData = globalVariantiCache[dStr];
+            let isEmpty = (Array.isArray(lineeData) && lineeData.length === 0) || (typeof lineeData === 'string' && lineeData.trim() === '') || !lineeData;
+            
+            if (isEmpty) { 
+                alertVarText.innerHTML = "Attenzione: nella data selezionata sono presenti varianti per il servizio, verificare le DDS su spriss.";
+            } else { 
+                let linee = Array.isArray(lineeData) ? lineeData.join(", ") : lineeData;
+                alertVarText.innerHTML = "Attenzione: nella data selezionata sono presenti varianti per le linee: <b>" + linee + "</b>";
+            }
+            alertVar.style.display = 'flex';
+        }
+        
+        // Gestione Tasto Immagine Turno
         const btnVedi = document.getElementById('dash-btn-vedi-turno');
-        if (mioTurno && mioTurno !== "RIPOSO" && mioTurno !== "RI" && mioTurno !== "DISP" && mioTurno !== "NPL") {
-            btnVedi.style.display = "block";
-            btnVedi.onclick = () => { apriImmagineDashboard(mioTurno, dStr); };
-        } else { btnVedi.style.display = "none"; }
+        const avvisoVedi = document.getElementById('dash-avviso-vedi-turno');
+        
+        let isRiposo = (!mioTurno || mioTurno === "RIPOSO" || mioTurno === "RI" || mioTurno === "DISP" || mioTurno === "NPL");
+
+        if (isRiposo) {
+            btnVedi.style.display = "none";
+            avvisoVedi.style.display = "none";
+        } else {
+            if (haVarianti) {
+                btnVedi.style.display = "none";
+                avvisoVedi.style.display = "block";
+            } else {
+                btnVedi.style.display = "block";
+                avvisoVedi.style.display = "none";
+                btnVedi.onclick = () => { apriImmagineDashboard(mioTurno, dStr); };
+            }
+        }
 
         cercaCompagno(dStr, mioTurno);
         aggiornaMeteo(dStr);
@@ -366,7 +416,10 @@ export function avviaMotoreDashboard(db, auth) {
                         const data = docSnap.data();
                         let turnoComp = data.variazioni && data.variazioni[dStr] ? String(data.variazioni[dStr]) : calcolaTurnoBase(dStr, data);
                         if (compagniPossibili.includes(String(turnoComp).toUpperCase().replace(/\s+/g, ''))) {
-                            compagniTrovati.push(`${data.cognomePubblico} ${data.nomePubblico}`);
+                            let cognomeCap = capitalizzaIniziali(data.cognomePubblico);
+                            let nomeCap = capitalizzaIniziali(data.nomePubblico);
+                            let matricola = data.matricolaPubblico ? ` (Mat: ${data.matricolaPubblico})` : "";
+                            compagniTrovati.push(`${cognomeCap} ${nomeCap}${matricola}`);
                         }
                     }
                 });

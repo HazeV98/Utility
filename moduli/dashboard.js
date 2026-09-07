@@ -24,10 +24,9 @@ export function initUIDashboard() {
         
         .dash-mate { display: none; background: rgba(40, 167, 69, 0.1); border-left: 5px solid var(--success); padding: 15px; border-radius: var(--radius-sm); margin-bottom: 15px; text-align: left; }
         
-        /* Nuovi stili Meteo */
         .dash-daily-weather { display: flex; align-items: center; justify-content: space-between; padding: 10px 0 15px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; }
         .dash-daily-main { display: flex; align-items: center; gap: 15px; }
-        .dash-daily-icon { font-size: 38px; }
+        .dash-daily-icon { font-size: 42px; line-height: 1; }
         .dash-daily-desc { font-weight: bold; font-size: 16px; color: var(--text-main); }
         .dash-daily-temps { text-align: right; }
         .dash-daily-temp-max { font-size: 26px; font-weight: 900; color: var(--text-main); }
@@ -36,7 +35,7 @@ export function initUIDashboard() {
         .dash-hourly-weather { display: flex; overflow-x: auto; gap: 15px; padding-bottom: 5px; }
         .weather-hour-card { min-width: 60px; text-align: center; font-size: 13px; }
         .weather-hour-time { font-weight: bold; color: var(--text-main); }
-        .weather-hour-icon { font-size: 22px; margin: 8px 0; }
+        .weather-hour-icon { font-size: 26px; margin: 8px 0; line-height: 1; }
         .weather-hour-temp { color: var(--primary); font-weight: bold; font-size: 15px;}
     </style>
 
@@ -86,7 +85,7 @@ export function initUIDashboard() {
                 </div>
 
                 <div class="dash-card" style="text-align: left;">
-                    <div class="dash-turno-title"><i class="fa-solid fa-cloud-sun"></i> METEO VENEZIA</div>
+                    <div class="dash-turno-title">METEO VENEZIA</div>
                     <div id="dash-daily-weather-container"></div>
                     <div id="dash-weather-container" class="dash-hourly-weather">
                         <div style="text-align:center; width:100%;"><i class="fa-solid fa-spinner fa-spin" style="color: var(--primary);"></i></div>
@@ -143,6 +142,10 @@ export function avviaMotoreDashboard(db, auth) {
             lastTap = currentTime;
         });
         imgElem.addEventListener('dblclick', eseguiZoomToggle);
+    }
+
+    function dateToLocalISO(d) { 
+        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); 
     }
 
     function stringToNum(s) { 
@@ -351,7 +354,8 @@ export function avviaMotoreDashboard(db, auth) {
 
     async function aggiornaVistaDashboard() {
         await initCaches();
-        const dStr = dataCorrente.toISOString().split('T')[0];
+        
+        const dStr = dateToLocalISO(dataCorrente); 
         
         document.getElementById('dash-dayname').textContent = dataCorrente.toLocaleDateString('it-IT', { weekday: 'long' });
         document.getElementById('dash-fulldate').textContent = dataCorrente.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -452,20 +456,20 @@ export function avviaMotoreDashboard(db, auth) {
             const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=45.4371&longitude=12.3326&hourly=temperature_2m,precipitation_probability,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Europe%2FRome&start_date=${dStr}&end_date=${dStr}`);
             const data = await res.json();
 
-            // Meteo Giornaliero
             if (data.daily) {
                 let dailyWCode = data.daily.weathercode[0];
                 let dailyMax = Math.round(data.daily.temperature_2m_max[0]);
                 let dailyMin = Math.round(data.daily.temperature_2m_min[0]);
                 
-                let dailyIcona = '<i class="fa-solid fa-sun" style="color:#f1c40f;"></i>';
+                let dailyIcona = '☀️';
                 let descMeteo = "Sereno";
                 
-                if (dailyWCode >= 1 && dailyWCode <= 3) { dailyIcona = '<i class="fa-solid fa-cloud-sun" style="color:#95a5a6;"></i>'; descMeteo = "Nuvoloso"; }
-                if (dailyWCode >= 45 && dailyWCode <= 48) { dailyIcona = '<i class="fa-solid fa-smog" style="color:#7f8c8d;"></i>'; descMeteo = "Nebbia"; }
-                if (dailyWCode >= 51 && dailyWCode <= 67) { dailyIcona = '<i class="fa-solid fa-cloud-rain" style="color:#3498db;"></i>'; descMeteo = "Pioggia"; }
-                if (dailyWCode >= 80 && dailyWCode <= 82) { dailyIcona = '<i class="fa-solid fa-cloud-showers-water" style="color:#2980b9;"></i>'; descMeteo = "Rovescio"; }
-                if (dailyWCode >= 95) { dailyIcona = '<i class="fa-solid fa-cloud-bolt" style="color:#8e44ad;"></i>'; descMeteo = "Temporale"; }
+                if (dailyWCode >= 1 && dailyWCode <= 3) { dailyIcona = '⛅'; descMeteo = "Nuvoloso"; }
+                if (dailyWCode >= 45 && dailyWCode <= 48) { dailyIcona = '🌫️'; descMeteo = "Nebbia"; }
+                if (dailyWCode >= 51 && dailyWCode <= 67) { dailyIcona = '🌧️'; descMeteo = "Pioggia"; }
+                if (dailyWCode >= 71 && dailyWCode <= 77) { dailyIcona = '❄️'; descMeteo = "Neve"; }
+                if (dailyWCode >= 80 && dailyWCode <= 82) { dailyIcona = '🌦️'; descMeteo = "Rovescio"; }
+                if (dailyWCode >= 95) { dailyIcona = '⛈️'; descMeteo = "Temporale"; }
 
                 dailyContainer.innerHTML = `
                     <div class="dash-daily-weather">
@@ -481,7 +485,6 @@ export function avviaMotoreDashboard(db, auth) {
                 `;
             }
 
-            // Meteo Orario
             let ciSaraPioggia = false;
             let htmlOrario = "";
 
@@ -493,11 +496,13 @@ export function avviaMotoreDashboard(db, auth) {
 
                 if ((wCode >= 51 && wCode <= 67) || (wCode >= 80 && wCode <= 82) || wCode >= 95) ciSaraPioggia = true;
 
-                let icona = '<i class="fa-solid fa-sun" style="color:#f1c40f;"></i>';
-                if (wCode >= 1 && wCode <= 3) icona = '<i class="fa-solid fa-cloud-sun" style="color:#95a5a6;"></i>';
-                if (wCode >= 45 && wCode <= 48) icona = '<i class="fa-solid fa-smog" style="color:#7f8c8d;"></i>';
-                if (wCode >= 51 && wCode <= 82) icona = '<i class="fa-solid fa-cloud-rain" style="color:#3498db;"></i>';
-                if (wCode >= 95) icona = '<i class="fa-solid fa-cloud-bolt" style="color:#8e44ad;"></i>';
+                let icona = '☀️';
+                if (wCode >= 1 && wCode <= 3) icona = '⛅';
+                if (wCode >= 45 && wCode <= 48) icona = '🌫️';
+                if (wCode >= 51 && wCode <= 67) icona = '🌧️';
+                if (wCode >= 71 && wCode <= 77) icona = '❄️';
+                if (wCode >= 80 && wCode <= 82) icona = '🌦️';
+                if (wCode >= 95) icona = '⛈️';
 
                 htmlOrario += `
                     <div class="weather-hour-card">

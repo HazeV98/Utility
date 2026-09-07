@@ -307,7 +307,7 @@
         "id": "dashboard",
         "label": "Dashboard",
         "icon": "fa-solid fa-chart-bar",
-        "defaultColor": "#0066cc",
+        "defaultColor": "#28a745",
         "conditions": [
             "admin"
         ],

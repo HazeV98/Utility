@@ -24,7 +24,16 @@ export function initUIDashboard() {
         
         .dash-mate { display: none; background: rgba(40, 167, 69, 0.1); border-left: 5px solid var(--success); padding: 15px; border-radius: var(--radius-sm); margin-bottom: 15px; text-align: left; }
         
-        .dash-hourly-weather { display: flex; overflow-x: auto; gap: 15px; padding-bottom: 10px; margin-top: 15px; }
+        /* Nuovi stili Meteo */
+        .dash-daily-weather { display: flex; align-items: center; justify-content: space-between; padding: 10px 0 15px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; }
+        .dash-daily-main { display: flex; align-items: center; gap: 15px; }
+        .dash-daily-icon { font-size: 38px; }
+        .dash-daily-desc { font-weight: bold; font-size: 16px; color: var(--text-main); }
+        .dash-daily-temps { text-align: right; }
+        .dash-daily-temp-max { font-size: 26px; font-weight: 900; color: var(--text-main); }
+        .dash-daily-temp-min { font-size: 16px; color: var(--text-muted); font-weight: bold; }
+
+        .dash-hourly-weather { display: flex; overflow-x: auto; gap: 15px; padding-bottom: 5px; }
         .weather-hour-card { min-width: 60px; text-align: center; font-size: 13px; }
         .weather-hour-time { font-weight: bold; color: var(--text-main); }
         .weather-hour-icon { font-size: 22px; margin: 8px 0; }
@@ -77,7 +86,8 @@ export function initUIDashboard() {
                 </div>
 
                 <div class="dash-card" style="text-align: left;">
-                    <div class="dash-turno-title"><i class="fa-solid fa-cloud-sun"></i> PREVISIONI ORARIE (VENEZIA)</div>
+                    <div class="dash-turno-title"><i class="fa-solid fa-cloud-sun"></i> METEO VENEZIA</div>
+                    <div id="dash-daily-weather-container"></div>
                     <div id="dash-weather-container" class="dash-hourly-weather">
                         <div style="text-align:center; width:100%;"><i class="fa-solid fa-spinner fa-spin" style="color: var(--primary);"></i></div>
                     </div>
@@ -351,7 +361,6 @@ export function avviaMotoreDashboard(db, auth) {
         
         document.getElementById('dash-turno-val').textContent = mioTurno || "N/D";
         
-        // Alert Varianti DDS
         const alertVar = document.getElementById('dash-alert-varianti');
         const alertVarText = document.getElementById('dash-varianti-text');
         alertVar.style.display = 'none';
@@ -372,10 +381,8 @@ export function avviaMotoreDashboard(db, auth) {
             alertVar.style.display = 'flex';
         }
         
-        // Gestione Tasto Immagine Turno
         const btnVedi = document.getElementById('dash-btn-vedi-turno');
         const avvisoVedi = document.getElementById('dash-avviso-vedi-turno');
-        
         let isRiposo = (!mioTurno || mioTurno === "RIPOSO" || mioTurno === "RI" || mioTurno === "DISP" || mioTurno === "NPL");
 
         if (isRiposo) {
@@ -434,15 +441,47 @@ export function avviaMotoreDashboard(db, auth) {
 
     async function aggiornaMeteo(dStr) {
         const alertDiv = document.getElementById('dash-alert-pioggia');
+        const dailyContainer = document.getElementById('dash-daily-weather-container');
         const weatherContainer = document.getElementById('dash-weather-container');
         
         alertDiv.style.display = 'none';
+        dailyContainer.innerHTML = '';
         weatherContainer.innerHTML = '<div style="text-align:center; width:100%;"><i class="fa-solid fa-spinner fa-spin" style="color:var(--primary);"></i></div>';
 
         try {
-            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=45.4371&longitude=12.3326&hourly=temperature_2m,precipitation_probability,weathercode&timezone=Europe%2FRome&start_date=${dStr}&end_date=${dStr}`);
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=45.4371&longitude=12.3326&hourly=temperature_2m,precipitation_probability,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Europe%2FRome&start_date=${dStr}&end_date=${dStr}`);
             const data = await res.json();
 
+            // Meteo Giornaliero
+            if (data.daily) {
+                let dailyWCode = data.daily.weathercode[0];
+                let dailyMax = Math.round(data.daily.temperature_2m_max[0]);
+                let dailyMin = Math.round(data.daily.temperature_2m_min[0]);
+                
+                let dailyIcona = '<i class="fa-solid fa-sun" style="color:#f1c40f;"></i>';
+                let descMeteo = "Sereno";
+                
+                if (dailyWCode >= 1 && dailyWCode <= 3) { dailyIcona = '<i class="fa-solid fa-cloud-sun" style="color:#95a5a6;"></i>'; descMeteo = "Nuvoloso"; }
+                if (dailyWCode >= 45 && dailyWCode <= 48) { dailyIcona = '<i class="fa-solid fa-smog" style="color:#7f8c8d;"></i>'; descMeteo = "Nebbia"; }
+                if (dailyWCode >= 51 && dailyWCode <= 67) { dailyIcona = '<i class="fa-solid fa-cloud-rain" style="color:#3498db;"></i>'; descMeteo = "Pioggia"; }
+                if (dailyWCode >= 80 && dailyWCode <= 82) { dailyIcona = '<i class="fa-solid fa-cloud-showers-water" style="color:#2980b9;"></i>'; descMeteo = "Rovescio"; }
+                if (dailyWCode >= 95) { dailyIcona = '<i class="fa-solid fa-cloud-bolt" style="color:#8e44ad;"></i>'; descMeteo = "Temporale"; }
+
+                dailyContainer.innerHTML = `
+                    <div class="dash-daily-weather">
+                        <div class="dash-daily-main">
+                            <div class="dash-daily-icon">${dailyIcona}</div>
+                            <div class="dash-daily-desc">${descMeteo}</div>
+                        </div>
+                        <div class="dash-daily-temps">
+                            <span class="dash-daily-temp-max">${dailyMax}°</span>
+                            <span class="dash-daily-temp-min">/ ${dailyMin}°</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Meteo Orario
             let ciSaraPioggia = false;
             let htmlOrario = "";
 

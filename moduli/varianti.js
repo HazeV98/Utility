@@ -150,6 +150,10 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
     }
 
     // --- HELPER MATEMATICI ---
+    function dateToLocalISO(d) { 
+        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); 
+    }
+
     function stringToNum(s) { 
         if(!s) return 0; 
         let p = s.split('-'); 
@@ -398,7 +402,7 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
                     if (document.getElementById('btn-var-menu')) document.getElementById('btn-var-menu').style.display = 'block';
                     mostraVista('view-var-main');
                     const dataInput = document.getElementById('data-ricerca-varianti');
-                    if (!dataInput.value) dataInput.value = new Date().toISOString().split('T')[0];
+                    if (!dataInput.value) dataInput.value = dateToLocalISO(new Date()); // FIX applicato qui
                     window.cercaVariantiGiorno();
                 } else {
                     if (document.getElementById('btn-var-menu')) document.getElementById('btn-var-menu').style.display = 'none';

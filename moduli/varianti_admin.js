@@ -19,7 +19,9 @@ export function initUIVariantiAdmin() {
     </style>
 
     <div id="modal-varianti-admin-main" class="modal-overlay" onclick="if(event.target.id === 'modal-varianti-admin-main') this.style.display='none'">
-        <div class="modal-content" style="max-width: 440px; height: 85vh; display: flex; flex-direction: column; padding: 20px;">
+        <div class="modal-content" style="max-width: 440px; height: 85vh; display: flex; flex-direction: column; padding: 20px; position: relative;">
+            
+            <i class="fa-solid fa-users-slash" style="position: absolute; right: 60px; top: 20px; font-size: 24px; cursor: pointer; color: var(--warning);" onclick="window.apriListaRevocheAdmin()" title="Gestione Revoche e Ban"></i>
             <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-varianti-admin-main').style.display='none'"></i>
             
             <h3 style="margin-top: 0; color: var(--danger); font-weight: 800; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
@@ -54,6 +56,18 @@ export function initUIVariantiAdmin() {
         </div>
     </div>
 
+    <!-- Modale Revoche e Ban -->
+    <div id="modal-revoche-admin" class="modal-overlay" style="z-index: 10000; display: none; background: rgba(0,0,0,0.8);" onclick="if(event.target.id === 'modal-revoche-admin') this.style.display='none'">
+        <div class="modal-content" style="max-width: 440px; height: 75vh; display: flex; flex-direction: column; padding: 20px; position: relative;">
+            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-revoche-admin').style.display='none'"></i>
+            <h3 style="margin-top: 0; color: var(--warning); font-weight: 800; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+                <i class="fa-solid fa-users-slash"></i> Gestione Blocchi
+            </h3>
+            <div id="revoche-list-admin" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; width: 100%; margin-top: 10px;">
+            </div>
+        </div>
+    </div>
+
     <!-- Modale Visualizzatore Immagini Admin -->
     <div id="modal-image-variante-admin" class="modal-overlay" style="z-index: 9999; display: none; background: rgba(0,0,0,0.9);" onclick="window.chiudiImageModalVariantiSeSfondoAdmin(event)">
         <div id="imageFlexContainerVarianteAdmin" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative;">
@@ -65,6 +79,10 @@ export function initUIVariantiAdmin() {
     `;
     document.body.insertAdjacentHTML('beforeend', uiHTML);
 
+    function dateToLocalISOAdmin(d) { 
+        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); 
+    }
+
     // FUNZIONE GLOBALE PER APRIRE IL MODULO
     window.apriVariantiAdmin = function() {
         const modal = document.getElementById('modal-varianti-admin-main');
@@ -72,7 +90,7 @@ export function initUIVariantiAdmin() {
             modal.style.display = 'flex';
             const dataInput = document.getElementById('data-ricerca-varianti-admin');
             if (!dataInput.value) {
-                dataInput.value = new Date().toISOString().split('T')[0];
+                dataInput.value = dateToLocalISOAdmin(new Date());
             }
             if (typeof window.cercaVariantiGiornoAdmin === 'function') {
                 window.cercaVariantiGiornoAdmin();
@@ -120,6 +138,10 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
             lastTapAdmin = currentTime;
         });
         imgElemAdmin.addEventListener('dblclick', function(e) { eseguiZoomToggleAdmin(e); });
+    }
+
+    function dateToLocalISOAdmin(d) { 
+        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); 
     }
 
     function stringToNum(s) { 
@@ -326,20 +348,96 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
             await initCachesAdmin(); 
             mostraVistaAdmin('view-var-admin-main');
             
-            // Forza l'apertura se non avviene automaticamente
             if (document.getElementById('modal-varianti-admin-main').style.display !== 'flex') {
                 document.getElementById('modal-varianti-admin-main').style.display = 'flex';
             }
 
             const dataInput = document.getElementById('data-ricerca-varianti-admin');
-            if (!dataInput.value) dataInput.value = new Date().toISOString().split('T')[0];
+            if (!dataInput.value) dataInput.value = dateToLocalISOAdmin(new Date());
             window.cercaVariantiGiornoAdmin();
         } catch (error) { 
             console.error("Errore caricamento admin", error); 
         }
     }
 
-        window.cercaVariantiGiornoAdmin = async function() {
+    // GESTIONE REVOCHE E BAN
+    window.apriListaRevocheAdmin = async function() {
+        document.getElementById('modal-revoche-admin').style.display = 'flex';
+        const listDiv = document.getElementById('revoche-list-admin');
+        listDiv.innerHTML = "<div style='text-align:center; margin-top:20px;'><i class='fa-solid fa-spinner fa-spin' style='color:var(--warning); font-size:24px;'></i></div>";
+
+        try {
+            const utentiSnapshot = await getDocs(collection(db, "utenti"));
+            const utentiMap = {};
+            utentiSnapshot.forEach(doc => { utentiMap[doc.id] = doc.data(); });
+
+            const calSnapshot = await getDocs(collection(db, "calendario"));
+            let revocati = [];
+
+            calSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.revocheCondivisione > 0 || data.bannatoVarianti) {
+                    const utenteData = utentiMap[doc.id] || {};
+                    revocati.push({
+                        uid: doc.id,
+                        nome: utenteData.nome || data.nomePubblico || "Utente",
+                        cognome: utenteData.cognome || data.cognomePubblico || "Sconosciuto",
+                        matricola: utenteData.matricola || data.matricolaPubblico || "N/D",
+                        revoche: data.revocheCondivisione || 0,
+                        bannato: data.bannatoVarianti || false
+                    });
+                }
+            });
+
+            listDiv.innerHTML = "";
+            if (revocati.length === 0) {
+                listDiv.innerHTML = "<div style='text-align:center; color:var(--text-muted); padding:20px;'>Nessun utente ha blocchi o revoche attive.</div>";
+                return;
+            }
+
+            revocati.forEach(u => {
+                let badgeClass = u.bannato ? 'background: var(--danger);' : 'background: var(--warning); color: black;';
+                let badgeText = u.bannato ? 'BANNATO' : `REVOCHE: ${u.revoche}`;
+                let statusBadge = `<span style="${badgeClass} color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 8px;">${badgeText}</span>`;
+
+                const item = document.createElement('div');
+                item.className = "contact-item-admin";
+                item.style.borderLeftColor = u.bannato ? 'var(--danger)' : 'var(--warning)';
+                item.innerHTML = `
+                    <div class="contact-info-admin">
+                        <div class="contact-name-admin">${u.cognome} ${u.nome}</div>
+                        <div class="contact-detail-admin">Mat: ${u.matricola} ${statusBadge}</div>
+                    </div>
+                    <div>
+                        <button onclick="window.azzeraRevocheUtente('${u.uid}')" class="btn-action" style="background: var(--success); color: white; border: none; padding: 8px 12px; font-size: 12px; border-radius: var(--radius-sm); font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; margin: 0;">
+                            <i class="fa-solid fa-unlock"></i> Sblocca
+                        </button>
+                    </div>
+                `;
+                listDiv.appendChild(item);
+            });
+        } catch (error) {
+            console.error(error);
+            listDiv.innerHTML = "<div style='color:var(--danger); text-align:center;'>Errore durante il caricamento della lista.</div>";
+        }
+    };
+
+    window.azzeraRevocheUtente = async function(uid) {
+        if (!confirm("Sei sicuro di voler azzerare le revoche e sbloccare questo utente?")) return;
+        try {
+            const calRef = doc(db, "calendario", uid);
+            await updateDoc(calRef, {
+                revocheCondivisione: 0,
+                bannatoVarianti: false
+            });
+            window.apriListaRevocheAdmin(); 
+        } catch (error) {
+            console.error(error);
+            alert("Errore durante lo sblocco dell'utente.");
+        }
+    };
+
+    window.cercaVariantiGiornoAdmin = async function() {
         const dataScelta = document.getElementById('data-ricerca-varianti-admin').value;
         const listDiv = document.getElementById('varianti-list-admin');
         listDiv.innerHTML = "<div style='text-align:center; margin-top:20px;'><i class='fa-solid fa-spinner fa-spin' style='color:var(--danger); font-size:24px;'></i></div>";
@@ -350,24 +448,20 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
             let mioTurnoOggi = state.variazioni && state.variazioni[dataScelta] ? state.variazioni[dataScelta] : calcolaTurnoBase(dataScelta, state);
             let compagniPossibili = calcolaCompagniPossibili(mioTurnoOggi);
 
-            // 1. Scarica la mappa degli utenti per incrociare i dati reali (Admin Privilege)
             const utentiSnapshot = await getDocs(collection(db, "utenti"));
             const utentiMap = {};
             utentiSnapshot.forEach(doc => {
                 utentiMap[doc.id] = doc.data();
             });
 
-            // 2. Scarica la collezione calendario
             const querySnapshot = await getDocs(collection(db, "calendario"));
             let turniCondivisi = [];
             
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
                 
-                // Ignora i documenti cancellati logicamente
                 if (data.deleted === true) return;
                 
-                // INCROCIO DATI: Prende il profilo da "utenti" usando l'ID del calendario
                 const utenteData = utentiMap[doc.id] || {};
                 
                 let nomeMostrato = utenteData.nome || data.nomePubblico || "Utente";
@@ -382,7 +476,6 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
                 
                 let isMate = (doc.id !== currentUser.uid) && compagniPossibili.includes(turnoDaMostrare.toUpperCase().replace(/\s+/g, ''));
                 
-                // Mostra il turno crudo senza censure
                 let turnoSchermato = formattazioneSiglaAdmin(turnoDaMostrare);
                 let originaleSchermato = isModificato ? formattazioneSiglaAdmin(turnoOriginaleBase) : "";
 
@@ -410,7 +503,6 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
             listDiv.innerHTML = "<div style='color:var(--danger); text-align:center;'>Errore di caricamento.</div>"; 
         }
     };
-
 
     window.filtraVariantiAdmin = function() {
         let filter = document.getElementById('search-varianti-admin').value.toUpperCase();

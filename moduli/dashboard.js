@@ -24,6 +24,10 @@ export function initUIDashboard() {
         
         .dash-mate { display: none; background: rgba(40, 167, 69, 0.1); border-left: 5px solid var(--success); padding: 15px; border-radius: var(--radius-sm); margin-bottom: 15px; text-align: left; }
         
+        .dash-prom-card { background: rgba(52, 152, 219, 0.1); border-left: 5px solid #3498db; padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; text-align: left; }
+        .dash-prom-title { font-weight: bold; font-size: 14px; color: #2980b9; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .dash-prom-note { font-size: 13px; color: var(--text-main); }
+
         .dash-daily-weather { display: flex; align-items: center; justify-content: space-between; padding: 10px 0 15px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; }
         .dash-daily-main { display: flex; align-items: center; gap: 15px; }
         .dash-daily-icon { font-size: 42px; line-height: 1; }
@@ -83,6 +87,9 @@ export function initUIDashboard() {
                     <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 5px;"><i class="fa-solid fa-users"></i> Oggi lavorerai con:</div>
                     <div id="dash-mate-name" style="font-weight: bold; font-size: 17px; color: var(--text-main);">--</div>
                 </div>
+
+                <!-- Container Promemoria (sopra il meteo) -->
+                <div id="dash-promemoria-container" style="display: none; width: 100%;"></div>
 
                 <div class="dash-card" style="text-align: left;">
                     <div class="dash-turno-title">METEO VENEZIA</div>
@@ -368,6 +375,43 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
         return codiceBase; 
     }
 
+    // --- FUNZIONE PER RECUPERARE PROMEMORIA DEL GIORNO ---
+    function caricaPromemoriaDashboard(dStr) {
+        const container = document.getElementById('dash-promemoria-container');
+        if (!container) return;
+        container.innerHTML = '';
+        container.style.display = 'none';
+
+        const request = indexedDB.open("UtilityDB");
+        request.onsuccess = function(event) {
+            const dbLocal = event.target.result;
+            if (!dbLocal.objectStoreNames.contains("archivio_dds")) return;
+
+            const tx = dbLocal.transaction("archivio_dds", "readonly");
+            tx.objectStore("archivio_dds").getAll().onsuccess = function(e) {
+                let ddsArray = e.target.result;
+                let promGiorno = ddsArray.filter(dds => dds.isPromemoria && dds.dateValidita && dds.dateValidita.includes(dStr));
+
+                if (promGiorno.length > 0) {
+                    let html = '';
+                    promGiorno.forEach(prom => {
+                        html += `
+                            <div class="dash-prom-card">
+                                <div class="dash-prom-title"><i class="fa-solid fa-bell"></i> ${prom.titolo}</div>
+                                ${prom.note ? `<div class="dash-prom-note">${prom.note}</div>` : ''}
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                    container.style.display = 'block';
+                }
+            };
+        };
+        request.onerror = function() {
+            console.error("Errore IndexedDB in dashboard promemoria");
+        };
+    }
+
     // --- LOGICA UI PRINCIPALE ---
     window.cambiaDataDashboard = function(giorni) {
         dataCorrente.setDate(dataCorrente.getDate() + giorni);
@@ -429,6 +473,7 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
         }
 
         cercaCompagno(dStr, mioTurnoOggi);
+        caricaPromemoriaDashboard(dStr);
         aggiornaMeteo(dStr);
     }
 

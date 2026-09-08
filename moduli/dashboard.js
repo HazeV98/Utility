@@ -109,7 +109,7 @@ export function initUIDashboard() {
 // ==========================================
 // 2. MOTORE LOGICO DASHBOARD
 // ==========================================
-export function avviaMotoreDashboard(db, auth) {
+export function avviaMotoreDashboard(db, auth, userDataPrivate) {
     let dataCorrente = new Date();
     let globalRotCache = null;
     let globalDbCache = null;
@@ -163,6 +163,28 @@ export function avviaMotoreDashboard(db, auth) {
     function capitalizzaIniziali(str) {
         if (!str) return "";
         return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    // --- HELPER CONVERSIONE MANSIONE ---
+    function convertiTurnoPerMansione(turno, mansione) {
+        if (!turno || !mansione) return turno;
+        let t = String(turno).toUpperCase();
+        let m = String(mansione).toLowerCase();
+
+        let isMarinaio = m.includes('marinaio') || m.includes('timoniere');
+
+        if (isMarinaio) {
+            let matchP = t.match(/^([1-9])[CP](\d{2})$/);
+            if (matchP) return `${matchP[1]}B${matchP[2]}`;
+        } else {
+            let matchB = t.match(/^([1-9])B(\d{2})$/);
+            if (matchB) {
+                let l = matchB[1]; let f = matchB[2];
+                let letPilota = (l === '1' || l === '2') ? 'C' : 'P';
+                return `${l}${letPilota}${f}`;
+            }
+        }
+        return t;
     }
 
     async function initCaches() {
@@ -361,9 +383,12 @@ export function avviaMotoreDashboard(db, auth) {
         document.getElementById('dash-fulldate').textContent = dataCorrente.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
 
         let state = JSON.parse(localStorage.getItem('myTurniApp')) || {};
-        let mioTurno = state.variazioni && state.variazioni[dStr] ? state.variazioni[dStr] : calcolaTurnoBase(dStr, state);
         
-        document.getElementById('dash-turno-val').textContent = mioTurno || "N/D";
+        let mioTurnoBase = calcolaTurnoBase(dStr, state);
+        let mioTurnoConvertito = convertiTurnoPerMansione(mioTurnoBase, userDataPrivate?.mansione);
+        let mioTurnoOggi = state.variazioni && state.variazioni[dStr] ? state.variazioni[dStr] : mioTurnoConvertito;
+        
+        document.getElementById('dash-turno-val').textContent = mioTurnoOggi || "N/D";
         
         const alertVar = document.getElementById('dash-alert-varianti');
         const alertVarText = document.getElementById('dash-varianti-text');
@@ -387,7 +412,7 @@ export function avviaMotoreDashboard(db, auth) {
         
         const btnVedi = document.getElementById('dash-btn-vedi-turno');
         const avvisoVedi = document.getElementById('dash-avviso-vedi-turno');
-        let isRiposo = (!mioTurno || mioTurno === "RIPOSO" || mioTurno === "RI" || mioTurno === "DISP" || mioTurno === "NPL");
+        let isRiposo = (!mioTurnoOggi || ["RIPOSO", "RI", "DISP", "NPL", "AL", "FER", "FEP", "FES", "PRT", "KINF", "KMAL", "KNOP", "AVIS"].includes(mioTurnoOggi.toUpperCase().trim()));
 
         if (isRiposo) {
             btnVedi.style.display = "none";
@@ -399,11 +424,11 @@ export function avviaMotoreDashboard(db, auth) {
             } else {
                 btnVedi.style.display = "block";
                 avvisoVedi.style.display = "none";
-                btnVedi.onclick = () => { apriImmagineDashboard(mioTurno, dStr); };
+                btnVedi.onclick = () => { apriImmagineDashboard(mioTurnoOggi, dStr); };
             }
         }
 
-        cercaCompagno(dStr, mioTurno);
+        cercaCompagno(dStr, mioTurnoOggi);
         aggiornaMeteo(dStr);
     }
 
@@ -413,25 +438,62 @@ export function avviaMotoreDashboard(db, auth) {
         if (!auth.currentUser || !mioTurno) return;
 
         try {
-            const calRef = doc(db, "calendario", auth.currentUser.uid);
-            const calSnap = await getDoc(calRef);
+            const userRef = doc(db, "utenti", auth.currentUser.uid);
+            const userSnap = await getDoc(userRef);
             
-            if (calSnap.exists() && calSnap.data().condivisioneVarianti === true) {
+            if (userSnap.exists() && userSnap.data().condivisioneVarianti === true) {
+                let mioTurnoClean = String(mioTurno).toUpperCase().replace(/\s+/g, '');
                 let compagniPossibili = calcolaCompagniPossibili(mioTurno);
-                const q = query(collection(db, "calendario"), where("condivisioneVarianti", "==", true));
+                
+                let mStr = String(userDataPrivate?.mansione || "").toLowerCase();
+                let isMioMarinaio = mStr.includes('marinaio') || mStr.includes('timoniere');
+
+                const q = query(collection(db, "utenti"), where("condivisioneVarianti", "==", true));
                 const querySnapshot = await getDocs(q);
+                
                 let compagniTrovati = [];
+                let promises = [];
 
                 querySnapshot.forEach((docSnap) => {
                     if (docSnap.id !== auth.currentUser.uid) {
-                        const data = docSnap.data();
-                        let turnoComp = data.variazioni && data.variazioni[dStr] ? String(data.variazioni[dStr]) : calcolaTurnoBase(dStr, data);
-                        if (compagniPossibili.includes(String(turnoComp).toUpperCase().replace(/\s+/g, ''))) {
-                            let cognomeCap = capitalizzaIniziali(data.cognomePubblico);
-                            let nomeCap = capitalizzaIniziali(data.nomePubblico);
-                            let matricola = data.matricolaPubblico ? ` (Mat: ${data.matricolaPubblico})` : "";
-                            compagniTrovati.push(`${cognomeCap} ${nomeCap}${matricola}`);
+                        const userData = docSnap.data();
+                        if (userData.cognome) {
+                            const calRef = doc(db, "calendario", docSnap.id);
+                            promises.push(getDoc(calRef).then(calSnap => {
+                                return { id: docSnap.id, userData: userData, calData: calSnap.exists() ? calSnap.data() : {} };
+                            }));
                         }
+                    }
+                });
+
+                const risultati = await Promise.all(promises);
+
+                risultati.forEach((res) => {
+                    let turnoOriginaleBase = String(calcolaTurnoBase(dStr, res.calData) || "N/D");
+                    turnoOriginaleBase = convertiTurnoPerMansione(turnoOriginaleBase, res.userData.mansione);
+                    
+                    let turnoManuale = res.calData.variazioni && res.calData.variazioni[dStr] ? String(res.calData.variazioni[dStr]) : null;
+                    let turnoComp = turnoManuale !== null ? turnoManuale : turnoOriginaleBase;
+                    
+                    let stringaSicuraTurno = String(turnoComp).toUpperCase().replace(/\s+/g, '');
+                    
+                    let mTheir = String(res.userData.mansione || "").toLowerCase();
+                    let isTheirMarinaio = mTheir.includes('marinaio') || mTheir.includes('timoniere');
+                    
+                    let isMate = false;
+                    if (compagniPossibili.includes(stringaSicuraTurno)) {
+                        isMate = true;
+                    } else if (stringaSicuraTurno === mioTurnoClean && (isMioMarinaio !== isTheirMarinaio)) {
+                        if (!["NPL", "RI", "RIPOSO", "AL"].includes(stringaSicuraTurno)) {
+                            isMate = true;
+                        }
+                    }
+
+                    if (isMate) {
+                        let cognomeCap = capitalizzaIniziali(res.userData.cognome);
+                        let nomeCap = capitalizzaIniziali(res.userData.nome);
+                        let matricola = res.userData.matricola ? ` (Mat: ${res.userData.matricola})` : "";
+                        compagniTrovati.push(`${cognomeCap} ${nomeCap}${matricola}`);
                     }
                 });
 

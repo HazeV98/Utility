@@ -597,7 +597,7 @@ export function avviaMotoreVariantiAdmin(db, auth, userDataPrivate) {
 
             if (c.modificato) {
                 bloccoIcona = `<i class="fa-solid fa-pen-to-square" style="color:var(--warning); cursor:pointer;" onclick="this.parentElement.nextElementSibling.style.display = this.parentElement.nextElementSibling.style.display === 'none' ? 'block' : 'none'"></i>`;
-                textOriginale = `<div class="turno-originale-admin" style="display:none;"><i class="fa-solid fa-clock-rotate-left"></i> Strutturale Base: <b>${c.originaleStr}</b></div>`;
+                textOriginale = `<div class="turno-originale-admin" style="display:none;"><i class="fa-solid fa-clock-rotate-left"></i> Assegnato: <b>${c.originaleStr}</b></div>`;
             }
             
             item.innerHTML = `

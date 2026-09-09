@@ -477,7 +477,7 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
         aggiornaMeteo(dStr);
     }
 
-    async function cercaCompagno(dStr, mioTurno) {
+        async function cercaCompagno(dStr, mioTurno) {
         const container = document.getElementById('dash-mate-container');
         container.style.display = 'none';
         if (!auth.currentUser || !mioTurno) return;
@@ -485,6 +485,11 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
         try {
             const userRef = doc(db, "utenti", auth.currentUser.uid);
             const userSnap = await getDoc(userRef);
+            
+            // 1. Verifica se l'utente attuale ha dato il consenso alla rubrica
+            const miaRubricaRef = doc(db, "rubrica", auth.currentUser.uid);
+            const miaRubricaSnap = await getDoc(miaRubricaRef);
+            const isCurrentUserInRubrica = miaRubricaSnap.exists();
             
             if (userSnap.exists() && userSnap.data().condivisioneVarianti === true) {
                 let mioTurnoClean = String(mioTurno).toUpperCase().replace(/\s+/g, '');
@@ -513,7 +518,8 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
 
                 const risultati = await Promise.all(promises);
 
-                risultati.forEach((res) => {
+                // Modificato con for...of per supportare 'await' durante il loop
+                for (let res of risultati) {
                     let turnoOriginaleBase = String(calcolaTurnoBase(dStr, res.calData) || "N/D");
                     turnoOriginaleBase = convertiTurnoPerMansione(turnoOriginaleBase, res.userData.mansione);
                     
@@ -538,17 +544,38 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
                         let cognomeCap = capitalizzaIniziali(res.userData.cognome);
                         let nomeCap = capitalizzaIniziali(res.userData.nome);
                         let matricola = res.userData.matricola ? ` (Mat: ${res.userData.matricola})` : "";
-                        compagniTrovati.push(`${cognomeCap} ${nomeCap}${matricola}`);
+                        
+                        let mateHtml = `<span>${cognomeCap} ${nomeCap}${matricola}</span>`;
+
+                        // 2. Se l'utente attuale è in rubrica, controlla anche il compagno
+                        if (isCurrentUserInRubrica) {
+                            const mateRubricaRef = doc(db, "rubrica", res.id);
+                            const mateRubricaSnap = await getDoc(mateRubricaRef);
+                            
+                            if (mateRubricaSnap.exists() && mateRubricaSnap.data().telefono) {
+                                const matePhone = String(mateRubricaSnap.data().telefono).replace(/\s+/g, '');
+                                mateHtml += `
+                                    <span style="white-space: nowrap;">
+                                        <a href="tel:${matePhone}" style="margin-left: 12px; color: var(--text-main); text-decoration: none;"><i class="fa-solid fa-phone"></i></a>
+                                        <a href="https://wa.me/39${matePhone}" target="_blank" style="margin-left: 12px; color: #25D366; text-decoration: none;"><i class="fa-brands fa-whatsapp"></i></a>
+                                    </span>
+                                `;
+                            }
+                        }
+
+                        compagniTrovati.push(mateHtml);
                     }
-                });
+                }
 
                 if (compagniTrovati.length > 0) {
-                    document.getElementById('dash-mate-name').textContent = compagniTrovati.join(", ");
+                    // Utilizziamo innerHTML per iniettare correttamente i tag HTML delle icone
+                    document.getElementById('dash-mate-name').innerHTML = compagniTrovati.join("<br><br>");
                     container.style.display = 'block';
                 }
             }
         } catch (e) { console.error("Errore compagno", e); }
     }
+
 
     async function aggiornaMeteo(dStr) {
         const alertDiv = document.getElementById('dash-alert-pioggia');

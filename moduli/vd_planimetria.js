@@ -53,6 +53,7 @@ let invShaAttuale = null;
 
 let idPlanAttivo = null;
 let isEditMode = false;
+let hasUnsavedChanges = false; // Aggiunto per tracciare i salvataggi in sospeso
 let globalIsAdminCollab = false;
 let livelloCorrenteIdx = 0;
 let statoDropPin = null; 
@@ -62,6 +63,7 @@ export async function inizializzaPlanimetria(containerId, planId, databaseIgnora
     const token = localStorage.getItem('gh_admin_token');
     globalIsAdminCollab = isAdminOrCollab || (token ? true : false);
     isEditMode = false;
+    hasUnsavedChanges = false; // Reset all'avvio
     statoDropPin = null;
 
     const container = document.getElementById(containerId);
@@ -285,7 +287,7 @@ async function migrazioneVecchiDati(token) {
 
     if (globalIsAdminCollab && token) {
         if (salvaGlo) await salvaInventarioGlobaleSuGitHub();
-        if (salvaLoc) await salvaPlanimetriaSuGitHub();
+        if (salvaLoc) await salvaPlanimetriaSuGitHub(false, true); // Forziamo al caricamento
     }
 }
 
@@ -408,7 +410,15 @@ async function salvaInventarioGlobaleSuGitHub() {
     } catch(e) {}
 }
 
-async function salvaPlanimetriaSuGitHub(mostraCaricamento = false) {
+async function salvaPlanimetriaSuGitHub(mostraCaricamento = false, forzaSalvataggio = false) {
+    // Gestione salvataggio locale temporaneo in Edit Mode
+    if (isEditMode && !forzaSalvataggio) {
+        hasUnsavedChanges = true;
+        aggiornaLegenda();
+        disegnaLivelloCorrente();
+        return; // Esce senza chiamare le API di GitHub
+    }
+
     const token = localStorage.getItem('gh_admin_token');
     if (!token) return alert("Manca il token PAT Admin!");
     
@@ -426,6 +436,7 @@ async function salvaPlanimetriaSuGitHub(mostraCaricamento = false) {
         if (!res.ok) throw new Error("Errore salvataggio planimetria");
         
         fileShaAttuale = (await res.json()).content.sha; 
+        hasUnsavedChanges = false; // Modifiche locali salvate con successo
         aggiornaLegenda(); 
         disegnaLivelloCorrente();
     } catch(e) { console.error("Errore salvataggio", e); } 
@@ -442,19 +453,22 @@ function salvaDimensionePin(idPin, newSize) {
     }
 }
 
-function toggleEditMode() {
-    isEditMode = !isEditMode;
+async function toggleEditMode() {
     const btn = document.getElementById('fab-edit-plan');
     const icon = document.getElementById('icon-edit-plan');
     const fabDb = document.getElementById('fab-db-schede');
     const fabAdd = document.getElementById('fab-add-pin');
     
     if (isEditMode) {
-        btn.style.background = 'var(--success)'; 
-        icon.className = "fa-solid fa-check";
-        fabDb.style.display = 'flex';
-        fabAdd.style.display = 'flex';
-    } else {
+        // Disattivazione Edit Mode: salvo su GitHub se ci sono modifiche in sospeso
+        if (hasUnsavedChanges) {
+            icon.className = "fa-solid fa-spinner fa-spin";
+            btn.disabled = true;
+            await salvaPlanimetriaSuGitHub(false, true); // forza il salvataggio remoto
+            btn.disabled = false;
+        }
+
+        isEditMode = false;
         btn.style.background = 'var(--primary)'; 
         icon.className = "fa-solid fa-pen";
         fabDb.style.display = 'none';
@@ -463,6 +477,14 @@ function toggleEditMode() {
         statoDropPin = null;
         document.getElementById('plan-drop-indicator').style.display = 'none';
         document.getElementById('plan-map-container').style.cursor = 'grab';
+    } else {
+        // Attivazione Edit Mode
+        isEditMode = true;
+        hasUnsavedChanges = false;
+        btn.style.background = 'var(--success)'; 
+        icon.className = "fa-solid fa-check";
+        fabDb.style.display = 'flex';
+        fabAdd.style.display = 'flex';
     }
     disegnaLivelloCorrente(); 
 }

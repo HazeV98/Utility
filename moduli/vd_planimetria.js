@@ -5,16 +5,9 @@ const GH_REPO = "Utility";
 const stiliPlan = document.createElement('style');
 stiliPlan.innerHTML = `
     .plan-glass-panel {
-        background: rgba(255, 255, 255, 0.85) !important;
+        background: var(--surface) !important;
         backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.6) !important;
-    }
-    :root[data-theme="dark"] .plan-glass-panel, 
-    @media (prefers-color-scheme: dark) { 
-        :root:not([data-theme="light"]) .plan-glass-panel {
-            background: rgba(26, 29, 36, 0.85) !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
-        }
+        border: 1px solid var(--border-color) !important;
     }
 
     /* Inversione Colori Planimetria Standard (Immagine base) in Dark Mode */
@@ -134,7 +127,7 @@ export async function inizializzaPlanimetria(containerId, planId, databaseIgnora
     if (globalIsAdminCollab) document.getElementById('fab-edit-plan').style.display = 'flex';
 
     if (mappaPlan) mappaPlan.remove(); 
-    mappaPlan = L.map('plan-map-container', { crs: L.CRS.Simple, minZoom: -4, zoomControl: false, zoomSnap: 0 });
+    mappaPlan = L.map('plan-map-container', { crs: L.CRS.Simple, minZoom: -4, zoomControl: false, zoomSnap: 0, attributionControl: false });
     L.control.zoom({ position: 'bottomleft' }).addTo(mappaPlan); // Spostato bottomleft per non dare fastidio
     markersLayer = L.layerGroup().addTo(mappaPlan);
 
@@ -882,7 +875,7 @@ function apriEditorScheda(id) {
 
         <div style="display:flex; justify-content:space-between; margin-bottom: 20px;">
             <button onclick="document.getElementById('upload-media-plan').click()" style="background:var(--primary); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;"><i class="fa-solid fa-photo-film"></i> Immagine/Video</button>
-            <button onclick="document.getElementById('upload-pdf-plan').click()" style="background:var(--danger); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+            <button onclick="document.getElementById('upload-pdf-plan').click()" style="background:var(--danger); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;"><i class="fa-solid fa-file-pdf"></i></button>
             
             <input type="file" id="upload-media-plan" accept="image/*, video/*" style="display:none;" onchange="window.Plan.gestisciUploadMediaPlan(event, 'media', '${id}')">
             <input type="file" id="upload-pdf-plan" accept="application/pdf" style="display:none;" onchange="window.Plan.gestisciUploadMediaPlan(event, 'pdf', '${id}')">

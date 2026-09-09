@@ -1,5 +1,5 @@
 const GH_OWNER = "HazeV98"; 
-const GH_REPO = "Utility-test";
+const GH_REPO = "Utility";
 
 // Stili base e Dark Mode
 const stiliPlan = document.createElement('style');

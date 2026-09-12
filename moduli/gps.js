@@ -33,7 +33,10 @@ export function initUIGPS() {
         .gps-coord-box { display: flex; justify-content: space-around; padding-top: 25px; border-top: 1px solid var(--border-color); }
         .gps-coord { font-size: 24px; color: var(--text-main); font-weight: bold; font-family: monospace; letter-spacing: -1px; }
         
-        .gps-status-box { font-size: 14px; font-weight: bold; text-align: center; margin-top: 30px; padding: 12px; border-radius: var(--radius-sm); }
+        .gps-status-box { font-size: 14px; font-weight: bold; text-align: center; margin-top: 30px; padding: 12px; border-radius: var(--radius-sm); min-height: 45px; display: flex; align-items: center; justify-content: center; }
+        
+        .btn-attiva-gps { background: var(--primary); color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: var(--radius-sm); cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.2s; display: flex; align-items: center; gap: 8px; margin: 0 auto; }
+        .btn-attiva-gps:active { transform: scale(0.95); }
     </style>
 
     <div id="modal-gps-main" class="modal-overlay" style="display:none;" onclick="window.chiudiSuSfondo(event, 'modal-gps-main')">
@@ -73,8 +76,8 @@ export function initUIGPS() {
                     </div>
                 </div>
                 
-                <div id="gps-status" class="gps-status-box" style="background: rgba(0,0,0,0.05); color: var(--text-muted);">
-                    <i class="fa-solid fa-satellite-dish"></i> Modulo GPS pronto
+                <div id="gps-status" class="gps-status-box" style="background: transparent;">
+                    <button id="btn-attiva-gps" class="btn-attiva-gps"><i class="fa-solid fa-location-arrow"></i> Attiva GPS</button>
                 </div>
             </div>
         </div>
@@ -118,6 +121,7 @@ export function avviaMotoreGPS() {
     const latVal = document.getElementById('gps-lat-val');
     const lonVal = document.getElementById('gps-lon-val');
     const statusDiv = document.getElementById('gps-status');
+    const btnAttiva = document.getElementById('btn-attiva-gps');
 
     const widthPerMark = 60; 
     const pxPerDegree = widthPerMark / 10; 
@@ -169,6 +173,34 @@ export function avviaMotoreGPS() {
         statusDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${msg}`;
         statusDiv.style.color = "var(--danger, #ef4444)";
         statusDiv.style.background = "rgba(239, 68, 68, 0.1)";
+        
+        // Rimette il bottone in caso di errore per riprovare
+        setTimeout(() => {
+            statusDiv.innerHTML = '';
+            statusDiv.style.background = "transparent";
+            statusDiv.appendChild(btnAttiva);
+        }, 4000);
+    }
+
+    function inizializzaGPS() {
+        if (!("geolocation" in navigator)) {
+            statusDiv.innerHTML = "Il tuo browser non supporta il GPS.";
+            return;
+        }
+
+        statusDiv.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> In attesa di segnale GPS...`;
+        statusDiv.style.color = "var(--text-main)";
+        statusDiv.style.background = "rgba(0,0,0,0.05)";
+        
+        watchId = navigator.geolocation.watchPosition(
+            elaboraPosizione,
+            gestisciErrore,
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+        );
+    }
+
+    if (btnAttiva) {
+        btnAttiva.addEventListener('click', inizializzaGPS);
     }
 
     window.apriModaleGPS = function() {
@@ -181,19 +213,5 @@ export function avviaMotoreGPS() {
             let curr = parseFloat(headingVal.textContent);
             if(!isNaN(curr)) aggiornaGhiera(curr);
         });
-
-        if (watchId === null && "geolocation" in navigator) {
-            statusDiv.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> In attesa di segnale GPS...`;
-            statusDiv.style.color = "var(--text-main)";
-            statusDiv.style.background = "rgba(0,0,0,0.05)";
-            
-            watchId = navigator.geolocation.watchPosition(
-                elaboraPosizione,
-                gestisciErrore,
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-            );
-        } else if (!("geolocation" in navigator)) {
-            statusDiv.textContent = "Il tuo browser non supporta il GPS.";
-        }
     };
 }

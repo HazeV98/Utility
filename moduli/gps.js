@@ -113,6 +113,8 @@ export function initUIGPS() {
 // ==========================================
 export function avviaMotoreGPS() {
     let watchId = null;
+    let lastValidHeading = null; // Memorizza l'ultima rotta valida
+    const MIN_SPEED_HEADING = 0.5; // Soglia minima in m/s (circa 1.8 km/h) per aggiornare la rotta
     
     const tape = document.getElementById('compass-tape');
     const headingVal = document.getElementById('gps-heading-val');
@@ -158,8 +160,12 @@ export function avviaMotoreGPS() {
         speedVal.textContent = speedKmh.toFixed(1);
         speedKnots.textContent = `${speedNodi.toFixed(1)} nodi`;
 
+        // Aggiorna la rotta SOLO se in movimento o se è la prima lettura assoluta
         if (coords.heading !== null) {
-            aggiornaGhiera(coords.heading);
+            if (speedMs >= MIN_SPEED_HEADING || lastValidHeading === null) {
+                lastValidHeading = coords.heading;
+                aggiornaGhiera(coords.heading);
+            }
         }
     }
 
@@ -174,7 +180,6 @@ export function avviaMotoreGPS() {
         statusDiv.style.color = "var(--danger, #ef4444)";
         statusDiv.style.background = "rgba(239, 68, 68, 0.1)";
         
-        // Rimette il bottone in caso di errore per riprovare
         setTimeout(() => {
             statusDiv.innerHTML = '';
             statusDiv.style.background = "transparent";
@@ -206,11 +211,11 @@ export function avviaMotoreGPS() {
     window.apriModaleGPS = function() {
         document.getElementById('modal-gps-main').style.display = 'flex';
         
-        let currentHeading = parseFloat(headingVal.textContent);
+        let currentHeading = lastValidHeading !== null ? lastValidHeading : parseFloat(headingVal.textContent);
         if(!isNaN(currentHeading)) setTimeout(() => aggiornaGhiera(currentHeading), 50); 
         
         window.addEventListener('resize', () => {
-            let curr = parseFloat(headingVal.textContent);
+            let curr = lastValidHeading !== null ? lastValidHeading : parseFloat(headingVal.textContent);
             if(!isNaN(curr)) aggiornaGhiera(curr);
         });
     };

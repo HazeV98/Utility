@@ -305,5 +305,18 @@
         "moduleId": "varianti_admin",
         "moduleName": "varianti_admin",
         "splitModule": false
+    },
+    {
+        "id": "gps",
+        "label": "Tachimetro",
+        "icon": "fa-solid fa-arrow",
+        "defaultColor": "#0066cc",
+        "conditions": [
+            "admin"
+        ],
+        "isModule": true,
+        "moduleId": "gps",
+        "moduleName": "gps",
+        "splitModule": false
     }
 ]

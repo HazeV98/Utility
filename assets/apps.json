@@ -309,7 +309,7 @@
     {
         "id": "gps",
         "label": "Tachimetro",
-        "icon": "fa-solid fa-arrow",
+        "icon": "fa-solid fa-location-arrow",
         "defaultColor": "#0066cc",
         "conditions": [
             "admin"

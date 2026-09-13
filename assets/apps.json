@@ -354,6 +354,7 @@
         "conditions": [
             "tutti"
         ],
-        "href": "https://avm.avmspa.it/it/content/linee-extraurbane-0"
+        "href": "https://avm.avmspa.it/it/content/linee-extraurbane-0",
+        "folder": "Orari"
     }
 ]

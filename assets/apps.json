@@ -327,7 +327,7 @@
     {
         "id": "arrivaveneto",
         "label": "Orari Arriva Veneto",
-        "icon": "fa-regular fa-bus-simple",
+        "icon": "fa-solid fa-bus-simple",
         "defaultColor": "#6f42c1",
         "conditions": [
             "tutti"

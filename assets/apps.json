@@ -326,11 +326,11 @@
     },
     {
         "id": "arrivaveneto",
-        "label": "Orari Arrivaveneto",
-        "icon": "fa-regular fa-clock",
+        "label": "Orari Arriva Veneto",
+        "icon": "fa-regular fa-bus-simple",
         "defaultColor": "#6f42c1",
         "conditions": [
-            "admin"
+            "tutti"
         ],
         "href": "https://www.arrivaveneto.it/orari-e-percorsi/",
         "folder": "Orari"

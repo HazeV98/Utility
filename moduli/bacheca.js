@@ -43,7 +43,6 @@ export function initUIBacheca() {
         
         .bacheca-actions { display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px; position: relative; }
         
-        /* Classi rinominate per evitare conflitti di layout globale */
         .btn-bacheca { padding: 8px 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: opacity 0.2s; position: static !important; }
         .btn-bacheca:hover { opacity: 0.8; }
         .btn-bacheca-ed { background: rgba(243, 156, 18, 0.15); color: #f39c12; }
@@ -228,7 +227,7 @@ export function avviaMotoreBacheca(db, auth, userDataPrivate) {
             pNome.value = userDataPrivate.nome || "";
             pCogn.value = userDataPrivate.cognome || "";
             pMatr.value = userDataPrivate.matricola || "";
-            pOmo.value = userDataPrivate.omonimia || "";
+            pOmo.value = userDataPrivate.progressivo || ""; // Corretto: legge progressivo
             pTel.value = userDataPrivate.telefono || "";
 
             let mancanoDati = (!pNome.value || !pCogn.value || !pMatr.value || !pTel.value);
@@ -296,12 +295,13 @@ export function avviaMotoreBacheca(db, auth, userDataPrivate) {
             }
 
             try {
-                if (pNome !== userDataPrivate.nome || pCogn !== userDataPrivate.cognome || pMatr !== userDataPrivate.matricola || pOmo !== (userDataPrivate.omonimia || "") || pTel !== userDataPrivate.telefono) {
+                // Corretto: salva come 'progressivo'
+                if (pNome !== userDataPrivate.nome || pCogn !== userDataPrivate.cognome || pMatr !== userDataPrivate.matricola || pOmo !== (userDataPrivate.progressivo || "") || pTel !== userDataPrivate.telefono) {
                     await updateDoc(doc(db, "utenti", currentUserUid), {
-                        nome: pNome, cognome: pCogn, matricola: pMatr, omonimia: pOmo, telefono: pTel
+                        nome: pNome, cognome: pCogn, matricola: pMatr, progressivo: pOmo, telefono: pTel
                     });
                     userDataPrivate.nome = pNome; userDataPrivate.cognome = pCogn; 
-                    userDataPrivate.matricola = pMatr; userDataPrivate.omonimia = pOmo; userDataPrivate.telefono = pTel;
+                    userDataPrivate.matricola = pMatr; userDataPrivate.progressivo = pOmo; userDataPrivate.telefono = pTel;
                 }
 
                 let nomeVisivo = `${pCogn} ${pNome}`;

@@ -69,7 +69,7 @@ export function initUIBacheca() {
                 <div class="bacheca-top-bar">
                     <div class="search-wrapper">
                         <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="bacheca-search-input" class="bacheca-search" placeholder="Cerca nel titolo o nel testo..." oninput="window.bachecaAPI.filtraPost()">
+                        <input type="text" id="bacheca-search-input" class="bacheca-search" placeholder="Cerca" oninput="window.bachecaAPI.filtraPost()">
                     </div>
                     <button class="btn-icon-only btn-filter-icon" onclick="window.bachecaAPI.apriFiltro()"><i class="fa-solid fa-filter"></i></button>
                     <button id="btn-bacheca-admin" class="btn-icon-only btn-admin-icon" style="display: none;" onclick="window.bachecaAPI.apriAdmin()"><i class="fa-solid fa-shield-halved"></i></button>

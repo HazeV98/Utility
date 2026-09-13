@@ -281,7 +281,8 @@
         "isModule": true,
         "moduleId": "admin",
         "moduleName": "admin",
-        "splitModule": true
+        "splitModule": true,
+        "folder": "Admin"
     },
     {
         "id": "accessi",
@@ -304,32 +305,6 @@
         "isModule": true,
         "moduleId": "varianti_admin",
         "moduleName": "varianti_admin",
-        "splitModule": false
-    },
-    {
-        "id": "gps",
-        "label": "Tachimetro",
-        "icon": "fa-solid fa-location-arrow",
-        "defaultColor": "#0066cc",
-        "conditions": [
-            "admin"
-        ],
-        "isModule": true,
-        "moduleId": "gps",
-        "moduleName": "gps",
-        "splitModule": false
-    },
-    {
-        "id": "annunci",
-        "label": "Bacheca annunci",
-        "icon": "fa-regular fa-clipboard",
-        "defaultColor": "#fd7e14",
-        "conditions": [
-            "admin"
-        ],
-        "isModule": true,
-        "moduleId": "annunci",
-        "moduleName": "bacheca",
         "splitModule": false
     }
 ]

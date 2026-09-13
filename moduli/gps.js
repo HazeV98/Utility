@@ -114,7 +114,10 @@ export function initUIGPS() {
 export function avviaMotoreGPS() {
     let watchId = null;
     let lastValidHeading = null;
+    let speedHistory = []; // Array per la media mobile
+    
     const MIN_SPEED_HEADING = 0.5;
+    const SMOOTHING_WINDOW_MS = 2000; // Calcola la media degli ultimi 2 secondi
     
     const tape = document.getElementById('compass-tape');
     const headingVal = document.getElementById('gps-heading-val');
@@ -145,23 +148,36 @@ export function avviaMotoreGPS() {
 
     function elaboraPosizione(position) {
         const coords = position.coords;
+        const now = Date.now();
         
         statusDiv.innerHTML = `<i class="fa-solid fa-satellite-dish"></i> Segnale Ricevuto (Prec: ±${Math.round(coords.accuracy)}m)`;
         statusDiv.style.color = "var(--success, #10b981)";
         statusDiv.style.background = "transparent";
 
-        latVal.textContent = coords.latitude.toFixed(5);
-        lonVal.textContent = coords.longitude.toFixed(5);
+        // Formattazione Coordinate con Cardinali
+        let lat = coords.latitude;
+        let lon = coords.longitude;
+        latVal.textContent = `${Math.abs(lat).toFixed(5)}° ${lat >= 0 ? 'N' : 'S'}`;
+        lonVal.textContent = `${Math.abs(lon).toFixed(5)}° ${lon >= 0 ? 'E' : 'W'}`;
 
-        let speedMs = coords.speed || 0;
-        let speedKmh = speedMs * 3.6;
-        let speedNodi = speedMs * 1.94384;
+        // Sistema Media Mobile Velocità
+        let rawSpeedMs = coords.speed || 0;
+        speedHistory.push({ speed: rawSpeedMs, time: now });
+        
+        // Pulisce i valori più vecchi della finestra temporale
+        speedHistory = speedHistory.filter(entry => now - entry.time <= SMOOTHING_WINDOW_MS);
+        
+        // Calcola la media dei valori rimasti
+        let avgSpeedMs = speedHistory.reduce((sum, entry) => sum + entry.speed, 0) / speedHistory.length;
+
+        let speedKmh = avgSpeedMs * 3.6;
+        let speedNodi = avgSpeedMs * 1.94384;
         
         speedVal.textContent = speedKmh.toFixed(1);
         speedKnots.textContent = `${speedNodi.toFixed(1)} nodi`;
 
         if (coords.heading !== null) {
-            if (speedMs >= MIN_SPEED_HEADING || lastValidHeading === null) {
+            if (rawSpeedMs >= MIN_SPEED_HEADING || lastValidHeading === null) {
                 lastValidHeading = coords.heading;
                 aggiornaGhiera(coords.heading);
             }
@@ -195,6 +211,8 @@ export function avviaMotoreGPS() {
         statusDiv.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> In attesa di segnale GPS...`;
         statusDiv.style.color = "var(--text-main)";
         statusDiv.style.background = "transparent";
+        
+        speedHistory = []; // Resetta la storia della velocità a ogni nuovo avvio
         
         watchId = navigator.geolocation.watchPosition(
             elaboraPosizione,

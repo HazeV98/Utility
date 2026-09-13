@@ -330,6 +330,7 @@
         "conditions": [
             "admin"
         ],
-        "href": "https://www.arrivaveneto.it/orari-e-percorsi/"
+        "href": "https://www.arrivaveneto.it/orari-e-percorsi/",
+        "folder": "Orari"
     }
 ]

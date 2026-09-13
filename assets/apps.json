@@ -179,7 +179,7 @@
         "icon": "fa-regular fa-clipboard",
         "defaultColor": "#fd7e14",
         "conditions": [
-            "admin"
+            "tutti"
         ],
         "isModule": true,
         "moduleId": "annunci",

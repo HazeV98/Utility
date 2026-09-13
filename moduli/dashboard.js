@@ -48,7 +48,7 @@ export function initUIDashboard() {
             <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-dashboard-main').style.display='none'"></i>
             
             <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
-                <i class="fa-solid fa-gauge-high"></i> Dashboard
+                <i class="fa-solid fa-chart-bar"></i> Dashboard
             </h3>
 
             <div class="dash-header">

@@ -194,7 +194,7 @@ export function avviaMotoreGPS() {
 
         statusDiv.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> In attesa di segnale GPS...`;
         statusDiv.style.color = "var(--text-main)";
-        statusDiv.style.background = "rgba(0,0,0,0.05)";
+        statusDiv.style.background = "transparent";
         
         watchId = navigator.geolocation.watchPosition(
             elaboraPosizione,

@@ -325,7 +325,7 @@
     {
         "id": "arrivaveneto",
         "label": "Orari Arrivaveneto",
-        "icon": "fa-solid fa-clock",
+        "icon": "fa-regular fa-clock",
         "defaultColor": "#6f42c1",
         "conditions": [
             "admin"

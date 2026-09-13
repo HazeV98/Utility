@@ -334,5 +334,15 @@
         ],
         "href": "https://www.arrivaveneto.it/orari-e-percorsi/",
         "folder": "Orari"
+    },
+    {
+        "id": "busurb",
+        "label": "Orari bus urbani",
+        "icon": "fa-solid fa-bus-simple",
+        "defaultColor": "#33a0ff",
+        "conditions": [
+            "tutti"
+        ],
+        "href": "https://avm.avmspa.it/it/content/linee-urbane-0"
     }
 ]

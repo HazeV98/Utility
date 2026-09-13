@@ -35,7 +35,7 @@ export function initUIGPS() {
         
         .gps-status-box { font-size: 14px; font-weight: bold; text-align: center; margin-top: 30px; padding: 12px; border-radius: var(--radius-sm); min-height: 45px; display: flex; align-items: center; justify-content: center; }
         
-        .btn-attiva-gps { background: var(--primary); color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: var(--radius-sm); cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.2s; display: flex; align-items: center; gap: 8px; margin: 0 auto; }
+        .btn-attiva-gps { background: var(--primary); color: white; border: none; padding: 12px 28px; font-size: 16px; font-weight: bold; border-radius: 30px; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.2s; display: flex; align-items: center; gap: 8px; margin: 0 auto; }
         .btn-attiva-gps:active { transform: scale(0.95); }
     </style>
 
@@ -113,8 +113,8 @@ export function initUIGPS() {
 // ==========================================
 export function avviaMotoreGPS() {
     let watchId = null;
-    let lastValidHeading = null; // Memorizza l'ultima rotta valida
-    const MIN_SPEED_HEADING = 0.5; // Soglia minima in m/s (circa 1.8 km/h) per aggiornare la rotta
+    let lastValidHeading = null;
+    const MIN_SPEED_HEADING = 0.5;
     
     const tape = document.getElementById('compass-tape');
     const headingVal = document.getElementById('gps-heading-val');
@@ -148,7 +148,7 @@ export function avviaMotoreGPS() {
         
         statusDiv.innerHTML = `<i class="fa-solid fa-satellite-dish"></i> Segnale Ricevuto (Prec: ±${Math.round(coords.accuracy)}m)`;
         statusDiv.style.color = "var(--success, #10b981)";
-        statusDiv.style.background = "rgba(16, 185, 129, 0.1)";
+        statusDiv.style.background = "transparent";
 
         latVal.textContent = coords.latitude.toFixed(5);
         lonVal.textContent = coords.longitude.toFixed(5);
@@ -160,7 +160,6 @@ export function avviaMotoreGPS() {
         speedVal.textContent = speedKmh.toFixed(1);
         speedKnots.textContent = `${speedNodi.toFixed(1)} nodi`;
 
-        // Aggiorna la rotta SOLO se in movimento o se è la prima lettura assoluta
         if (coords.heading !== null) {
             if (speedMs >= MIN_SPEED_HEADING || lastValidHeading === null) {
                 lastValidHeading = coords.heading;

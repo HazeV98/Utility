@@ -170,10 +170,7 @@
         "conditions": [
             "admin"
         ],
-        "isModule": true,
-        "moduleId": "vademecum",
-        "moduleName": "vademecum",
-        "splitModule": false
+        "href": "vademecum.html"
     },
     {
         "id": "link",

@@ -345,5 +345,15 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
+    },
+    {
+        "id": "busextrurb",
+        "label": "Orari Bus Extraurbani",
+        "icon": "fa-solid fa-bus-simple",
+        "defaultColor": "#1c67c9",
+        "conditions": [
+            "tutti"
+        ],
+        "href": "https://avm.avmspa.it/it/content/linee-extraurbane-0"
     }
 ]

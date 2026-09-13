@@ -137,7 +137,8 @@
         "isModule": true,
         "moduleId": "orari",
         "moduleName": "orari",
-        "splitModule": true
+        "splitModule": true,
+        "folder": "Orari"
     },
     {
         "id": "chebateo",

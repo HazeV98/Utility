@@ -343,6 +343,7 @@
         "conditions": [
             "tutti"
         ],
-        "href": "https://avm.avmspa.it/it/content/linee-urbane-0"
+        "href": "https://avm.avmspa.it/it/content/linee-urbane-0",
+        "folder": "Orari"
     }
 ]

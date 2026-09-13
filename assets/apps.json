@@ -312,8 +312,8 @@
     {
         "id": "annunci",
         "label": "Bacheca annunci",
-        "icon": "fa-regular fa-clipboard-list",
-        "defaultColor": "#0066cc",
+        "icon": "fa-solid fa-clipboard-list",
+        "defaultColor": "#fd7e14",
         "conditions": [
             "admin"
         ],

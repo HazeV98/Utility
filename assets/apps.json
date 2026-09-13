@@ -306,6 +306,7 @@
         "isModule": true,
         "moduleId": "varianti_admin",
         "moduleName": "varianti_admin",
-        "splitModule": false
+        "splitModule": false,
+        "folder": "Admin"
     }
 ]

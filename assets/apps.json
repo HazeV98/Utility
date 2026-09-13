@@ -127,6 +127,19 @@
         "splitModule": true
     },
     {
+        "id": "annunci",
+        "label": "Bacheca annunci",
+        "icon": "fa-regular fa-clipboard",
+        "defaultColor": "#fd7e14",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "annunci",
+        "moduleName": "bacheca",
+        "splitModule": false
+    },
+    {
         "id": "orari",
         "label": "Orari Navigazione",
         "icon": "fa-regular fa-clock",
@@ -152,6 +165,17 @@
         "folder": "Orari"
     },
     {
+        "id": "busextrurb",
+        "label": "Orari Bus Extraurbani",
+        "icon": "fa-solid fa-bus-simple",
+        "defaultColor": "#1c67c9",
+        "conditions": [
+            "tutti"
+        ],
+        "href": "https://avm.avmspa.it/it/content/linee-extraurbane-0",
+        "folder": "Orari"
+    },
+    {
         "id": "chebateo",
         "label": "CheBateo",
         "icon": "fa-solid fa-water",
@@ -172,19 +196,6 @@
         ],
         "href": "https://www.arrivaveneto.it/orari-e-percorsi/",
         "folder": "Orari"
-    },
-    {
-        "id": "annunci",
-        "label": "Bacheca annunci",
-        "icon": "fa-regular fa-clipboard",
-        "defaultColor": "#fd7e14",
-        "conditions": [
-            "tutti"
-        ],
-        "isModule": true,
-        "moduleId": "annunci",
-        "moduleName": "bacheca",
-        "splitModule": false
     },
     {
         "id": "documenti",
@@ -345,16 +356,5 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
-    },
-    {
-        "id": "busextrurb",
-        "label": "Orari Bus Extraurbani",
-        "icon": "fa-solid fa-bus-simple",
-        "defaultColor": "#1c67c9",
-        "conditions": [
-            "tutti"
-        ],
-        "href": "https://avm.avmspa.it/it/content/linee-extraurbane-0",
-        "folder": "Orari"
     }
 ]

@@ -292,7 +292,8 @@
         "onclick": "window.apriGestioneAccessi()",
         "conditions": [
             "admin"
-        ]
+        ],
+        "folder": "Admin"
     },
     {
         "id": "varianti_admin",

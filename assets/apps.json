@@ -148,7 +148,8 @@
         "href": "https://m.chebateo.it/",
         "conditions": [
             "tutti"
-        ]
+        ],
+        "folder": "Orari"
     },
     {
         "id": "documenti",

@@ -318,5 +318,18 @@
         "moduleId": "gps",
         "moduleName": "gps",
         "splitModule": false
+    },
+    {
+        "id": "annunci",
+        "label": "Bacheca annunci",
+        "icon": "fa-regular fa-clipboard",
+        "defaultColor": "#fd7e14",
+        "conditions": [
+            "admin"
+        ],
+        "isModule": true,
+        "moduleId": "annunci",
+        "moduleName": "bacheca",
+        "splitModule": false
     }
 ]

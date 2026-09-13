@@ -141,6 +141,17 @@
         "folder": "Orari"
     },
     {
+        "id": "busurb",
+        "label": "Orari bus urbani",
+        "icon": "fa-solid fa-bus-simple",
+        "defaultColor": "#33a0ff",
+        "conditions": [
+            "tutti"
+        ],
+        "href": "https://avm.avmspa.it/it/content/linee-urbane-0",
+        "folder": "Orari"
+    },
+    {
         "id": "chebateo",
         "label": "CheBateo",
         "icon": "fa-solid fa-water",
@@ -150,6 +161,30 @@
             "tutti"
         ],
         "folder": "Orari"
+    },
+    {
+        "id": "arrivaveneto",
+        "label": "Orari Arriva Veneto",
+        "icon": "fa-solid fa-bus-simple",
+        "defaultColor": "#6f42c1",
+        "conditions": [
+            "tutti"
+        ],
+        "href": "https://www.arrivaveneto.it/orari-e-percorsi/",
+        "folder": "Orari"
+    },
+    {
+        "id": "annunci",
+        "label": "Bacheca annunci",
+        "icon": "fa-regular fa-clipboard",
+        "defaultColor": "#fd7e14",
+        "conditions": [
+            "admin"
+        ],
+        "isModule": true,
+        "moduleId": "annunci",
+        "moduleName": "bacheca",
+        "splitModule": false
     },
     {
         "id": "documenti",
@@ -310,40 +345,5 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
-    },
-    {
-        "id": "annunci",
-        "label": "Bacheca annunci",
-        "icon": "fa-regular fa-clipboard",
-        "defaultColor": "#fd7e14",
-        "conditions": [
-            "admin"
-        ],
-        "isModule": true,
-        "moduleId": "annunci",
-        "moduleName": "bacheca",
-        "splitModule": false
-    },
-    {
-        "id": "arrivaveneto",
-        "label": "Orari Arriva Veneto",
-        "icon": "fa-solid fa-bus-simple",
-        "defaultColor": "#6f42c1",
-        "conditions": [
-            "tutti"
-        ],
-        "href": "https://www.arrivaveneto.it/orari-e-percorsi/",
-        "folder": "Orari"
-    },
-    {
-        "id": "busurb",
-        "label": "Orari bus urbani",
-        "icon": "fa-solid fa-bus-simple",
-        "defaultColor": "#33a0ff",
-        "conditions": [
-            "tutti"
-        ],
-        "href": "https://avm.avmspa.it/it/content/linee-urbane-0",
-        "folder": "Orari"
     }
 ]

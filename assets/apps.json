@@ -321,5 +321,15 @@
         "moduleId": "annunci",
         "moduleName": "bacheca",
         "splitModule": false
+    },
+    {
+        "id": "arrivaveneto",
+        "label": "Orari Arrivaveneto",
+        "icon": "fa-solid fa-clock",
+        "defaultColor": "#6f42c1",
+        "conditions": [
+            "admin"
+        ],
+        "href": "https://www.arrivaveneto.it/orari-e-percorsi/"
     }
 ]

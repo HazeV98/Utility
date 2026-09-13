@@ -168,7 +168,7 @@
         "id": "busextrurb",
         "label": "Orari Bus Extraurbani",
         "icon": "fa-solid fa-bus-simple",
-        "defaultColor": "#1c67c9",
+        "defaultColor": "#fd7e14",
         "conditions": [
             "tutti"
         ],

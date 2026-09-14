@@ -356,5 +356,18 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
+    },
+    {
+        "id": "gps",
+        "label": "Tachimetro",
+        "icon": "fa-solid fa-gauge",
+        "defaultColor": "#e83e8c",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "gps",
+        "moduleName": "gps",
+        "splitModule": false
     }
 ]

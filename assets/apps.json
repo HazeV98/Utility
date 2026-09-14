@@ -335,7 +335,7 @@
         "id": "admin",
         "label": "Admin",
         "icon": "fa-solid fa-lock",
-        "defaultColor": "#ff3b30",
+        "defaultColor": "#dc3545",
         "conditions": [
             "admin"
         ],

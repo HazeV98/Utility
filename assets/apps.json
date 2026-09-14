@@ -130,7 +130,7 @@
         "id": "annunci",
         "label": "Bacheca annunci",
         "icon": "fa-regular fa-clipboard",
-        "defaultColor": "#fd7e14",
+        "defaultColor": "#28a745",
         "conditions": [
             "tutti"
         ],

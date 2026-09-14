@@ -201,7 +201,7 @@
         "id": "documenti",
         "label": "Documenti",
         "icon": "fa-solid fa-file-lines",
-        "defaultColor": "#6c757d",
+        "defaultColor": "#6f42c1",
         "conditions": [
             "tutti"
         ],

@@ -157,7 +157,7 @@
         "id": "busurb",
         "label": "Orari bus urbani",
         "icon": "fa-solid fa-bus-simple",
-        "defaultColor": "#33a0ff",
+        "defaultColor": "#28a745",
         "conditions": [
             "tutti"
         ],

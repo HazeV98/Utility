@@ -91,7 +91,7 @@
         "id": "barcadvisor",
         "label": "BarcAdvisor",
         "icon": "fa-solid fa-sailboat",
-        "defaultColor": "#ff9800",
+        "defaultColor": "#0066cc",
         "conditions": [
             "tutti"
         ],

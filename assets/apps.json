@@ -360,8 +360,8 @@
     {
         "id": "gps",
         "label": "Tachimetro",
-        "icon": "fa-solid fa-gauge",
-        "defaultColor": "#e83e8c",
+        "icon": "fa-solid fa-location-arrow",
+        "defaultColor": "#0066cc",
         "conditions": [
             "tutti"
         ],

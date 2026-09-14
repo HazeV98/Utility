@@ -315,11 +315,11 @@
         "id": "spriss",
         "label": "Spriss",
         "icon": "fa-solid fa-martini-glass",
-        "defaultColor": "#dc3545",
-        "href": "https://spriss.avmspa.it/",
+        "defaultColor": "#fd7e14",
         "conditions": [
             "tutti"
-        ]
+        ],
+        "href": "https://spriss.avmspa.it/"
     },
     {
         "id": "bateolive",

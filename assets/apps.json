@@ -221,6 +221,19 @@
         "href": "vademecum.html"
     },
     {
+        "id": "gps",
+        "label": "Tachimetro",
+        "icon": "fa-solid fa-location-arrow",
+        "defaultColor": "#0066cc",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "gps",
+        "moduleName": "gps",
+        "splitModule": false
+    },
+    {
         "id": "link",
         "label": "Link",
         "icon": "fa-solid fa-link",
@@ -356,18 +369,5 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
-    },
-    {
-        "id": "gps",
-        "label": "Tachimetro",
-        "icon": "fa-solid fa-location-arrow",
-        "defaultColor": "#0066cc",
-        "conditions": [
-            "tutti"
-        ],
-        "isModule": true,
-        "moduleId": "gps",
-        "moduleName": "gps",
-        "splitModule": false
     }
 ]

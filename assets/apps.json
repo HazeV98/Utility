@@ -276,7 +276,7 @@
         "id": "promemoria",
         "label": "Promemoria",
         "icon": "fa-solid fa-stopwatch",
-        "defaultColor": "#0dcaf0",
+        "defaultColor": "#ffc107",
         "conditions": [
             "tutti"
         ],

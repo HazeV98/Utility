@@ -349,11 +349,11 @@
         "id": "accessi",
         "label": "Accessi",
         "icon": "fa-solid fa-users-gear",
-        "defaultColor": "#1c1c1e",
-        "onclick": "window.apriGestioneAccessi()",
+        "defaultColor": "#dc3545",
         "conditions": [
             "admin"
         ],
+        "onclick": "window.apriGestioneAccessi()",
         "folder": "Admin"
     },
     {

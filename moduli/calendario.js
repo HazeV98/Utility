@@ -16,6 +16,7 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 window.utenteLoggato = null;
+window.statoCloudPronto = false; // true solo dopo che il merge iniziale locale/cloud e' completato
 
 window.deleteCloudData = async () => {
     if (window.utenteLoggato) {
@@ -27,7 +28,7 @@ window.deleteCloudData = async () => {
 };
 
 window.syncToCloud = async (dati) => {
-    if (window.utenteLoggato) {
+    if (window.utenteLoggato && window.statoCloudPronto) {
         try {
             dati.migrazioneCompletata = true;
             await setDoc(doc(db, "calendario", window.utenteLoggato), dati);
@@ -2565,6 +2566,7 @@ window.salvaMansione = salvaMansione;
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         window.utenteLoggato = user.uid;
+        window.statoCloudPronto = false; // riblocca le scritture finche' anche questa esecuzione non ha completato il merge
         
         const appenaResettato = localStorage.getItem('app_just_reset') === 'true';
         if (appenaResettato) {
@@ -2583,11 +2585,6 @@ onAuthStateChanged(auth, async (user) => {
                         const cached = JSON.parse(localStorage.getItem('userDataCache_haze') || '{}');
                         localStorage.setItem('userDataCache_haze', JSON.stringify({ ...cached, ...window.userProfileData }));
                     } catch(e) {}
-                    if (!state.mansione && window.userProfileData.mansione) {
-                        state.mansione = window.userProfileData.mansione;
-                        salvaLocal();
-                        if (calendar) calendar.refetchEvents();
-                    }
                 }
             } catch(e) { console.error("Errore lettura profilo utente:", e); }
 
@@ -2634,6 +2631,9 @@ onAuthStateChanged(auth, async (user) => {
                 }
             }
 
+            // Da qui in poi cloudData e' definitivo: e' sicuro permettere scritture verso il cloud.
+            window.statoCloudPronto = true;
+
             if (cloudData && !cloudData.deleted && !appenaResettato) {
                 const localData = JSON.parse(localStorage.getItem('myTurniApp'));
                 let usaCloud = false;
@@ -2660,8 +2660,17 @@ onAuthStateChanged(auth, async (user) => {
                     window.syncToCloud(copiaDati);
                 }
             }
+
+            // Applica la mansione dal profilo legacy SOLO dopo aver unito i dati cloud reali,
+            // cosi' non si rischia piu' di salvare/sincronizzare uno stato vuoto su un device nuovo.
+            if (!state.mansione && window.userProfileData && window.userProfileData.mansione) {
+                state.mansione = window.userProfileData.mansione;
+                salvaLocal();
+                if (calendar) calendar.refetchEvents();
+            }
         } catch(e) {
             console.error("Errore lettura dati da Cloud:", e);
+            window.statoCloudPronto = true;
         }
     } else {
         window.utenteLoggato = null;

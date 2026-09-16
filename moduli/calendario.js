@@ -93,6 +93,7 @@ if (!state.buonoPasto) state.buonoPasto = {};
 if (!state.permessoSP) state.permessoSP = {};
 if (!state.dispCache) state.dispCache = {};
 if (!state.coloriRotazione) state.coloriRotazione = {}; 
+if (!state.backupAuto) state.backupAuto = { attivo: false, locale: true, telegram: false };
 
 let selectedDate, tempRotDate, calendar;
 let currentImagePath = "";
@@ -1321,6 +1322,8 @@ async function inizializzaApp() {
     if (selManMain) {
         selManMain.value = getMansioneAttiva() || "";
     }
+
+    eseguiBackupAutomaticoSeNecessario();
 }
 
 function confermaRotazione() {
@@ -2328,6 +2331,7 @@ async function confermaReset() {
 
 function apriBackup() { 
     chiudiMenuDestro(); 
+    popolaFormBackupAuto();
     document.getElementById('backupModal').style.display = 'block'; 
 }
 
@@ -2371,6 +2375,133 @@ function importaDatiDaFile(event) {
         } 
     }; 
     reader.readAsText(file); 
+}
+
+// --- BACKUP AUTOMATICO GIORNALIERO ---
+// state.backupAuto (attivo/locale/telegram) e' sincronizzato via cloud come il resto dello stato.
+// Le credenziali Telegram e la data dell'ultimo backup restano SOLO su questo dispositivo.
+function leggiCredenzialiTelegram() {
+    try {
+        return { token: '', chatId: '', ...(JSON.parse(localStorage.getItem('backupTelegramCred')) || {}) };
+    } catch(e) {
+        return { token: '', chatId: '' };
+    }
+}
+
+function salvaCredenzialiTelegram() {
+    const token = document.getElementById('backupTelegramToken')?.value.trim() || '';
+    const chatId = document.getElementById('backupTelegramChatId')?.value.trim() || '';
+    localStorage.setItem('backupTelegramCred', JSON.stringify({ token, chatId }));
+}
+
+function aggiornaVisibilitaBackupAuto() {
+    const attivo = document.getElementById('backupAutoToggle')?.checked;
+    const contOpzioni = document.getElementById('backupAutoOpzioni');
+    if (contOpzioni) contOpzioni.style.display = attivo ? 'block' : 'none';
+
+    const telegramAttivo = document.getElementById('backupAutoTelegramToggle')?.checked;
+    const contTelegram = document.getElementById('backupTelegramCredenziali');
+    if (contTelegram) contTelegram.style.display = (attivo && telegramAttivo) ? 'block' : 'none';
+}
+
+function popolaFormBackupAuto() {
+    if (!state.backupAuto) state.backupAuto = { attivo: false, locale: true, telegram: false };
+    const elAttivo = document.getElementById('backupAutoToggle');
+    const elLocale = document.getElementById('backupAutoLocaleToggle');
+    const elTg = document.getElementById('backupAutoTelegramToggle');
+    if (elAttivo) elAttivo.checked = !!state.backupAuto.attivo;
+    if (elLocale) elLocale.checked = !!state.backupAuto.locale;
+    if (elTg) elTg.checked = !!state.backupAuto.telegram;
+
+    const cred = leggiCredenzialiTelegram();
+    const elToken = document.getElementById('backupTelegramToken');
+    const elChatId = document.getElementById('backupTelegramChatId');
+    if (elToken) elToken.value = cred.token;
+    if (elChatId) elChatId.value = cred.chatId;
+
+    aggiornaVisibilitaBackupAuto();
+}
+
+function toggleBackupAutomatico(checked) {
+    state.backupAuto.attivo = checked;
+    salvaERicarica();
+    aggiornaVisibilitaBackupAuto();
+}
+
+function toggleBackupAutoLocale(checked) {
+    state.backupAuto.locale = checked;
+    salvaERicarica();
+}
+
+function toggleBackupAutoTelegram(checked) {
+    state.backupAuto.telegram = checked;
+    salvaERicarica();
+    aggiornaVisibilitaBackupAuto();
+}
+
+async function inviaBackupTelegram(token, chatId, contenutoJson, nomeFile) {
+    const formData = new FormData();
+    formData.append('chat_id', chatId);
+    const blob = new Blob([contenutoJson], { type: 'application/json' });
+    formData.append('document', blob, nomeFile);
+    formData.append('caption', `Backup turni - ${new Date().toLocaleDateString('it-IT')}`);
+    const resp = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, { method: 'POST', body: formData });
+    const result = await resp.json();
+    if (!result.ok) throw new Error(result.description || 'Errore invio Telegram');
+    return result;
+}
+
+async function testBackupTelegram() {
+    salvaCredenzialiTelegram();
+    const cred = leggiCredenzialiTelegram();
+    if (!cred.token || !cred.chatId) {
+        alert("Inserisci Token del bot e Chat ID prima di testare.");
+        return;
+    }
+    const data = localStorage.getItem('myTurniApp');
+    if (!data) { alert("Nessun dato da inviare."); return; }
+    try {
+        await inviaBackupTelegram(cred.token, cred.chatId, data, `test_backup_${new Date().toISOString().split('T')[0]}.json`);
+        alert("Backup di prova inviato su Telegram!");
+    } catch(e) {
+        alert("Errore invio Telegram: " + e.message);
+    }
+}
+
+async function eseguiBackupAutomaticoSeNecessario() {
+    if (!state.depositoAttivo) return; // configurazione non ancora completata, niente da salvare
+    if (!state.backupAuto || !state.backupAuto.attivo) return;
+
+    const oggi = new Date().toISOString().split('T')[0];
+    if (localStorage.getItem('backupAutoUltimaData') === oggi) return; // gia' eseguito oggi su questo dispositivo
+
+    const data = localStorage.getItem('myTurniApp');
+    if (!data) return;
+
+    const nomeFile = `backup_turni_${oggi}.json`;
+
+    if (state.backupAuto.locale) {
+        try {
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nomeFile;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch(e) { console.error("Errore backup automatico locale:", e); }
+    }
+
+    if (state.backupAuto.telegram) {
+        const cred = leggiCredenzialiTelegram();
+        if (cred.token && cred.chatId) {
+            try {
+                await inviaBackupTelegram(cred.token, cred.chatId, data, nomeFile);
+            } catch(e) { console.error("Errore backup automatico Telegram:", e); }
+        }
+    }
+
+    localStorage.setItem('backupAutoUltimaData', oggi);
 }
 
 function popolaCambio() { 
@@ -2554,6 +2685,11 @@ window.chiudiStep = chiudiStep;
 window.chiudiEdit = chiudiEdit;
 window.esportaDatiSuFile = esportaDatiSuFile;
 window.importaDatiDaFile = importaDatiDaFile;
+window.toggleBackupAutomatico = toggleBackupAutomatico;
+window.toggleBackupAutoLocale = toggleBackupAutoLocale;
+window.toggleBackupAutoTelegram = toggleBackupAutoTelegram;
+window.salvaCredenzialiTelegram = salvaCredenzialiTelegram;
+window.testBackupTelegram = testBackupTelegram;
 window.apriIcsModal = apriIcsModal;
 window.chiudiIcsModal = chiudiIcsModal;
 window.esportaICS = esportaICS;

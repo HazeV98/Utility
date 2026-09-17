@@ -93,7 +93,8 @@ if (!state.buonoPasto) state.buonoPasto = {};
 if (!state.permessoSP) state.permessoSP = {};
 if (!state.dispCache) state.dispCache = {};
 if (!state.coloriRotazione) state.coloriRotazione = {}; 
-if (!state.backupAuto) state.backupAuto = { attivo: false, locale: true, telegram: false };
+if (!state.backupAuto) state.backupAuto = { attivo: false, locale: true, telegram: false, frequenza: 'giornaliero' };
+if (!state.backupAuto.frequenza) state.backupAuto.frequenza = 'giornaliero';
 
 let selectedDate, tempRotDate, calendar;
 let currentImagePath = "";
@@ -970,6 +971,8 @@ function salvaLocal(timestampManuale = null) {
     if (typeof window.syncToCloud === 'function') { 
         window.syncToCloud(copiaDati); 
     }
+
+    eseguiBackupAutomaticoSeNecessario();
 }
 
 function salvaERicarica(timestampManuale = null) {
@@ -990,13 +993,18 @@ function salvaERicarica(timestampManuale = null) {
 
     if (typeof window.syncToCloud === 'function' && window.utenteLoggato) {
         Promise.race([
-            window.syncToCloud(copiaDati),
+            Promise.allSettled([window.syncToCloud(copiaDati), eseguiBackupAutomaticoSeNecessario()]),
             new Promise(resolve => setTimeout(resolve, 2500))
         ]).then(() => {
             location.reload();
         });
     } else {
-        location.reload();
+            Promise.race([
+                eseguiBackupAutomaticoSeNecessario(),
+                new Promise(resolve => setTimeout(resolve, 2500))
+            ]).then(() => {
+                location.reload();
+            });
     }
 }
 
@@ -2405,13 +2413,16 @@ function aggiornaVisibilitaBackupAuto() {
 }
 
 function popolaFormBackupAuto() {
-    if (!state.backupAuto) state.backupAuto = { attivo: false, locale: true, telegram: false };
+    if (!state.backupAuto) state.backupAuto = { attivo: false, locale: true, telegram: false, frequenza: 'giornaliero' };
+    if (!state.backupAuto.frequenza) state.backupAuto.frequenza = 'giornaliero';
     const elAttivo = document.getElementById('backupAutoToggle');
     const elLocale = document.getElementById('backupAutoLocaleToggle');
     const elTg = document.getElementById('backupAutoTelegramToggle');
+    const elFrequenza = document.getElementById('backupAutoFrequenza');
     if (elAttivo) elAttivo.checked = !!state.backupAuto.attivo;
     if (elLocale) elLocale.checked = !!state.backupAuto.locale;
     if (elTg) elTg.checked = !!state.backupAuto.telegram;
+    if (elFrequenza) elFrequenza.value = state.backupAuto.frequenza;
 
     const cred = leggiCredenzialiTelegram();
     const elToken = document.getElementById('backupTelegramToken');
@@ -2424,19 +2435,32 @@ function popolaFormBackupAuto() {
 
 function toggleBackupAutomatico(checked) {
     state.backupAuto.attivo = checked;
-    salvaERicarica();
+    salvaLocal();
     aggiornaVisibilitaBackupAuto();
 }
 
 function toggleBackupAutoLocale(checked) {
     state.backupAuto.locale = checked;
-    salvaERicarica();
+    salvaLocal();
 }
 
 function toggleBackupAutoTelegram(checked) {
     state.backupAuto.telegram = checked;
-    salvaERicarica();
+    salvaLocal();
     aggiornaVisibilitaBackupAuto();
+}
+
+function cambiaFrequenzaBackupAuto(frequenza) {
+    state.backupAuto.frequenza = frequenza === 'ogni_modifica' ? 'ogni_modifica' : 'giornaliero';
+    salvaLocal();
+}
+
+function apriBackupTelegramInfo() {
+    document.getElementById('backupTelegramInfoModal').style.display = 'block';
+}
+
+function chiudiBackupTelegramInfo() {
+    document.getElementById('backupTelegramInfoModal').style.display = 'none';
 }
 
 async function inviaBackupTelegram(token, chatId, contenutoJson, nomeFile) {
@@ -2473,7 +2497,7 @@ async function eseguiBackupAutomaticoSeNecessario() {
     if (!state.backupAuto || !state.backupAuto.attivo) return;
 
     const oggi = new Date().toISOString().split('T')[0];
-    if (localStorage.getItem('backupAutoUltimaData') === oggi) return; // gia' eseguito oggi su questo dispositivo
+    if (state.backupAuto.frequenza !== 'ogni_modifica' && localStorage.getItem('backupAutoUltimaData') === oggi) return; // gia' eseguito oggi su questo dispositivo
 
     const data = localStorage.getItem('myTurniApp');
     if (!data) return;
@@ -2501,7 +2525,9 @@ async function eseguiBackupAutomaticoSeNecessario() {
         }
     }
 
-    localStorage.setItem('backupAutoUltimaData', oggi);
+    if (state.backupAuto.frequenza !== 'ogni_modifica') {
+        localStorage.setItem('backupAutoUltimaData', oggi);
+    }
 }
 
 function popolaCambio() { 
@@ -2688,8 +2714,11 @@ window.importaDatiDaFile = importaDatiDaFile;
 window.toggleBackupAutomatico = toggleBackupAutomatico;
 window.toggleBackupAutoLocale = toggleBackupAutoLocale;
 window.toggleBackupAutoTelegram = toggleBackupAutoTelegram;
+window.cambiaFrequenzaBackupAuto = cambiaFrequenzaBackupAuto;
 window.salvaCredenzialiTelegram = salvaCredenzialiTelegram;
 window.testBackupTelegram = testBackupTelegram;
+window.apriBackupTelegramInfo = apriBackupTelegramInfo;
+window.chiudiBackupTelegramInfo = chiudiBackupTelegramInfo;
 window.apriIcsModal = apriIcsModal;
 window.chiudiIcsModal = chiudiIcsModal;
 window.esportaICS = esportaICS;

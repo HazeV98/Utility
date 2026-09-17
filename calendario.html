@@ -727,7 +727,6 @@
 <div id="backupModal">
     <div class="modal-content">
         <h3 style="color: var(--turno); margin-top: 0;"><i class="fa-solid fa-floppy-disk"></i> Backup Dati</h3>
-        <p class="instruction-text" style="font-size: 14px;">Gestisci i tuoi dati tramite file per non perdere i tuoi turni.</p>
         <input type="file" id="fileInput" style="display:none" accept=".json" onchange="importaDatiDaFile(event)">
         <button class="btn" style="background: var(--turno);" onclick="esportaDatiSuFile()">Scarica Backup (Esporta)</button>
         <button class="btn" style="background: var(--riposo);" onclick="document.getElementById('fileInput').click()">Carica Backup (Importa)</button>

@@ -7,7 +7,6 @@ const PRECACHE_ASSETS = [
     './calendario.html',
     './vademecum.html',
     './manifest.json',
-    './mappa_file.json',
     './moduli/admin.js',
     './moduli/auth.js',
     './moduli/bacheca.js',

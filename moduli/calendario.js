@@ -953,7 +953,7 @@ function formattaData(d) {
     return dataObj.getDate() + ' ' + mese.charAt(0).toUpperCase() + mese.slice(1); 
 }
 
-function salvaLocal(timestampManuale = null) { 
+function salvaLocal(timestampManuale = null, saltaBackupModifica = false) { 
     state.lastUpdate = timestampManuale || new Date().getTime();
     
     if (state.profiloAttivoId && state.profiliSalvati) {
@@ -972,7 +972,9 @@ function salvaLocal(timestampManuale = null) {
         window.syncToCloud(copiaDati); 
     }
 
-    eseguiBackupAutomaticoSeNecessario();
+    if (!saltaBackupModifica) {
+        eseguiBackupAutomaticoSeNecessario('modifica');
+    }
 }
 
 function salvaERicarica(timestampManuale = null) {
@@ -993,14 +995,14 @@ function salvaERicarica(timestampManuale = null) {
 
     if (typeof window.syncToCloud === 'function' && window.utenteLoggato) {
         Promise.race([
-            Promise.allSettled([window.syncToCloud(copiaDati), eseguiBackupAutomaticoSeNecessario()]),
+            Promise.allSettled([window.syncToCloud(copiaDati), eseguiBackupAutomaticoSeNecessario('modifica')]),
             new Promise(resolve => setTimeout(resolve, 2500))
         ]).then(() => {
             location.reload();
         });
     } else {
             Promise.race([
-                eseguiBackupAutomaticoSeNecessario(),
+                eseguiBackupAutomaticoSeNecessario('modifica'),
                 new Promise(resolve => setTimeout(resolve, 2500))
             ]).then(() => {
                 location.reload();
@@ -1331,7 +1333,7 @@ async function inizializzaApp() {
         selManMain.value = getMansioneAttiva() || "";
     }
 
-    eseguiBackupAutomaticoSeNecessario();
+    eseguiBackupAutomaticoSeNecessario('apertura');
 }
 
 function confermaRotazione() {
@@ -2435,24 +2437,24 @@ function popolaFormBackupAuto() {
 
 function toggleBackupAutomatico(checked) {
     state.backupAuto.attivo = checked;
-    salvaLocal();
+    salvaLocal(null, true);
     aggiornaVisibilitaBackupAuto();
 }
 
 function toggleBackupAutoLocale(checked) {
     state.backupAuto.locale = checked;
-    salvaLocal();
+    salvaLocal(null, true);
 }
 
 function toggleBackupAutoTelegram(checked) {
     state.backupAuto.telegram = checked;
-    salvaLocal();
+    salvaLocal(null, true);
     aggiornaVisibilitaBackupAuto();
 }
 
 function cambiaFrequenzaBackupAuto(frequenza) {
     state.backupAuto.frequenza = frequenza === 'ogni_modifica' ? 'ogni_modifica' : 'giornaliero';
-    salvaLocal();
+    salvaLocal(null, true);
 }
 
 function apriBackupTelegramInfo() {
@@ -2492,17 +2494,27 @@ async function testBackupTelegram() {
     }
 }
 
-async function eseguiBackupAutomaticoSeNecessario() {
+async function eseguiBackupAutomaticoSeNecessario(motivo = 'apertura') {
     if (!state.depositoAttivo) return; // configurazione non ancora completata, niente da salvare
     if (!state.backupAuto || !state.backupAuto.attivo) return;
 
-    const oggi = new Date().toISOString().split('T')[0];
-    if (state.backupAuto.frequenza !== 'ogni_modifica' && localStorage.getItem('backupAutoUltimaData') === oggi) return; // gia' eseguito oggi su questo dispositivo
+    const modalitaOgniModifica = state.backupAuto.frequenza === 'ogni_modifica';
+
+    // le due modalita' hanno trigger distinti: l'apertura pagina non e' una modifica,
+    // e in modalita' "ogni modifica" l'apertura pagina da sola non deve mai far scattare un backup.
+    if (modalitaOgniModifica && motivo !== 'modifica') return;
+    if (!modalitaOgniModifica && motivo !== 'apertura') return;
+
+    if (!modalitaOgniModifica) {
+        const oggi = new Date().toISOString().split('T')[0];
+        if (localStorage.getItem('backupAutoUltimaData') === oggi) return; // gia' eseguito oggi su questo dispositivo
+    }
 
     const data = localStorage.getItem('myTurniApp');
     if (!data) return;
 
-    const nomeFile = `backup_turni_${oggi}.json`;
+    const adesso = new Date();
+    const nomeFile = `backup_turni_${adesso.toISOString().split('T')[0]}_${adesso.getTime()}.json`;
 
     if (state.backupAuto.locale) {
         try {
@@ -2525,8 +2537,8 @@ async function eseguiBackupAutomaticoSeNecessario() {
         }
     }
 
-    if (state.backupAuto.frequenza !== 'ogni_modifica') {
-        localStorage.setItem('backupAutoUltimaData', oggi);
+    if (!modalitaOgniModifica) {
+        localStorage.setItem('backupAutoUltimaData', new Date().toISOString().split('T')[0]);
     }
 }
 

@@ -347,7 +347,7 @@
     },
     {
         "id": "accessi",
-        "label": "Accessi",
+        "label": "Gestione utenti",
         "icon": "fa-solid fa-users-gear",
         "defaultColor": "#dc3545",
         "conditions": [

@@ -650,4 +650,3 @@ async function fetchAndUpdateBoats() {
 
     } catch (error) { console.error("Errore di rete:", error); }
 }
- 

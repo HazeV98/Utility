@@ -67,7 +67,7 @@ async function loadMapDependencies() {
 // ==========================================
 // INIEZIONE UI Mappa Lite
 // ==========================================
-export function initBateoLite() {
+export function initUIBateoLite() {
     if (document.getElementById('modal-bateolite-main')) return;
 
     const uiHTML = `
@@ -212,8 +212,8 @@ export function initBateoLite() {
 // LOGICA DI CONTROLLO
 // ==========================================
 
-export async function avviaBateoLite() {
-    initBateoLite();
+export async function avviaMotoreBateoLite(db, auth, userData, isAdmin) {
+    initUIBateoLite();
     document.getElementById('modal-bateolite-main').style.display = 'flex';
     
     // Attende che Leaflet e OMS siano scaricati e operativi

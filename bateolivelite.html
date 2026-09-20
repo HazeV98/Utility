@@ -105,8 +105,9 @@
     <script>
         const API_URL = 'https://bateolive.tailec23c3.ts.net';
         
-        const map = L.map('map').setView([45.4371, 12.3326], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+        // Rimosso il tag Leaflet passando attributionControl: false
+        const map = L.map('map', { attributionControl: false }).setView([45.4371, 12.3326], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         const oms = new OverlappingMarkerSpiderfier(map, {
             keepSpiderfied: true,
@@ -181,8 +182,9 @@
             mBoats.slice(0, 4).forEach(b => {
                 const c = getLineColors(b.line);
                 const dotHtml = `<div class="line-dot" style="background-color: ${c.bg}; color: ${c.text}; border-color: ${c.border}; width: 18px; height: 18px; font-size: 8px;">${b.line}</div>`;
+                // Rimosso l'emoji della barca per mostrare direttamente la dicitura M/S o M/B
                 html += `<div class="suggestion-item" onclick="selectSuggestion('boat', '${b.id}')">
-                            ${dotHtml} <span>🚤 ${b.label}</span>
+                            ${dotHtml} <span>${b.label}</span>
                          </div>`;
             });
             
@@ -321,12 +323,12 @@
                         const iconHtml = `<div class="boat-icon" style="background-color: ${boat.color}; color: ${boat.textColor}; border: 2.5px solid ${boat.border}; width: 26px; height: 26px; box-sizing: border-box;">${boat.line}</div>`;
                         const customBoatIcon = L.divIcon({ html: iconHtml, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
 
-                        // Costruzione del fumetto (popup) per la barca
+                        // Costruzione del fumetto (popup) per la barca rimosso emoji
                         const lineColor = boat.color === '#ffffff' ? '#000000' : boat.color;
                         const popupContent = `
                             <div style="font-family:'Inter', sans-serif; text-align:center; padding:2px;">
                                 <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.5px;">Linea <strong style="color:${lineColor}; font-size:14px; margin-left:2px;">${boat.line}</strong></div>
-                                <div style="font-weight:600; font-size:14px; margin-top:6px; color:#333;">🚤 ${boat.label}</div>
+                                <div style="font-weight:600; font-size:14px; margin-top:6px; color:#333;">${boat.label}</div>
                             </div>`;
 
                         if (boatMarkers[boat.id]) {
@@ -355,4 +357,3 @@
     </script>
 </body>
 </html>
- 

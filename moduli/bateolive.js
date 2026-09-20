@@ -89,6 +89,9 @@ export function initUIBateoLive() {
 
         /* Contenitore Fabs in basso a sinistra (Ricerca, Filtri) */
         .bv-fab-container { position: absolute; bottom: 30px; left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; }
+
+        .bv-error-banner { position: absolute; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px); z-index: 1500; background: #e53935; color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.25); display: flex; align-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; max-width: 85%; text-align: center; }
+        .bv-error-banner.active { opacity: 1; transform: translateX(-50%) translateY(0); }
         .bv-fab { width: 45px; height: 45px; border-radius: 50%; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: transform 0.2s, background 0.2s; color: #00529b; }
         .bv-fab:hover { transform: scale(1.05); background: white; }
 
@@ -171,6 +174,11 @@ export function initUIBateoLive() {
         <div id="bv-map"></div>
 
         <!-- Tasti Ricerca e Filtro -->
+        <div id="bv-error-banner" class="bv-error-banner">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span id="bv-error-banner-text">Impossibile collegarsi al server. Verifica la connessione.</span>
+        </div>
+
         <div class="bv-fab-container">
             <div class="bv-fab" onclick="apriBateoLiveSearchModal()" title="Cerca Mezzo o Fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
             <div class="bv-fab" onclick="apriBateoLiveFilterModal()" title="Filtra Linee"><i class="fa-solid fa-filter"></i></div>
@@ -436,6 +444,13 @@ function locateBateoLiveBoat(staticTripId, liveBoatId) {
     }
 }
 
+function showBateoLiveError(show, message) {
+    const banner = document.getElementById('bv-error-banner');
+    if (!banner) return;
+    if (message) document.getElementById('bv-error-banner-text').innerText = message;
+    banner.classList.toggle('active', !!show);
+}
+
 function formatTime(unixTimestamp) {
     if (!unixTimestamp || isNaN(unixTimestamp)) return '--:--';
     const d = new Date(unixTimestamp * 1000);
@@ -594,25 +609,39 @@ async function renderStopDrawer(stop) {
 async function loadStops() {
     try {
         const res = await fetch(`${API_URL}/api/stops`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         globalStops = await res.json();
+        showBateoLiveError(false);
         const stopIcon = L.divIcon({ className: 'bv-stop-icon', iconSize: [14, 14], iconAnchor: [7, 7] });
+
+        // Il click va gestito tramite il listener nativo di OMS (non con un marker.on('click', ...)
+        // separato): avere entrambi in competizione è ciò che faceva "scattare" il pallino,
+        // anche per una fermata isolata.
+        oms.addListener('click', function(marker) {
+            if (marker.stopData) renderStopDrawer(marker.stopData);
+        });
 
         globalStops.forEach(stop => {
             const marker = L.marker([stop.lat, stop.lon], { icon: stopIcon }).addTo(map);
-            marker.on('click', () => renderStopDrawer(stop));
+            marker.stopData = stop;
             // Solo le fermate (statiche) vengono registrate in OMS: le barche si muovono
             // di continuo e lo spiderfy di OMS entrava in conflitto col refresh posizione.
             oms.addMarker(marker);
         });
-    } catch (e) { console.error("Errore caricamento fermate:", e); }
+    } catch (e) {
+        console.error("Errore caricamento fermate:", e);
+        showBateoLiveError(true, "Impossibile collegarsi al server. Verifica la connessione.");
+    }
 }
 
 async function fetchAndUpdateBoats() {
     if (!map) return;
     try {
         const response = await fetch(`${API_URL}/api/vaporetti/live`);
+        if (!response.ok) throw new Error('HTTP ' + response.status);
         const boats = await response.json();
         globalBoats = boats;
+        showBateoLiveError(false);
 
         boats.forEach(boat => {
             if (boat.lat && boat.lon) {
@@ -648,5 +677,8 @@ async function fetchAndUpdateBoats() {
             renderStopDrawer(activeSelection.data);
         }
 
-    } catch (error) { console.error("Errore di rete:", error); }
+    } catch (error) {
+        console.error("Errore di rete:", error);
+        showBateoLiveError(true, "Impossibile collegarsi al server. Verifica la connessione.");
+    }
 }

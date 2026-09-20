@@ -396,10 +396,11 @@ async function fetchAndUpdateBoats() {
                     return; 
                 }
 
-                const iconHtml = `<div class="bl-boat-icon" style="background-color: ${boat.color}; color: ${boat.textColor}; border: 2.5px solid ${boat.border}; width: 26px; height: 26px; box-sizing: border-box;">${boat.line}</div>`;
+                const c = getLineColors(boat.line.toUpperCase());
+                const iconHtml = `<div class="bl-boat-icon" style="background-color: ${c.bg}; color: ${c.text}; border: 2.5px solid ${c.border}; width: 26px; height: 26px; box-sizing: border-box;">${boat.line}</div>`;
                 const customBoatIcon = L.divIcon({ html: iconHtml, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
 
-                const lineColor = boat.color === '#ffffff' ? '#000000' : boat.color;
+                const lineColor = c.bg === '#ffffff' ? '#000000' : c.bg;
                 const popupContent = `
                     <div style="font-family:'Inter', sans-serif; text-align:center; padding:2px;">
                         <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.5px;">Linea <strong style="color:${lineColor}; font-size:14px; margin-left:2px;">${boat.line}</strong></div>

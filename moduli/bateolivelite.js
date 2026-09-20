@@ -13,7 +13,6 @@ let fetchInterval = null;
 let mapDepsLoaded = false;
 
 const ACTV_COLORS = {
-    '-': { bg: '#000000', text: '#ffffff', border: '#ffffff' },
     '1': { bg: '#ffffff', text: '#000000', border: '#000000' },
     '2': { bg: '#e3001b', text: '#ffffff', border: '#e3001b' },
     '2/': { bg: '#e3001b', text: '#ffffff', border: '#e3001b' },
@@ -86,6 +85,9 @@ export function initUIBateoLite() {
         
         /* Contenitore Fabs in basso a sinistra (Ricerca, Filtri) */
         .bl-fab-container { position: absolute; bottom: 30px; left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; }
+        
+        .bl-error-banner { position: absolute; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px); z-index: 1500; background: #e53935; color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.25); display: flex; align-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; max-width: 85%; text-align: center; }
+        .bl-error-banner.active { opacity: 1; transform: translateX(-50%) translateY(0); }
         .bl-fab { width: 45px; height: 45px; border-radius: 50%; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; color: #00529b; }
         
         /* Sottomodali (Ricerca e Filtri) */
@@ -137,6 +139,11 @@ export function initUIBateoLite() {
 
         <div id="bl-map"></div>
         
+        <div id="bl-error-banner" class="bl-error-banner">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span id="bl-error-banner-text">Impossibile collegarsi al server. Verifica la connessione.</span>
+        </div>
+
         <!-- Tasti Ricerca e Filtro -->
         <div class="bl-fab-container">
             <div class="bl-fab" onclick="apriBateoLiteSearchModal()" title="Cerca Mezzo o Fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
@@ -365,10 +372,19 @@ function eseguiBateoLiteSearch() {
     }, 2000);
 }
 
+function showBateoLiteError(show, message) {
+    const banner = document.getElementById('bl-error-banner');
+    if (!banner) return;
+    if (message) document.getElementById('bl-error-banner-text').innerText = message;
+    banner.classList.toggle('active', !!show);
+}
+
 async function loadStops() {
     try {
         const res = await fetch(`${API_URL}/api/stops`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         globalStops = await res.json();
+        showBateoLiteError(false);
         const stopIcon = L.divIcon({ className: 'bl-stop-icon', iconSize: [14, 14], iconAnchor: [7, 7] });
         
         globalStops.forEach(stop => {
@@ -376,15 +392,20 @@ async function loadStops() {
             marker.bindPopup(`<div style="font-family:'Inter', sans-serif; font-weight:600; text-align:center; font-size:13px; color:#333;">⚓ ${stop.name}</div>`);
             oms.addMarker(marker); 
         });
-    } catch(e) { console.error("Errore caricamento fermate:", e); }
+    } catch(e) {
+        console.error("Errore caricamento fermate:", e);
+        showBateoLiteError(true, "Impossibile collegarsi al server. Verifica la connessione.");
+    }
 }
 
 async function fetchAndUpdateBoats() {
     if (!map) return;
     try {
         const response = await fetch(`${API_URL}/api/vaporetti/live`);
+        if (!response.ok) throw new Error('HTTP ' + response.status);
         const boats = await response.json();
         globalBoats = boats;
+        showBateoLiteError(false);
 
         boats.forEach(boat => {
             if (boat.lat && boat.lon) {
@@ -397,7 +418,7 @@ async function fetchAndUpdateBoats() {
                     return; 
                 }
 
-                const c = getLineColors(boat.line.toUpperCase());
+                const c = boat.line === '-' ? { bg: '#000000', text: '#ffffff', border: '#ffffff' } : getLineColors(boat.line.toUpperCase());
                 const iconHtml = `<div class="bl-boat-icon" style="background-color: ${c.bg}; color: ${c.text}; border: 2.5px solid ${c.border}; width: 26px; height: 26px; box-sizing: border-box;">${boat.line}</div>`;
                 const customBoatIcon = L.divIcon({ html: iconHtml, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
 
@@ -424,5 +445,8 @@ async function fetchAndUpdateBoats() {
                 }
             }
         });
-    } catch (error) { console.error("Errore di rete:", error); }
+    } catch (error) {
+        console.error("Errore di rete:", error);
+        showBateoLiteError(true, "Impossibile collegarsi al server. Verifica la connessione.");
+    }
 }

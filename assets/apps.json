@@ -329,7 +329,10 @@
         "conditions": [
             "admin"
         ],
-        "href": "bateolive.html"
+        "isModule": true,
+        "moduleId": "bateolive",
+        "moduleName": "bateolive",
+        "splitModule": false
     },
     {
         "id": "admin",

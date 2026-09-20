@@ -220,7 +220,7 @@ export async function avviaMotoreBateoLite(db, auth, userData, isAdmin) {
     await loadMapDependencies();
     
     if (!map) {
-        map = L.map('bl-map', { attributionControl: false }).setView([45.4371, 12.3326], 13);
+        map = L.map('bl-map', { attributionControl: false, zoomControl: false }).setView([45.4371, 12.3326], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         oms = new OverlappingMarkerSpiderfier(map, {

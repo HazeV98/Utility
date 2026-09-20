@@ -15,6 +15,7 @@ let mapDepsLoaded = false;
 const ACTV_COLORS = {
     '1': { bg: '#ffffff', text: '#000000', border: '#000000' },
     '2': { bg: '#e3001b', text: '#ffffff', border: '#e3001b' },
+    '2/': { bg: '#e3001b', text: '#ffffff', border: '#e3001b' },
     '3': { bg: '#ff8c00', text: '#000000', border: '#ff8c00' },
     '4.1': { bg: '#bd429b', text: '#ffffff', border: '#bd429b' },
     '4.2': { bg: '#bd429b', text: '#ffffff', border: '#bd429b' },

@@ -376,7 +376,7 @@
         "icon": "fa-solid fa-map-location-dot",
         "defaultColor": "#0066cc",
         "conditions": [
-            "admin"
+            "tutti"
         ],
         "isModule": true,
         "moduleId": "bateolivelite",

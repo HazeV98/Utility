@@ -369,5 +369,15 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
+    },
+    {
+        "id": "bateolivelite",
+        "label": "BateoLive",
+        "icon": "fa-solid fa-map-location-dot",
+        "defaultColor": "#0066cc",
+        "conditions": [
+            "admin"
+        ],
+        "href": "bateolivelite.html"
     }
 ]

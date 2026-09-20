@@ -378,6 +378,9 @@
         "conditions": [
             "admin"
         ],
-        "href": "bateolivelite.html"
+        "isModule": true,
+        "moduleId": "bateolivelite",
+        "moduleName": "bateolivelite",
+        "splitModule": false
     }
 ]

@@ -13,6 +13,7 @@ let fetchInterval = null;
 let mapDepsLoaded = false;
 
 const ACTV_COLORS = {
+    '-': { bg: '#000000', text: '#ffffff', border: '#ffffff' },
     '1': { bg: '#ffffff', text: '#000000', border: '#000000' },
     '2': { bg: '#e3001b', text: '#ffffff', border: '#e3001b' },
     '2/': { bg: '#e3001b', text: '#ffffff', border: '#e3001b' },

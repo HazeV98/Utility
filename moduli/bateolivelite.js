@@ -10,6 +10,7 @@ let oms = null;
 let boatMarkers = {};
 let currentFilterLines = [];
 let fetchInterval = null;
+let mapDepsLoaded = false;
 
 const ACTV_COLORS = {
     '1': { bg: '#ffffff', text: '#000000', border: '#000000' },
@@ -40,13 +41,17 @@ function getLineColors(lineId) {
     return ACTV_COLORS[lineId] || { bg: '#888888', text: '#ffffff', border: '#888888' };
 }
 
-// ==========================================
-// INIEZIONE UI Mappa Lite
-// ==========================================
-export function initBateoLite() {
-    if (document.getElementById('modal-bateolite-main')) return;
-    
-    // Iniezione risorse esterne se non presenti
+const loadScript = (src) => new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) return resolve();
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+});
+
+async function loadMapDependencies() {
+    if (mapDepsLoaded) return;
     if (!document.getElementById('leaflet-css')) {
         const css = document.createElement('link');
         css.id = 'leaflet-css';
@@ -54,15 +59,16 @@ export function initBateoLite() {
         css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
         document.head.appendChild(css);
     }
-    
-    // Assicurati che gli script siano caricati prima di inizializzare la mappa
-    const loadScript = (src) => new Promise((resolve) => {
-        if (document.querySelector(`script[src="${src}"]`)) return resolve();
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = resolve;
-        document.head.appendChild(script);
-    });
+    await loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/OverlappingMarkerSpiderfier-Leaflet/0.2.6/oms.min.js');
+    mapDepsLoaded = true;
+}
+
+// ==========================================
+// INIEZIONE UI Mappa Lite
+// ==========================================
+export function initBateoLite() {
+    if (document.getElementById('modal-bateolite-main')) return;
 
     const uiHTML = `
     <style>
@@ -135,7 +141,7 @@ export function initBateoLite() {
             <div class="bl-fab" onclick="apriBateoLiteFilterModal()" title="Filtra Linee"><i class="fa-solid fa-filter"></i></div>
         </div>
 
-        <!-- Sottomodale Ricerca (confinato all'interno dello schermo) -->
+        <!-- Sottomodale Ricerca -->
         <div id="bl-search-modal" class="bl-submodal-overlay" onclick="chiudiBateoLiteModals(event)">
             <div class="bl-submodal" onclick="event.stopPropagation()">
                 <h3>Cerca Mezzo / Fermata</h3>
@@ -159,7 +165,6 @@ export function initBateoLite() {
     `;
     document.body.insertAdjacentHTML('beforeend', uiHTML);
 
-    // Esponi le funzioni globalmente per gli handler HTML
     window.chiudiBateoLite = chiudiBateoLite;
     window.chiudiBateoLiteModals = chiudiBateoLiteModals;
     window.apriBateoLiteSearchModal = apriBateoLiteSearchModal;
@@ -168,7 +173,6 @@ export function initBateoLite() {
     window.applicaBateoLiteFilter = applicaBateoLiteFilter;
     window.selezionaBateoLiteSuggestion = selezionaBateoLiteSuggestion;
 
-    // Aggiungi event listener per l'input di ricerca
     document.getElementById('bl-search-input').addEventListener('input', async function(e) {
         const q = e.target.value.toLowerCase().trim();
         const suggBox = document.getElementById('bl-search-suggestions');
@@ -202,42 +206,33 @@ export function initBateoLite() {
         suggBox.innerHTML = html;
         suggBox.classList.add('active');
     });
-
-    // Avvia il caricamento delle librerie
-    Promise.all([
-        loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js')
-    ]).then(() => {
-        loadScript('https://cdnjs.cloudflare.com/ajax/libs/OverlappingMarkerSpiderfier-Leaflet/0.2.6/oms.min.js');
-    });
 }
 
 // ==========================================
 // LOGICA DI CONTROLLO
 // ==========================================
 
-export function avviaBateoLite() {
+export async function avviaBateoLite() {
     initBateoLite();
     document.getElementById('modal-bateolite-main').style.display = 'flex';
     
-    // Inizializza mappa solo la prima volta
+    // Attende che Leaflet e OMS siano scaricati e operativi
+    await loadMapDependencies();
+    
     if (!map) {
-        // Piccolo timeout per dare tempo al DOM di renderizzarsi prima di calcolare le dimensioni
-        setTimeout(() => {
-            map = L.map('bl-map', { attributionControl: false }).setView([45.4371, 12.3326], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        map = L.map('bl-map', { attributionControl: false }).setView([45.4371, 12.3326], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
-            oms = new OverlappingMarkerSpiderfier(map, {
-                keepSpiderfied: true,
-                legWeight: 2,
-                nearbyDistance: 35
-            });
+        oms = new OverlappingMarkerSpiderfier(map, {
+            keepSpiderfied: true,
+            legWeight: 2,
+            nearbyDistance: 35
+        });
 
-            loadStops();
-            fetchAndUpdateBoats();
-            fetchInterval = setInterval(fetchAndUpdateBoats, 500);
-        }, 100);
+        loadStops();
+        fetchAndUpdateBoats();
+        fetchInterval = setInterval(fetchAndUpdateBoats, 500);
     } else {
-        // Forza ridisegno della mappa se era già inizializzata
         setTimeout(() => map.invalidateSize(), 100);
         if (!fetchInterval) {
             fetchInterval = setInterval(fetchAndUpdateBoats, 500);
@@ -314,7 +309,6 @@ function applicaBateoLiteFilter() {
         currentFilterLines = allChecked;
     }
     
-    // Chiudi modale forzatamente passando un event fittizio
     chiudiBateoLiteModals({target: {classList: {contains: ()=>true}}});
     
     Object.keys(boatMarkers).forEach(id => {
@@ -401,7 +395,6 @@ async function fetchAndUpdateBoats() {
                     return; 
                 }
 
-                // Generato icona statica senza transizione hover (rimosso l'effetto "allargamento")
                 const iconHtml = `<div class="bl-boat-icon" style="background-color: ${boat.color}; color: ${boat.textColor}; border: 2.5px solid ${boat.border}; width: 26px; height: 26px; box-sizing: border-box;">${boat.line}</div>`;
                 const customBoatIcon = L.divIcon({ html: iconHtml, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
 
@@ -430,4 +423,3 @@ async function fetchAndUpdateBoats() {
         });
     } catch (error) { console.error("Errore di rete:", error); }
 }
- 

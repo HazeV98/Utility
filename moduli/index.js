@@ -507,6 +507,7 @@ window.LayoutEngine = {
             const cond = app.conditions || [app.condition].filter(Boolean);
             const excl = app.excludeConditions || [];
             const isVisibleByCond = () => {
+                if(excl.includes('admin') && globalIsAdmin) return false;
                 if(globalIsAdmin) return true;
                 if(excl.includes('vip') && globalIsVip) return false;
                 if(excl.includes('collab') && globalIsCollab) return false;
@@ -517,7 +518,7 @@ window.LayoutEngine = {
                 return false;
             };
 
-            if(!isVisibleByCond() && !globalIsAdmin) return;
+            if(!isVisibleByCond()) return;
             
             if (app.folder) {
                 if (!foldersMap[app.folder]) {
@@ -867,7 +868,8 @@ window.injectAdminConfigTools = () => {
                     <div style="background:var(--surface-hover); padding:10px; border-radius:8px; margin-bottom:15px;">
                         <label style="font-size:12px; font-weight:700; display:block; margin-bottom:5px;">Nascondi comunque a (es. per evitare doppioni tra versione lite e completa):</label>
                         <label style="display:block; font-size:13px; margin-bottom:4px;"><input type="checkbox" class="chk-excl" value="vip"> Nascondi ai VIP</label>
-                        <label style="display:block; font-size:13px;"><input type="checkbox" class="chk-excl" value="collab"> Nascondi ai Collaboratori</label>
+                        <label style="display:block; font-size:13px; margin-bottom:4px;"><input type="checkbox" class="chk-excl" value="collab"> Nascondi ai Collaboratori</label>
+                        <label style="display:block; font-size:13px;"><input type="checkbox" class="chk-excl" value="admin"> Nascondi agli Admin</label>
                     </div>
 
 
@@ -1254,16 +1256,17 @@ window.apriCartella = (folderName) => {
     apps.forEach((app, index) => {
         const cond = app.conditions || [app.condition].filter(Boolean);
         const excl = app.excludeConditions || [];
-        const isExcluded = !globalIsAdmin && (
+        const isExcluded = (excl.includes('admin') && globalIsAdmin) ||
+                          (!globalIsAdmin && (
                           (excl.includes('vip') && globalIsVip) ||
-                          (excl.includes('collab') && globalIsCollab));
+                          (excl.includes('collab') && globalIsCollab)));
         const isVisible = !isExcluded && (
                           (globalIsAdmin) || (!cond || cond.length === 0) || 
                           (cond.includes('vip') && (globalIsVip || globalIsCollab)) || 
                           (cond.includes('collab') && globalIsCollab) || 
                           (cond.includes('tutti')));
 
-        if(!isVisible && !globalIsAdmin) return;
+        if(!isVisible) return;
 
         const finalColor = app.defaultColor || "#0066cc";
         const btn = document.createElement('div');

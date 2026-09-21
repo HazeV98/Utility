@@ -127,19 +127,6 @@
         "splitModule": true
     },
     {
-        "id": "annunci",
-        "label": "Bacheca annunci",
-        "icon": "fa-regular fa-clipboard",
-        "defaultColor": "#28a745",
-        "conditions": [
-            "tutti"
-        ],
-        "isModule": true,
-        "moduleId": "annunci",
-        "moduleName": "bacheca",
-        "splitModule": false
-    },
-    {
         "id": "orari",
         "label": "Orari Navigazione",
         "icon": "fa-regular fa-clock",
@@ -198,6 +185,59 @@
         "folder": "Orari"
     },
     {
+        "id": "annunci",
+        "label": "Bacheca annunci",
+        "icon": "fa-regular fa-clipboard",
+        "defaultColor": "#28a745",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "annunci",
+        "moduleName": "bacheca",
+        "splitModule": false,
+        "folder": "Altre funzioni"
+    },
+    {
+        "id": "link",
+        "label": "Link",
+        "icon": "fa-solid fa-link",
+        "defaultColor": "#495057",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "link",
+        "moduleName": "link",
+        "splitModule": true
+    },
+    {
+        "id": "dds",
+        "label": "Archivio DDS",
+        "icon": "fa-solid fa-box-archive",
+        "defaultColor": "#6f42c1",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "dds",
+        "moduleName": "dds",
+        "splitModule": true
+    },
+    {
+        "id": "promemoria",
+        "label": "Promemoria",
+        "icon": "fa-solid fa-stopwatch",
+        "defaultColor": "#ffc107",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "promemoria",
+        "moduleName": "promemoria",
+        "splitModule": true
+    },
+    {
         "id": "documenti",
         "label": "Documenti",
         "icon": "fa-solid fa-file-lines",
@@ -234,19 +274,6 @@
         "splitModule": false
     },
     {
-        "id": "link",
-        "label": "Link",
-        "icon": "fa-solid fa-link",
-        "defaultColor": "#495057",
-        "conditions": [
-            "tutti"
-        ],
-        "isModule": true,
-        "moduleId": "link",
-        "moduleName": "link",
-        "splitModule": true
-    },
-    {
         "id": "contatti",
         "label": "Contatti",
         "icon": "fa-solid fa-id-card",
@@ -270,32 +297,6 @@
         "isModule": true,
         "moduleId": "buoni",
         "moduleName": "buoni_pasto",
-        "splitModule": true
-    },
-    {
-        "id": "promemoria",
-        "label": "Promemoria",
-        "icon": "fa-solid fa-stopwatch",
-        "defaultColor": "#ffc107",
-        "conditions": [
-            "tutti"
-        ],
-        "isModule": true,
-        "moduleId": "promemoria",
-        "moduleName": "promemoria",
-        "splitModule": true
-    },
-    {
-        "id": "dds",
-        "label": "Archivio DDS",
-        "icon": "fa-solid fa-box-archive",
-        "defaultColor": "#6f42c1",
-        "conditions": [
-            "tutti"
-        ],
-        "isModule": true,
-        "moduleId": "dds",
-        "moduleName": "dds",
         "splitModule": true
     },
     {

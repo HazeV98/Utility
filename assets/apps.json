@@ -237,7 +237,8 @@
         "isModule": true,
         "moduleId": "promemoria",
         "moduleName": "promemoria",
-        "splitModule": true
+        "splitModule": true,
+        "folder": "Altre funzioni"
     },
     {
         "id": "documenti",

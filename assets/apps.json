@@ -327,8 +327,9 @@
         "icon": "fa-solid fa-map-location-dot",
         "defaultColor": "#0066cc",
         "conditions": [
-            "admin"
+            "vip"
         ],
+        "excludeConditions": [],
         "isModule": true,
         "moduleId": "bateolive",
         "moduleName": "bateolive",

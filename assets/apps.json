@@ -382,6 +382,9 @@
         "conditions": [
             "tutti"
         ],
+        "excludeConditions": [
+            "vip"
+        ],
         "isModule": true,
         "moduleId": "bateolivelite",
         "moduleName": "bateolivelite",

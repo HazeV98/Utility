@@ -127,6 +127,36 @@
         "splitModule": true
     },
     {
+        "id": "bateolivelite",
+        "label": "BateoLive",
+        "icon": "fa-solid fa-map-location-dot",
+        "defaultColor": "#0066cc",
+        "conditions": [
+            "tutti"
+        ],
+        "excludeConditions": [
+            "vip"
+        ],
+        "isModule": true,
+        "moduleId": "bateolivelite",
+        "moduleName": "bateolivelite",
+        "splitModule": false
+    },
+    {
+        "id": "bateolive",
+        "label": "BateoLive",
+        "icon": "fa-solid fa-map-location-dot",
+        "defaultColor": "#0066cc",
+        "conditions": [
+            "vip"
+        ],
+        "excludeConditions": [],
+        "isModule": true,
+        "moduleId": "bateolive",
+        "moduleName": "bateolive",
+        "splitModule": false
+    },
+    {
         "id": "orari",
         "label": "Orari Navigazione",
         "icon": "fa-regular fa-clock",
@@ -326,20 +356,6 @@
         "href": "https://spriss.avmspa.it/"
     },
     {
-        "id": "bateolive",
-        "label": "BateoLive",
-        "icon": "fa-solid fa-map-location-dot",
-        "defaultColor": "#0066cc",
-        "conditions": [
-            "vip"
-        ],
-        "excludeConditions": [],
-        "isModule": true,
-        "moduleId": "bateolive",
-        "moduleName": "bateolive",
-        "splitModule": false
-    },
-    {
         "id": "admin",
         "label": "Admin",
         "icon": "fa-solid fa-lock",
@@ -377,21 +393,5 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
-    },
-    {
-        "id": "bateolivelite",
-        "label": "BateoLive",
-        "icon": "fa-solid fa-map-location-dot",
-        "defaultColor": "#0066cc",
-        "conditions": [
-            "tutti"
-        ],
-        "excludeConditions": [
-            "vip"
-        ],
-        "isModule": true,
-        "moduleId": "bateolivelite",
-        "moduleName": "bateolivelite",
-        "splitModule": false
     }
 ]

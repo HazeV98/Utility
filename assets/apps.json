@@ -135,7 +135,8 @@
             "tutti"
         ],
         "excludeConditions": [
-            "vip","admin"
+            "vip",
+            "admin"
         ],
         "isModule": true,
         "moduleId": "bateolivelite",
@@ -215,6 +216,42 @@
         "folder": "Orari"
     },
     {
+        "id": "documenti",
+        "label": "Documenti",
+        "icon": "fa-solid fa-file-lines",
+        "defaultColor": "#6f42c1",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "documenti",
+        "moduleName": "documenti",
+        "splitModule": true
+    },
+    {
+        "id": "vademecum",
+        "label": "Vademecum",
+        "icon": "fa-solid fa-book",
+        "defaultColor": "#8e8e93",
+        "conditions": [
+            "admin"
+        ],
+        "href": "vademecum.html"
+    },
+    {
+        "id": "gps",
+        "label": "Tachimetro",
+        "icon": "fa-solid fa-location-arrow",
+        "defaultColor": "#0066cc",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "gps",
+        "moduleName": "gps",
+        "splitModule": false
+    },
+    {
         "id": "annunci",
         "label": "Bacheca annunci",
         "icon": "fa-regular fa-clipboard",
@@ -269,42 +306,6 @@
         "moduleName": "promemoria",
         "splitModule": true,
         "folder": "Altre funzioni"
-    },
-    {
-        "id": "documenti",
-        "label": "Documenti",
-        "icon": "fa-solid fa-file-lines",
-        "defaultColor": "#6f42c1",
-        "conditions": [
-            "tutti"
-        ],
-        "isModule": true,
-        "moduleId": "documenti",
-        "moduleName": "documenti",
-        "splitModule": true
-    },
-    {
-        "id": "vademecum",
-        "label": "Vademecum",
-        "icon": "fa-solid fa-book",
-        "defaultColor": "#8e8e93",
-        "conditions": [
-            "admin"
-        ],
-        "href": "vademecum.html"
-    },
-    {
-        "id": "gps",
-        "label": "Tachimetro",
-        "icon": "fa-solid fa-location-arrow",
-        "defaultColor": "#0066cc",
-        "conditions": [
-            "tutti"
-        ],
-        "isModule": true,
-        "moduleId": "gps",
-        "moduleName": "gps",
-        "splitModule": false
     },
     {
         "id": "contatti",

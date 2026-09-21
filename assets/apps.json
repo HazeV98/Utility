@@ -135,7 +135,7 @@
             "tutti"
         ],
         "excludeConditions": [
-            "vip"
+            "vip","admin"
         ],
         "isModule": true,
         "moduleId": "bateolivelite",

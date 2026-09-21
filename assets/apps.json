@@ -223,7 +223,8 @@
         "isModule": true,
         "moduleId": "dds",
         "moduleName": "dds",
-        "splitModule": true
+        "splitModule": true,
+        "folder": "Altre funzioni"
     },
     {
         "id": "promemoria",

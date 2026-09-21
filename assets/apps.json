@@ -209,7 +209,8 @@
         "isModule": true,
         "moduleId": "link",
         "moduleName": "link",
-        "splitModule": true
+        "splitModule": true,
+        "folder": "Altre funzioni"
     },
     {
         "id": "dds",

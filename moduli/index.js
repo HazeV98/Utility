@@ -505,8 +505,11 @@ window.LayoutEngine = {
 
         window.DYNAMIC_APPS.forEach((app) => { // <-- Tolto l'index dal ciclo
             const cond = app.conditions || [app.condition].filter(Boolean);
+            const excl = app.excludeConditions || [];
             const isVisibleByCond = () => {
                 if(globalIsAdmin) return true;
+                if(excl.includes('vip') && globalIsVip) return false;
+                if(excl.includes('collab') && globalIsCollab) return false;
                 if(!cond || cond.length === 0) return true; 
                 if(cond.includes('vip') && (globalIsVip || globalIsCollab)) return true;
                 if(cond.includes('collab') && globalIsCollab) return true;
@@ -861,6 +864,12 @@ window.injectAdminConfigTools = () => {
                         <label style="display:block; font-size:13px;"><input type="checkbox" class="chk-cond" value="tutti"> Tutti (Pubblica)</label>
                     </div>
 
+                    <div style="background:var(--surface-hover); padding:10px; border-radius:8px; margin-bottom:15px;">
+                        <label style="font-size:12px; font-weight:700; display:block; margin-bottom:5px;">Nascondi comunque a (es. per evitare doppioni tra versione lite e completa):</label>
+                        <label style="display:block; font-size:13px; margin-bottom:4px;"><input type="checkbox" class="chk-excl" value="vip"> Nascondi ai VIP</label>
+                        <label style="display:block; font-size:13px;"><input type="checkbox" class="chk-excl" value="collab"> Nascondi ai Collaboratori</label>
+                    </div>
+
 
                     <button class="btn-modal" style="background:var(--success); color:white;" onclick="window.salvaAppConfig()"><i class="fa-solid fa-cloud-arrow-up"></i> Salva su GitHub</button>
                 </div>
@@ -945,6 +954,7 @@ window.apriModalAddApp = () => {
     document.getElementById('add-link-val').value = "";
     document.getElementById('add-split').checked = false;
     document.querySelectorAll('.chk-cond').forEach(c => c.checked = false);
+    document.querySelectorAll('.chk-excl').forEach(c => c.checked = false);
     document.getElementById('add-module-opts').style.display = 'none';
     window.apriModal('modal-add-app');
 };
@@ -969,6 +979,9 @@ window.apriModalEditApp = (appId) => {
     
     const conds = app.conditions || [app.condition].filter(Boolean);
     document.querySelectorAll('.chk-cond').forEach(c => { c.checked = conds.includes(c.value); });
+    
+    const excls = app.excludeConditions || [];
+    document.querySelectorAll('.chk-excl').forEach(c => { c.checked = excls.includes(c.value); });
     
     window.chiudiModal('modal-edit-list');
     window.apriModal('modal-add-app');
@@ -1000,13 +1013,15 @@ window.salvaAppConfig = async () => {
     if(!id) return alert("Inserisci un ID univoco.");
     
     const checkedConds = Array.from(document.querySelectorAll('.chk-cond:checked')).map(c => c.value);
+    const checkedExcl = Array.from(document.querySelectorAll('.chk-excl:checked')).map(c => c.value);
     
     let appObj = {
         id: id,
         label: document.getElementById('add-label').value,
         icon: document.getElementById('add-icon').value,
         defaultColor: document.getElementById('add-color').value,
-        conditions: checkedConds
+        conditions: checkedConds,
+        excludeConditions: checkedExcl
     };
     
     const type = document.getElementById('add-type').value;
@@ -1238,10 +1253,15 @@ window.apriCartella = (folderName) => {
     const apps = window.DYNAMIC_APPS.filter(a => a.folder === folderName);
     apps.forEach((app, index) => {
         const cond = app.conditions || [app.condition].filter(Boolean);
-        const isVisible = (globalIsAdmin) || (!cond || cond.length === 0) || 
+        const excl = app.excludeConditions || [];
+        const isExcluded = !globalIsAdmin && (
+                          (excl.includes('vip') && globalIsVip) ||
+                          (excl.includes('collab') && globalIsCollab));
+        const isVisible = !isExcluded && (
+                          (globalIsAdmin) || (!cond || cond.length === 0) || 
                           (cond.includes('vip') && (globalIsVip || globalIsCollab)) || 
                           (cond.includes('collab') && globalIsCollab) || 
-                          (cond.includes('tutti'));
+                          (cond.includes('tutti')));
 
         if(!isVisible && !globalIsAdmin) return;
 

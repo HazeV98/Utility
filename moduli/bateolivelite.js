@@ -2,7 +2,7 @@
 // BATEOLIVE LITE - JS MODULE (Per Utility)
 // ==========================================
 
-const API_URL = 'https://bateolive.tailec23c3.ts.net';
+const API_URL = 'https://api.bateolive.stream';
 let globalBoats = []; 
 let globalStops = [];
 let map = null;

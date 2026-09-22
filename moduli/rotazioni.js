@@ -18,16 +18,34 @@ export function avviaMotoreRotazioni(db, auth) {
 
     const paroleDaSaltare = ["GENNAIO", "FEBBRAIO", "MARZO", "APRILE", "MAGGIO", "GIUGNO", "LUGLIO", "AGOSTO", "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE", "MESE", "AGENTI"];
 
+    // Titolo atteso del gruppo dentro il json mensile (rotazioni/rotazioni_<mese>_<anno>.json) per ciascuna chiave di rotazione.
+    // ATTENZIONE: se in futuro il json usa un nome diverso per un gruppo, aggiornare qui, altrimenti verrà creato un gruppo duplicato "auto-generato".
+    const ROTAZIONI_TITOLI_JSON = {
+        "rot_fnove": "Fondamente nove", "spez_fnove": "Spezzati F.Nove", "tc_spez_fnove": "T.C. Spezzati F.Nove",
+        "rot_proma": "P.Roma", "spez_proma": "Spezzati P.Roma", "ris_proma": "Riserva P.Roma",
+        "rot_szaccaria": "S.Zaccaria", "spez_szaccaria": "Spezzati S.Zaccaria", "tc_spez_szaccaria": "T.C. Spezzati S.Zaccaria",
+        "rot_lido": "Lido", "spez_lido": "Spezzati Lido", "tc_spez_lido": "T.C. Spezzati Lido",
+        "rot_linea12": "Linea 12", "rot_linea13": "Linea 13", "rot_linea14": "Linea 14 M/N",
+        "rot_linea14_mb": "Linea 14 M/B", "rot_17sn": "Linea 17 S. Nicolò", "tc_rot_17sn": "T.C. Linea 17 S. Nicolò",
+        "rot_17tr": "Linea 17 Tronchetto", "tc_rot_17tr": "T.C. Linea 17 Tronchetto"
+    };
+
+    // Stessa data soglia usata dal modulo varianti per il calcolo dei turni storici/attuali
+    const DATA_INIZIO_NUOVI_TURNI_ROT = "2026-06-01";
+
     // Globals per UI
     window.globalNomiRotazioni = [];
     window.utentiMap = {}; 
     window.currentUtentePdf = null; 
+    window.rotazioniAutoGenerateRot = new Set(); // titoli dei gruppi ricostruiti dal calendario (assenti dal json mensile)
 
     // Stato Interno
     let databaseTurni = []; 
     let activePredictors = []; 
     let globalShiftData = {};
     let globalImgDir = "";
+    let globalRotPatternCache = {}; // cache dei file rotazioni_YYYY-MM-DD.json (pattern posizionali, come in varianti.js)
+    let globalRotPatternCacheLoaded = false;
     let pzInstance = null;
     let currentImagePath = "";
 
@@ -194,8 +212,274 @@ export function avviaMotoreRotazioni(db, auth) {
                     .then(jData => { globalShiftData = { ...globalShiftData, ...jData }; })
                     .catch(e => console.error("Errore info turni"));
             }
+
+            // File pattern posizionali delle rotazioni (rotazioni_YYYY-MM-DD.json in root), usati per ricalcolare i turni dal calendario personale
+            let rotPatternFiles = rootFiles.filter(f => f.match(/^rotazioni_\d{4}-\d{2}-\d{2}\.json$/));
+            const rotPatternPromises = rotPatternFiles.map(f => {
+                const dateMatch = f.match(/\d{4}-\d{2}-\d{2}/);
+                if (!dateMatch) return Promise.resolve();
+                return fetch(f + `?t=${new Date().getTime()}`)
+                    .then(r => r.json())
+                    .then(d => { globalRotPatternCache[dateMatch[0]] = d; })
+                    .catch(() => {});
+            });
+            await Promise.all(rotPatternPromises);
+            globalRotPatternCacheLoaded = true;
         } catch (e) { console.error("Errore mappa"); }
     };
+
+    // ==========================================
+    // MOTORE DI CALCOLO TURNI DAL CALENDARIO PERSONALE (porting da varianti.js)
+    // Usato per ricostruire una rotazione mancante nel json mensile, leggendo il
+    // calendario di chi ha aderito al modulo rotazioni con quella rotazione.
+    // ==========================================
+    function stringToNumUTC(s) {
+        if (!s) return 0;
+        let p = s.split('-');
+        return Math.floor(Date.UTC(p[0], p[1] - 1, p[2]) / 86400000);
+    }
+
+    function creaDataSicuraRot(dataStr) {
+        if (!dataStr) return new Date();
+        let p = dataStr.split('-');
+        return new Date(p[0], p[1] - 1, p[2], 12, 0, 0);
+    }
+
+    function isGiornoRiposoBaseRot(curr, cfg) {
+        if (!cfg.riposoStart) return false;
+        let ref = stringToNumUTC(cfg.riposoStart);
+        if (cfg.depositoAttivo === 'disp_det') return (((curr - ref) % 6 + 6) % 6 === 0);
+        let pos = ((curr - ref + 6) % 15 + 15) % 15;
+        return (pos === 6 || pos === 13 || pos === 14);
+    }
+
+    // Converte il codice turno in base alla mansione (marinaio/timoniere vs pilota), identico a varianti.js
+    function convertiTurnoPerMansioneRot(turno, mansione) {
+        if (!turno || !mansione) return turno;
+        let t = String(turno).toUpperCase();
+        let m = String(mansione).toLowerCase();
+        let isMarinaio = m.includes('marinaio') || m.includes('timoniere');
+
+        if (isMarinaio) {
+            let matchP = t.match(/^([1-9])[CP](\d{2})$/);
+            if (matchP) return `${matchP[1]}B${matchP[2]}`;
+        } else {
+            let matchB = t.match(/^([1-9])B(\d{2})$/);
+            if (matchB) {
+                let l = matchB[1]; let f = matchB[2];
+                let letPilota = (l === '1' || l === '2') ? 'C' : 'P';
+                return `${l}${letPilota}${f}`;
+            }
+        }
+        return t;
+    }
+
+    // Ricostruisce il turno "teorico" (calcolato) per una data, identico alla logica di varianti.js,
+    // ma basato sulla cache locale globalRotPatternCache. Non tiene conto di variazioni/cambi manuali.
+    function calcolaTurnoBaseRot(dStr, cfgData) {
+        if (!cfgData || !cfgData.depositoAttivo || !cfgData.riposoStart) return null;
+        let curr = stringToNumUTC(dStr);
+        let isPastUpdate = (cfgData.history && curr < stringToNumUTC(DATA_INIZIO_NUOVI_TURNI_ROT));
+        let cfgBase = isPastUpdate ? cfgData.history : cfgData;
+
+        if (isGiornoRiposoBaseRot(curr, cfgBase)) {
+            let titoloRiposo = 'RI';
+            if (cfgBase.riposoStart && cfgBase.depositoAttivo !== 'disp_det') {
+                let ref = stringToNumUTC(cfgBase.riposoStart);
+                let pos = ((curr - ref + 6) % 15 + 15) % 15;
+                if (pos === 13) titoloRiposo = 'AL';
+            }
+            return titoloRiposo;
+        }
+
+        if (cfgBase.depositoAttivo.startsWith('disp_')) return "Disp";
+
+        if (cfgBase.rotazioneStart) {
+            let activeCfg = (cfgData.futureConfig && curr >= stringToNumUTC(cfgData.futureConfig.dataInizio))
+                ? { start: cfgData.futureConfig.dataInizio, idx: cfgData.futureConfig.turnoIndex, tcPattern: cfgData.futureConfig.tcPattern }
+                : { start: cfgBase.rotazioneStart, idx: cfgBase.turnoIndex, tcPattern: cfgBase.tcPattern };
+
+            let refRot = stringToNumUTC(activeCfg.start), w = 0;
+            if (curr >= refRot) { for (let j = refRot; j < curr; j++) { if (!isGiornoRiposoBaseRot(j, cfgBase)) w++; } }
+            else { for (let j = refRot; j > curr; j--) { if (!isGiornoRiposoBaseRot(j, cfgBase)) w--; } }
+
+            let refRip = stringToNumUTC(cfgBase.riposoStart);
+            let startPos = ((refRot - refRip + 6) % 15 + 15) % 15;
+            let offset = [1, 3, 5, 8, 10, 12].includes(startPos) ? 1 : 0;
+
+            let rotList = [];
+            if (globalRotPatternCache) {
+                const dateChiavi = Object.keys(globalRotPatternCache).sort();
+                let rotCorrente = dateChiavi.length > 0 ? globalRotPatternCache[dateChiavi[0]] : null;
+                for (let i = dateChiavi.length - 1; i >= 0; i--) {
+                    if (curr >= stringToNumUTC(dateChiavi[i])) { rotCorrente = globalRotPatternCache[dateChiavi[i]]; break; }
+                }
+                if (rotCorrente && rotCorrente[cfgBase.depositoAttivo]) {
+                    rotList = rotCorrente[cfgBase.depositoAttivo];
+                }
+            }
+
+            if (rotList.length > 0) {
+                if (cfgBase.depositoAttivo.startsWith('tc_')) {
+                    let currPos = ((curr - refRip + 6) % 15 + 15) % 15;
+                    let isBlock2 = (currPos >= 7 && currPos <= 12);
+                    let k = isBlock2 ? (currPos - 7) : currPos;
+                    let patternDopoSingolo = activeCfg.tcPattern || cfgBase.tcPattern || 'doppio';
+                    let isAlternato = (patternDopoSingolo === 'disp') ? isBlock2 : !isBlock2;
+                    let idx = Math.floor(k / 2);
+                    if (idx >= rotList.length) idx = rotList.length - 1;
+                    let t = rotList[idx].toUpperCase();
+                    if (isAlternato) {
+                        let dispOnEven = (cfgBase.depositoAttivo === 'tc_spez_lido');
+                        if (dispOnEven && k % 2 === 0) t = "Disp";
+                        if (!dispOnEven && k % 2 !== 0) t = "Disp";
+                    }
+                    return t;
+                } else {
+                    let expandedRotList = [];
+                    let originalToExpanded = [];
+                    for (let j = 0; j < rotList.length; j++) {
+                        originalToExpanded[j] = expandedRotList.length;
+                        let currentTurn = rotList[j].toUpperCase();
+                        if (currentTurn.includes('+')) {
+                            let parts = currentTurn.split('+');
+                            expandedRotList.push(parts[0].trim());
+                            if (parts.length > 1) { expandedRotList.push(parts[1].trim()); }
+                        } else {
+                            expandedRotList.push(currentTurn);
+                            expandedRotList.push(currentTurn);
+                        }
+                    }
+                    let L_exp = expandedRotList.length;
+                    let baseExpIdx = originalToExpanded[activeCfg.idx];
+                    let blockStartIdx = baseExpIdx - (baseExpIdx % 2);
+                    let idxExp = (blockStartIdx + w + offset) % L_exp;
+                    if (idxExp < 0) idxExp += L_exp;
+                    return expandedRotList[idxExp];
+                }
+            }
+        }
+        return null;
+    }
+
+    function normalizzaTitoloRot(s) {
+        return (s || '').toString().trim().toUpperCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[.\s]+/g, ' ').trim();
+    }
+
+    // Costruisce, per le rotazioni non-disp assenti dal json mensile, i turni di tutti gli
+    // utenti abilitati al modulo rotazioni con quella rotazione, leggendo il loro calendario
+    // (solo turni calcolati, ignorando i cambi/variazioni manuali).
+    async function costruisciRotazioniMancantiRot(jsonData, allU, y, m) {
+        if (!y || !m) return [];
+        const titoliEsistenti = Object.keys(jsonData).map(normalizzaTitoloRot);
+        const giorniMese = new Date(y, m, 0).getDate();
+        const gruppiCreati = [];
+
+        for (let key in ROTAZIONI_MAP) {
+            if (key.startsWith('disp_')) continue; // gestite a parte
+            const titolo = ROTAZIONI_TITOLI_JSON[key] || ROTAZIONI_MAP[key];
+            if (titoliEsistenti.includes(normalizzaTitoloRot(titolo))) continue; // già presente nel json
+
+            const utentiRotazione = allU.filter(u => u.rotazione_richiesta === key && u.uid);
+            if (utentiRotazione.length === 0) continue; // nessun utente con questa rotazione, niente da creare
+
+            const risultati = await Promise.all(utentiRotazione.map(async u => {
+                try {
+                    const [calSnap, uSnap] = await Promise.all([
+                        getDoc(doc(db, "calendario", u.uid)),
+                        getDoc(doc(db, "utenti", u.uid))
+                    ]);
+                    if (!calSnap.exists()) return null;
+                    const cfgData = calSnap.data();
+                    const mansione = uSnap.exists() ? (uSnap.data().mansione || '') : '';
+                    const isMarinaio = /marinaio|timoniere/i.test(mansione);
+
+                    const turniBase = {};   // codice grezzo, non convertito per mansione -> usato per l'accoppiamento armo
+                    const turniDisplay = {}; // codice convertito secondo la propria mansione -> usato per la visualizzazione
+                    let haAlmenoUnGiornoValido = false;
+                    for (let i = 1; i <= giorniMese; i++) {
+                        const dStr = `${y}-${String(m).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                        let base = calcolaTurnoBaseRot(dStr, cfgData);
+                        if (base === null) { turniBase[i.toString()] = "N/D"; turniDisplay[i.toString()] = "N/D"; continue; }
+                        turniBase[i.toString()] = base;
+                        turniDisplay[i.toString()] = convertiTurnoPerMansioneRot(base, mansione);
+                        haAlmenoUnGiornoValido = true;
+                    }
+                    // Calendario presente ma non configurato (o config incompatibile): niente da mostrare, nascondiamo l'utente
+                    if (!haAlmenoUnGiornoValido) return null;
+
+                    const nomeLabel = `${u.cognome || ''} ${u.nome || ''} ${u.progressivo || ''}`.replace(/\s+/g, ' ').trim();
+                    return { nome: nomeLabel || 'Sconosciuto', turniBase, turniDisplay, isMarinaio };
+                } catch (e) { console.error("Errore calcolo turni per rotazione mancante", e); return null; }
+            }));
+
+            const validi = risultati.filter(r => r !== null);
+            if (validi.length === 0) continue;
+
+            // Accoppiamento in un unico "armo": utenti con la stessa sequenza di turni del mese
+            // (stesso mezzo/incarico condiviso) vengono uniti in un'unica riga "Cognome Nome - Cognome Nome".
+            // Il confronto usa il codice BASE (non convertito per mansione): un pilota e un marinaio sullo
+            // stesso mezzo hanno lo stesso codice base ma vengono mostrati con lettere diverse (P/C vs B),
+            // quindi confrontare i codici già convertiti impedirebbe l'accoppiamento.
+            // Ignora inoltre i giorni "N/D" di uno dei due membri (calendario non ancora configurato per
+            // quel giorno/periodo), così una lacuna isolata non impedisce l'accoppiamento; il turno di
+            // quel giorno viene poi completato con il valore del collega abbinato.
+            function turniCompatibili(t1, t2) {
+                let sovrapposizioneTrovata = false;
+                for (let day in t1) {
+                    const v1 = t1[day], v2 = t2[day];
+                    if (v1 === "N/D" || v2 === "N/D") continue;
+                    sovrapposizioneTrovata = true;
+                    if (v1 !== v2) return false;
+                }
+                return sovrapposizioneTrovata;
+            }
+
+            const parent = validi.map((_, i) => i);
+            function find(x) { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }
+            function union(a, b) { const ra = find(a), rb = find(b); if (ra !== rb) parent[ra] = rb; }
+
+            for (let i = 0; i < validi.length; i++) {
+                for (let j = i + 1; j < validi.length; j++) {
+                    if (turniCompatibili(validi[i].turniBase, validi[j].turniBase)) union(i, j);
+                }
+            }
+
+            const gruppiPerFirma = {};
+            validi.forEach((v, i) => {
+                const radice = find(i);
+                if (!gruppiPerFirma[radice]) gruppiPerFirma[radice] = { nomi: [], membri: [] };
+                gruppiPerFirma[radice].nomi.push(v.nome);
+                gruppiPerFirma[radice].membri.push(v);
+            });
+
+            let righe = Object.values(gruppiPerFirma).map(g => {
+                const nomi = g.nomi.slice().sort((a, b) => a.localeCompare(b));
+                // Turni uniti: per ogni giorno preferisce il codice mostrato da un membro non-marinaio
+                // (convenzione del documento ufficiale, es. "4P04"), altrimenti usa il primo valore valido disponibile.
+                const turniUniti = {};
+                const membriPilota = g.membri.filter(mm => !mm.isMarinaio);
+                const ordinePreferenza = [...membriPilota, ...g.membri];
+                for (let day in g.membri[0].turniDisplay) {
+                    let valore = "N/D";
+                    for (const mm of ordinePreferenza) {
+                        if (mm.turniDisplay[day] !== "N/D") { valore = mm.turniDisplay[day]; break; }
+                    }
+                    turniUniti[day] = valore;
+                }
+                return { nome: nomi.join(" - "), turni: turniUniti };
+            });
+            righe.sort((a, b) => a.nome.localeCompare(b.nome));
+
+            let finalObj = {};
+            righe.forEach(r => finalObj[r.nome] = r.turni);
+            jsonData[titolo] = finalObj;
+            gruppiCreati.push(titolo);
+        }
+        return gruppiCreati;
+    }
 
     function stringToNum(s) { 
         if(!s) return 0; 
@@ -221,12 +505,13 @@ export function avviaMotoreRotazioni(db, auth) {
         permSnap.forEach(d => {
             let pData = d.data();
             let uData = utentiBase[d.id] || {};
-            arr.push({ ...uData, ...pData });
+            arr.push({ ...uData, ...pData, uid: d.id });
         });
         return arr;
     };
 
     window.caricaRotazioniMain = async () => {
+        window.rotazioniAutoGenerateRot = new Set();
         const area = document.getElementById('rot-rotazioni-list');
         area.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);"><i class="fa-solid fa-circle-notch fa-spin" style="font-size: 32px; color: var(--primary);"></i><br><br>Scansione documenti in corso...</div>`;
 
@@ -329,6 +614,15 @@ export function avviaMotoreRotazioni(db, auth) {
                                 });
 
                                 const mapNomiRotDisp = { "disp_5_1": "Disponibili 5-1", "disp_6_2_6_1": "Disponibili 6-2-6-1" };
+
+                                // Rotazioni non presenti nel json mensile: le ricostruiamo dal calendario
+                                // personale di chi ha aderito al modulo rotazioni con quella rotazione.
+                                // Vanno inserite PRIMA dei gruppi "Disponibili" per rispettare l'ordine richiesto:
+                                // [rotazioni da documento] -> [rotazioni auto-generate] -> [disponibili]
+                                if (!globalRotPatternCacheLoaded) { await window.caricaDatiTurniSilenziosoRot(); }
+                                let gruppiAutoGenerati = await costruisciRotazioniMancantiRot(jsonData, allU, y, m);
+                                gruppiAutoGenerati.forEach(t => window.rotazioniAutoGenerateRot.add(t));
+
                                 for (let rotKey in dispGroups) {
                                     for (let manKey in dispGroups[rotKey]) {
                                         dispGroups[rotKey][manKey].sort((a, b) => a.sortKey - b.sortKey);
@@ -355,7 +649,10 @@ export function avviaMotoreRotazioni(db, auth) {
 
                             let rotTitle = document.createElement('h4');
                             rotTitle.className = "rot-title-box";
-                            rotTitle.innerHTML = `<i class="fa-solid fa-folder-tree" style="color: var(--text-muted); font-size: 14px;"></i> ${rotName}`;
+                            let badgeAuto = window.rotazioniAutoGenerateRot.has(rotName)
+                                ? ` <i class="fa-solid fa-arrows-rotate" style="color: var(--info); font-size: 12px;" title="Ricostruita automaticamente dai calendari personali (nessun documento caricato per questa rotazione)"></i>`
+                                : '';
+                            rotTitle.innerHTML = `<i class="fa-solid fa-folder-tree" style="color: var(--text-muted); font-size: 14px;"></i> ${rotName}${badgeAuto}`;
                             rotContainer.appendChild(rotTitle);
 
                             let btnTab = document.createElement('button');
@@ -428,17 +725,19 @@ export function avviaMotoreRotazioni(db, auth) {
         title.innerHTML = `<i class="fa-solid fa-table" style="color:var(--text-muted); font-size:18px;"></i> ${rotName}`;
         
         let html = `<div class="rot-table-responsive"><table class="rot-rotazioni-table">`;
-        html += `<thead><tr><th>Colleghi</th>`;
+        html += `<thead><tr><th>N.</th><th>Colleghi</th>`;
         for(let i=1; i<=31; i++) html += `<th>${i}</th>`;
         html += `</tr></thead><tbody>`;
 
         const dipendenti = data[rotName];
+        let numeroArmo = 0;
         for (let nome in dipendenti) {
             let nomeUpper = nome.toUpperCase();
             if (paroleDaSaltare.some(parola => nomeUpper.includes(parola)) || nome.trim() === "") continue;
 
+            numeroArmo++;
             let nomeFormattato = nome.split(" - ").join("<br>");
-            html += `<tr><td>${nomeFormattato}</td>`;
+            html += `<tr><td class="rot-cell-num">${numeroArmo}</td><td>${nomeFormattato}</td>`;
             
             for(let i=1; i<=31; i++) {
                 let turno = dipendenti[nome][i.toString()] || "";
@@ -1321,9 +1620,9 @@ export function avviaMotoreRotazioni(db, auth) {
                 html += `<div style="background:var(--warning-light); border:1px dashed var(--warning-border); padding:16px; margin-bottom:12px; border-radius:12px;">
                     <div style="font-weight:800; font-size:15px; color:var(--warning); cursor:pointer; display:flex; align-items:center;" onclick="window.apriDettaglioUtenteRot('${u.uid}')">${u.cognome||''} ${u.nome||''} ${u.progressivo||''} ${pallino}</div>
                     <div style="font-size:12px; color:var(--text-muted); margin-top:4px; font-weight:600;"><i class="fa-solid fa-id-badge"></i> Matr: ${u.matricola||''}</div>
-                    <div style="display:flex; gap:10px; margin-top:16px;">
-                        <button class="rot-btn" style="background:var(--success); padding:10px; font-size:13px; margin:0; box-shadow:none;" onclick="window.gestisciRichiestaRot('${u.uid}', true, this)"><i class="fa-solid fa-check"></i>✅</button>
-                        <button class="rot-btn-outline" style="color:var(--danger); border-color:var(--danger); padding:10px; font-size:13px; margin:0;" onclick="window.gestisciRichiestaRot('${u.uid}', false, this)"><i class="fa-solid fa-xmark"></i>🚫</button>
+                    <div style="display:flex; gap:8px; margin-top:16px; justify-content:flex-end;">
+                        <button class="rot-btn-icon" title="Accetta" onclick="window.gestisciRichiestaRot('${u.uid}', true, this)"><i class="fa-solid fa-check"></i></button>
+                        <button class="rot-btn-icon rot-btn-icon-danger" title="Rifiuta" onclick="window.gestisciRichiestaRot('${u.uid}', false, this)"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 </div>`;
             });

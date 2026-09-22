@@ -64,7 +64,12 @@ const RESET_DOPO_AGGIORNAMENTO = {
         tc_spez_szaccaria: false,
         tc_spez_lido: false,
         tc_rot_17sn: false,
-        tc_rot_17tr: false
+        tc_rot_17tr: false,
+        tfg_proma: false,
+        tfg_lido: false,
+        m115: false,
+        m116: false,
+        notti: false
     };
 
 let state = JSON.parse(localStorage.getItem('myTurniApp')) || { 

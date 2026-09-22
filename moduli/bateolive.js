@@ -80,22 +80,25 @@ export function initUIBateoLive() {
 
         .bv-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer; transition: scale 0.2s ease; }
         .bv-boat-icon:hover { scale: 1.15; }
-        .bv-stop-icon { background: #ffffff; border: 2.5px solid #00529b; border-radius: 50%; width: 14px; height: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; transition: scale 0.2s ease; }
-        .bv-stop-icon:hover { scale: 1.4; }
+        
+        .bv-stop-icon-wrap { width: 14px; height: 14px; }
+        .bv-stop-icon-inner { background: #ffffff; border: 2.5px solid #00529b; border-radius: 50%; width: 14px; height: 14px; box-sizing: border-box; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; transition: scale 0.2s ease; }
+        .bv-stop-icon-inner:hover { scale: 1.4; }
+        
         .bv-line-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; border: 2px solid; flex-shrink: 0; box-sizing: border-box; }
 
         /* Tasto fluttuante in alto a sinistra (Indietro) */
-        .bv-back-btn { position: absolute; top: calc(20px + env(safe-area-inset-top)); left: 20px; z-index: 1000; width: 45px; height: 45px; border-radius: 50%; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; color: #00529b; }
+        .bv-back-btn { position: absolute; top: calc(20px + env(safe-area-inset-top, 0px)); left: 20px; z-index: 1000; width: 45px; height: 45px; border-radius: 50%; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; color: #00529b; }
 
         /* Contenitore Fabs in basso a sinistra (Ricerca, Filtri) */
-        .bv-fab-container { position: absolute; bottom: 30px; left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; }
+        .bv-fab-container { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; }
 
-        .bv-error-banner { position: absolute; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px); z-index: 1500; background: #e53935; color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.25); display: flex; align-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; max-width: 85%; text-align: center; }
+        .bv-error-banner { position: absolute; top: calc(20px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%) translateY(-20px); z-index: 1500; background: #e53935; color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.25); display: flex; align-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; max-width: 85%; text-align: center; }
         .bv-error-banner.active { opacity: 1; transform: translateX(-50%) translateY(0); }
         .bv-fab { width: 45px; height: 45px; border-radius: 50%; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: transform 0.2s, background 0.2s; color: #00529b; }
         .bv-fab:hover { transform: scale(1.05); background: white; }
 
-        #bv-drawer { position: absolute; top: 15px; bottom: 15px; right: -390px; width: 360px; max-height: calc(100% - 30px); height: auto; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 16px; box-shadow: -4px 10px 30px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.8); z-index: 1000; transition: right 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; overflow: hidden; }
+        #bv-drawer { position: absolute; top: calc(15px + env(safe-area-inset-top, 0px)); bottom: calc(15px + env(safe-area-inset-bottom, 0px)); right: -390px; width: 360px; max-height: calc(100% - 30px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); height: auto; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 16px; box-shadow: -4px 10px 30px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.8); z-index: 1000; transition: right 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; overflow: hidden; }
         #bv-drawer.open { right: 15px; }
         #bv-drawer-header { padding: 20px; background: linear-gradient(135deg, #00529b 0%, #003666 100%); color: white; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         #bv-drawer-title { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
@@ -128,7 +131,7 @@ export function initUIBateoLive() {
         .bv-badge-early { background: #f39c12; }
         .bv-badge-ok { background: #43a047; }
 
-        .bv-modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(3px); opacity: 0; transition: opacity 0.2s ease; }
+        .bv-modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(3px); opacity: 0; transition: opacity 0.2s ease; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); box-sizing: border-box; }
         .bv-modal-overlay.active { display: flex; opacity: 1; }
 
         .bv-modal { background: white; padding: 20px; border-radius: 16px; width: 90%; max-width: 320px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; }
@@ -293,6 +296,24 @@ export async function avviaMotoreBateoLive(db, auth, userData, isAdmin) {
     }
 }
 
+function lockBateoLiveMap() {
+    if (!map) return;
+    map.dragging.disable();
+    map.scrollWheelZoom.disable();
+    map.doubleClickZoom.disable();
+    map.touchZoom.disable();
+    if (map.tap) map.tap.disable();
+}
+
+function unlockBateoLiveMap() {
+    if (!map) return;
+    map.dragging.enable();
+    map.scrollWheelZoom.enable();
+    map.doubleClickZoom.enable();
+    map.touchZoom.enable();
+    if (map.tap) map.tap.enable();
+}
+
 function chiudiBateoLive() {
     document.getElementById('modal-bateolive-main').style.display = 'none';
     closeBateoLiveDrawer();
@@ -320,6 +341,8 @@ function chiudiBateoLiveModals(e) {
     document.getElementById('bv-filter-modal').classList.remove('active');
     document.getElementById('bv-search-suggestions').classList.remove('active');
 
+    unlockBateoLiveMap();
+
     const searchBtn = document.getElementById('bv-search-btn');
     if (searchBtn) {
         searchBtn.innerText = "Cerca";
@@ -329,6 +352,7 @@ function chiudiBateoLiveModals(e) {
 
 function apriBateoLiveSearchModal() {
     document.getElementById('bv-search-modal').classList.add('active');
+    lockBateoLiveMap();
     const input = document.getElementById('bv-search-input');
     input.value = '';
     setTimeout(() => input.focus(), 50);
@@ -336,6 +360,7 @@ function apriBateoLiveSearchModal() {
 
 async function openBateoLiveFilterModalInternal() {
     document.getElementById('bv-filter-modal').classList.add('active');
+    lockBateoLiveMap();
     try {
         const lines = [...new Set(globalBoats.map(b => b.line).filter(l => l !== '-'))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
@@ -377,6 +402,7 @@ function applicaBateoLiveFilter() {
     chiudiBateoLiveModals({ target: { classList: { contains: () => true } } });
 
     Object.keys(boatMarkers).forEach(id => {
+        oms.removeMarker(boatMarkers[id]);
         map.removeLayer(boatMarkers[id]);
         delete boatMarkers[id];
     });
@@ -612,21 +638,12 @@ async function loadStops() {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         globalStops = await res.json();
         showBateoLiveError(false);
-        const stopIcon = L.divIcon({ className: 'bv-stop-icon', iconSize: [14, 14], iconAnchor: [7, 7] });
-
-        // Il click va gestito tramite il listener nativo di OMS (non con un marker.on('click', ...)
-        // separato): avere entrambi in competizione è ciò che faceva "scattare" il pallino,
-        // anche per una fermata isolata.
-        oms.addListener('click', function(marker) {
-            if (marker.stopData) renderStopDrawer(marker.stopData);
-        });
+        
+        const stopIcon = L.divIcon({ html: '<div class="bv-stop-icon-inner"></div>', className: 'bv-stop-icon-wrap', iconSize: [14, 14], iconAnchor: [7, 7] });
 
         globalStops.forEach(stop => {
             const marker = L.marker([stop.lat, stop.lon], { icon: stopIcon }).addTo(map);
-            marker.stopData = stop;
-            // Solo le fermate (statiche) vengono registrate in OMS: le barche si muovono
-            // di continuo e lo spiderfy di OMS entrava in conflitto col refresh posizione.
-            oms.addMarker(marker);
+            marker.on('click', () => renderStopDrawer(stop));
         });
     } catch (e) {
         console.error("Errore caricamento fermate:", e);
@@ -647,6 +664,7 @@ async function fetchAndUpdateBoats() {
             if (boat.lat && boat.lon) {
                 if (currentFilterLines.length > 0 && !currentFilterLines.includes(boat.line.toUpperCase())) {
                     if (boatMarkers[boat.id]) {
+                        oms.removeMarker(boatMarkers[boat.id]);
                         map.removeLayer(boatMarkers[boat.id]);
                         delete boatMarkers[boat.id];
                     }
@@ -664,6 +682,7 @@ async function fetchAndUpdateBoats() {
                 } else {
                     const marker = L.marker([boat.lat, boat.lon], { icon: customBoatIcon, zIndexOffset: 1000 }).addTo(map);
                     marker.on('click', () => renderBoatDrawer(boat));
+                    oms.addMarker(marker);
                     boatMarkers[boat.id] = marker;
                 }
 

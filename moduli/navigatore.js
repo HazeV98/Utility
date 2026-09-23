@@ -15,8 +15,8 @@ let fetchInterval = null;
 let mapDepsLoaded = false;
 
 // Livelli Mappa e Stile
-let baseOSM, baseSat, nauticLayer, bathyLayer;
-let currentMapMode = 0; // 0: Base, 1: Satellitare, 2: Batimetrica
+let baseOSM, baseSat, nauticLayer;
+let currentMapMode = 0; // 0: Base, 1: Satellitare
 
 // Variabili GPS e Identità
 let watchId = null;
@@ -272,7 +272,6 @@ export async function avviaMotoreNavigatore(db, auth, userData) {
         baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
         baseSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
         nauticLayer = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxZoom: 18 });
-        bathyLayer = L.tileLayer.wms('https://ows.emodnet-bathymetry.eu/wms', { layers: 'emodnet:mean', format: 'image/png', transparent: true });
 
         map = L.map('nav-map', { 
             attributionControl: false, 
@@ -321,29 +320,20 @@ function chiudiNavigatore() {
 function cambiaStileMappa() {
     if (!map) return;
     
-    currentMapMode = (currentMapMode + 1) % 3;
-    const fab = document.getElementById('fab-layers');
+    currentMapMode = (currentMapMode + 1) % 2;
     const hudStatus = document.getElementById('hud-status');
     
     if (map.hasLayer(baseOSM)) map.removeLayer(baseOSM);
     if (map.hasLayer(baseSat)) map.removeLayer(baseSat);
-    if (map.hasLayer(bathyLayer)) map.removeLayer(bathyLayer);
     
     if (!map.hasLayer(nauticLayer)) map.addLayer(nauticLayer);
 
     if (currentMapMode === 0) {
         map.addLayer(baseOSM);
-        fab.innerHTML = '<i class="fa-solid fa-layer-group"></i>';
         hudStatus.innerText = "Mappa Base Nautica";
     } else if (currentMapMode === 1) {
         map.addLayer(baseSat);
-        fab.innerHTML = '<i class="fa-solid fa-satellite"></i>';
         hudStatus.innerText = "Mappa Satellitare";
-    } else if (currentMapMode === 2) {
-        map.addLayer(baseOSM);
-        map.addLayer(bathyLayer);
-        fab.innerHTML = '<i class="fa-solid fa-water"></i>';
-        hudStatus.innerText = "Mappa Batimetrica (EMODnet)";
     }
     
     if (map.hasLayer(nauticLayer)) nauticLayer.bringToFront();

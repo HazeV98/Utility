@@ -394,19 +394,5 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
-    },
-    {
-        "id": "navigatore",
-        "label": "Navigatore",
-        "icon": "fa-solid fa-location-arrow",
-        "defaultColor": "#0066cc",
-        "conditions": [
-            "admin"
-        ],
-        "excludeConditions": [],
-        "isModule": true,
-        "moduleId": "navigatore",
-        "moduleName": "navigatore",
-        "splitModule": false
     }
 ]

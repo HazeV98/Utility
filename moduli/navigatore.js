@@ -249,7 +249,8 @@ export function initUINavigatore() {
 // ==========================================
 // INIZIALIZZAZIONE E MOTORE
 // ==========================================
-export async function avviaNavigatore(db, auth, userData) {
+// QUI LA CORREZIONE: Da avviaNavigatore a avviaMotoreNavigatore
+export async function avviaMotoreNavigatore(db, auth, userData) {
     currentUserId = (auth && auth.currentUser) ? auth.currentUser.uid : 'user_' + Math.random().toString(36).substr(2, 9);
     currentUserName = (userData && userData.nome) ? userData.nome : "Collega";
 

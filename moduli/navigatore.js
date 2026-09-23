@@ -14,6 +14,10 @@ let currentFilterLines = [];
 let fetchInterval = null;
 let mapDepsLoaded = false;
 
+// Livelli Mappa e Stile
+let baseOSM, baseSat, nauticLayer, bathyLayer;
+let currentMapMode = 0; // 0: Base, 1: Satellitare, 2: Batimetrica
+
 // Variabili GPS e Identità
 let watchId = null;
 let speedHistory = [];
@@ -115,7 +119,7 @@ export function initUINavigatore() {
         .speed-val { font-size: 42px; font-weight: 900; color: #00529b; line-height: 0.9; }
         .speed-knots { font-size: 16px; font-weight: 700; color: #333; margin-top: 5px; }
 
-        .hud-status { position: absolute; top: calc(85px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(0,0,0,0.6); color: white; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; }
+        .hud-status { position: absolute; top: calc(85px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 1500; background: rgba(0,0,0,0.6); color: white; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         
         .nav-submodal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
         .nav-submodal-overlay.active { display: flex; }
@@ -159,6 +163,9 @@ export function initUINavigatore() {
             <div id="fab-rotate" class="nav-fab" onclick="toggleMapRotation()" title="Rotazione Mappa (Rotta in alto)" style="display: none;">
                 <i class="fa-regular fa-compass"></i>
             </div>
+            <div id="fab-layers" class="nav-fab" onclick="cambiaStileMappa()" title="Cambia Stile Cartografico">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
             <div class="nav-fab" onclick="apriNavigatoreSearchModal()" title="Cerca Mezzo o Fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
             <div class="nav-fab" onclick="apriNavigatoreFilterModal()" title="Filtra Linee"><i class="fa-solid fa-filter"></i></div>
         </div>
@@ -199,7 +206,7 @@ export function initUINavigatore() {
     }
     tape.innerHTML = tapeHTML;
 
-    // Aggiunta Event Listener per i Suggerimenti di Ricerca
+    // Suggerimenti di Ricerca
     document.getElementById('nav-search-input').addEventListener('input', async function(e) {
         const q = e.target.value.toLowerCase().trim();
         const suggBox = document.getElementById('nav-search-suggestions');
@@ -238,6 +245,7 @@ export function initUINavigatore() {
     window.toggleGPS = toggleGPS;
     window.toggleCenterMap = toggleCenterMap;
     window.toggleMapRotation = toggleMapRotation;
+    window.cambiaStileMappa = cambiaStileMappa;
     window.chiudiNavigatoreModals = chiudiNavigatoreModals;
     window.apriNavigatoreSearchModal = apriNavigatoreSearchModal;
     window.apriNavigatoreFilterModal = apriNavigatoreFilterModal;
@@ -249,7 +257,6 @@ export function initUINavigatore() {
 // ==========================================
 // INIZIALIZZAZIONE E MOTORE
 // ==========================================
-// QUI LA CORREZIONE: Da avviaNavigatore a avviaMotoreNavigatore
 export async function avviaMotoreNavigatore(db, auth, userData) {
     currentUserId = (auth && auth.currentUser) ? auth.currentUser.uid : 'user_' + Math.random().toString(36).substr(2, 9);
     currentUserName = (userData && userData.nome) ? userData.nome : "Collega";
@@ -260,20 +267,19 @@ export async function avviaMotoreNavigatore(db, auth, userData) {
     await loadMapDependencies();
     
     if (!map) {
-        const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
-        const baseSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
-        const nauticLayer = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxZoom: 18 });
-        const bathyLayer = L.tileLayer.wms('https://ows.emodnet-bathymetry.eu/wms', { layers: 'emodnet:mean', format: 'image/png', transparent: true });
+        // Inizializzazione globale dei layer (così la funzione del tasto può usarli)
+        baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+        baseSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+        nauticLayer = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxZoom: 18 });
+        bathyLayer = L.tileLayer.wms('https://ows.emodnet-bathymetry.eu/wms', { layers: 'emodnet:mean', format: 'image/png', transparent: true });
 
         map = L.map('nav-map', { 
             attributionControl: false, 
             zoomControl: false,
-            layers: [baseOSM, nauticLayer]
+            layers: [baseOSM, nauticLayer] // Setup Iniziale
         }).setView([45.4371, 12.3326], 13);
 
-        const baseMaps = { "Mappa Standard": baseOSM, "Satellitare": baseSat };
-        const overlayMaps = { "Dati Nautici": nauticLayer, "Batimetria (EMODnet)": bathyLayer };
-        L.control.layers(baseMaps, overlayMaps, { position: 'topright' }).addTo(map);
+        // Abbiamo rimosso il selettore nativo di Leaflet a favore del tasto rapido (FAB)
 
         oms = new OverlappingMarkerSpiderfier(map, { keepSpiderfied: true, legWeight: 2, nearbyDistance: 35 });
 
@@ -311,8 +317,55 @@ function chiudiNavigatore() {
 }
 
 // ==========================================
-// LOGICA CONTROLLI VISTA MAPPA
+// LOGICA CONTROLLI VISTA MAPPA E STILI
 // ==========================================
+function cambiaStileMappa() {
+    if (!map) return;
+    
+    currentMapMode = (currentMapMode + 1) % 3;
+    const fab = document.getElementById('fab-layers');
+    const hudStatus = document.getElementById('hud-status');
+    
+    // Rimuove tutti i layer di background per preparare il nuovo assetto
+    if (map.hasLayer(baseOSM)) map.removeLayer(baseOSM);
+    if (map.hasLayer(baseSat)) map.removeLayer(baseSat);
+    if (map.hasLayer(bathyLayer)) map.removeLayer(bathyLayer);
+    
+    // Assicura che i dati nautici di OpenSeaMap restino sempre accesi
+    if (!map.hasLayer(nauticLayer)) map.addLayer(nauticLayer);
+
+    if (currentMapMode === 0) {
+        map.addLayer(baseOSM);
+        fab.innerHTML = '<i class="fa-solid fa-layer-group"></i>';
+        hudStatus.innerText = "Mappa Base Nautica";
+    } else if (currentMapMode === 1) {
+        map.addLayer(baseSat);
+        fab.innerHTML = '<i class="fa-solid fa-satellite"></i>';
+        hudStatus.innerText = "Mappa Satellitare";
+    } else if (currentMapMode === 2) {
+        map.addLayer(baseOSM); // Fondo chiaro sotto la batimetria
+        map.addLayer(bathyLayer);
+        fab.innerHTML = '<i class="fa-solid fa-water"></i>';
+        hudStatus.innerText = "Mappa Batimetrica (EMODnet)";
+    }
+    
+    // Riporta i layer nautici vettoriali in primo piano rispetto a satellite/batimetria
+    if (map.hasLayer(nauticLayer)) nauticLayer.bringToFront();
+
+    // Feedback Visivo Temporaneo
+    hudStatus.style.background = "rgba(0, 82, 155, 0.9)";
+    hudStatus.style.display = 'block';
+    setTimeout(() => {
+        // Se il GPS è in acquisizione e senza fix, non spegnere l'HUD, altrimenti nascondilo
+        if (watchId && !lastValidHeading && document.getElementById('speed-val').textContent === "0.0") {
+            hudStatus.innerText = "Acquisizione GPS...";
+            hudStatus.style.background = "rgba(0,0,0,0.6)";
+        } else {
+            hudStatus.style.display = 'none';
+        }
+    }, 2000);
+}
+
 function toggleCenterMap(forceState = null) {
     followUser = forceState !== null ? forceState : !followUser;
     document.getElementById('fab-center').classList.toggle('active', followUser);
@@ -377,6 +430,8 @@ function toggleGPS() {
         hudCompass.style.display = 'flex';
         hudSpeed.style.display = 'block';
         hudStatus.style.display = 'block';
+        hudStatus.innerText = "Acquisizione GPS...";
+        hudStatus.style.background = "rgba(0,0,0,0.6)";
         fabCenter.style.display = 'flex';
         fabRotate.style.display = 'flex';
         
@@ -386,6 +441,7 @@ function toggleGPS() {
         watchId = navigator.geolocation.watchPosition(elaboraPosizioneGPS, (err) => {
             hudStatus.innerText = "Errore GPS: " + err.message;
             hudStatus.style.background = "rgba(227, 0, 27, 0.8)";
+            hudStatus.style.display = 'block';
         }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
     }
 }
@@ -394,7 +450,9 @@ function elaboraPosizioneGPS(position) {
     const coords = position.coords;
     const now = Date.now();
     
-    document.getElementById('hud-status').style.display = 'none'; 
+    // Nascondi HUD se non stiamo mostrando avvisi di layer in questo momento
+    const hudStatus = document.getElementById('hud-status');
+    if (hudStatus.innerText === "Acquisizione GPS...") hudStatus.style.display = 'none'; 
     
     let rawSpeedMs = coords.speed || 0;
     speedHistory.push({ speed: rawSpeedMs, time: now });

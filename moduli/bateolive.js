@@ -347,7 +347,7 @@ export function initUIBateoLive() {
             <div id="bv-fab-layers" class="bv-fab" onclick="cambiaStileBvMappa()" title="Cambia Stile Cartografico">
                 <i class="fa-solid fa-layer-group"></i>
             </div>
-            <div class="bv-fab" onclick="apriBateoLiveUnitModal()" title="Configura Unità e Linea">
+            <div id="bv-fab-unit" class="bv-fab" onclick="apriBateoLiveUnitModal()" title="Configura Unità e Linea" style="display: none;">
                 <i class="fa-solid fa-ship"></i>
             </div>
             <div class="bv-fab" onclick="apriBateoLiveSearchModal()" title="Cerca Mezzo o Fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
@@ -630,6 +630,7 @@ function toggleBvGPS() {
         hudStatus.style.display = 'none';
         fabCenter.style.display = 'none';
         fabRotate.style.display = 'none';
+        document.getElementById('bv-fab-unit').style.display = 'none';
         
         toggleBvCenterMap(false);
         toggleBvMapRotation(false);
@@ -648,8 +649,9 @@ function toggleBvGPS() {
         hudStatus.style.background = "rgba(0,0,0,0.6)";
         fabCenter.style.display = 'flex';
         fabRotate.style.display = 'flex';
+        document.getElementById('bv-fab-unit').style.display = 'flex';
         
-        toggleBvCenterMap(true); 
+        toggleBvCenterMap(true);
         speedHistory = [];
         
         watchId = navigator.geolocation.watchPosition(elaboraBvPosizioneGPS, (err) => {

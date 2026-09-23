@@ -263,7 +263,7 @@ export function initUINavigatore() {
             <div id="fab-layers" class="nav-fab" onclick="cambiaStileMappa()" title="Cambia Stile Cartografico">
                 <i class="fa-solid fa-layer-group"></i>
             </div>
-            <div class="nav-fab" onclick="apriNavigatoreUnitModal()" title="Configura Unità e Linea">
+            <div id="fab-unit" class="nav-fab" onclick="apriNavigatoreUnitModal()" title="Configura Unità e Linea" style="display: none;">
                 <i class="fa-solid fa-ship"></i>
             </div>
             <div class="nav-fab" onclick="apriNavigatoreSearchModal()" title="Cerca Mezzo o Fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
@@ -445,6 +445,7 @@ function chiudiNavigatore() {
     document.getElementById('fab-center').style.display = 'none';
     document.getElementById('fab-rotate').style.display = 'none';
     document.getElementById('fab-gps').classList.remove('active');
+    document.getElementById('fab-unit').style.display = 'none';
     
     courseUp = false;
     followUser = false;
@@ -545,6 +546,7 @@ function toggleGPS() {
         hudStatus.style.display = 'none';
         fabCenter.style.display = 'none';
         fabRotate.style.display = 'none';
+        document.getElementById('fab-unit').style.display = 'none';
         
         toggleCenterMap(false);
         toggleMapRotation(false);
@@ -563,6 +565,7 @@ function toggleGPS() {
         hudStatus.style.background = "rgba(0,0,0,0.6)";
         fabCenter.style.display = 'flex';
         fabRotate.style.display = 'flex';
+        document.getElementById('fab-unit').style.display = 'flex';
         
         toggleCenterMap(true); 
         speedHistory = [];

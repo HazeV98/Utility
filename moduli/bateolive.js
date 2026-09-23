@@ -28,8 +28,8 @@ const SMOOTHING_WINDOW_MS = 2000;
 let lastValidHeading = null;
 let currentUserId = null;
 let currentUserName = "Collega";
-let customUnitName = localStorage.getItem('bv_custom_unit') || '';
-let customLine = localStorage.getItem('bv_custom_line') || '';
+let customUnitName = '';
+let customLine = '';
 
 // Variabili Controllo Vista Mappa
 let followUser = false; 
@@ -542,8 +542,6 @@ function apriBateoLiveUnitModal() {
 
 function salvaConfigurazioneUnita() {
     customUnitName = document.getElementById('bv-unit-name-input').value.trim();
-    localStorage.setItem('bv_custom_unit', customUnitName);
-    localStorage.setItem('bv_custom_line', customLine);
     chiudiBateoLiveModals({ target: { classList: { contains: () => true } } });
 }
 
@@ -845,6 +843,11 @@ function chiudiBateoLive() {
     const mapEl = document.getElementById('bv-map');
     mapEl.style.transform = `rotate(0deg)`;
     mapEl.style.setProperty('--marker-rotation', `0deg`);
+
+    customUnitName = '';
+    customLine = '';
+    localStorage.removeItem('bv_custom_unit');
+    localStorage.removeItem('bv_custom_line');
 
     if (fetchInterval) {
         clearInterval(fetchInterval);

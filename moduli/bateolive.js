@@ -8,10 +8,28 @@ let globalStops = [];
 let map = null;
 let oms = null;
 let boatMarkers = {};
+let otherUsersMarkers = {};
+let userMarker = null;
 let currentFilterLines = [];
 let fetchInterval = null;
 let mapDepsLoaded = false;
 let activeSelection = null;
+
+// Livelli Mappa e Stile
+let baseOSM, baseSat, nauticLayer;
+let currentMapMode = 0; // 0: Base, 1: Satellitare
+
+// Variabili GPS e Identità
+let watchId = null;
+let speedHistory = [];
+const SMOOTHING_WINDOW_MS = 2000;
+let lastValidHeading = null;
+let currentUserId = null;
+let currentUserName = "Collega";
+
+// Variabili Controllo Vista Mappa
+let followUser = false; 
+let courseUp = false;
 
 const ACTV_COLORS = {
     '1': { bg: '#ffffff', text: '#000000', border: '#000000' },
@@ -75,10 +93,12 @@ export function initUIBateoLive() {
 
     const uiHTML = `
     <style>
-        #modal-bateolive-main { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: #e0e0e0; display: none; flex-direction: column; font-family: 'Inter', sans-serif; }
-        #bv-map { flex-grow: 1; width: 100%; height: 100%; z-index: 1; }
+        #modal-bateolive-main { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: #e0e0e0; display: none; flex-direction: column; font-family: 'Inter', sans-serif; overflow: hidden; }
+        
+        #bv-map-wrapper { flex-grow: 1; position: relative; overflow: hidden; background: #aad3df; z-index: 1; }
+        #bv-map { width: 200%; height: 200%; position: absolute; top: -50%; left: -50%; z-index: 1; transition: transform 0.2s linear; }
 
-        .bv-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer; transition: scale 0.2s ease; }
+        .bv-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer; transform: rotate(var(--marker-rotation, 0deg)); transition: transform 0.2s linear, scale 0.2s ease; }
         .bv-boat-icon:hover { scale: 1.15; }
         
         .bv-stop-icon-wrap { width: 14px; height: 14px; }
@@ -86,17 +106,37 @@ export function initUIBateoLive() {
         .bv-stop-icon-inner:hover { scale: 1.4; }
         
         .bv-line-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; border: 2px solid; flex-shrink: 0; box-sizing: border-box; }
+        .other-user-icon { background: #28a745; border: 2.5px solid #ffffff; border-radius: 50%; width: 20px; height: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); transform: rotate(var(--marker-rotation, 0deg)); transition: transform 0.2s linear; }
 
         /* Tasto fluttuante in alto a sinistra (Indietro) */
         .bv-back-btn { position: absolute; top: calc(20px + env(safe-area-inset-top, 0px)); left: 20px; z-index: 1000; width: 45px; height: 45px; border-radius: 50%; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; color: #00529b; }
 
-        /* Contenitore Fabs in basso a sinistra (Ricerca, Filtri) */
+        /* Contenitore Fabs in basso a sinistra */
         .bv-fab-container { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; }
 
         .bv-error-banner { position: absolute; top: calc(20px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%) translateY(-20px); z-index: 1500; background: #e53935; color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.25); display: flex; align-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; max-width: 85%; text-align: center; }
         .bv-error-banner.active { opacity: 1; transform: translateX(-50%) translateY(0); }
         .bv-fab { width: 45px; height: 45px; border-radius: 50%; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: transform 0.2s, background 0.2s; color: #00529b; }
-        .bv-fab:hover { transform: scale(1.05); background: white; }
+        .bv-fab.active { background: #00529b; color: white; }
+        .bv-fab:hover { transform: scale(1.05); }
+
+        /* HUD Bussola Superiore */
+        .bv-hud-compass { position: absolute; top: calc(15px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); width: 250px; height: 60px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; z-index: 1000; display: flex; align-items: center; justify-content: center; display: none; }
+        .bv-compass-tape { position: absolute; top: 10px; left: 0; height: 100%; display: flex; transition: transform 0.15s linear; }
+        .bv-compass-mark { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; width: 60px; flex-shrink: 0; }
+        .bv-tick { width: 2px; height: 8px; background: #666; margin-bottom: 4px; border-radius: 2px; }
+        .bv-tick.major { height: 16px; background: #00529b; width: 3px; }
+        .bv-compass-label { color: #666; font-size: 12px; font-weight: 600; }
+        .bv-compass-label.major { color: #333; font-size: 14px; font-weight: 900; }
+        .bv-compass-center-line { position: absolute; left: 50%; top: 0; width: 3px; height: 30px; background: #e3001b; transform: translateX(-50%); z-index: 10; border-radius: 2px; }
+
+        /* HUD Velocità Inferiore Destra */
+        .bv-hud-speed { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); right: 20px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); padding: 12px 18px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1000; display: none; }
+        .bv-speed-wrapper { display: flex; align-items: baseline; justify-content: center; gap: 5px; }
+        .bv-speed-val { font-size: 42px; font-weight: 900; color: #00529b; line-height: 0.9; }
+        .bv-speed-unit { font-size: 16px; font-weight: bold; color: #666; }
+
+        .bv-hud-status { position: absolute; top: calc(85px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 1500; background: rgba(0,0,0,0.6); color: white; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
 
         #bv-drawer { position: absolute; top: calc(15px + env(safe-area-inset-top, 0px)); bottom: calc(15px + env(safe-area-inset-bottom, 0px)); right: -390px; width: 360px; max-height: calc(100% - 30px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); height: auto; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 16px; box-shadow: -4px 10px 30px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.8); z-index: 1000; transition: right 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; overflow: hidden; }
         #bv-drawer.open { right: 15px; }
@@ -174,15 +214,45 @@ export function initUIBateoLive() {
             <i class="fa-solid fa-arrow-left"></i>
         </div>
 
-        <div id="bv-map"></div>
+        <div id="bv-map-wrapper">
+            <div id="bv-map"></div>
+        </div>
 
-        <!-- Tasti Ricerca e Filtro -->
+        <!-- HUD Bussola e Stato -->
+        <div id="bv-hud-compass" class="bv-hud-compass">
+            <div class="bv-compass-center-line"></div>
+            <div id="bv-compass-tape" class="bv-compass-tape"></div>
+        </div>
+
+        <div id="bv-hud-status" class="bv-hud-status">Acquisizione GPS...</div>
+
+        <!-- HUD Velocità -->
+        <div id="bv-hud-speed" class="bv-hud-speed">
+            <div class="bv-speed-wrapper">
+                <span id="bv-speed-val" class="bv-speed-val">0.0</span>
+                <span class="bv-speed-unit">km/h</span>
+            </div>
+        </div>
+
+        <!-- Tasti Fluttuanti (FAB) -->
         <div id="bv-error-banner" class="bv-error-banner">
             <i class="fa-solid fa-triangle-exclamation"></i>
             <span id="bv-error-banner-text">Impossibile collegarsi al server. Verifica la connessione.</span>
         </div>
 
         <div class="bv-fab-container">
+            <div id="bv-fab-gps" class="bv-fab" onclick="toggleBvGPS()" title="Attiva/Disattiva GPS">
+                <i class="fa-solid fa-satellite-dish"></i>
+            </div>
+            <div id="bv-fab-center" class="bv-fab" onclick="toggleBvCenterMap()" title="Centra sulla Posizione" style="display: none;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 2L4 20L12 17L20 20L12 2Z"/></svg>
+            </div>
+            <div id="bv-fab-rotate" class="bv-fab" onclick="toggleBvMapRotation()" title="Rotazione Mappa (Rotta in alto)" style="display: none;">
+                <i class="fa-regular fa-compass"></i>
+            </div>
+            <div id="bv-fab-layers" class="bv-fab" onclick="cambiaStileBvMappa()" title="Cambia Stile Cartografico">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
             <div class="bv-fab" onclick="apriBateoLiveSearchModal()" title="Cerca Mezzo o Fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
             <div class="bv-fab" onclick="apriBateoLiveFilterModal()" title="Filtra Linee"><i class="fa-solid fa-filter"></i></div>
         </div>
@@ -200,7 +270,7 @@ export function initUIBateoLive() {
             <div class="bv-modal" onclick="event.stopPropagation()">
                 <h3>Cerca Mezzo / Fermata</h3>
                 <div class="bv-search-container">
-                    <input type="text" id="bv-search-input" placeholder="Es. Rialto, 4.2, MS 123..." autocomplete="off">
+                    <input type="text" id="bv-search-input" placeholder="Es. Rialto, 4.2..." autocomplete="off">
                     <div id="bv-search-suggestions" class="bv-suggestions-dropdown"></div>
                 </div>
                 <button id="bv-search-btn" class="bv-modal-btn" onclick="eseguiBateoLiveSearch()">Cerca</button>
@@ -219,6 +289,21 @@ export function initUIBateoLive() {
     `;
     document.body.insertAdjacentHTML('beforeend', uiHTML);
 
+    // Inizializzazione Tape Bussola
+    const tape = document.getElementById('bv-compass-tape');
+    let tapeHTML = '';
+    const directions = {0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SO', 270: 'O', 315: 'NO'};
+    for (let cycle = -1; cycle <= 1; cycle++) {
+        for (let deg = 0; deg < 360; deg += 10) {
+            let isMajor = (deg % 90 === 0);
+            let tickClass = 'bv-tick' + (isMajor ? ' major' : '');
+            let labelClass = 'bv-compass-label' + (isMajor ? ' major' : '');
+            let labelText = directions[deg] !== undefined ? directions[deg] : deg;
+            tapeHTML += `<div class="bv-compass-mark"><div class="${tickClass}"></div><div class="${labelClass}">${labelText}</div></div>`;
+        }
+    }
+    tape.innerHTML = tapeHTML;
+
     window.chiudiBateoLive = chiudiBateoLive;
     window.chiudiBateoLiveModals = chiudiBateoLiveModals;
     window.closeBateoLiveDrawer = closeBateoLiveDrawer;
@@ -228,6 +313,10 @@ export function initUIBateoLive() {
     window.applicaBateoLiveFilter = applicaBateoLiveFilter;
     window.selezionaBateoLiveSuggestion = selezionaBateoLiveSuggestion;
     window.locateBateoLiveBoat = locateBateoLiveBoat;
+    window.toggleBvGPS = toggleBvGPS;
+    window.toggleBvCenterMap = toggleBvCenterMap;
+    window.toggleBvMapRotation = toggleBvMapRotation;
+    window.cambiaStileBvMappa = cambiaStileBvMappa;
 
     document.getElementById('bv-search-input').addEventListener('input', async function(e) {
         const q = e.target.value.toLowerCase().trim();
@@ -265,18 +354,28 @@ export function initUIBateoLive() {
 }
 
 // ==========================================
-// LOGICA DI CONTROLLO
+// LOGICA DI CONTROLLO MOTORE & GPS
 // ==========================================
 
 export async function avviaMotoreBateoLive(db, auth, userData, isAdmin) {
+    currentUserId = (auth && auth.currentUser) ? auth.currentUser.uid : 'user_' + Math.random().toString(36).substr(2, 9);
+    currentUserName = (userData && userData.nome) ? userData.nome : "Collega";
+
     initUIBateoLive();
     document.getElementById('modal-bateolive-main').style.display = 'flex';
 
     await loadMapDependencies();
 
     if (!map) {
-        map = L.map('bv-map', { attributionControl: false, zoomControl: false }).setView([45.4371, 12.3326], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+        baseSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+        nauticLayer = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxZoom: 18 });
+
+        map = L.map('bv-map', { 
+            attributionControl: false, 
+            zoomControl: false,
+            layers: [baseOSM, nauticLayer]
+        }).setView([45.4371, 12.3326], 13);
 
         oms = new OverlappingMarkerSpiderfier(map, {
             keepSpiderfied: true,
@@ -284,16 +383,255 @@ export async function avviaMotoreBateoLive(db, auth, userData, isAdmin) {
             nearbyDistance: 35
         });
 
+        map.on('dragstart', () => {
+            if (followUser && !courseUp) {
+                toggleBvCenterMap(false);
+            }
+        });
+
         loadStops();
         fetchAndUpdateBoats();
-        fetchInterval = setInterval(fetchAndUpdateBoats, 500);
+        fetchInterval = setInterval(() => {
+            fetchAndUpdateBoats();
+            sincronizzaPosizioneAltriUtenti();
+        }, 1500);
     } else {
         setTimeout(() => map.invalidateSize(), 100);
         if (!fetchInterval) {
-            fetchInterval = setInterval(fetchAndUpdateBoats, 500);
+            fetchInterval = setInterval(() => {
+                fetchAndUpdateBoats();
+                sincronizzaPosizioneAltriUtenti();
+            }, 1500);
             fetchAndUpdateBoats();
         }
     }
+}
+
+function cambiaStileBvMappa() {
+    if (!map) return;
+    
+    currentMapMode = (currentMapMode + 1) % 2;
+    const hudStatus = document.getElementById('bv-hud-status');
+    
+    if (map.hasLayer(baseOSM)) map.removeLayer(baseOSM);
+    if (map.hasLayer(baseSat)) map.removeLayer(baseSat);
+    
+    if (!map.hasLayer(nauticLayer)) map.addLayer(nauticLayer);
+
+    if (currentMapMode === 0) {
+        map.addLayer(baseOSM);
+        hudStatus.innerText = "Mappa Base Nautica";
+    } else if (currentMapMode === 1) {
+        map.addLayer(baseSat);
+        hudStatus.innerText = "Mappa Satellitare";
+    }
+    
+    if (map.hasLayer(nauticLayer)) nauticLayer.bringToFront();
+
+    hudStatus.style.background = "rgba(0, 82, 155, 0.9)";
+    hudStatus.style.display = 'block';
+    setTimeout(() => {
+        if (watchId && !lastValidHeading && document.getElementById('bv-speed-val').textContent === "0.0") {
+            hudStatus.innerText = "Acquisizione GPS...";
+            hudStatus.style.background = "rgba(0,0,0,0.6)";
+        } else {
+            hudStatus.style.display = 'none';
+        }
+    }, 2000);
+}
+
+function toggleBvCenterMap(forceState = null) {
+    followUser = forceState !== null ? forceState : !followUser;
+    document.getElementById('bv-fab-center').classList.toggle('active', followUser);
+    
+    if (followUser && userMarker && map) {
+        map.setView(userMarker.getLatLng());
+    }
+    
+    if (!followUser && courseUp) {
+        toggleBvMapRotation(false);
+    }
+}
+
+function toggleBvMapRotation(forceState = null) {
+    courseUp = forceState !== null ? forceState : !courseUp;
+    const fabRot = document.getElementById('bv-fab-rotate');
+    fabRot.classList.toggle('active', courseUp);
+    
+    const mapEl = document.getElementById('bv-map');
+
+    if (courseUp) {
+        if (map) map.dragging.disable();
+        if (!followUser) toggleBvCenterMap(true);
+        
+        let h = lastValidHeading || 0;
+        let normalizedHeading = h % 360;
+        if (normalizedHeading < 0) normalizedHeading += 360;
+        
+        mapEl.style.transform = `rotate(-${normalizedHeading}deg)`;
+        mapEl.style.setProperty('--marker-rotation', `${normalizedHeading}deg`);
+    } else {
+        if (map) map.dragging.enable();
+        mapEl.style.transform = `rotate(0deg)`;
+        mapEl.style.setProperty('--marker-rotation', `0deg`);
+    }
+}
+
+function toggleBvGPS() {
+    const fab = document.getElementById('bv-fab-gps');
+    const hudCompass = document.getElementById('bv-hud-compass');
+    const hudSpeed = document.getElementById('bv-hud-speed');
+    const hudStatus = document.getElementById('bv-hud-status');
+    const fabCenter = document.getElementById('bv-fab-center');
+    const fabRotate = document.getElementById('bv-fab-rotate');
+
+    if (fab.classList.contains('active')) {
+        fab.classList.remove('active');
+        hudCompass.style.display = 'none';
+        hudSpeed.style.display = 'none';
+        hudStatus.style.display = 'none';
+        fabCenter.style.display = 'none';
+        fabRotate.style.display = 'none';
+        
+        toggleBvCenterMap(false);
+        toggleBvMapRotation(false);
+        
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+        if (userMarker) {
+            map.removeLayer(userMarker);
+            userMarker = null;
+        }
+    } else {
+        fab.classList.add('active');
+        hudCompass.style.display = 'flex';
+        hudSpeed.style.display = 'block';
+        hudStatus.style.display = 'block';
+        hudStatus.innerText = "Acquisizione GPS...";
+        hudStatus.style.background = "rgba(0,0,0,0.6)";
+        fabCenter.style.display = 'flex';
+        fabRotate.style.display = 'flex';
+        
+        toggleBvCenterMap(true); 
+        speedHistory = [];
+        
+        watchId = navigator.geolocation.watchPosition(elaboraBvPosizioneGPS, (err) => {
+            hudStatus.innerText = "Errore GPS: " + err.message;
+            hudStatus.style.background = "rgba(227, 0, 27, 0.8)";
+            hudStatus.style.display = 'block';
+        }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+    }
+}
+
+function elaboraBvPosizioneGPS(position) {
+    const coords = position.coords;
+    const now = Date.now();
+    
+    const hudStatus = document.getElementById('bv-hud-status');
+    if (hudStatus.innerText === "Acquisizione GPS...") hudStatus.style.display = 'none'; 
+    
+    let rawSpeedMs = coords.speed || 0;
+    speedHistory.push({ speed: rawSpeedMs, time: now });
+    speedHistory = speedHistory.filter(entry => now - entry.time <= SMOOTHING_WINDOW_MS);
+    let avgSpeedMs = speedHistory.reduce((sum, entry) => sum + entry.speed, 0) / speedHistory.length;
+
+    let speedKmh = avgSpeedMs * 3.6;
+    document.getElementById('bv-speed-val').textContent = speedKmh.toFixed(1);
+
+    if (coords.heading !== null && (rawSpeedMs >= 0.5 || lastValidHeading === null)) {
+        lastValidHeading = coords.heading;
+    }
+    
+    let validHeading = lastValidHeading || 0;
+
+    const svgArrow = `
+    <div style="transform: rotate(${validHeading}deg); width:32px; height:32px; display:flex; align-items:center; justify-content:center; filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.5)); transition: transform 0.2s linear;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#00529b" stroke="white" stroke-width="1.5" stroke-linejoin="round">
+            <path d="M12 2L4 20L12 17L20 20L12 2Z"/>
+        </svg>
+    </div>`;
+    
+    const userIcon = L.divIcon({ html: svgArrow, className: '', iconSize: [32,32], iconAnchor: [16,16] });
+
+    if (!userMarker) {
+        userMarker = L.marker([coords.latitude, coords.longitude], {
+            icon: userIcon, zIndexOffset: 2000
+        }).addTo(map);
+    } else {
+        userMarker.setLatLng([coords.latitude, coords.longitude]);
+        userMarker.setIcon(userIcon);
+    }
+    
+    if (followUser) map.setView([coords.latitude, coords.longitude]);
+
+    let normalizedHeading = validHeading % 360;
+    if (normalizedHeading < 0) normalizedHeading += 360;
+    
+    if (courseUp) {
+        const mapEl = document.getElementById('bv-map');
+        mapEl.style.transform = `rotate(-${normalizedHeading}deg)`;
+        mapEl.style.setProperty('--marker-rotation', `${normalizedHeading}deg`);
+    }
+
+    const tape = document.getElementById('bv-compass-tape');
+    const widthPerMark = 60; 
+    const pxPerDegree = widthPerMark / 10; 
+    const baseOffset = 36 * widthPerMark; 
+    const targetX = - (baseOffset + (normalizedHeading * pxPerDegree)) + 125 - 30; 
+    tape.style.transform = `translateX(${targetX}px)`;
+
+    inviaBvPosizionePersonale(coords.latitude, coords.longitude, speedKmh, validHeading);
+}
+
+function inviaBvPosizionePersonale(lat, lon, speed, heading) {
+    if (!currentUserId) return;
+
+    fetch(`${API_URL}/api/users/location`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            id: currentUserId,
+            lat: lat,
+            lon: lon,
+            speed: speed,
+            heading: heading,
+            nome: currentUserName
+        })
+    }).catch(err => console.error("Errore invio posizione:", err));
+}
+
+async function sincronizzaPosizioneAltriUtenti() {
+    if (!map || !currentUserId) return;
+    try {
+        const response = await fetch(`${API_URL}/api/users/live`);
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const users = await response.json();
+        const activeIds = Object.keys(users);
+
+        activeIds.forEach(uid => {
+            if (uid === currentUserId) return; 
+
+            const u = users[uid];
+            if (otherUsersMarkers[uid]) {
+                otherUsersMarkers[uid].setLatLng([u.lat, u.lon]);
+                if (otherUsersMarkers[uid].getPopup()) {
+                    otherUsersMarkers[uid].getPopup().setContent(`<div style="text-align:center;"><b>${u.nome}</b><br>Velocità: ${parseFloat(u.speed).toFixed(1)} km/h</div>`);
+                }
+            } else {
+                const iconHtml = `<div class="other-user-icon"></div>`;
+                const icon = L.divIcon({ html: iconHtml, className: '', iconSize: [20,20], iconAnchor: [10,10] });
+                const marker = L.marker([u.lat, u.lon], { icon: icon }).addTo(map);
+                marker.bindPopup(`<div style="text-align:center;"><b>${u.nome}</b><br>Velocità: ${parseFloat(u.speed).toFixed(1)} km/h</div>`);
+                otherUsersMarkers[uid] = marker;
+            }
+        });
+
+        Object.keys(otherUsersMarkers).forEach(uid => {
+            if (!activeIds.includes(uid)) {
+                map.removeLayer(otherUsersMarkers[uid]);
+                delete otherUsersMarkers[uid];
+            }
+        });
+    } catch (error) { console.error("Errore ricezione altri utenti:", error); }
 }
 
 function lockBateoLiveMap() {
@@ -317,6 +655,19 @@ function unlockBateoLiveMap() {
 function chiudiBateoLive() {
     document.getElementById('modal-bateolive-main').style.display = 'none';
     closeBateoLiveDrawer();
+    if (watchId) navigator.geolocation.clearWatch(watchId);
+    document.getElementById('bv-hud-compass').style.display = 'none';
+    document.getElementById('bv-hud-speed').style.display = 'none';
+    document.getElementById('bv-fab-center').style.display = 'none';
+    document.getElementById('bv-fab-rotate').style.display = 'none';
+    document.getElementById('bv-fab-gps').classList.remove('active');
+    
+    courseUp = false;
+    followUser = false;
+    const mapEl = document.getElementById('bv-map');
+    mapEl.style.transform = `rotate(0deg)`;
+    mapEl.style.setProperty('--marker-rotation', `0deg`);
+
     if (fetchInterval) {
         clearInterval(fetchInterval);
         fetchInterval = null;
@@ -644,6 +995,7 @@ async function loadStops() {
         globalStops.forEach(stop => {
             const marker = L.marker([stop.lat, stop.lon], { icon: stopIcon }).addTo(map);
             marker.on('click', () => renderStopDrawer(stop));
+            oms.addMarker(marker);
         });
     } catch (e) {
         console.error("Errore caricamento fermate:", e);

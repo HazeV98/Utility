@@ -1,5 +1,5 @@
 // ==========================================
-// NAVIGATORE - JS MODULE
+// NAVIGATORE NAUTICO INTEGRATO - JS MODULE
 // ==========================================
 
 const API_URL = 'https://api.bateolive.stream';
@@ -18,13 +18,15 @@ let mapDepsLoaded = false;
 let baseOSM, baseSat, nauticLayer;
 let currentMapMode = 0; // 0: Base, 1: Satellitare
 
-// Variabili GPS e Identità
+// Variabili GPS, Identità e Unità Personalizzata
 let watchId = null;
 let speedHistory = [];
 const SMOOTHING_WINDOW_MS = 2000;
 let lastValidHeading = null;
 let currentUserId = null;
 let currentUserName = "Collega";
+let customUnitName = localStorage.getItem('bv_custom_unit') || '';
+let customLine = localStorage.getItem('bv_custom_line') || '';
 
 // Variabili Controllo Vista Mappa
 let followUser = false; 
@@ -91,7 +93,7 @@ export function initUINavigatore() {
 
     const uiHTML = `
     <style>
-        #modal-navigatore-main { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: #e0e0e0; display: none; flex-direction: column; overflow: hidden; }
+        #modal-navigatore-main { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: #e0e0e0; display: none; flex-direction: column; overflow: hidden; font-family: 'Inter', sans-serif; }
         
         #nav-map-wrapper { flex-grow: 1; position: relative; overflow: hidden; background: #aad3df; z-index: 1; }
         #nav-map { width: 200%; height: 200%; position: absolute; top: -50%; left: -50%; z-index: 1; transition: transform 0.2s linear; }
@@ -126,8 +128,8 @@ export function initUINavigatore() {
         .nav-submodal-overlay.active { display: flex; }
         .nav-submodal { background: white; padding: 20px; border-radius: 16px; width: 90%; max-width: 320px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; }
         .nav-search-container { position: relative; flex-shrink: 0; }
-        .nav-submodal input[type="text"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 15px; box-sizing: border-box; outline: none; font-size: 14px; }
-        .nav-btn { background: #00529b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 15px; }
+        .nav-submodal input[type="text"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 15px; box-sizing: border-box; outline: none; font-size: 14px; font-family: 'Inter', sans-serif; }
+        .nav-btn { background: #00529b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 15px; font-family: 'Inter', sans-serif; }
         .nav-btn.error { background: #e53935; }
         .nav-suggestions-dropdown { position: absolute; top: 48px; left: 0; right: 0; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); max-height: 220px; overflow-y: auto; z-index: 10; display: none; border: 1px solid #ddd; }
         .nav-suggestions-dropdown.active { display: block; }
@@ -168,8 +170,27 @@ export function initUINavigatore() {
             <div id="fab-layers" class="nav-fab" onclick="cambiaStileMappa()" title="Cambia Stile Cartografico">
                 <i class="fa-solid fa-layer-group"></i>
             </div>
+            <div class="nav-fab" onclick="apriNavigatoreUnitModal()" title="Configura Unità e Linea">
+                <i class="fa-solid fa-ship"></i>
+            </div>
             <div class="nav-fab" onclick="apriNavigatoreSearchModal()" title="Cerca Mezzo o Fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
             <div class="nav-fab" onclick="apriNavigatoreFilterModal()" title="Filtra Linee"><i class="fa-solid fa-filter"></i></div>
+        </div>
+
+        <!-- Sottomodale Configurazione Unità -->
+        <div id="nav-unit-modal" class="nav-submodal-overlay" onclick="chiudiNavigatoreModals(event)">
+            <div class="nav-submodal" onclick="event.stopPropagation()">
+                <h3 style="margin-top:0; color:#00529b;">Configurazione Unità</h3>
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; font-weight: 600; color: #666; display: block; margin-bottom: 4px;">Nome Unità / Mezzo</label>
+                    <input type="text" id="nav-unit-name-input" placeholder="Es. Motonave, Pattuglia..." autocomplete="off">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 12px; font-weight: 600; color: #666; display: block; margin-bottom: 4px;">Linea in servizio (opzionale)</label>
+                    <input type="text" id="nav-unit-line-input" placeholder="Es. 1, 4.1, N..." autocomplete="off">
+                </div>
+                <button class="nav-btn" onclick="salvaNavigatoreConfigUnita()">Salva</button>
+            </div>
         </div>
 
         <div id="nav-search-modal" class="nav-submodal-overlay" onclick="chiudiNavigatoreModals(event)">
@@ -248,6 +269,8 @@ export function initUINavigatore() {
     window.toggleCenterMap = toggleCenterMap;
     window.toggleMapRotation = toggleMapRotation;
     window.cambiaStileMappa = cambiaStileMappa;
+    window.apriNavigatoreUnitModal = apriNavigatoreUnitModal;
+    window.salvaNavigatoreConfigUnita = salvaNavigatoreConfigUnita;
     window.chiudiNavigatoreModals = chiudiNavigatoreModals;
     window.apriNavigatoreSearchModal = apriNavigatoreSearchModal;
     window.apriNavigatoreFilterModal = apriNavigatoreFilterModal;
@@ -297,6 +320,20 @@ export async function avviaMotoreNavigatore(db, auth, userData) {
     } else {
         setTimeout(() => map.invalidateSize(), 100);
     }
+}
+
+function apriNavigatoreUnitModal() {
+    document.getElementById('nav-unit-modal').classList.add('active');
+    document.getElementById('nav-unit-name-input').value = customUnitName;
+    document.getElementById('nav-unit-line-input').value = customLine;
+}
+
+function salvaNavigatoreConfigUnita() {
+    customUnitName = document.getElementById('nav-unit-name-input').value.trim();
+    customLine = document.getElementById('nav-unit-line-input').value.trim();
+    localStorage.setItem('bv_custom_unit', customUnitName);
+    localStorage.setItem('bv_custom_line', customLine);
+    chiudiNavigatoreModals({ target: { classList: { contains: () => true } } });
 }
 
 function chiudiNavigatore() {
@@ -510,7 +547,8 @@ function inviaPosizionePersonale(lat, lon, speed, heading) {
             lon: lon,
             speed: speed,
             heading: heading,
-            nome: currentUserName
+            nome: customUnitName || currentUserName,
+            line: customLine || ''
         })
     }).catch(err => console.error("Errore invio posizione:", err));
 }
@@ -527,16 +565,43 @@ async function sincronizzaPosizioneAltriUtenti() {
             if (uid === currentUserId) return; 
 
             const u = users[uid];
+            const uHeading = u.heading || 0;
+            const uLine = u.line ? u.line.trim() : '';
+
+            let iconHtml = '';
+            let iconSize = [32, 32];
+            let iconAnchor = [16, 16];
+
+            if (uLine) {
+                const c = getLineColors(uLine.toUpperCase());
+                iconHtml = `<div class="nav-boat-icon" style="background-color: ${c.bg}; color: ${c.text}; border: 3px solid #28a745; width: 26px; height: 26px; box-sizing: border-box;">${uLine}</div>`;
+                iconSize = [26, 26];
+                iconAnchor = [13, 13];
+            } else {
+                iconHtml = `
+                <div style="transform: rotate(${uHeading}deg); width:32px; height:32px; display:flex; align-items:center; justify-content:center; filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.5)); transition: transform 0.2s linear;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="#28a745" stroke="white" stroke-width="1.5" stroke-linejoin="round">
+                        <path d="M12 2L4 20L12 17L20 20L12 2Z"/>
+                    </svg>
+                </div>`;
+            }
+
+            const icon = L.divIcon({ html: iconHtml, className: '', iconSize: iconSize, iconAnchor: iconAnchor });
+
+            let popupContent = `<div style="text-align:center;">Velocità: ${parseFloat(u.speed || 0).toFixed(1)} km/h</div>`;
+            if (u.nome && u.nome !== currentUserName) {
+                popupContent = `<div style="text-align:center;"><b>${u.nome}</b><br>Velocità: ${parseFloat(u.speed || 0).toFixed(1)} km/h</div>`;
+            }
+
             if (otherUsersMarkers[uid]) {
                 otherUsersMarkers[uid].setLatLng([u.lat, u.lon]);
+                otherUsersMarkers[uid].setIcon(icon);
                 if (otherUsersMarkers[uid].getPopup()) {
-                    otherUsersMarkers[uid].getPopup().setContent(`<div style="text-align:center;"><b>${u.nome}</b><br>Velocità: ${parseFloat(u.speed).toFixed(1)} km/h</div>`);
+                    otherUsersMarkers[uid].getPopup().setContent(popupContent);
                 }
             } else {
-                const iconHtml = `<div class="other-user-icon"></div>`;
-                const icon = L.divIcon({ html: iconHtml, className: '', iconSize: [20,20], iconAnchor: [10,10] });
                 const marker = L.marker([u.lat, u.lon], { icon: icon }).addTo(map);
-                marker.bindPopup(`<div style="text-align:center;"><b>${u.nome}</b><br>Velocità: ${parseFloat(u.speed).toFixed(1)} km/h</div>`);
+                marker.bindPopup(popupContent);
                 otherUsersMarkers[uid] = marker;
             }
         });
@@ -607,6 +672,7 @@ function chiudiNavigatoreModals(e) {
     if (e && e.target && e.target.classList && !e.target.classList.contains('nav-submodal-overlay')) return;
     document.getElementById('nav-search-modal').classList.remove('active'); 
     document.getElementById('nav-filter-modal').classList.remove('active'); 
+    document.getElementById('nav-unit-modal').classList.remove('active');
     document.getElementById('nav-search-suggestions').classList.remove('active');
 }
 function apriNavigatoreSearchModal() { document.getElementById('nav-search-modal').classList.add('active'); }

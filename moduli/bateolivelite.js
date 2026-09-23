@@ -1,5 +1,5 @@
 // ==========================================
-// NAVIGATORE NAUTICO INTEGRATO - JS MODULE
+// BateoLive lite - JS MODULE
 // ==========================================
 
 const API_URL = 'https://api.bateolive.stream';
@@ -13,6 +13,8 @@ let userMarker = null;
 let currentFilterLines = [];
 let fetchInterval = null;
 let mapDepsLoaded = false;
+// Nomi unità (normalizzati) inseriti manualmente da altri utenti: le unità ACTV corrispondenti vengono nascoste
+let hiddenActvUnitNames = new Set();
 
 // Livelli Mappa e Stile
 let baseOSM, baseSat, nauticLayer;
@@ -665,12 +667,17 @@ async function sincronizzaPosizioneAltriUtenti() {
         const users = await response.json();
         const activeIds = Object.keys(users);
 
+        const nextHiddenActvUnitNames = new Set();
+
         activeIds.forEach(uid => {
             if (uid === currentUserId) return; 
 
             const u = users[uid];
             const uHeading = u.heading || 0;
             const uLine = u.line ? u.line.trim() : '';
+
+            const normalizedUnitName = normalizzaNomeUnita(u.nome);
+            if (normalizedUnitName) nextHiddenActvUnitNames.add(normalizedUnitName);
 
             let iconHtml = '';
             let iconSize = [32, 32];
@@ -716,6 +723,9 @@ async function sincronizzaPosizioneAltriUtenti() {
                 delete otherUsersMarkers[uid];
             }
         });
+
+        hiddenActvUnitNames = nextHiddenActvUnitNames;
+        aggiornaVisibilitaBarcheActv();
     } catch (error) { console.error("Errore ricezione altri utenti:", error); }
 }
 
@@ -736,6 +746,59 @@ async function loadStops() {
     } catch(e) { console.error("Errore fermate:", e); }
 }
 
+// Normalizza un nome unità per il confronto: maiuscolo, senza prefisso M/S M/B M/N M/Z
+// (con o senza slash/spazio, es. "M/S 200", "MS200", "M/S200" -> "200"), e senza spazi/simboli superflui.
+function normalizzaNomeUnita(nome) {
+    if (!nome) return '';
+    return nome
+        .toUpperCase()
+        .replace(/\bM\s*\/?\s*[SBNZ]\b\.?\s*/g, '')
+        .replace(/[^A-Z0-9]+/g, ' ')
+        .trim();
+}
+
+// Crea/aggiorna/rimuove il marker di una singola unità ACTV, nascondendola se un altro
+// utente ha inserito manualmente lo stesso nome unità (i suoi dati GPS sono più precisi).
+function renderOrHideBoatMarker(boat) {
+    if (!boat.lat || !boat.lon) return;
+
+    if (currentFilterLines.length > 0 && !currentFilterLines.includes(boat.line.toUpperCase())) {
+        if (boatMarkers[boat.id]) { oms.removeMarker(boatMarkers[boat.id]); map.removeLayer(boatMarkers[boat.id]); delete boatMarkers[boat.id]; }
+        return;
+    }
+
+    const normalizedLabel = normalizzaNomeUnita(boat.label);
+    if (normalizedLabel && hiddenActvUnitNames.has(normalizedLabel)) {
+        if (boatMarkers[boat.id]) { oms.removeMarker(boatMarkers[boat.id]); map.removeLayer(boatMarkers[boat.id]); delete boatMarkers[boat.id]; }
+        return;
+    }
+
+    const c = boat.line === '-' ? { bg: '#000000', text: '#ffffff', border: '#ffffff' } : getLineColors(boat.line.toUpperCase());
+
+    const iconHtml = `<div class="nav-boat-icon" style="background-color: ${c.bg}; color: ${c.text}; border: 2.5px solid ${c.border}; width: 26px; height: 26px; box-sizing: border-box;">${boat.line}</div>`;
+    const customBoatIcon = L.divIcon({ html: iconHtml, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
+
+    const popupContent = `<div style="text-align:center; padding:2px;"><div style="font-size:11px; color:#666;">Linea <strong style="font-size:14px;">${boat.line}</strong></div><div style="font-weight:600; font-size:14px; margin-top:6px;">${boat.label}</div></div>`;
+
+    if (boatMarkers[boat.id]) {
+        boatMarkers[boat.id].setLatLng([boat.lat, boat.lon]);
+        boatMarkers[boat.id].setIcon(customBoatIcon);
+        boatMarkers[boat.id].getPopup() ? boatMarkers[boat.id].getPopup().setContent(popupContent) : boatMarkers[boat.id].bindPopup(popupContent);
+    } else {
+        const marker = L.marker([boat.lat, boat.lon], { icon: customBoatIcon, zIndexOffset: 1000 }).addTo(map);
+        marker.bindPopup(popupContent);
+        oms.addMarker(marker);
+        boatMarkers[boat.id] = marker;
+    }
+}
+
+// Riapplica la logica di visibilità (usata quando cambia l'elenco degli altri utenti)
+// senza dover rifare la fetch delle unità ACTV.
+function aggiornaVisibilitaBarcheActv() {
+    if (!map) return;
+    globalBoats.forEach(boat => renderOrHideBoatMarker(boat));
+}
+
 async function fetchAndUpdateBoats() {
     if (!map) return;
     try {
@@ -744,31 +807,7 @@ async function fetchAndUpdateBoats() {
         const boats = await response.json();
         globalBoats = boats;
 
-        boats.forEach(boat => {
-            if (boat.lat && boat.lon) {
-                if (currentFilterLines.length > 0 && !currentFilterLines.includes(boat.line.toUpperCase())) {
-                    if (boatMarkers[boat.id]) { oms.removeMarker(boatMarkers[boat.id]); map.removeLayer(boatMarkers[boat.id]); delete boatMarkers[boat.id]; }
-                    return; 
-                }
-                const c = boat.line === '-' ? { bg: '#000000', text: '#ffffff', border: '#ffffff' } : getLineColors(boat.line.toUpperCase());
-                
-                const iconHtml = `<div class="nav-boat-icon" style="background-color: ${c.bg}; color: ${c.text}; border: 2.5px solid ${c.border}; width: 26px; height: 26px; box-sizing: border-box;">${boat.line}</div>`;
-                const customBoatIcon = L.divIcon({ html: iconHtml, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
-                
-                const popupContent = `<div style="text-align:center; padding:2px;"><div style="font-size:11px; color:#666;">Linea <strong style="font-size:14px;">${boat.line}</strong></div><div style="font-weight:600; font-size:14px; margin-top:6px;">${boat.label}</div></div>`;
-                
-                if (boatMarkers[boat.id]) {
-                    boatMarkers[boat.id].setLatLng([boat.lat, boat.lon]);
-                    boatMarkers[boat.id].setIcon(customBoatIcon);
-                    boatMarkers[boat.id].getPopup() ? boatMarkers[boat.id].getPopup().setContent(popupContent) : boatMarkers[boat.id].bindPopup(popupContent);
-                } else {
-                    const marker = L.marker([boat.lat, boat.lon], { icon: customBoatIcon, zIndexOffset: 1000 }).addTo(map);
-                    marker.bindPopup(popupContent);
-                    oms.addMarker(marker); 
-                    boatMarkers[boat.id] = marker;
-                }
-            }
-        });
+        boats.forEach(boat => renderOrHideBoatMarker(boat));
     } catch (error) { console.error("Errore Vaporetti:", error); }
 }
 

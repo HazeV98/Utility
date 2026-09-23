@@ -1,5 +1,5 @@
 // ==========================================
-// NAVIGATORE NAUTICO INTEGRATO - JS MODULE
+// NAVIGATORE - JS MODULE
 // ==========================================
 
 const API_URL = 'https://api.bateolive.stream';
@@ -115,9 +115,10 @@ export function initUINavigatore() {
         .compass-label.major { color: #333; font-size: 14px; font-weight: 900; }
         .compass-center-line { position: absolute; left: 50%; top: 0; width: 3px; height: 30px; background: #e3001b; transform: translateX(-50%); z-index: 10; border-radius: 2px; }
         
-        .hud-speed-container { position: absolute; bottom: 30px; right: 20px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); padding: 15px 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1000; text-align: center; display: none; }
+        .hud-speed-container { position: absolute; bottom: 30px; right: 20px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); padding: 12px 18px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1000; display: none; }
+        .speed-wrapper { display: flex; align-items: baseline; justify-content: center; gap: 5px; }
         .speed-val { font-size: 42px; font-weight: 900; color: #00529b; line-height: 0.9; }
-        .speed-knots { font-size: 16px; font-weight: 700; color: #333; margin-top: 5px; }
+        .speed-unit { font-size: 16px; font-weight: bold; color: #666; }
 
         .hud-status { position: absolute; top: calc(85px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 1500; background: rgba(0,0,0,0.6); color: white; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         
@@ -148,9 +149,10 @@ export function initUINavigatore() {
         <div id="hud-status" class="hud-status">Acquisizione GPS...</div>
 
         <div id="hud-speed" class="hud-speed-container">
-            <div id="speed-val" class="speed-val">0.0</div>
-            <div style="font-size:12px; color:#666; font-weight:bold;">km/h</div>
-            <div id="speed-knots" class="speed-knots">0.0 kn</div>
+            <div class="speed-wrapper">
+                <span id="speed-val" class="speed-val">0.0</span>
+                <span class="speed-unit">km/h</span>
+            </div>
         </div>
 
         <div class="nav-fab-container">
@@ -267,7 +269,6 @@ export async function avviaMotoreNavigatore(db, auth, userData) {
     await loadMapDependencies();
     
     if (!map) {
-        // Inizializzazione globale dei layer (così la funzione del tasto può usarli)
         baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
         baseSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
         nauticLayer = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxZoom: 18 });
@@ -276,10 +277,8 @@ export async function avviaMotoreNavigatore(db, auth, userData) {
         map = L.map('nav-map', { 
             attributionControl: false, 
             zoomControl: false,
-            layers: [baseOSM, nauticLayer] // Setup Iniziale
+            layers: [baseOSM, nauticLayer]
         }).setView([45.4371, 12.3326], 13);
-
-        // Abbiamo rimosso il selettore nativo di Leaflet a favore del tasto rapido (FAB)
 
         oms = new OverlappingMarkerSpiderfier(map, { keepSpiderfied: true, legWeight: 2, nearbyDistance: 35 });
 
@@ -326,12 +325,10 @@ function cambiaStileMappa() {
     const fab = document.getElementById('fab-layers');
     const hudStatus = document.getElementById('hud-status');
     
-    // Rimuove tutti i layer di background per preparare il nuovo assetto
     if (map.hasLayer(baseOSM)) map.removeLayer(baseOSM);
     if (map.hasLayer(baseSat)) map.removeLayer(baseSat);
     if (map.hasLayer(bathyLayer)) map.removeLayer(bathyLayer);
     
-    // Assicura che i dati nautici di OpenSeaMap restino sempre accesi
     if (!map.hasLayer(nauticLayer)) map.addLayer(nauticLayer);
 
     if (currentMapMode === 0) {
@@ -343,20 +340,17 @@ function cambiaStileMappa() {
         fab.innerHTML = '<i class="fa-solid fa-satellite"></i>';
         hudStatus.innerText = "Mappa Satellitare";
     } else if (currentMapMode === 2) {
-        map.addLayer(baseOSM); // Fondo chiaro sotto la batimetria
+        map.addLayer(baseOSM);
         map.addLayer(bathyLayer);
         fab.innerHTML = '<i class="fa-solid fa-water"></i>';
         hudStatus.innerText = "Mappa Batimetrica (EMODnet)";
     }
     
-    // Riporta i layer nautici vettoriali in primo piano rispetto a satellite/batimetria
     if (map.hasLayer(nauticLayer)) nauticLayer.bringToFront();
 
-    // Feedback Visivo Temporaneo
     hudStatus.style.background = "rgba(0, 82, 155, 0.9)";
     hudStatus.style.display = 'block';
     setTimeout(() => {
-        // Se il GPS è in acquisizione e senza fix, non spegnere l'HUD, altrimenti nascondilo
         if (watchId && !lastValidHeading && document.getElementById('speed-val').textContent === "0.0") {
             hudStatus.innerText = "Acquisizione GPS...";
             hudStatus.style.background = "rgba(0,0,0,0.6)";
@@ -450,7 +444,6 @@ function elaboraPosizioneGPS(position) {
     const coords = position.coords;
     const now = Date.now();
     
-    // Nascondi HUD se non stiamo mostrando avvisi di layer in questo momento
     const hudStatus = document.getElementById('hud-status');
     if (hudStatus.innerText === "Acquisizione GPS...") hudStatus.style.display = 'none'; 
     
@@ -460,10 +453,8 @@ function elaboraPosizioneGPS(position) {
     let avgSpeedMs = speedHistory.reduce((sum, entry) => sum + entry.speed, 0) / speedHistory.length;
 
     let speedKmh = avgSpeedMs * 3.6;
-    let speedNodi = avgSpeedMs * 1.94384;
     
     document.getElementById('speed-val').textContent = speedKmh.toFixed(1);
-    document.getElementById('speed-knots').textContent = `${speedNodi.toFixed(1)} kn`;
 
     if (coords.heading !== null && (rawSpeedMs >= 0.5 || lastValidHeading === null)) {
         lastValidHeading = coords.heading;
@@ -505,7 +496,7 @@ function elaboraPosizioneGPS(position) {
     const targetX = - (baseOffset + (normalizedHeading * pxPerDegree)) + 125 - 30; 
     tape.style.transform = `translateX(${targetX}px)`;
 
-    inviaPosizionePersonale(coords.latitude, coords.longitude, speedNodi, validHeading);
+    inviaPosizionePersonale(coords.latitude, coords.longitude, speedKmh, validHeading);
 }
 
 function inviaPosizionePersonale(lat, lon, speed, heading) {
@@ -540,13 +531,13 @@ async function sincronizzaPosizioneAltriUtenti() {
             if (otherUsersMarkers[uid]) {
                 otherUsersMarkers[uid].setLatLng([u.lat, u.lon]);
                 if (otherUsersMarkers[uid].getPopup()) {
-                    otherUsersMarkers[uid].getPopup().setContent(`<div style="text-align:center;"><b>${u.nome}</b><br>Velocità: ${parseFloat(u.speed).toFixed(1)} kn</div>`);
+                    otherUsersMarkers[uid].getPopup().setContent(`<div style="text-align:center;"><b>${u.nome}</b><br>Velocità: ${parseFloat(u.speed).toFixed(1)} km/h</div>`);
                 }
             } else {
                 const iconHtml = `<div class="other-user-icon"></div>`;
                 const icon = L.divIcon({ html: iconHtml, className: '', iconSize: [20,20], iconAnchor: [10,10] });
                 const marker = L.marker([u.lat, u.lon], { icon: icon }).addTo(map);
-                marker.bindPopup(`<div style="text-align:center;"><b>${u.nome}</b><br>Velocità: ${parseFloat(u.speed).toFixed(1)} kn</div>`);
+                marker.bindPopup(`<div style="text-align:center;"><b>${u.nome}</b><br>Velocità: ${parseFloat(u.speed).toFixed(1)} km/h</div>`);
                 otherUsersMarkers[uid] = marker;
             }
         });

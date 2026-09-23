@@ -151,7 +151,7 @@ export function initUINavigatore() {
 
         <div class="nav-fab-container">
             <div id="fab-gps" class="nav-fab" onclick="toggleGPS()" title="Attiva/Disattiva GPS">
-                <i class="fa-solid fa-location-arrow"></i>
+                <i class="fa-solid fa-satellite-dish"></i>
             </div>
             <div id="fab-center" class="nav-fab" onclick="toggleCenterMap()" title="Centra sulla Posizione" style="display: none;">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 2L4 20L12 17L20 20L12 2Z"/></svg>

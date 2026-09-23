@@ -183,7 +183,7 @@ export function initUINavigatore() {
                 <h3 style="margin-top:0; color:#00529b;">Configurazione Unità</h3>
                 <div style="margin-bottom: 12px;">
                     <label style="font-size: 12px; font-weight: 600; color: #666; display: block; margin-bottom: 4px;">Nome Unità / Mezzo</label>
-                    <input type="text" id="nav-unit-name-input" placeholder="Es. Motonave, Pattuglia..." autocomplete="off">
+                    <input type="text" id="nav-unit-name-input" placeholder="Es. M/B 1, M/S 200" autocomplete="off">
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="font-size: 12px; font-weight: 600; color: #666; display: block; margin-bottom: 4px;">Linea in servizio (opzionale)</label>

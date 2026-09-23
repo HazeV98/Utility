@@ -96,10 +96,10 @@ export function initUINavigatore() {
         #nav-map-wrapper { flex-grow: 1; position: relative; overflow: hidden; background: #aad3df; z-index: 1; }
         #nav-map { width: 200%; height: 200%; position: absolute; top: -50%; left: -50%; z-index: 1; transition: transform 0.2s linear; }
         
-        .nav-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer; }
+        .nav-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer; transform: rotate(var(--marker-rotation, 0deg)); transition: transform 0.2s linear; }
         .nav-stop-icon { background: #ffffff; border: 2.5px solid #00529b; border-radius: 50%; width: 14px; height: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; }
         .nav-line-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; border: 2px solid; flex-shrink: 0; box-sizing: border-box; }
-        .other-user-icon { background: #28a745; border: 2.5px solid #ffffff; border-radius: 50%; width: 20px; height: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+        .other-user-icon { background: #28a745; border: 2.5px solid #ffffff; border-radius: 50%; width: 20px; height: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); transform: rotate(var(--marker-rotation, 0deg)); transition: transform 0.2s linear; }
 
         .nav-back-btn { position: absolute; top: calc(20px + env(safe-area-inset-top)); left: 20px; z-index: 1000; width: 45px; height: 45px; border-radius: 50%; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; color: #00529b; }
         .nav-fab-container { position: absolute; bottom: 30px; left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; }
@@ -310,7 +310,9 @@ function chiudiNavigatore() {
     
     courseUp = false;
     followUser = false;
-    document.getElementById('nav-map').style.transform = `rotate(0deg)`;
+    const mapEl = document.getElementById('nav-map');
+    mapEl.style.transform = `rotate(0deg)`;
+    mapEl.style.setProperty('--marker-rotation', `0deg`);
     if (map) map.dragging.enable();
 }
 
@@ -375,10 +377,15 @@ function toggleMapRotation(forceState = null) {
         if (!followUser) toggleCenterMap(true);
         
         let h = lastValidHeading || 0;
-        mapEl.style.transform = `rotate(-${h}deg)`;
+        let normalizedHeading = h % 360;
+        if (normalizedHeading < 0) normalizedHeading += 360;
+        
+        mapEl.style.transform = `rotate(-${normalizedHeading}deg)`;
+        mapEl.style.setProperty('--marker-rotation', `${normalizedHeading}deg`);
     } else {
         if (map) map.dragging.enable();
         mapEl.style.transform = `rotate(0deg)`;
+        mapEl.style.setProperty('--marker-rotation', `0deg`);
     }
 }
 
@@ -476,7 +483,9 @@ function elaboraPosizioneGPS(position) {
     if (normalizedHeading < 0) normalizedHeading += 360;
     
     if (courseUp) {
-        document.getElementById('nav-map').style.transform = `rotate(-${normalizedHeading}deg)`;
+        const mapEl = document.getElementById('nav-map');
+        mapEl.style.transform = `rotate(-${normalizedHeading}deg)`;
+        mapEl.style.setProperty('--marker-rotation', `${normalizedHeading}deg`);
     }
 
     const tape = document.getElementById('compass-tape');

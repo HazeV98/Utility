@@ -19,13 +19,15 @@ let activeSelection = null;
 let baseOSM, baseSat, nauticLayer;
 let currentMapMode = 0; // 0: Base, 1: Satellitare
 
-// Variabili GPS e Identità
+// Variabili GPS, Identità e Unità Personalizzata
 let watchId = null;
 let speedHistory = [];
 const SMOOTHING_WINDOW_MS = 2000;
 let lastValidHeading = null;
 let currentUserId = null;
 let currentUserName = "Collega";
+let customUnitName = localStorage.getItem('bv_custom_unit') || '';
+let customLine = localStorage.getItem('bv_custom_line') || '';
 
 // Variabili Controllo Vista Mappa
 let followUser = false; 
@@ -106,7 +108,6 @@ export function initUIBateoLive() {
         .bv-stop-icon-inner:hover { scale: 1.4; }
         
         .bv-line-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; border: 2px solid; flex-shrink: 0; box-sizing: border-box; }
-        .other-user-icon { background: #28a745; border: 2.5px solid #ffffff; border-radius: 50%; width: 20px; height: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); transform: rotate(var(--marker-rotation, 0deg)); transition: transform 0.2s linear; }
 
         /* Tasto fluttuante in alto a sinistra (Indietro) */
         .bv-back-btn { position: absolute; top: calc(20px + env(safe-area-inset-top, 0px)); left: 20px; z-index: 1000; width: 45px; height: 45px; border-radius: 50%; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; color: #00529b; }
@@ -253,6 +254,9 @@ export function initUIBateoLive() {
             <div id="bv-fab-layers" class="bv-fab" onclick="cambiaStileBvMappa()" title="Cambia Stile Cartografico">
                 <i class="fa-solid fa-layer-group"></i>
             </div>
+            <div class="bv-fab" onclick="apriBateoLiveUnitModal()" title="Configura Unità e Linea">
+                <i class="fa-solid fa-ship"></i>
+            </div>
             <div class="bv-fab" onclick="apriBateoLiveSearchModal()" title="Cerca Mezzo o Fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
             <div class="bv-fab" onclick="apriBateoLiveFilterModal()" title="Filtra Linee"><i class="fa-solid fa-filter"></i></div>
         </div>
@@ -263,6 +267,22 @@ export function initUIBateoLive() {
                 <button id="bv-close-btn" onclick="closeBateoLiveDrawer()">✖</button>
             </div>
             <div id="bv-drawer-content"></div>
+        </div>
+
+        <!-- Sottomodale Configurazione Unità -->
+        <div id="bv-unit-modal" class="bv-modal-overlay" onclick="chiudiBateoLiveModals(event)">
+            <div class="bv-modal" onclick="event.stopPropagation()">
+                <h3>Configurazione Unità</h3>
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; font-weight: 600; color: #666; display: block; margin-bottom: 4px;">Nome Unità / Mezzo</label>
+                    <input type="text" id="bv-unit-name-input" placeholder="Es. Motonave, Pattuglia..." autocomplete="off">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 12px; font-weight: 600; color: #666; display: block; margin-bottom: 4px;">Linea in servizio (opzionale)</label>
+                    <input type="text" id="bv-unit-line-input" placeholder="Es. 1, 4.1, N..." autocomplete="off">
+                </div>
+                <button class="bv-modal-btn" onclick="salvaConfigurazioneUnita()">Salva</button>
+            </div>
         </div>
 
         <!-- Sottomodale Ricerca -->
@@ -309,6 +329,8 @@ export function initUIBateoLive() {
     window.closeBateoLiveDrawer = closeBateoLiveDrawer;
     window.apriBateoLiveSearchModal = apriBateoLiveSearchModal;
     window.apriBateoLiveFilterModal = apriBateoLiveFilterModal;
+    window.apriBateoLiveUnitModal = apriBateoLiveUnitModal;
+    window.salvaConfigurazioneUnita = salvaConfigurazioneUnita;
     window.eseguiBateoLiveSearch = eseguiBateoLiveSearch;
     window.applicaBateoLiveFilter = applicaBateoLiveFilter;
     window.selezionaBateoLiveSuggestion = selezionaBateoLiveSuggestion;
@@ -405,6 +427,21 @@ export async function avviaMotoreBateoLive(db, auth, userData, isAdmin) {
             fetchAndUpdateBoats();
         }
     }
+}
+
+function apriBateoLiveUnitModal() {
+    document.getElementById('bv-unit-modal').classList.add('active');
+    lockBateoLiveMap();
+    document.getElementById('bv-unit-name-input').value = customUnitName;
+    document.getElementById('bv-unit-line-input').value = customLine;
+}
+
+function salvaConfigurazioneUnita() {
+    customUnitName = document.getElementById('bv-unit-name-input').value.trim();
+    customLine = document.getElementById('bv-unit-line-input').value.trim();
+    localStorage.setItem('bv_custom_unit', customUnitName);
+    localStorage.setItem('bv_custom_line', customLine);
+    chiudiBateoLiveModals({ target: { classList: { contains: () => true } } });
 }
 
 function cambiaStileBvMappa() {
@@ -594,7 +631,8 @@ function inviaBvPosizionePersonale(lat, lon, speed, heading) {
             lon: lon,
             speed: speed,
             heading: heading,
-            nome: currentUserName
+            nome: customUnitName || currentUserName,
+            line: customLine || ''
         })
     }).catch(err => console.error("Errore invio posizione:", err));
 }
@@ -611,16 +649,43 @@ async function sincronizzaPosizioneAltriUtenti() {
             if (uid === currentUserId) return; 
 
             const u = users[uid];
+            const uHeading = u.heading || 0;
+            const uLine = u.line ? u.line.trim() : '';
+
+            let iconHtml = '';
+            let iconSize = [32, 32];
+            let iconAnchor = [16, 16];
+
+            if (uLine) {
+                const c = getLineColors(uLine.toUpperCase());
+                iconHtml = `<div class="bv-boat-icon" style="background-color: ${c.bg}; color: ${c.text}; border: 3px solid #28a745; width: 26px; height: 26px; box-sizing: border-box;">${uLine}</div>`;
+                iconSize = [26, 26];
+                iconAnchor = [13, 13];
+            } else {
+                iconHtml = `
+                <div style="transform: rotate(${uHeading}deg); width:32px; height:32px; display:flex; align-items:center; justify-content:center; filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.5)); transition: transform 0.2s linear;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="#28a745" stroke="white" stroke-width="1.5" stroke-linejoin="round">
+                        <path d="M12 2L4 20L12 17L20 20L12 2Z"/>
+                    </svg>
+                </div>`;
+            }
+
+            const icon = L.divIcon({ html: iconHtml, className: '', iconSize: iconSize, iconAnchor: iconAnchor });
+
+            let popupContent = `<div style="text-align:center;">Velocità: ${parseFloat(u.speed || 0).toFixed(1)} km/h</div>`;
+            if (u.nome && u.nome !== currentUserName) {
+                popupContent = `<div style="text-align:center;"><b>${u.nome}</b><br>Velocità: ${parseFloat(u.speed || 0).toFixed(1)} km/h</div>`;
+            }
+
             if (otherUsersMarkers[uid]) {
                 otherUsersMarkers[uid].setLatLng([u.lat, u.lon]);
+                otherUsersMarkers[uid].setIcon(icon);
                 if (otherUsersMarkers[uid].getPopup()) {
-                    otherUsersMarkers[uid].getPopup().setContent(`<div style="text-align:center;"><b>${u.nome}</b><br>Velocità: ${parseFloat(u.speed).toFixed(1)} km/h</div>`);
+                    otherUsersMarkers[uid].getPopup().setContent(popupContent);
                 }
             } else {
-                const iconHtml = `<div class="other-user-icon"></div>`;
-                const icon = L.divIcon({ html: iconHtml, className: '', iconSize: [20,20], iconAnchor: [10,10] });
                 const marker = L.marker([u.lat, u.lon], { icon: icon }).addTo(map);
-                marker.bindPopup(`<div style="text-align:center;"><b>${u.nome}</b><br>Velocità: ${parseFloat(u.speed).toFixed(1)} km/h</div>`);
+                marker.bindPopup(popupContent);
                 otherUsersMarkers[uid] = marker;
             }
         });
@@ -690,6 +755,7 @@ function chiudiBateoLiveModals(e) {
     if (e && e.target && e.target.classList && !e.target.classList.contains('bv-modal-overlay')) return;
     document.getElementById('bv-search-modal').classList.remove('active');
     document.getElementById('bv-filter-modal').classList.remove('active');
+    document.getElementById('bv-unit-modal').classList.remove('active');
     document.getElementById('bv-search-suggestions').classList.remove('active');
 
     unlockBateoLiveMap();

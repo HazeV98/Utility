@@ -64,6 +64,90 @@ function getLineColors(lineId) {
     return ACTV_COLORS[lineId] || { bg: '#888888', text: '#ffffff', border: '#888888' };
 }
 
+const BATEOLIVE_LINE_ITEMS = [
+    { value: '', label: 'Nessuna linea', color: { bg: '#e7ebf1', text: '#1b2430', border: '#c9d2dd' } },
+    { value: '1', label: 'Linea 1' },
+    { value: '2', label: 'Linea 2' },
+    { value: '2/', label: 'Linea 2/' },
+    { value: '3', label: 'Linea 3' },
+    { value: '4.1', label: 'Linea 4.1' },
+    { value: '4.2', label: 'Linea 4.2' },
+    { value: '5.1', label: 'Linea 5.1' },
+    { value: '5.2', label: 'Linea 5.2' },
+    { value: '6', label: 'Linea 6' },
+    { value: '7', label: 'Linea 7' },
+    { value: '8', label: 'Linea 8' },
+    { value: '9', label: 'Linea 9' },
+    { value: '10', label: 'Linea 10' },
+    { value: '11', label: 'Linea 11' },
+    { value: '12', label: 'Linea 12' },
+    { value: '13', label: 'Linea 13' },
+    { value: '14', label: 'Linea 14' },
+    { value: '15', label: 'Linea 15' },
+    { value: '17', label: 'Linea 17' },
+    { value: '18', label: 'Linea 18' },
+    { value: '20', label: 'Linea 20' },
+    { value: '22', label: 'Linea 22' },
+    { value: 'N', label: 'Linea N' }
+];
+
+function renderBateoLiveLineSelector() {
+    const optionsEl = document.getElementById('bv-unit-line-options');
+    const triggerEl = document.getElementById('bv-unit-line-trigger');
+    const triggerContent = triggerEl && triggerEl.querySelector('.bv-line-select-content');
+
+    if (!optionsEl || !triggerContent) return;
+
+    const selectedItem = BATEOLIVE_LINE_ITEMS.find(item => item.value === customLine) || BATEOLIVE_LINE_ITEMS[0];
+    const selectedColor = selectedItem.color || getLineColors(selectedItem.value);
+
+    triggerContent.innerHTML = `
+        <span class="bv-line-dot-badge" style="background: ${selectedColor.bg}; color: ${selectedColor.text}; border-color: ${selectedColor.border};">${selectedItem.value || '•'}</span>
+        <span>${selectedItem.label}</span>
+    `;
+
+    optionsEl.innerHTML = BATEOLIVE_LINE_ITEMS.map(item => {
+        const color = item.color || getLineColors(item.value);
+        const isSelected = item.value === customLine;
+        return `
+            <button type="button" class="bv-line-option ${isSelected ? 'selected' : ''}" data-value="${item.value}" data-label="${item.label}">
+                <span class="bv-line-dot-badge" style="background: ${color.bg}; color: ${color.text}; border-color: ${color.border};">${item.value || '•'}</span>
+                <span>${item.label}</span>
+            </button>
+        `;
+    }).join('');
+
+    optionsEl.querySelectorAll('.bv-line-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const nextValue = option.dataset.value;
+            customLine = nextValue;
+            renderBateoLiveLineSelector();
+            optionsEl.classList.remove('active');
+            triggerEl.setAttribute('aria-expanded', 'false');
+        });
+    });
+}
+
+function initBateoLiveLineSelectorEvents() {
+    const triggerEl = document.getElementById('bv-unit-line-trigger');
+    const optionsEl = document.getElementById('bv-unit-line-options');
+    if (!triggerEl || !optionsEl) return;
+
+    triggerEl.addEventListener('click', () => {
+        const isOpen = optionsEl.classList.contains('active');
+        optionsEl.classList.toggle('active', !isOpen);
+        triggerEl.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
+    });
+
+    document.addEventListener('click', (event) => {
+        const isInside = event.target.closest('#bv-unit-line-trigger') || event.target.closest('#bv-unit-line-options');
+        if (!isInside) {
+            optionsEl.classList.remove('active');
+            triggerEl.setAttribute('aria-expanded', 'false');
+        }
+    });
+}
+
 const loadScript = (src) => new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) return resolve();
     const script = document.createElement('script');
@@ -181,6 +265,15 @@ export function initUIBateoLive() {
         .bv-search-container { position: relative; flex-shrink: 0; }
         .bv-modal input[type="text"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 15px; box-sizing: border-box; font-family: 'Inter', sans-serif; outline: none; font-size: 14px; }
         .bv-modal input[type="text"]:focus { border-color: #00529b; }
+        .bv-line-select { position: relative; margin-bottom: 15px; }
+        .bv-line-select-trigger { width: 100%; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; font-size: 14px; font-family: 'Inter', sans-serif; color: #222; display: flex; align-items: center; justify-content: space-between; cursor: pointer; box-sizing: border-box; }
+        .bv-line-select-content { display: flex; align-items: center; gap: 10px; overflow: hidden; }
+        .bv-line-select-arrow { color: #666; font-size: 12px; }
+        .bv-line-select-options { display: none; position: absolute; left: 0; right: 0; top: calc(100% + 6px); background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.12); max-height: 250px; overflow-y: auto; z-index: 20; }
+        .bv-line-select-options.active { display: block; }
+        .bv-line-option { width: 100%; border: none; background: white; padding: 10px 12px; text-align: left; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; font-family: 'Inter', sans-serif; color: #222; }
+        .bv-line-option:hover, .bv-line-option.selected { background: #f3f7ff; }
+        .bv-line-dot-badge { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; border: 2px solid; flex-shrink: 0; }
         .bv-modal-btn { background: #00529b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: 'Inter', sans-serif; transition: background 0.2s; flex-shrink: 0; margin-top: 15px; }
         .bv-modal-btn:hover { background: #003666; }
         .bv-modal-btn.error { background: #e53935; }
@@ -279,7 +372,13 @@ export function initUIBateoLive() {
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="font-size: 12px; font-weight: 600; color: #666; display: block; margin-bottom: 4px;">Linea in servizio (opzionale)</label>
-                    <input type="text" id="bv-unit-line-input" placeholder="Es. 1, 4.1, N..." autocomplete="off">
+                    <div class="bv-line-select">
+                        <button type="button" id="bv-unit-line-trigger" class="bv-line-select-trigger" aria-expanded="false">
+                            <span class="bv-line-select-content"></span>
+                            <span class="bv-line-select-arrow">▾</span>
+                        </button>
+                        <div id="bv-unit-line-options" class="bv-line-select-options" role="listbox" aria-label="Seleziona linea"></div>
+                    </div>
                 </div>
                 <button class="bv-modal-btn" onclick="salvaConfigurazioneUnita()">Salva</button>
             </div>
@@ -339,6 +438,9 @@ export function initUIBateoLive() {
     window.toggleBvCenterMap = toggleBvCenterMap;
     window.toggleBvMapRotation = toggleBvMapRotation;
     window.cambiaStileBvMappa = cambiaStileBvMappa;
+
+    initBateoLiveLineSelectorEvents();
+    renderBateoLiveLineSelector();
 
     document.getElementById('bv-search-input').addEventListener('input', async function(e) {
         const q = e.target.value.toLowerCase().trim();
@@ -433,12 +535,11 @@ function apriBateoLiveUnitModal() {
     document.getElementById('bv-unit-modal').classList.add('active');
     lockBateoLiveMap();
     document.getElementById('bv-unit-name-input').value = customUnitName;
-    document.getElementById('bv-unit-line-input').value = customLine;
+    renderBateoLiveLineSelector();
 }
 
 function salvaConfigurazioneUnita() {
     customUnitName = document.getElementById('bv-unit-name-input').value.trim();
-    customLine = document.getElementById('bv-unit-line-input').value.trim();
     localStorage.setItem('bv_custom_unit', customUnitName);
     localStorage.setItem('bv_custom_line', customLine);
     chiudiBateoLiveModals({ target: { classList: { contains: () => true } } });

@@ -89,23 +89,19 @@ export function initUINavigatore() {
     <style>
         #modal-navigatore-main { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: #e0e0e0; display: none; flex-direction: column; overflow: hidden; }
         
-        /* Contenitore Mappa Maggiorato per Rotazione (Evita angoli vuoti) */
         #nav-map-wrapper { flex-grow: 1; position: relative; overflow: hidden; background: #aad3df; z-index: 1; }
         #nav-map { width: 200%; height: 200%; position: absolute; top: -50%; left: -50%; z-index: 1; transition: transform 0.2s linear; }
         
-        /* Stili ACTV BateoLite */
-        .bl-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer; }
-        .bl-stop-icon { background: #ffffff; border: 2.5px solid #00529b; border-radius: 50%; width: 14px; height: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; }
-        .bl-line-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; border: 2px solid; flex-shrink: 0; box-sizing: border-box; }
+        .nav-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer; }
+        .nav-stop-icon { background: #ffffff; border: 2.5px solid #00529b; border-radius: 50%; width: 14px; height: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; }
+        .nav-line-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; border: 2px solid; flex-shrink: 0; box-sizing: border-box; }
         .other-user-icon { background: #28a745; border: 2.5px solid #ffffff; border-radius: 50%; width: 20px; height: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
 
-        /* Controlli UI Mappa */
         .nav-back-btn { position: absolute; top: calc(20px + env(safe-area-inset-top)); left: 20px; z-index: 1000; width: 45px; height: 45px; border-radius: 50%; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; color: #00529b; }
         .nav-fab-container { position: absolute; bottom: 30px; left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; }
         .nav-fab { width: 45px; height: 45px; border-radius: 50%; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; color: #00529b; transition: all 0.2s; }
         .nav-fab.active { background: #00529b; color: white; }
 
-        /* HUD GPS in sovrimpressione */
         .hud-compass-container { position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: 250px; height: 60px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; z-index: 1000; display: flex; align-items: center; justify-content: center; display: none; }
         .compass-tape { position: absolute; top: 10px; left: 0; height: 100%; display: flex; transition: transform 0.15s linear; }
         .compass-mark { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; width: 60px; flex-shrink: 0; }
@@ -121,43 +117,38 @@ export function initUINavigatore() {
 
         .hud-status { position: absolute; top: calc(85px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(0,0,0,0.6); color: white; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; }
         
-        /* Modali Ricerca e Filtri */
-        .bl-submodal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
-        .bl-submodal-overlay.active { display: flex; }
-        .bl-submodal { background: white; padding: 20px; border-radius: 16px; width: 90%; max-width: 320px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; }
-        .bl-search-container { position: relative; flex-shrink: 0; }
-        .bl-submodal input[type="text"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 15px; box-sizing: border-box; outline: none; font-size: 14px; }
-        .bl-btn { background: #00529b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 15px; }
-        .bl-suggestions-dropdown { position: absolute; top: 48px; left: 0; right: 0; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); max-height: 220px; overflow-y: auto; z-index: 10; display: none; border: 1px solid #ddd; }
-        .bl-suggestions-dropdown.active { display: block; }
-        .bl-suggestion-item { padding: 12px 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; }
+        .nav-submodal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+        .nav-submodal-overlay.active { display: flex; }
+        .nav-submodal { background: white; padding: 20px; border-radius: 16px; width: 90%; max-width: 320px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; }
+        .nav-search-container { position: relative; flex-shrink: 0; }
+        .nav-submodal input[type="text"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 15px; box-sizing: border-box; outline: none; font-size: 14px; }
+        .nav-btn { background: #00529b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 15px; }
+        .nav-btn.error { background: #e53935; }
+        .nav-suggestions-dropdown { position: absolute; top: 48px; left: 0; right: 0; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); max-height: 220px; overflow-y: auto; z-index: 10; display: none; border: 1px solid #ddd; }
+        .nav-suggestions-dropdown.active { display: block; }
+        .nav-suggestion-item { padding: 12px 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; }
     </style>
 
     <div id="modal-navigatore-main">
         <div class="nav-back-btn" onclick="chiudiNavigatore()" title="Torna al menu"><i class="fa-solid fa-arrow-left"></i></div>
 
-        <!-- Mappa Contenuta in un Wrapper per consentire la Rotazione -->
         <div id="nav-map-wrapper">
             <div id="nav-map"></div>
         </div>
         
-        <!-- HUD GPS Bussola -->
         <div id="hud-compass" class="hud-compass-container">
             <div class="compass-center-line"></div>
             <div id="compass-tape" class="compass-tape"></div>
         </div>
         
-        <!-- HUD Status -->
         <div id="hud-status" class="hud-status">Acquisizione GPS...</div>
 
-        <!-- HUD GPS Velocità -->
         <div id="hud-speed" class="hud-speed-container">
             <div id="speed-val" class="speed-val">0.0</div>
             <div style="font-size:12px; color:#666; font-weight:bold;">km/h</div>
             <div id="speed-knots" class="speed-knots">0.0 kn</div>
         </div>
 
-        <!-- Tasti Fluttuanti -->
         <div class="nav-fab-container">
             <div id="fab-gps" class="nav-fab" onclick="toggleGPS()" title="Attiva/Disattiva GPS">
                 <i class="fa-solid fa-location-arrow"></i>
@@ -168,27 +159,26 @@ export function initUINavigatore() {
             <div id="fab-rotate" class="nav-fab" onclick="toggleMapRotation()" title="Rotazione Mappa (Rotta in alto)" style="display: none;">
                 <i class="fa-regular fa-compass"></i>
             </div>
-            <div class="nav-fab" onclick="apriBateoLiteSearchModal()" title="Cerca Mezzo o Fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
-            <div class="nav-fab" onclick="apriBateoLiteFilterModal()" title="Filtra Linee"><i class="fa-solid fa-filter"></i></div>
+            <div class="nav-fab" onclick="apriNavigatoreSearchModal()" title="Cerca Mezzo o Fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
+            <div class="nav-fab" onclick="apriNavigatoreFilterModal()" title="Filtra Linee"><i class="fa-solid fa-filter"></i></div>
         </div>
 
-        <!-- Modali (Ricerca e Filtri) -->
-        <div id="bl-search-modal" class="bl-submodal-overlay" onclick="chiudiBateoLiteModals(event)">
-            <div class="bl-submodal" onclick="event.stopPropagation()">
+        <div id="nav-search-modal" class="nav-submodal-overlay" onclick="chiudiNavigatoreModals(event)">
+            <div class="nav-submodal" onclick="event.stopPropagation()">
                 <h3 style="margin-top:0; color:#00529b;">Cerca Mezzo / Fermata</h3>
-                <div class="bl-search-container">
-                    <input type="text" id="bl-search-input" placeholder="Es. Rialto, 4.2..." autocomplete="off">
-                    <div id="bl-search-suggestions" class="bl-suggestions-dropdown"></div>
+                <div class="nav-search-container">
+                    <input type="text" id="nav-search-input" placeholder="Es. Rialto, 4.2..." autocomplete="off">
+                    <div id="nav-search-suggestions" class="nav-suggestions-dropdown"></div>
                 </div>
-                <button id="bl-search-btn" class="bl-btn" onclick="eseguiBateoLiteSearch()">Cerca</button>
+                <button id="nav-search-btn" class="nav-btn" onclick="eseguiNavigatoreSearch()">Cerca</button>
             </div>
         </div>
         
-        <div id="bl-filter-modal" class="bl-submodal-overlay" onclick="chiudiBateoLiteModals(event)">
-            <div class="bl-submodal" onclick="event.stopPropagation()">
+        <div id="nav-filter-modal" class="nav-submodal-overlay" onclick="chiudiNavigatoreModals(event)">
+            <div class="nav-submodal" onclick="event.stopPropagation()">
                 <h3 style="margin-top:0; color:#00529b;">Filtra Linee</h3>
-                <div id="bl-filter-list" style="overflow-y:auto; flex-grow:1; max-height:50vh;"></div>
-                <button class="bl-btn" onclick="applicaBateoLiteFilter()">Applica Filtro</button>
+                <div id="nav-filter-list" style="overflow-y:auto; flex-grow:1; max-height:50vh;"></div>
+                <button class="nav-btn" onclick="applicaNavigatoreFilter()">Applica Filtro</button>
             </div>
         </div>
     </div>
@@ -209,16 +199,51 @@ export function initUINavigatore() {
     }
     tape.innerHTML = tapeHTML;
 
+    // Aggiunta Event Listener per i Suggerimenti di Ricerca
+    document.getElementById('nav-search-input').addEventListener('input', async function(e) {
+        const q = e.target.value.toLowerCase().trim();
+        const suggBox = document.getElementById('nav-search-suggestions');
+        
+        if(q.length < 2) { 
+            suggBox.classList.remove('active'); 
+            return; 
+        }
+        
+        const mStops = globalStops.filter(s => s.name.toLowerCase().includes(q));
+        const mBoats = globalBoats.filter(b => b.line.toLowerCase() === q || b.label.toLowerCase().includes(q));
+        
+        let html = '';
+        
+        mBoats.slice(0, 4).forEach(b => {
+            const c = getLineColors(b.line);
+            const dotHtml = `<div class="nav-line-dot" style="background-color: ${c.bg}; color: ${c.text}; border-color: ${c.border}; width: 18px; height: 18px; font-size: 8px;">${b.line}</div>`;
+            html += `<div class="nav-suggestion-item" onclick="selezionaNavigatoreSuggestion('boat', '${b.id}')">
+                        ${dotHtml} <span>${b.label}</span>
+                     </div>`;
+        });
+        
+        mStops.slice(0, 4).forEach(s => {
+            html += `<div class="nav-suggestion-item" onclick="selezionaNavigatoreSuggestion('stop', '${s.id}')">
+                        ⚓ <span>${s.name}</span>
+                     </div>`;
+        });
+        
+        if(!html) html = `<div class="nav-suggestion-item" style="color:#999; justify-content: center;">Nessun risultato trovato</div>`;
+        
+        suggBox.innerHTML = html;
+        suggBox.classList.add('active');
+    });
+
     window.chiudiNavigatore = chiudiNavigatore;
     window.toggleGPS = toggleGPS;
     window.toggleCenterMap = toggleCenterMap;
     window.toggleMapRotation = toggleMapRotation;
-    window.chiudiBateoLiteModals = chiudiBateoLiteModals;
-    window.apriBateoLiteSearchModal = apriBateoLiteSearchModal;
-    window.apriBateoLiteFilterModal = openBateoLiteFilterModalInternal;
-    window.eseguiBateoLiteSearch = eseguiBateoLiteSearch;
-    window.applicaBateoLiteFilter = applicaBateoLiteFilter;
-    window.selezionaBateoLiteSuggestion = selezionaBateoLiteSuggestion;
+    window.chiudiNavigatoreModals = chiudiNavigatoreModals;
+    window.apriNavigatoreSearchModal = apriNavigatoreSearchModal;
+    window.apriNavigatoreFilterModal = apriNavigatoreFilterModal;
+    window.eseguiNavigatoreSearch = eseguiNavigatoreSearch;
+    window.applicaNavigatoreFilter = applicaNavigatoreFilter;
+    window.selezionaNavigatoreSuggestion = selezionaNavigatoreSuggestion;
 }
 
 // ==========================================
@@ -251,7 +276,6 @@ export async function avviaNavigatore(db, auth, userData) {
 
         oms = new OverlappingMarkerSpiderfier(map, { keepSpiderfied: true, legWeight: 2, nearbyDistance: 35 });
 
-        // Disattiva il follow-user se l'utente trascina la mappa manualmente (e non è in modalità rotta in alto)
         map.on('dragstart', () => {
             if (followUser && !courseUp) {
                 toggleCenterMap(false);
@@ -279,7 +303,6 @@ function chiudiNavigatore() {
     document.getElementById('fab-rotate').style.display = 'none';
     document.getElementById('fab-gps').classList.remove('active');
     
-    // Ripristina la mappa alla normalità alla chiusura
     courseUp = false;
     followUser = false;
     document.getElementById('nav-map').style.transform = `rotate(0deg)`;
@@ -297,7 +320,6 @@ function toggleCenterMap(forceState = null) {
         map.setView(userMarker.getLatLng());
     }
     
-    // Se disattiviamo il centro mappa, forziamo la disattivazione anche della bussola (course up)
     if (!followUser && courseUp) {
         toggleMapRotation(false);
     }
@@ -311,15 +333,12 @@ function toggleMapRotation(forceState = null) {
     const mapEl = document.getElementById('nav-map');
 
     if (courseUp) {
-        // Disattiva il drag manuale per non creare conflitti con l'orientamento
         if (map) map.dragging.disable();
-        // Attiva automaticamente il "Segui Posizione"
         if (!followUser) toggleCenterMap(true);
         
         let h = lastValidHeading || 0;
         mapEl.style.transform = `rotate(-${h}deg)`;
     } else {
-        // Ripristina rotazione e controlli
         if (map) map.dragging.enable();
         mapEl.style.transform = `rotate(0deg)`;
     }
@@ -337,7 +356,6 @@ function toggleGPS() {
     const fabRotate = document.getElementById('fab-rotate');
 
     if (fab.classList.contains('active')) {
-        // Disattiva GPS
         fab.classList.remove('active');
         hudCompass.style.display = 'none';
         hudSpeed.style.display = 'none';
@@ -354,7 +372,6 @@ function toggleGPS() {
             userMarker = null;
         }
     } else {
-        // Attiva GPS
         fab.classList.add('active');
         hudCompass.style.display = 'flex';
         hudSpeed.style.display = 'block';
@@ -362,7 +379,7 @@ function toggleGPS() {
         fabCenter.style.display = 'flex';
         fabRotate.style.display = 'flex';
         
-        toggleCenterMap(true); // Inizia centrando subito la mappa
+        toggleCenterMap(true); 
         speedHistory = [];
         
         watchId = navigator.geolocation.watchPosition(elaboraPosizioneGPS, (err) => {
@@ -378,7 +395,6 @@ function elaboraPosizioneGPS(position) {
     
     document.getElementById('hud-status').style.display = 'none'; 
     
-    // Calcolo Media Velocità
     let rawSpeedMs = coords.speed || 0;
     speedHistory.push({ speed: rawSpeedMs, time: now });
     speedHistory = speedHistory.filter(entry => now - entry.time <= SMOOTHING_WINDOW_MS);
@@ -390,14 +406,12 @@ function elaboraPosizioneGPS(position) {
     document.getElementById('speed-val').textContent = speedKmh.toFixed(1);
     document.getElementById('speed-knots').textContent = `${speedNodi.toFixed(1)} kn`;
 
-    // Aggiornamento Direzione e Marker SVG
     if (coords.heading !== null && (rawSpeedMs >= 0.5 || lastValidHeading === null)) {
         lastValidHeading = coords.heading;
     }
     
     let validHeading = lastValidHeading || 0;
 
-    // Vettore utente: un'icona direzionale ruotata tramite CSS in base al true heading
     const svgArrow = `
     <div style="transform: rotate(${validHeading}deg); width:32px; height:32px; display:flex; align-items:center; justify-content:center; filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.5)); transition: transform 0.2s linear;">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="#00529b" stroke="white" stroke-width="1.5" stroke-linejoin="round">
@@ -418,7 +432,6 @@ function elaboraPosizioneGPS(position) {
     
     if (followUser) map.setView([coords.latitude, coords.longitude]);
 
-    // Ruota la mappa (Course Up) e aggiorna la bussola in alto
     let normalizedHeading = validHeading % 360;
     if (normalizedHeading < 0) normalizedHeading += 360;
     
@@ -489,14 +502,14 @@ async function sincronizzaPosizioneAltriUtenti() {
 }
 
 // ==========================================
-// LOGICA ACTV (Mantenuta inalterata)
+// LOGICA ACTV
 // ==========================================
 async function loadStops() {
     try {
         const res = await fetch(`${API_URL}/api/stops`);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         globalStops = await res.json();
-        const stopIcon = L.divIcon({ className: 'bl-stop-icon', iconSize: [14, 14], iconAnchor: [7, 7] });
+        const stopIcon = L.divIcon({ className: 'nav-stop-icon', iconSize: [14, 14], iconAnchor: [7, 7] });
         globalStops.forEach(stop => {
             const marker = L.marker([stop.lat, stop.lon], { icon: stopIcon }).addTo(map);
             marker.bindPopup(`<div style="font-family:'Inter', sans-serif; font-weight:600; text-align:center; font-size:13px;">⚓ ${stop.name}</div>`);
@@ -521,8 +534,7 @@ async function fetchAndUpdateBoats() {
                 }
                 const c = boat.line === '-' ? { bg: '#000000', text: '#ffffff', border: '#ffffff' } : getLineColors(boat.line.toUpperCase());
                 
-                // Opzionale: Anche l'icona dei vaporetti potrebbe avere una contro-rotazione in futuro
-                const iconHtml = `<div class="bl-boat-icon" style="background-color: ${c.bg}; color: ${c.text}; border: 2.5px solid ${c.border}; width: 26px; height: 26px; box-sizing: border-box;">${boat.line}</div>`;
+                const iconHtml = `<div class="nav-boat-icon" style="background-color: ${c.bg}; color: ${c.text}; border: 2.5px solid ${c.border}; width: 26px; height: 26px; box-sizing: border-box;">${boat.line}</div>`;
                 const customBoatIcon = L.divIcon({ html: iconHtml, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
                 
                 const popupContent = `<div style="text-align:center; padding:2px;"><div style="font-size:11px; color:#666;">Linea <strong style="font-size:14px;">${boat.line}</strong></div><div style="font-weight:600; font-size:14px; margin-top:6px;">${boat.label}</div></div>`;
@@ -542,38 +554,59 @@ async function fetchAndUpdateBoats() {
     } catch (error) { console.error("Errore Vaporetti:", error); }
 }
 
-function chiudiBateoLiteModals(e) { 
-    if (e && e.target && e.target.classList && !e.target.classList.contains('bl-submodal-overlay')) return;
-    document.getElementById('bl-search-modal').classList.remove('active'); 
-    document.getElementById('bl-filter-modal').classList.remove('active'); 
-    document.getElementById('bl-search-suggestions').classList.remove('active');
+function chiudiNavigatoreModals(e) { 
+    if (e && e.target && e.target.classList && !e.target.classList.contains('nav-submodal-overlay')) return;
+    document.getElementById('nav-search-modal').classList.remove('active'); 
+    document.getElementById('nav-filter-modal').classList.remove('active'); 
+    document.getElementById('nav-search-suggestions').classList.remove('active');
 }
-function apriBateoLiteSearchModal() { document.getElementById('bl-search-modal').classList.add('active'); }
-function openBateoLiteFilterModalInternal() { 
-    document.getElementById('bl-filter-modal').classList.add('active'); 
+function apriNavigatoreSearchModal() { document.getElementById('nav-search-modal').classList.add('active'); }
+function apriNavigatoreFilterModal() { 
+    document.getElementById('nav-filter-modal').classList.add('active'); 
     try {
         const lines = [...new Set(globalBoats.map(b => b.line).filter(l => l !== '-'))].sort((a,b) => a.localeCompare(b, undefined, {numeric: true}));
         let html = '';
         lines.forEach(line => {
             const isChecked = currentFilterLines.length === 0 || currentFilterLines.includes(line) ? 'checked' : '';
-            html += `<div><label><input type="checkbox" value="${line}" class="bl-line-filter-cb" ${isChecked}> Linea ${line}</label></div><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">`;
+            html += `<div><label><input type="checkbox" value="${line}" class="nav-line-filter-cb" ${isChecked}> Linea ${line}</label></div><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">`;
         });
-        document.getElementById('bl-filter-list').innerHTML = html;
+        document.getElementById('nav-filter-list').innerHTML = html;
     } catch(e) {}
 }
-function applicaBateoLiteFilter() {
-    const checkboxes = document.querySelectorAll('.bl-line-filter-cb');
+function applicaNavigatoreFilter() {
+    const checkboxes = document.querySelectorAll('.nav-line-filter-cb');
     const allChecked = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
     currentFilterLines = (allChecked.length === checkboxes.length || allChecked.length === 0) ? [] : allChecked;
-    chiudiBateoLiteModals({target: {classList: {contains: ()=>true}}});
+    chiudiNavigatoreModals({target: {classList: {contains: ()=>true}}});
     Object.keys(boatMarkers).forEach(id => { oms.removeMarker(boatMarkers[id]); map.removeLayer(boatMarkers[id]); delete boatMarkers[id]; });
     fetchAndUpdateBoats(); 
 }
-function eseguiBateoLiteSearch() { /* Da implementare come nel file nativo */ }
-function selezionaBateoLiteSuggestion(type, id) {
-    chiudiBateoLiteModals({target: {classList: {contains: ()=>true}}});
+
+function eseguiNavigatoreSearch() {
+    const query = document.getElementById('nav-search-input').value.toLowerCase().trim();
+    const btn = document.getElementById('nav-search-btn');
     
-    // Disattiva la visuale fissa se salti a un target per permettere l'esplorazione
+    if(!query) return;
+    
+    const suggBox = document.getElementById('nav-search-suggestions');
+    const items = suggBox.querySelectorAll('.nav-suggestion-item');
+    
+    if (items.length > 0 && items[0].innerText !== 'Nessun risultato trovato') {
+        items[0].click();
+        return;
+    }
+    
+    btn.innerText = "Nessun Risultato";
+    btn.classList.add("error");
+    setTimeout(() => {
+        btn.innerText = "Cerca";
+        btn.classList.remove("error");
+    }, 2000);
+}
+
+function selezionaNavigatoreSuggestion(type, id) {
+    chiudiNavigatoreModals({target: {classList: {contains: ()=>true}}});
+    
     toggleCenterMap(false);
 
     if (type === 'stop') {
@@ -584,4 +617,3 @@ function selezionaBateoLiteSuggestion(type, id) {
         if(boat) { map.setView([boat.lat, boat.lon], 16); if (boatMarkers[boat.id]) boatMarkers[boat.id].openPopup(); }
     }
 }
- 

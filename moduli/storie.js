@@ -8,7 +8,6 @@ export function initUIStorie() {
     
     const uiHTML = `
     <style>
-        /* Stili basati su bacheca.js per mantenere la coerenza */
         .storie-header { display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
         .storie-top-bar { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         
@@ -159,7 +158,6 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 document.getElementById('storie-edit-id').value = "";
                 document.getElementById('storie-in-testo').value = "";
                 
-                // Precompila il nome visivo di default se l'utente non vuole l'anonimo
                 let defaultNome = userDataPrivate.nome || "Utente";
                 document.getElementById('storie-in-nome').value = defaultNome;
                 document.getElementById('storie-in-anonimo').checked = false;
@@ -185,12 +183,11 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             }
 
             try {
-                // Prepariamo i dati reali per gli admin
                 const datiReali = {
                     nome: userDataPrivate.nome || "",
                     cognome: userDataPrivate.cognome || "",
                     matricola: userDataPrivate.matricola || "",
-                    progressivo: userDataPrivate.progressivo || "" // Omonimia
+                    progressivo: userDataPrivate.progressivo || ""
                 };
 
                 const postData = {
@@ -199,7 +196,7 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                     nomeVisualizzato: isAnon ? "Anonimo" : nomeVis,
                     autoreReale: datiReali,
                     testo: testo,
-                    timestamp: idModifica ? undefined : serverTimestamp() // Aggiorniamo il timestamp solo se nuovo? Scegliamo di mantenerlo originale in modifica.
+                    timestamp: idModifica ? undefined : serverTimestamp()
                 };
 
                 if (idModifica) {
@@ -233,7 +230,6 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
         },
 
         esportaPDF: function() {
-            // Carica dinamicamente html2pdf.js se non presente
             if (typeof html2pdf === 'undefined') {
                 const script = document.createElement('script');
                 script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
@@ -250,42 +246,37 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 return;
             }
 
-            // Creiamo un div temporaneo formattato a libro per il PDF
             const pdfContainer = document.createElement('div');
             pdfContainer.style.padding = "40px";
             pdfContainer.style.fontFamily = "Georgia, serif";
             pdfContainer.style.color = "#333";
 
-            // Copertina
-            let htmlPDF = \`
+            let htmlPDF = `
                 <div style="text-align: center; margin-top: 300px;">
                     <h1 style="font-size: 40px; color: #2c3e50; margin-bottom: 10px;">Storie dal TPL</h1>
                     <h3 style="font-size: 20px; color: #7f8c8d; font-weight: normal;">Raccolta di aneddoti, avventure e disavventure vissute dai lavoratori del Trasporto Pubblico.</h3>
-                    <p style="margin-top: 50px; font-size: 14px; color: #95a5a6;">Generato il: \${new Date().toLocaleDateString('it-IT')}</p>
+                    <p style="margin-top: 50px; font-size: 14px; color: #95a5a6;">Generato il: ${new Date().toLocaleDateString('it-IT')}</p>
                 </div>
                 <div class="html2pdf__page-break"></div>
-            \`;
+            `;
 
-            // Aggiunta delle storie
-            // Ordiniamo dalla più vecchia alla più nuova per senso di lettura del "libro"
             const storieOrdinate = [...posts].reverse(); 
 
             storieOrdinate.forEach((p, index) => {
                 let dateStr = p.timestamp ? p.timestamp.toDate().toLocaleDateString('it-IT') : "";
-                htmlPDF += \`
+                htmlPDF += `
                     <div style="margin-bottom: 40px; page-break-inside: avoid;">
                         <h4 style="font-size: 18px; color: #2980b9; margin-bottom: 5px; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px;">
-                            Racconto di \${p.nomeVisualizzato}
+                            Racconto di ${p.nomeVisualizzato}
                         </h4>
-                        <p style="font-size: 12px; color: #7f8c8d; margin-bottom: 15px;">\${dateStr}</p>
-                        <p style="font-size: 15px; line-height: 1.8; text-align: justify; white-space: pre-wrap;">\${p.testo}</p>
+                        <p style="font-size: 12px; color: #7f8c8d; margin-bottom: 15px;">${dateStr}</p>
+                        <p style="font-size: 15px; line-height: 1.8; text-align: justify; white-space: pre-wrap;">${p.testo}</p>
                     </div>
-                \`;
+                `;
             });
 
             pdfContainer.innerHTML = htmlPDF;
 
-            // Opzioni di esportazione
             const opt = {
                 margin:       10,
                 filename:     'Storie_TPL.pdf',
@@ -294,7 +285,6 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // Avvia la generazione
             html2pdf().set(opt).from(pdfContainer).save();
         }
     };
@@ -311,36 +301,35 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             const isOwner = p.autoreId === currentUserUid;
             let dateStr = p.timestamp ? p.timestamp.toDate().toLocaleString('it-IT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "Pubblicata ora";
 
-            // Creazione blocco dati admin
             let adminBlock = '';
             if (isAdmin && p.autoreReale) {
-                adminBlock = \`
+                adminBlock = `
                 <div class="storie-admin-data" style="display: block;">
-                    <i class="fa-solid fa-shield-halved"></i> <b>Admin Info:</b> \${p.autoreReale.cognome} \${p.autoreReale.nome} | Matr: \${p.autoreReale.matricola} | Om: \${p.autoreReale.progressivo || 'N/A'}
-                </div>\`;
+                    <i class="fa-solid fa-shield-halved"></i> <b>Admin Info:</b> ${p.autoreReale.cognome} ${p.autoreReale.nome} | Matr: ${p.autoreReale.matricola} | Om: ${p.autoreReale.progressivo || 'N/A'}
+                </div>`;
             }
 
-            html += \`
+            html += `
             <div class="storie-post">
                 <div class="storie-post-header">
                     <span class="storie-post-author">
-                        <i class="fa-solid \${p.isAnonimo ? 'fa-user-secret' : 'fa-user-pen'}" style="margin-right:5px;"></i> \${p.nomeVisualizzato}
+                        <i class="fa-solid ${p.isAnonimo ? 'fa-user-secret' : 'fa-user-pen'}" style="margin-right:5px;"></i> ${p.nomeVisualizzato}
                     </span>
-                    <span class="storie-post-date">\${dateStr}</span>
+                    <span class="storie-post-date">${dateStr}</span>
                 </div>
                 
-                \${adminBlock}
+                ${adminBlock}
                 
-                <div class="storie-post-body">\${p.testo}</div>
+                <div class="storie-post-body">${p.testo}</div>
                 
-                \${(isOwner || isAdmin) ? \`
+                ${(isOwner || isAdmin) ? `
                 <div class="storie-actions">
-                    \${isOwner ? \`<button class="btn-storie btn-storie-ed" onclick="window.storieAPI.gestisciStoria('\${p.id}', 'edit')" title="Modifica"><i class="fa-solid fa-pen"></i></button>\` : ''}
-                    <button class="btn-storie btn-storie-del" onclick="window.storieAPI.gestisciStoria('\${p.id}', 'delete')" title="Elimina"><i class="fa-solid fa-trash"></i></button>
+                    ${isOwner ? `<button class="btn-storie btn-storie-ed" onclick="window.storieAPI.gestisciStoria('${p.id}', 'edit')" title="Modifica"><i class="fa-solid fa-pen"></i></button>` : ''}
+                    <button class="btn-storie btn-storie-del" onclick="window.storieAPI.gestisciStoria('${p.id}', 'delete')" title="Elimina"><i class="fa-solid fa-trash"></i></button>
                 </div>
-                \` : ''}
+                ` : ''}
             </div>
-            \`;
+            `;
         });
         feed.innerHTML = html;
     }

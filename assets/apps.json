@@ -394,5 +394,19 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
+    },
+    {
+        "id": "storie",
+        "label": "Storie",
+        "icon": "fa-solid fa-book",
+        "defaultColor": "#fd7e14",
+        "conditions": [
+            "admin"
+        ],
+        "excludeConditions": [],
+        "isModule": true,
+        "moduleId": "storie",
+        "moduleName": "storie",
+        "splitModule": false
     }
 ]

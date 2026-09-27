@@ -1,0 +1,365 @@
+import { doc, getDoc, collection, getDocs, query, addDoc, updateDoc, deleteDoc, orderBy, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// ==========================================
+// 1. INIEZIONE UI STORIE
+// ==========================================
+export function initUIStorie() {
+    if (document.getElementById('modal-storie-main')) return;
+    
+    const uiHTML = `
+    <style>
+        /* Stili basati su bacheca.js per mantenere la coerenza */
+        .storie-header { display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        .storie-top-bar { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        
+        .btn-icon-only { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--border-color); background: var(--surface); color: var(--text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.2s; flex-shrink: 0; font-size: 16px; }
+        .btn-icon-only:hover { background: rgba(0,0,0,0.05); transform: translateY(-1px); }
+        .btn-pdf { color: #e74c3c; border-color: rgba(231, 76, 60, 0.3); background: rgba(231, 76, 60, 0.05); }
+        
+        .input-storie { width: 100%; padding: 12px 15px; margin-bottom: 15px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--surface); color: var(--text-main); outline: none; font-family: inherit; font-size: 14px; transition: all 0.2s ease-in-out; box-sizing: border-box; }
+        .input-storie:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2); }
+        .input-storie:disabled { opacity: 0.6; cursor: not-allowed; background: rgba(0,0,0,0.05); }
+        
+        .storie-post { background: var(--surface); padding: 18px; border-radius: 16px; margin-bottom: 15px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); }
+        .storie-post-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px; }
+        .storie-post-author { font-size: 14px; font-weight: 900; color: var(--primary); }
+        .storie-post-date { font-size: 11px; color: var(--text-muted); }
+        
+        .storie-admin-data { margin-top: 5px; padding: 8px; background: rgba(220, 53, 69, 0.05); border-left: 3px solid var(--danger); border-radius: 4px; font-size: 12px; color: var(--text-main); display: none; }
+        
+        .storie-post-body { font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: var(--text-main); font-style: italic; }
+        
+        .storie-actions { display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px; }
+        
+        .btn-storie { padding: 8px 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: opacity 0.2s; }
+        .btn-storie:hover { opacity: 0.8; }
+        .btn-storie-ed { background: rgba(243, 156, 18, 0.15); color: #f39c12; }
+        .btn-storie-del { background: rgba(220, 53, 69, 0.15); color: var(--danger); }
+        
+        .anon-divider { display: flex; align-items: center; text-align: center; margin: 5px 0 15px 0; color: var(--text-muted); font-size: 12px; font-weight: bold; }
+        .anon-divider::before, .anon-divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--border-color); }
+        .anon-divider:not(:empty)::before { margin-right: .5em; }
+        .anon-divider:not(:empty)::after { margin-left: .5em; }
+        
+        .checkbox-wrapper { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; font-size: 14px; font-weight: bold; color: var(--text-main); cursor: pointer; }
+        .checkbox-wrapper input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+    </style>
+
+    <div id="modal-storie-main" class="modal-overlay" style="display:none;" onclick="window.storieAPI.chiudiSfondo(event, 'modal-storie-main')">
+        <div class="modal-content" style="max-width: 600px; height: 90vh; display: flex; flex-direction: column; padding: 25px; position: relative;">
+            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-storie-main').style.display='none'"></i>
+            
+            <h3 style="margin-top: 0; color: var(--primary); font-weight: 900; margin-bottom: 15px; display:flex; align-items:center; gap:10px;">
+                <i class="fa-solid fa-book-open"></i> Storie dal TPL
+            </h3>
+
+            <div class="storie-header">
+                <div class="storie-top-bar">
+                    <button class="btn-icon-only btn-pdf" onclick="window.storieAPI.esportaPDF()" title="Esporta come Libro PDF">
+                        <i class="fa-solid fa-file-pdf"></i>
+                    </button>
+                    <button class="btn-icon-only" style="color: var(--primary); border-color: var(--primary);" onclick="window.storieAPI.apriPubblica()" title="Aggiungi Storia">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="storie-feed" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; width: 100%; padding-right: 5px;">
+                <div style="text-align:center; padding: 40px;"><i class="fa-solid fa-spinner fa-spin" style="color: var(--primary); font-size: 30px;"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-storie-welcome" class="modal-overlay" style="display:none; z-index: 10001; background: rgba(0,0,0,0.85);">
+        <div class="modal-content" style="max-width: 420px; text-align: center; padding: 40px 30px;">
+            <i class="fa-solid fa-book-journal-whills" style="font-size: 55px; color: var(--primary); margin-bottom: 25px;"></i>
+            <h2 style="margin-top:0; font-weight: 900;">Raccolta Storie TPL</h2>
+            <p style="margin-bottom: 25px; color: var(--text-main); line-height: 1.6; font-size: 15px;">
+                Lavorando nel Trasporto Pubblico Locale ne vediamo e sentiamo di tutti i colori.<br><br>
+                Questo è il posto dove raccogliere aneddoti, situazioni assurde o divertenti vissute durante i turni. Un giorno potremo stamparci un libro! Puoi scegliere di pubblicare col tuo nome o in totale anonimato.
+            </p>
+            <button class="btn-action" style="width: 100%; font-size: 16px; border-radius: 12px; padding: 14px;" onclick="window.storieAPI.accettaBenvenuto()">Inizia a Leggere</button>
+        </div>
+    </div>
+
+    <div id="modal-storie-publish" class="modal-overlay" style="display:none; z-index: 9999;">
+        <div class="modal-content" style="max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 25px; position: relative;">
+            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-storie-publish').style.display='none'"></i>
+            <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; margin-bottom: 20px;"><span id="storie-pub-title">Scrivi una Storia</span></h3>
+            
+            <textarea id="storie-in-testo" class="input-storie" placeholder="C'era una volta durante il turno..." rows="8" style="resize: vertical;"></textarea>
+            
+            <input type="text" id="storie-in-nome" class="input-storie" placeholder="Nome Visualizzato (es. Il Marinaio Mascherato)">
+            
+            <div class="anon-divider">OPPURE</div>
+            
+            <label class="checkbox-wrapper">
+                <input type="checkbox" id="storie-in-anonimo" onchange="window.storieAPI.toggleAnonimo()">
+                Pubblica in Anonimo
+            </label>
+            
+            <input type="hidden" id="storie-edit-id">
+            <button class="btn-action" style="width: 100%; margin-top: 5px; border-radius: 12px; padding: 14px; font-size: 15px;" onclick="window.storieAPI.salvaStoria()">Pubblica Storia</button>
+        </div>
+    </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', uiHTML);
+}
+
+// ==========================================
+// 2. MOTORE LOGICO STORIE
+// ==========================================
+export function avviaMotoreStorie(db, auth, userDataPrivate) {
+    let posts = [];
+    let isAdmin = userDataPrivate?.ruolo === "admin";
+    let currentUserUid = auth.currentUser.uid;
+    let unsubscribeStorie = null;
+
+    window.storieAPI = {
+        chiudiSfondo: function(event, id) {
+            if (event.target.id === id) document.getElementById(id).style.display = 'none';
+        },
+        
+        accettaBenvenuto: async function() {
+            try {
+                await updateDoc(doc(db, "utenti", currentUserUid), { storieWelcomeSeen: true });
+                document.getElementById('modal-storie-welcome').style.display = 'none';
+                userDataPrivate.storieWelcomeSeen = true;
+            } catch (e) { console.error("Errore salvataggio benvenuto", e); }
+        },
+
+        toggleAnonimo: function() {
+            const isAnon = document.getElementById('storie-in-anonimo').checked;
+            const inputNome = document.getElementById('storie-in-nome');
+            if (isAnon) {
+                inputNome.value = "";
+                inputNome.disabled = true;
+            } else {
+                inputNome.disabled = false;
+            }
+        },
+
+        apriPubblica: function(postToEdit = null) {
+            if (postToEdit) {
+                document.getElementById('storie-pub-title').innerText = "Modifica Storia";
+                document.getElementById('storie-edit-id').value = postToEdit.id;
+                document.getElementById('storie-in-testo').value = postToEdit.testo;
+                
+                if (postToEdit.isAnonimo) {
+                    document.getElementById('storie-in-anonimo').checked = true;
+                    document.getElementById('storie-in-nome').value = "";
+                    document.getElementById('storie-in-nome').disabled = true;
+                } else {
+                    document.getElementById('storie-in-anonimo').checked = false;
+                    document.getElementById('storie-in-nome').value = postToEdit.nomeVisualizzato;
+                    document.getElementById('storie-in-nome').disabled = false;
+                }
+            } else {
+                document.getElementById('storie-pub-title').innerText = "Nuova Storia";
+                document.getElementById('storie-edit-id').value = "";
+                document.getElementById('storie-in-testo').value = "";
+                
+                // Precompila il nome visivo di default se l'utente non vuole l'anonimo
+                let defaultNome = userDataPrivate.nome || "Utente";
+                document.getElementById('storie-in-nome').value = defaultNome;
+                document.getElementById('storie-in-anonimo').checked = false;
+                document.getElementById('storie-in-nome').disabled = false;
+            }
+
+            document.getElementById('modal-storie-publish').style.display = 'flex';
+        },
+
+        salvaStoria: async function() {
+            const isAnon = document.getElementById('storie-in-anonimo').checked;
+            let nomeVis = document.getElementById('storie-in-nome').value.trim();
+            const testo = document.getElementById('storie-in-testo').value.trim();
+            const idModifica = document.getElementById('storie-edit-id').value;
+
+            if (!testo) {
+                alert("Non puoi pubblicare una storia vuota.");
+                return;
+            }
+            if (!isAnon && !nomeVis) {
+                alert("Inserisci un nome visualizzato o scegli di pubblicare in anonimo.");
+                return;
+            }
+
+            try {
+                // Prepariamo i dati reali per gli admin
+                const datiReali = {
+                    nome: userDataPrivate.nome || "",
+                    cognome: userDataPrivate.cognome || "",
+                    matricola: userDataPrivate.matricola || "",
+                    progressivo: userDataPrivate.progressivo || "" // Omonimia
+                };
+
+                const postData = {
+                    autoreId: currentUserUid,
+                    isAnonimo: isAnon,
+                    nomeVisualizzato: isAnon ? "Anonimo" : nomeVis,
+                    autoreReale: datiReali,
+                    testo: testo,
+                    timestamp: idModifica ? undefined : serverTimestamp() // Aggiorniamo il timestamp solo se nuovo? Scegliamo di mantenerlo originale in modifica.
+                };
+
+                if (idModifica) {
+                    await updateDoc(doc(db, "storie", idModifica), {
+                        isAnonimo: isAnon,
+                        nomeVisualizzato: isAnon ? "Anonimo" : nomeVis,
+                        testo: testo
+                    });
+                } else {
+                    await addDoc(collection(db, "storie"), postData);
+                }
+                
+                document.getElementById('modal-storie-publish').style.display = 'none';
+            } catch (e) {
+                console.error("Errore salvataggio storia", e);
+                alert("Errore durante il salvataggio.");
+            }
+        },
+
+        gestisciStoria: async function(id, act) {
+            if (act === 'edit') {
+                const post = posts.find(p => p.id === id);
+                if(post) this.apriPubblica(post);
+            } else if (act === 'delete') {
+                if(confirm("Sei sicuro di voler eliminare questa storia per sempre?")) {
+                    try {
+                        await deleteDoc(doc(db, "storie", id));
+                    } catch (e) { console.error("Errore eliminazione storia", e); }
+                }
+            }
+        },
+
+        esportaPDF: function() {
+            // Carica dinamicamente html2pdf.js se non presente
+            if (typeof html2pdf === 'undefined') {
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+                script.onload = () => this.generaDocumento();
+                document.head.appendChild(script);
+            } else {
+                this.generaDocumento();
+            }
+        },
+
+        generaDocumento: function() {
+            if (posts.length === 0) {
+                alert("Non ci sono storie da esportare.");
+                return;
+            }
+
+            // Creiamo un div temporaneo formattato a libro per il PDF
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.padding = "40px";
+            pdfContainer.style.fontFamily = "Georgia, serif";
+            pdfContainer.style.color = "#333";
+
+            // Copertina
+            let htmlPDF = \`
+                <div style="text-align: center; margin-top: 300px;">
+                    <h1 style="font-size: 40px; color: #2c3e50; margin-bottom: 10px;">Storie dal TPL</h1>
+                    <h3 style="font-size: 20px; color: #7f8c8d; font-weight: normal;">Raccolta di aneddoti, avventure e disavventure vissute dai lavoratori del Trasporto Pubblico.</h3>
+                    <p style="margin-top: 50px; font-size: 14px; color: #95a5a6;">Generato il: \${new Date().toLocaleDateString('it-IT')}</p>
+                </div>
+                <div class="html2pdf__page-break"></div>
+            \`;
+
+            // Aggiunta delle storie
+            // Ordiniamo dalla più vecchia alla più nuova per senso di lettura del "libro"
+            const storieOrdinate = [...posts].reverse(); 
+
+            storieOrdinate.forEach((p, index) => {
+                let dateStr = p.timestamp ? p.timestamp.toDate().toLocaleDateString('it-IT') : "";
+                htmlPDF += \`
+                    <div style="margin-bottom: 40px; page-break-inside: avoid;">
+                        <h4 style="font-size: 18px; color: #2980b9; margin-bottom: 5px; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px;">
+                            Racconto di \${p.nomeVisualizzato}
+                        </h4>
+                        <p style="font-size: 12px; color: #7f8c8d; margin-bottom: 15px;">\${dateStr}</p>
+                        <p style="font-size: 15px; line-height: 1.8; text-align: justify; white-space: pre-wrap;">\${p.testo}</p>
+                    </div>
+                \`;
+            });
+
+            pdfContainer.innerHTML = htmlPDF;
+
+            // Opzioni di esportazione
+            const opt = {
+                margin:       10,
+                filename:     'Storie_TPL.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Avvia la generazione
+            html2pdf().set(opt).from(pdfContainer).save();
+        }
+    };
+
+    function renderFeed(listaPosts) {
+        const feed = document.getElementById('storie-feed');
+        if (listaPosts.length === 0) {
+            feed.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted); font-weight:bold;"><i class="fa-solid fa-book" style="font-size:40px; margin-bottom: 15px; opacity:0.5; display:block;"></i> Nessuna storia ancora pubblicata.</div>';
+            return;
+        }
+
+        let html = '';
+        listaPosts.forEach(p => {
+            const isOwner = p.autoreId === currentUserUid;
+            let dateStr = p.timestamp ? p.timestamp.toDate().toLocaleString('it-IT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "Pubblicata ora";
+
+            // Creazione blocco dati admin
+            let adminBlock = '';
+            if (isAdmin && p.autoreReale) {
+                adminBlock = \`
+                <div class="storie-admin-data" style="display: block;">
+                    <i class="fa-solid fa-shield-halved"></i> <b>Admin Info:</b> \${p.autoreReale.cognome} \${p.autoreReale.nome} | Matr: \${p.autoreReale.matricola} | Om: \${p.autoreReale.progressivo || 'N/A'}
+                </div>\`;
+            }
+
+            html += \`
+            <div class="storie-post">
+                <div class="storie-post-header">
+                    <span class="storie-post-author">
+                        <i class="fa-solid \${p.isAnonimo ? 'fa-user-secret' : 'fa-user-pen'}" style="margin-right:5px;"></i> \${p.nomeVisualizzato}
+                    </span>
+                    <span class="storie-post-date">\${dateStr}</span>
+                </div>
+                
+                \${adminBlock}
+                
+                <div class="storie-post-body">\${p.testo}</div>
+                
+                \${(isOwner || isAdmin) ? \`
+                <div class="storie-actions">
+                    \${isOwner ? \`<button class="btn-storie btn-storie-ed" onclick="window.storieAPI.gestisciStoria('\${p.id}', 'edit')" title="Modifica"><i class="fa-solid fa-pen"></i></button>\` : ''}
+                    <button class="btn-storie btn-storie-del" onclick="window.storieAPI.gestisciStoria('\${p.id}', 'delete')" title="Elimina"><i class="fa-solid fa-trash"></i></button>
+                </div>
+                \` : ''}
+            </div>
+            \`;
+        });
+        feed.innerHTML = html;
+    }
+
+    document.getElementById('modal-storie-main').style.display = 'flex';
+
+    if (!userDataPrivate.storieWelcomeSeen) {
+        document.getElementById('modal-storie-welcome').style.display = 'flex';
+    }
+
+    const q = query(collection(db, "storie"), orderBy("timestamp", "desc"));
+    unsubscribeStorie = onSnapshot(q, (snapshot) => {
+        posts = [];
+        snapshot.forEach((docSnap) => {
+            posts.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderFeed(posts);
+    }, (error) => {
+        console.error("Errore fetch storie", error);
+        document.getElementById('storie-feed').innerHTML = '<div style="color:var(--danger); text-align:center; padding: 20px; font-weight:bold;">Errore di caricamento. Riprova più tardi.</div>';
+    });
+}

@@ -13,7 +13,10 @@ export function avviaMotoreRotazioni(db, auth) {
         "rot_lido": "Rotazione Lido", "spez_lido": "Spezzati Lido", "tc_spez_lido": "T.C. Spezzati Lido",
         "rot_linea12": "Rotazione Linea 12", "rot_linea13": "Rotazione Linea 13", "rot_linea14": "Rotazione Linea 14 M/N",
         "rot_linea14_mb": "Rotazione Linea 14 M/B", "rot_17sn": "Rotazione Linea 17 S. Nicolò", "tc_rot_17sn": "T.C. Rotazione 17 S. Nicolò",
-        "rot_17tr": "Rotazione Linea 17 Tron.", "tc_rot_17tr": "T.C. Rotazione Linea 17 Tronc."
+        "rot_17tr": "Rotazione Linea 17 Tron.", "tc_rot_17tr": "T.C. Rotazione Linea 17 Tronc.",
+        "tfg_proma": "TFG P.Roma", "tfg_lido": "TFG Lido",
+        "m115": "M115", "m116": "M116",
+        "notti": "Notti"
     };
 
     const paroleDaSaltare = ["GENNAIO", "FEBBRAIO", "MARZO", "APRILE", "MAGGIO", "GIUGNO", "LUGLIO", "AGOSTO", "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE", "MESE", "AGENTI"];
@@ -27,7 +30,10 @@ export function avviaMotoreRotazioni(db, auth) {
         "rot_lido": "Lido", "spez_lido": "Spezzati Lido", "tc_spez_lido": "T.C. Spezzati Lido",
         "rot_linea12": "Linea 12", "rot_linea13": "Linea 13", "rot_linea14": "Linea 14 M/N",
         "rot_linea14_mb": "Linea 14 M/B", "rot_17sn": "Linea 17 S. Nicolò", "tc_rot_17sn": "T.C. Linea 17 S. Nicolò",
-        "rot_17tr": "Linea 17 Tronchetto", "tc_rot_17tr": "T.C. Linea 17 Tronchetto"
+        "rot_17tr": "Linea 17 Tronchetto", "tc_rot_17tr": "T.C. Linea 17 Tronchetto",
+        "tfg_proma": "TFG P.Roma", "tfg_lido": "TFG Lido",
+        "m115": "M115", "m116": "M116",
+        "notti": "Notti"
     };
 
     // Stessa data soglia usata dal modulo varianti per il calcolo dei turni storici/attuali
@@ -95,40 +101,25 @@ export function avviaMotoreRotazioni(db, auth) {
     };
 
     // ==========================================
-    // OVERLAY DI CARICAMENTO (copre il modale mentre si preparano i dati/calcoli)
+    // ANIMAZIONE DI CARICAMENTO (contenuta nello spazio del modulo dove
+    // compaiono poi le rotazioni, NON a schermo intero)
     // ==========================================
     function mostraCaricamentoRotazioni(testo = "Preparazione rotazioni in corso...") {
-        let overlay = document.getElementById('rot-loading-overlay');
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'rot-loading-overlay';
-            overlay.style.cssText = `position:fixed; inset:0; background:var(--surface, #fff); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; z-index:99999; opacity:1; transition:opacity 0.25s ease;`;
-            overlay.innerHTML = `
-                <i class="fa-solid fa-circle-notch fa-spin" style="font-size:38px; color:var(--primary);"></i>
-                <div id="rot-loading-overlay-text" style="font-size:14px; color:var(--text-muted); font-weight:600;">${testo}</div>
-            `;
-            document.body.appendChild(overlay);
-        } else {
-            const t = document.getElementById('rot-loading-overlay-text');
-            if (t) t.innerText = testo;
-            overlay.style.display = 'flex';
-            overlay.style.opacity = '1';
+        const area = document.getElementById('rot-rotazioni-list');
+        if (area) {
+            area.innerHTML = `<div style="text-align:center; padding:60px 20px; color:var(--text-muted);"><i class="fa-solid fa-circle-notch fa-spin" style="font-size:34px; color:var(--primary);"></i><br><br>${testo}</div>`;
         }
     }
 
     function nascondiCaricamentoRotazioni() {
-        const overlay = document.getElementById('rot-loading-overlay');
-        if (!overlay) return;
-        overlay.style.opacity = '0';
-        setTimeout(() => { if (overlay) overlay.style.display = 'none'; }, 250);
+        // Non serve fare nulla: il contenuto vero (renderizzato da caricaRotazioniMain,
+        // oppure le sezioni auth/pending) sostituisce già il messaggio di caricamento.
     }
 
     // ==========================================
     // INIT STATO E ROTAZIONI (SPA UPGRADE)
     // ==========================================
     window.initRotazioniState = async () => {
-        mostraCaricamentoRotazioni();
-
         const user = auth.currentUser;
         const authSect = document.getElementById('rot-auth-section'); 
         const warnLog = document.getElementById('rot-login-warning');
@@ -167,6 +158,7 @@ export function avviaMotoreRotazioni(db, auth) {
                     // Se ha accesso, nascondiamo tutto il blocco auth e mostriamo i contenuti
                     if(authSect) authSect.style.display = 'none'; 
                     if(contSect) contSect.style.display = 'flex';
+                    mostraCaricamentoRotazioni();
                     
                     let btnMieiDati = document.getElementById('rot-btn-miei-dati');
                     if (btnMieiDati) btnMieiDati.style.display = 'flex';

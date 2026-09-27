@@ -37,7 +37,7 @@
     },
     "sch_1787604086080": {
       "nome": "Avaria alternatore",
-      "icona": "fa-solid fa-location-dot",
+      "icona": "fa-solid fa-gear",
       "colore": "#8a8a8a",
       "categoria": "Allarmi",
       "testo_html": "Spia e allarme acustico quando è presente gasolio nella vaschetta che raccoglie la perdita di tubi di iniezione o quasto a questo sensore",

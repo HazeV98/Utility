@@ -401,7 +401,8 @@
         "icon": "fa-solid fa-book",
         "defaultColor": "#fd7e14",
         "conditions": [
-            "admin"
+            "admin",
+            "collab"
         ],
         "excludeConditions": [],
         "isModule": true,

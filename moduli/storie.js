@@ -90,10 +90,12 @@ export function initUIStorie() {
             
             <div id="storie-comments-list" style="flex: 1; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
             
-            <div style="display: flex; gap: 10px; align-items: flex-end;">
-                <textarea id="storie-in-commento" class="input-storie" placeholder="Scrivi un commento..." style="margin-bottom: 0; flex: 1; resize: none; border-radius: 12px;" rows="2"></textarea>
+            <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+                <textarea id="storie-in-commento" class="input-storie" placeholder="Scrivi un commento..." style="margin-bottom: 0; flex: 1; resize: none; border-radius: 20px; padding: 12px 15px;" rows="1"></textarea>
                 <input type="hidden" id="storie-active-comment-id">
-                <button class="btn-action" style="padding: 12px; border-radius: 12px; height: 100%;" onclick="window.storieAPI.salvaCommento()"><i class="fa-solid fa-paper-plane"></i></button>
+                <button class="btn-action" style="width: 45px; height: 45px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" onclick="window.storieAPI.salvaCommento()">
+                    <i class="fa-solid fa-paper-plane" style="margin-left: -2px;"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -281,7 +283,6 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             }
             
             try {
-                // Aggiorniamo a livello db. La view si aggiornerà grazie a onSnapshot
                 await updateDoc(doc(db, "storie", storiaId), { likes: likesCorrenti });
             } catch (e) { console.error("Errore aggiornamento like", e); }
         },
@@ -348,9 +349,13 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             if (!testo || !storiaId) return;
             
             try {
+                // Prepara il nome per intero con l'eventuale numero omonimia (progressivo)
+                let numOmo = userDataPrivate.progressivo ? ` ${userDataPrivate.progressivo}` : "";
+                let nomeAutore = `${userDataPrivate.nome || 'Utente'} ${userDataPrivate.cognome || ''}${numOmo}`.trim();
+
                 await addDoc(collection(db, "storie", storiaId, "commenti"), {
                     autoreId: currentUserUid,
-                    autoreNome: `${userDataPrivate.nome || 'Utente'} ${userDataPrivate.cognome || ''}`.trim(),
+                    autoreNome: nomeAutore,
                     testo: testo,
                     timestamp: serverTimestamp()
                 });
@@ -441,9 +446,10 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
 
             let adminBlock = '';
             if (isAdmin && p.autoreReale) {
+                let numOmo = p.autoreReale.progressivo ? ` ${p.autoreReale.progressivo}` : "";
                 adminBlock = `
                 <div class="storie-admin-data" style="display: block;">
-                    <i class="fa-solid fa-shield-halved"></i> <b>Admin Info:</b> ${p.autoreReale.cognome} ${p.autoreReale.nome} | Matr: ${p.autoreReale.matricola} | Om: ${p.autoreReale.progressivo || 'N/A'}
+                    <i class="fa-solid fa-shield-halved"></i> <b>Admin Info:</b> ${p.autoreReale.nome} ${p.autoreReale.cognome}${numOmo} | Matr: ${p.autoreReale.matricola}
                 </div>`;
             }
             

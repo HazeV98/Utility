@@ -71,11 +71,11 @@ export function initUIStorie() {
 
     <div id="modal-storie-welcome" class="modal-overlay" style="display:none; z-index: 10001; background: rgba(0,0,0,0.85);">
         <div class="modal-content" style="max-width: 420px; text-align: center; padding: 40px 30px;">
-            <i class="fa-solid fa-book-journal-whills" style="font-size: 55px; color: var(--primary); margin-bottom: 25px;"></i>
+            <i class="fa-solid fa-book" style="font-size: 55px; color: var(--primary); margin-bottom: 25px;"></i>
             <h2 style="margin-top:0; font-weight: 900;">Raccolta Storie TPL</h2>
             <p style="margin-bottom: 25px; color: var(--text-main); line-height: 1.6; font-size: 15px;">
-                Lavorando nel Trasporto Pubblico Locale ne vediamo e sentiamo di tutti i colori.<br><br>
-                Questo è il posto dove raccogliere aneddoti, situazioni assurde o divertenti vissute durante i turni. Un giorno potremo stamparci un libro! Puoi scegliere di pubblicare col tuo nome o in totale anonimato.
+                Quante volte abbiamo detto "con tutte le cose che ci capitano potremmo scriverci un libro"<br><br>
+                Questo è il posto dove raccogliere aneddoti, situazioni assurde o divertenti vissute durante i turni. Puoi scegliere di pubblicare col tuo nome o in totale anonimato. Con il pulsante pdf potrai esportare la raccolta per avere un pdf come fosse il nostro libro di storie assurde. 
             </p>
             <button class="btn-action" style="width: 100%; font-size: 16px; border-radius: 12px; padding: 14px;" onclick="window.storieAPI.accettaBenvenuto()">Inizia a Leggere</button>
         </div>

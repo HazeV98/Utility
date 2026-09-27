@@ -29,7 +29,7 @@
     },
     "sch_1787603718098": {
       "nome": "Basso livello cassa compenso",
-      "icona": "fa-solid fa-location-dot",
+      "icona": "fa-solid fa-gear",
       "colore": "#8a8a8a",
       "categoria": "Allarmi",
       "testo_html": "Spia e allarme acustico quando il livello del fluido di raffreddamento nella cassa compenso è molto basso.&nbsp;",

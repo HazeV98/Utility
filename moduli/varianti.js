@@ -417,7 +417,7 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
     function applicaFiltroPrivacy(turnoStr) {
         if (!turnoStr) return "";
         let t = String(turnoStr).toUpperCase().trim();
-        const codiciSensibili = ["KMAL", "KNOP", "AVIS", "KINF", "FER", "FEP", "FES", "PRT"];
+        const codiciSensibili = ["KMAL", "KNOP", "AVIS", "KINF", "FER", "FEP", "FES", "PRT", "FERIE"];
         let isSensibile = codiciSensibili.some(codice => {
             let regex = new RegExp(`\\b${codice}\\b`);
             return regex.test(t);

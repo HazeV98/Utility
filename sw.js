@@ -1,4 +1,4 @@
-const CACHE_NAME = 'utility-app-v44';
+const CACHE_NAME = 'utility-app-v45';
 
 // Elenco completo dei file dell'app basato su mappa_file.json
 const PRECACHE_ASSETS = [
@@ -33,6 +33,7 @@ const PRECACHE_ASSETS = [
     './moduli/rotazioni.js',
     './moduli/rubrica.js',
     './moduli/statistiche.js',
+    './moduli/storie.js',
     './moduli/turni.js',
     './moduli/ui_admin.js',
     './moduli/ui_bacheca_turni.js',

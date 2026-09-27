@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, deleteUser, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, orderBy, deleteDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, orderBy, deleteDoc, where, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getMessaging, getToken, deleteToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
 
 import { avviaMotoreAuth } from './auth.js';
@@ -151,6 +151,8 @@ window.eseguiAzioneApp = async (appId) => {
 
     // Riallinea il badge del modulo appena aperto: report.js/rotazioni.js
     // segnano già come "letto" alla lettura, qui aggiorniamo solo l'icona.
+    if (appId === 'storie' && window.segnaStorieLette) window.segnaStorieLette();
+
     if (appId === 'rotazioni' || appId === 'report' || appId === 'promemoria') {
         setTimeout(() => {
             if (appId === 'rotazioni' && window.controllaRichiesteSospese) window.controllaRichiesteSospese();
@@ -353,11 +355,41 @@ window.controllaPromemoria = async () => {
     } catch(e) { console.error("Errore badge promemoria:", e); }
 };
 
+// --- STORIE: storie di altri utenti pubblicate dopo l'ultimo accesso al modulo ---
+// Stesso schema della bacheca: ultimo accesso salvato sia su Firestore che in localStorage.
+window.controllaStorie = async () => {
+    if (!auth.currentUser) { window.aggiornaBadgeUI('storie', 0); return; }
+    try {
+        const fbAccess = parseInt(window.currentUserData?.ultimo_accesso_storie || 0);
+        const localAccess = parseInt(localStorage.getItem('ultimo_accesso_storie') || 0);
+        const ultimoAccesso = Math.max(fbAccess, localAccess);
+
+        const q = query(collection(db, "storie"), where("timestamp", ">", Timestamp.fromMillis(ultimoAccesso)));
+        const snap = await getDocs(q);
+        let count = 0;
+        snap.forEach(d => { if (d.data().autoreId !== auth.currentUser.uid) count++; }); // le proprie storie non contano
+        window.aggiornaBadgeUI('storie', count);
+    } catch(e) { console.error("Errore badge storie:", e); }
+};
+
+// Segna tutte le storie come lette (chiamata all'apertura del modulo e quando arrivano storie a modulo aperto).
+window.segnaStorieLette = async () => {
+    const now = Date.now();
+    localStorage.setItem('ultimo_accesso_storie', now);
+    if (window.currentUserData) window.currentUserData.ultimo_accesso_storie = now;
+    window.aggiornaBadgeUI('storie', 0);
+    if (auth.currentUser) {
+        try { await setDoc(doc(db, "utenti", auth.currentUser.uid), { ultimo_accesso_storie: now }, { merge: true }); }
+        catch(e) { console.error("Errore salvataggio ultimo accesso storie:", e); }
+    }
+};
+
 // Esegue un refresh di tutti i badge dei moduli monitorati.
 window.aggiornaTuttiIBadge = () => {
     window.controllaRichiesteSospese();
     window.controllaSegnalazioni();
     window.controllaPromemoria();
+    window.controllaStorie();
 };
 
 // ============================================================================

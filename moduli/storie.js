@@ -509,6 +509,12 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             posts.push({ id: docSnap.id, ...docSnap.data() });
         });
         renderFeed(posts);
+
+        // Nuove storie arrivate a modulo aperto: le sta vedendo, quindi risultano già lette
+        const modaleAperto = document.getElementById('modal-storie-main')?.style.display === 'flex';
+        if (modaleAperto && window.segnaStorieLette && snapshot.docChanges().some(c => c.type === 'added' && !snapshot.metadata.fromCache)) {
+            window.segnaStorieLette();
+        }
     }, (error) => {
         console.error("Errore fetch storie", error);
         document.getElementById('storie-feed').innerHTML = '<div style="color:var(--danger); text-align:center; padding: 20px; font-weight:bold;">Errore di caricamento. Riprova più tardi.</div>';

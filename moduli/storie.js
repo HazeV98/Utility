@@ -28,12 +28,25 @@ export function initUIStorie() {
         
         .storie-post-body { font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: var(--text-main); font-style: italic; }
         
-        .storie-actions { display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px; }
+        /* Layout azioni e social */
+        .storie-actions-wrapper { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px; }
         
+        .storie-social-left { display: flex; gap: 18px; align-items: center; }
+        .btn-social { background: transparent; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: bold; color: var(--text-muted); padding: 5px; transition: all 0.2s; outline: none; }
+        .btn-social:hover { color: var(--text-main); transform: scale(1.05); }
+        .btn-like.liked { color: #e74c3c; }
+        .btn-like.liked i { font-weight: 900; } /* Cuore pieno */
+        
+        .storie-actions { display: flex; gap: 10px; }
         .btn-storie { padding: 8px 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: opacity 0.2s; }
         .btn-storie:hover { opacity: 0.8; }
         .btn-storie-ed { background: rgba(243, 156, 18, 0.15); color: #f39c12; }
         .btn-storie-del { background: rgba(220, 53, 69, 0.15); color: var(--danger); }
+        
+        /* Stili modale commenti */
+        .comment-box { background: var(--surface-hover); border-radius: 12px; padding: 12px; margin-bottom: 10px; font-size: 13px; border: 1px solid var(--border-color); }
+        .comment-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: bold; color: var(--primary); }
+        .comment-text { color: var(--text-main); line-height: 1.4; white-space: pre-wrap; }
         
         .anon-divider { display: flex; align-items: center; text-align: center; margin: 5px 0 15px 0; color: var(--text-muted); font-size: 12px; font-weight: bold; }
         .anon-divider::before, .anon-divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--border-color); }
@@ -69,6 +82,22 @@ export function initUIStorie() {
         </div>
     </div>
 
+    <!-- Modale Commenti -->
+    <div id="modal-storie-comments" class="modal-overlay" style="display:none; z-index: 10000;" onclick="window.storieAPI.chiudiSfondo(event, 'modal-storie-comments')">
+        <div class="modal-content" style="max-width: 500px; height: 75vh; display: flex; flex-direction: column; padding: 25px; position: relative;">
+            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="window.storieAPI.chiudiCommenti()"></i>
+            <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; margin-bottom: 15px;"><i class="fa-regular fa-comments"></i> Commenti</h3>
+            
+            <div id="storie-comments-list" style="flex: 1; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
+            
+            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                <textarea id="storie-in-commento" class="input-storie" placeholder="Scrivi un commento..." style="margin-bottom: 0; flex: 1; resize: none; border-radius: 12px;" rows="2"></textarea>
+                <input type="hidden" id="storie-active-comment-id">
+                <button class="btn-action" style="padding: 12px; border-radius: 12px; height: 100%;" onclick="window.storieAPI.salvaCommento()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-storie-welcome" class="modal-overlay" style="display:none; z-index: 10001; background: rgba(0,0,0,0.85);">
         <div class="modal-content" style="max-width: 420px; text-align: center; padding: 40px 30px;">
             <i class="fa-solid fa-book" style="font-size: 55px; color: var(--primary); margin-bottom: 25px;"></i>
@@ -88,7 +117,7 @@ export function initUIStorie() {
             
             <textarea id="storie-in-testo" class="input-storie" placeholder="C'era una volta durante il turno..." rows="8" style="resize: vertical;"></textarea>
             
-            <input type="text" id="storie-in-nome" class="input-storie" placeholder="Nome Visualizzato">
+            <input type="text" id="storie-in-nome" class="input-storie" placeholder="Nome Visualizzato (es. Il Marinaio Mascherato)">
             
             <div class="anon-divider">OPPURE</div>
             
@@ -113,10 +142,17 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
     let isAdmin = userDataPrivate?.ruolo === "admin";
     let currentUserUid = auth.currentUser.uid;
     let unsubscribeStorie = null;
+    let unsubscribeCommenti = null;
 
     window.storieAPI = {
         chiudiSfondo: function(event, id) {
-            if (event.target.id === id) document.getElementById(id).style.display = 'none';
+            if (event.target.id === id) {
+                document.getElementById(id).style.display = 'none';
+                if (id === 'modal-storie-comments' && unsubscribeCommenti) {
+                    unsubscribeCommenti();
+                    unsubscribeCommenti = null;
+                }
+            }
         },
         
         accettaBenvenuto: async function() {
@@ -196,6 +232,7 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                     nomeVisualizzato: isAnon ? "Anonimo" : nomeVis,
                     autoreReale: datiReali,
                     testo: testo,
+                    likes: [], // Array inizializzato per i Mi Piace
                     timestamp: idModifica ? undefined : serverTimestamp()
                 };
 
@@ -228,6 +265,107 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 }
             }
         },
+
+        // --- SEZIONE SOCIAL: LIKES & COMMENTI ---
+        toggleLike: async function(storiaId) {
+            const post = posts.find(p => p.id === storiaId);
+            if (!post) return;
+            
+            let likesCorrenti = post.likes || [];
+            const hasLiked = likesCorrenti.includes(currentUserUid);
+            
+            if (hasLiked) {
+                likesCorrenti = likesCorrenti.filter(uid => uid !== currentUserUid); // Rimuovi like
+            } else {
+                likesCorrenti.push(currentUserUid); // Aggiungi like
+            }
+            
+            try {
+                // Aggiorniamo a livello db. La view si aggiornerà grazie a onSnapshot
+                await updateDoc(doc(db, "storie", storiaId), { likes: likesCorrenti });
+            } catch (e) { console.error("Errore aggiornamento like", e); }
+        },
+
+        apriCommenti: function(storiaId) {
+            document.getElementById('storie-active-comment-id').value = storiaId;
+            document.getElementById('modal-storie-comments').style.display = 'flex';
+            
+            if (unsubscribeCommenti) { unsubscribeCommenti(); }
+            
+            // Ascolto in tempo reale dei commenti per questa specifica storia
+            const q = query(collection(db, "storie", storiaId, "commenti"), orderBy("timestamp", "asc"));
+            unsubscribeCommenti = onSnapshot(q, (snapshot) => {
+                let commenti = [];
+                snapshot.forEach(docSnap => {
+                    commenti.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                this.renderCommenti(commenti, storiaId);
+            });
+        },
+
+        chiudiCommenti: function() {
+            document.getElementById('modal-storie-comments').style.display = 'none';
+            if (unsubscribeCommenti) {
+                unsubscribeCommenti();
+                unsubscribeCommenti = null;
+            }
+        },
+
+        renderCommenti: function(commenti, storiaId) {
+            const container = document.getElementById('storie-comments-list');
+            if (commenti.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding: 30px; color: var(--text-muted);"><i class="fa-regular fa-comment-dots" style="font-size: 30px; margin-bottom:10px; display:block;"></i>Nessun commento. Scrivi il primo!</div>';
+                return;
+            }
+            
+            let html = '';
+            commenti.forEach(c => {
+                let dateStr = c.timestamp ? c.timestamp.toDate().toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : "Ora";
+                const isOwner = c.autoreId === currentUserUid;
+                
+                html += `
+                    <div class="comment-box">
+                        <div class="comment-header">
+                            <span><i class="fa-solid fa-user" style="font-size:10px; margin-right:4px;"></i> ${c.autoreNome}</span>
+                            <div style="display:flex; gap: 10px; align-items:center;">
+                                <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">${dateStr}</span>
+                                ${(isOwner || isAdmin) ? `<i class="fa-solid fa-trash" style="cursor:pointer; color: var(--danger);" onclick="window.storieAPI.eliminaCommento('${storiaId}', '${c.id}')" title="Elimina commento"></i>` : ''}
+                            </div>
+                        </div>
+                        <div class="comment-text">${c.testo}</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            container.scrollTop = container.scrollHeight; // Scroll automatico in basso
+        },
+
+        salvaCommento: async function() {
+            const storiaId = document.getElementById('storie-active-comment-id').value;
+            const input = document.getElementById('storie-in-commento');
+            const testo = input.value.trim();
+            
+            if (!testo || !storiaId) return;
+            
+            try {
+                await addDoc(collection(db, "storie", storiaId, "commenti"), {
+                    autoreId: currentUserUid,
+                    autoreNome: `${userDataPrivate.nome || 'Utente'} ${userDataPrivate.cognome || ''}`.trim(),
+                    testo: testo,
+                    timestamp: serverTimestamp()
+                });
+                input.value = ""; // Pulisci campo
+            } catch(e) { console.error("Errore salvataggio commento", e); }
+        },
+
+        eliminaCommento: async function(storiaId, commentoId) {
+            if(confirm("Vuoi eliminare questo commento?")) {
+                try {
+                    await deleteDoc(doc(db, "storie", storiaId, "commenti", commentoId));
+                } catch(e) { console.error("Errore eliminazione commento", e); }
+            }
+        },
+        // ----------------------------------------
 
         esportaPDF: function() {
             if (typeof html2pdf === 'undefined') {
@@ -308,6 +446,11 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                     <i class="fa-solid fa-shield-halved"></i> <b>Admin Info:</b> ${p.autoreReale.cognome} ${p.autoreReale.nome} | Matr: ${p.autoreReale.matricola} | Om: ${p.autoreReale.progressivo || 'N/A'}
                 </div>`;
             }
+            
+            // Gestione contatori Social
+            let likesCorrenti = p.likes || [];
+            let hasLiked = likesCorrenti.includes(currentUserUid);
+            let likeCount = likesCorrenti.length;
 
             html += `
             <div class="storie-post">
@@ -322,12 +465,25 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 
                 <div class="storie-post-body">${p.testo}</div>
                 
-                ${(isOwner || isAdmin) ? `
-                <div class="storie-actions">
-                    ${isOwner ? `<button class="btn-storie btn-storie-ed" onclick="window.storieAPI.gestisciStoria('${p.id}', 'edit')" title="Modifica"><i class="fa-solid fa-pen"></i></button>` : ''}
-                    <button class="btn-storie btn-storie-del" onclick="window.storieAPI.gestisciStoria('${p.id}', 'delete')" title="Elimina"><i class="fa-solid fa-trash"></i></button>
+                <div class="storie-actions-wrapper">
+                    <!-- Sezione Social (Sinistra) -->
+                    <div class="storie-social-left">
+                        <button class="btn-social btn-like ${hasLiked ? 'liked' : ''}" onclick="window.storieAPI.toggleLike('${p.id}')">
+                            <i class="${hasLiked ? 'fa-solid' : 'fa-regular'} fa-heart"></i> ${likeCount}
+                        </button>
+                        <button class="btn-social" onclick="window.storieAPI.apriCommenti('${p.id}')" title="Commenti">
+                            <i class="fa-regular fa-comment"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Sezione Azioni (Destra) -->
+                    ${(isOwner || isAdmin) ? `
+                    <div class="storie-actions">
+                        ${isOwner ? `<button class="btn-storie btn-storie-ed" onclick="window.storieAPI.gestisciStoria('${p.id}', 'edit')" title="Modifica"><i class="fa-solid fa-pen"></i></button>` : ''}
+                        <button class="btn-storie btn-storie-del" onclick="window.storieAPI.gestisciStoria('${p.id}', 'delete')" title="Elimina"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    ` : ''}
                 </div>
-                ` : ''}
             </div>
             `;
         });
@@ -352,3 +508,4 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
         document.getElementById('storie-feed').innerHTML = '<div style="color:var(--danger); text-align:center; padding: 20px; font-weight:bold;">Errore di caricamento. Riprova più tardi.</div>';
     });
 }
+ 

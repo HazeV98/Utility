@@ -397,7 +397,7 @@
     },
     {
         "id": "storie",
-        "label": "Storie",
+        "label": "Storie dal TPL",
         "icon": "fa-solid fa-book",
         "defaultColor": "#fd7e14",
         "conditions": [

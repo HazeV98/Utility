@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, deleteUser, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, orderBy, deleteDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getMessaging, getToken, deleteToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
 
 import { avviaMotoreAuth } from './auth.js';
@@ -78,6 +78,7 @@ window.currentUserData = {};
 window.utentiMap = {};
 window.utentiArrayCache = [];
 window.DYNAMIC_APPS = [];
+window.ModuleBadges = {};
 
 window.caricaAppsConfig = async () => {
     try {
@@ -146,6 +147,16 @@ window.eseguiAzioneApp = async (appId) => {
     if (moduleName) {
         const fn = await ModuliLazyLoader.avviaMotore(moduleName, isSplit);
         if (fn) await fn(db, auth, window.currentUserData, globalIsAdmin);
+    }
+
+    // Riallinea il badge del modulo appena aperto: report.js/rotazioni.js
+    // segnano già come "letto" alla lettura, qui aggiorniamo solo l'icona.
+    if (appId === 'rotazioni' || appId === 'report' || appId === 'promemoria') {
+        setTimeout(() => {
+            if (appId === 'rotazioni' && window.controllaRichiesteSospese) window.controllaRichiesteSospese();
+            if (appId === 'report' && window.controllaSegnalazioni) window.controllaSegnalazioni();
+            if (appId === 'promemoria' && window.controllaPromemoria) window.controllaPromemoria();
+        }, 900);
     }
 
     const legacyModals = { 
@@ -252,9 +263,102 @@ window.addEventListener('bacheca-utility-letta', async () => {
     }
 });
 
-window.controllaRichiesteSospese = async () => {};
-window.controllaPromemoria = async () => {};
-window.controllaSegnalazioni = async () => {};
+// ============================================================================
+// GESTIONE BADGE NOTIFICHE MODULI (icona app / cartella)
+// L'id modulo (chiave in window.ModuleBadges) coincide sempre con l'appId,
+// che a sua volta coincide col nome file del modulo senza ".js".
+// ============================================================================
+
+// Applica i conteggi correnti (window.ModuleBadges) a TUTTI gli elementi badge
+// presenti nel DOM in questo momento (griglia principale + modale cartella).
+window.sincronizzaBadgeDOM = () => {
+    Object.keys(window.ModuleBadges).forEach(appId => {
+        const count = window.ModuleBadges[appId] || 0;
+        document.querySelectorAll(`[data-badge-appid="${appId}"]`).forEach(el => {
+            if (count > 0) { el.innerText = count > 99 ? '99+' : count; el.style.display = 'flex'; }
+            else { el.style.display = 'none'; }
+        });
+    });
+    window.ricalcolaBadgeCartelle();
+};
+
+// Somma i badge di tutte le app contenute in ciascuna cartella e aggiorna
+// il pallino aggregato mostrato sull'icona della cartella.
+window.ricalcolaBadgeCartelle = () => {
+    const folderTotals = {};
+    (window.DYNAMIC_APPS || []).forEach(app => {
+        if (!app.folder) return;
+        const c = window.ModuleBadges[app.id] || 0;
+        folderTotals[app.folder] = (folderTotals[app.folder] || 0) + c;
+    });
+    document.querySelectorAll('[data-badge-folder]').forEach(el => {
+        const folderName = el.dataset.badgeFolder;
+        const total = folderTotals[folderName] || 0;
+        if (total > 0) { el.innerText = total > 99 ? '99+' : total; el.style.display = 'flex'; }
+        else { el.style.display = 'none'; }
+    });
+};
+
+// Aggiorna il conteggio di un singolo modulo e ripropaga la modifica nel DOM.
+window.aggiornaBadgeUI = (appId, count) => {
+    window.ModuleBadges[appId] = count || 0;
+    window.sincronizzaBadgeDOM();
+};
+
+// --- ROTAZIONI: notifica solo per l'admin, nuove richieste in attesa ---
+window.controllaRichiesteSospese = async () => {
+    if (!auth.currentUser || !globalIsAdmin) { window.aggiornaBadgeUI('rotazioni', 0); return; }
+    try {
+        const q = query(collection(db, "permessi_rotazioni"), where("stato_richiesta", "==", "pending"));
+        const snap = await getDocs(q);
+        window.aggiornaBadgeUI('rotazioni', snap.size);
+    } catch(e) { console.error("Errore badge rotazioni:", e); }
+};
+
+// --- REPORT: nuove domande (per l'admin) o nuove risposte (per l'utente) ---
+// Sfrutta i flag già gestiti da report.js (letta_da_admin / letta_da_utente),
+// che vengono azzerati automaticamente all'apertura della relativa chat.
+window.controllaSegnalazioni = async () => {
+    if (!auth.currentUser) { window.aggiornaBadgeUI('report', 0); return; }
+    try {
+        const colRef = collection(db, "segnalazioni");
+        let q;
+        if (globalIsAdmin) {
+            q = query(colRef, where("letta_da_admin", "==", false));
+        } else {
+            q = query(colRef, where("mittente_uid", "==", auth.currentUser.uid), where("letta_da_utente", "==", false));
+        }
+        const snap = await getDocs(q);
+        window.aggiornaBadgeUI('report', snap.size);
+    } catch(e) { console.error("Errore badge report:", e); }
+};
+
+// --- PROMEMORIA: numero di promemoria attualmente impostati (non scaduti) ---
+window.controllaPromemoria = async () => {
+    try {
+        const req = indexedDB.open("UtilityDB", 3);
+        req.onsuccess = (event) => {
+            const localDb = event.target.result;
+            if (!localDb.objectStoreNames.contains("archivio_dds")) { window.aggiornaBadgeUI('promemoria', 0); return; }
+            const tx = localDb.transaction("archivio_dds", "readonly");
+            tx.objectStore("archivio_dds").getAll().onsuccess = (e) => {
+                const oggiStr = new Date().toISOString().split('T')[0];
+                const attivi = (e.target.result || []).filter(d =>
+                    d.isPromemoria && (!d.dateValidita || !d.dateValidita.length || d.dateValidita[d.dateValidita.length - 1] >= oggiStr)
+                );
+                window.aggiornaBadgeUI('promemoria', attivi.length);
+            };
+        };
+        req.onerror = () => { window.aggiornaBadgeUI('promemoria', 0); };
+    } catch(e) { console.error("Errore badge promemoria:", e); }
+};
+
+// Esegue un refresh di tutti i badge dei moduli monitorati.
+window.aggiornaTuttiIBadge = () => {
+    window.controllaRichiesteSospese();
+    window.controllaSegnalazioni();
+    window.controllaPromemoria();
+};
 
 // ============================================================================
 // GESTIONE NOTIFICHE NATIVE / WEB PUSH
@@ -536,7 +640,8 @@ window.LayoutEngine = {
                     
                     // Contenitore cartella con CSS Grid 2x2 esatto
                     btn.innerHTML = `
-                        <div class="app-icon folder-grid" style="background-color: var(--surface-hover); border: 2px solid var(--border-color); display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; padding: 8px; box-sizing: border-box; align-items: center; justify-items: center;">
+                        <div class="app-icon folder-grid" style="background-color: var(--surface-hover); border: 2px solid var(--border-color); display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; padding: 8px; box-sizing: border-box; align-items: center; justify-items: center; position: relative;">
+                            <div class="app-notif-badge" data-badge-folder="${app.folder}" style="display:none; position:absolute; top:-4px; right:-4px; background:#e53935; color:#fff; font-size:10px; font-weight:800; min-width:18px; height:18px; line-height:18px; padding:0 4px; border-radius:9px; text-align:center; z-index:2; box-shadow:0 0 0 2px var(--surface);"></div>
                         </div>
                         <div class="app-label">${app.folder}</div>
                     `;
@@ -569,7 +674,10 @@ window.LayoutEngine = {
                 btn.style.cursor = 'pointer';
                 
                 btn.innerHTML = `
-                    <div class="app-icon" style="background-color: ${finalColor};"><i class="${app.icon || 'fa-solid fa-link'}"></i></div>
+                    <div class="app-icon" style="background-color: ${finalColor}; position: relative;">
+                        <i class="${app.icon || 'fa-solid fa-link'}"></i>
+                        <div class="app-notif-badge" data-badge-appid="${app.id}" style="display:none; position:absolute; top:-4px; right:-4px; background:#e53935; color:#fff; font-size:10px; font-weight:800; min-width:18px; height:18px; line-height:18px; padding:0 4px; border-radius:9px; text-align:center; box-shadow:0 0 0 2px var(--surface);"></div>
+                    </div>
                     <div class="app-label">${app.label.replace(/\n/g, '<br>')}</div>
                 `;
                 
@@ -577,8 +685,11 @@ window.LayoutEngine = {
             }
         });
 
+        window.sincronizzaBadgeDOM();
+
         setTimeout(() => {
             if(window.controllaBacheca) window.controllaBacheca();
+            if(window.aggiornaTuttiIBadge) window.aggiornaTuttiIBadge();
         }, 200);
     },
 
@@ -1275,11 +1386,15 @@ window.apriCartella = (folderName) => {
         btn.style.animationDelay = `${index * 0.04}s`;
         btn.style.cursor = 'pointer';
         btn.innerHTML = `
-            <div class="app-icon" style="background-color: ${finalColor};"><i class="${app.icon || 'fa-solid fa-link'}"></i></div>
+            <div class="app-icon" style="background-color: ${finalColor}; position: relative;">
+                <i class="${app.icon || 'fa-solid fa-link'}"></i>
+                <div class="app-notif-badge" data-badge-appid="${app.id}" style="display:none; position:absolute; top:-4px; right:-4px; background:#e53935; color:#fff; font-size:10px; font-weight:800; min-width:18px; height:18px; line-height:18px; padding:0 4px; border-radius:9px; text-align:center; box-shadow:0 0 0 2px var(--surface);"></div>
+            </div>
             <div class="app-label" style="font-size: 13px;">${app.label.replace(/\n/g, '<br>')}</div>
         `;
         btn.onclick = () => { window.chiudiModal('modal-folder-view'); window.eseguiAzioneApp(app.id); };
         container.appendChild(btn);
     });
     window.apriModal('modal-folder-view');
+    window.sincronizzaBadgeDOM();
 };

@@ -1471,6 +1471,9 @@ export function avviaMotoreRotazioni(db, auth) {
                 bMod.style.display = 'none';
             }
         } catch(e) { console.error("Errore conteggio richieste", e); }
+
+        // Riallinea il badge notifica sull'icona del modulo (index.js) — solo admin
+        if (window.controllaRichiesteSospese) window.controllaRichiesteSospese();
     };
 
     window.apriGestioneAccessiModalRot = async () => {

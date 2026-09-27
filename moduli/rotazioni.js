@@ -95,9 +95,40 @@ export function avviaMotoreRotazioni(db, auth) {
     };
 
     // ==========================================
+    // OVERLAY DI CARICAMENTO (copre il modale mentre si preparano i dati/calcoli)
+    // ==========================================
+    function mostraCaricamentoRotazioni(testo = "Preparazione rotazioni in corso...") {
+        let overlay = document.getElementById('rot-loading-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'rot-loading-overlay';
+            overlay.style.cssText = `position:fixed; inset:0; background:var(--surface, #fff); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; z-index:99999; opacity:1; transition:opacity 0.25s ease;`;
+            overlay.innerHTML = `
+                <i class="fa-solid fa-circle-notch fa-spin" style="font-size:38px; color:var(--primary);"></i>
+                <div id="rot-loading-overlay-text" style="font-size:14px; color:var(--text-muted); font-weight:600;">${testo}</div>
+            `;
+            document.body.appendChild(overlay);
+        } else {
+            const t = document.getElementById('rot-loading-overlay-text');
+            if (t) t.innerText = testo;
+            overlay.style.display = 'flex';
+            overlay.style.opacity = '1';
+        }
+    }
+
+    function nascondiCaricamentoRotazioni() {
+        const overlay = document.getElementById('rot-loading-overlay');
+        if (!overlay) return;
+        overlay.style.opacity = '0';
+        setTimeout(() => { if (overlay) overlay.style.display = 'none'; }, 250);
+    }
+
+    // ==========================================
     // INIT STATO E ROTAZIONI (SPA UPGRADE)
     // ==========================================
     window.initRotazioniState = async () => {
+        mostraCaricamentoRotazioni();
+
         const user = auth.currentUser;
         const authSect = document.getElementById('rot-auth-section'); 
         const warnLog = document.getElementById('rot-login-warning');
@@ -111,62 +142,70 @@ export function avviaMotoreRotazioni(db, auth) {
         if(pendSect) pendSect.style.display = 'none';
         if(contSect) contSect.style.display = 'none';
 
-        if (user) {
-            currentUserId = user.uid; 
-            isAdmin = (user.uid === ADMIN_UID);
-            
-            // Lettura parallela da utenti e permessi_rotazioni
-            const docRef = doc(db, "utenti", user.uid); 
-            const permRef = doc(db, "permessi_rotazioni", user.uid);
-            
-            const [docSnap, permSnap] = await Promise.all([getDoc(docRef), getDoc(permRef)]);
-            
-            const uData = docSnap.exists() ? docSnap.data() : {};
-            const pData = permSnap.exists() ? permSnap.data() : {};
-            
-            // Merge in memoria per compatibilità con il resto dell'interfaccia
-            currentUserDoc = { ...uData, ...pData }; 
-            isCollab = (uData.ruolo === 'collaborator');
-            
-            // BYPASS ADMIN O UTENTE APPROVATO
-            if (isAdmin || pData.abilitato_rotazioni === true || pData.stato_richiesta === 'approved') {
-                if (isAdmin) currentUserDoc.abilitato_rotazioni = true; 
+        try {
+            if (user) {
+                currentUserId = user.uid; 
+                isAdmin = (user.uid === ADMIN_UID);
                 
-                // Se ha accesso, nascondiamo tutto il blocco auth e mostriamo i contenuti
-                if(authSect) authSect.style.display = 'none'; 
-                if(contSect) contSect.style.display = 'flex';
+                // Lettura parallela da utenti e permessi_rotazioni
+                const docRef = doc(db, "utenti", user.uid); 
+                const permRef = doc(db, "permessi_rotazioni", user.uid);
                 
-                let btnMieiDati = document.getElementById('rot-btn-miei-dati');
-                if (btnMieiDati) btnMieiDati.style.display = 'flex';
+                const [docSnap, permSnap] = await Promise.all([getDoc(docRef), getDoc(permRef)]);
                 
-                let btnGestAccessi = document.getElementById('rot-btn-gestione-accessi');
-                if (isAdmin || isCollab) {
-                    if (btnGestAccessi) btnGestAccessi.style.display = 'flex';
-                    window.aggiornaBadgeRichiesteRotazioni();
+                const uData = docSnap.exists() ? docSnap.data() : {};
+                const pData = permSnap.exists() ? permSnap.data() : {};
+                
+                // Merge in memoria per compatibilità con il resto dell'interfaccia
+                currentUserDoc = { ...uData, ...pData }; 
+                isCollab = (uData.ruolo === 'collaborator');
+                
+                // BYPASS ADMIN O UTENTE APPROVATO
+                if (isAdmin || pData.abilitato_rotazioni === true || pData.stato_richiesta === 'approved') {
+                    if (isAdmin) currentUserDoc.abilitato_rotazioni = true; 
+                    
+                    // Se ha accesso, nascondiamo tutto il blocco auth e mostriamo i contenuti
+                    if(authSect) authSect.style.display = 'none'; 
+                    if(contSect) contSect.style.display = 'flex';
+                    
+                    let btnMieiDati = document.getElementById('rot-btn-miei-dati');
+                    if (btnMieiDati) btnMieiDati.style.display = 'flex';
+                    
+                    let btnGestAccessi = document.getElementById('rot-btn-gestione-accessi');
+                    if (isAdmin || isCollab) {
+                        if (btnGestAccessi) btnGestAccessi.style.display = 'flex';
+                        window.aggiornaBadgeRichiesteRotazioni();
+                    }
+                    
+                    window.initPanzoomRotazioni(); 
+                    await Promise.all([
+                        window.caricaDatiTurniSilenziosoRot(),
+                        window.caricaRotazioniMain()
+                    ]);
+                    
+                } else if (pData.stato_richiesta === 'pending') {
+                    // In attesa di approvazione: mostra contenitore auth e messaggio
+                    if(authSect) authSect.style.display = 'block';
+                    if(pendSect) pendSect.style.display = 'block';
+                } else {
+                    // Nessun accesso: mostra contenitore auth e modulo di richiesta
+                    if(authSect) authSect.style.display = 'block';
+                    if(reqSect) reqSect.style.display = 'block';
+                    
+                    if(document.getElementById('rot-req-nome')) document.getElementById('rot-req-nome').value = uData.nome || '';
+                    if(document.getElementById('rot-req-cognome')) document.getElementById('rot-req-cognome').value = uData.cognome || '';
+                    if(document.getElementById('rot-req-matricola')) document.getElementById('rot-req-matricola').value = uData.matricola || '';
+                    if(document.getElementById('rot-req-omonimia')) document.getElementById('rot-req-omonimia').value = uData.progressivo || '';
                 }
-                
-                window.initPanzoomRotazioni(); 
-                window.caricaDatiTurniSilenziosoRot(); 
-                window.caricaRotazioniMain();
-                
-            } else if (pData.stato_richiesta === 'pending') {
-                // In attesa di approvazione: mostra contenitore auth e messaggio
+            } else { 
+                // Non loggato: mostra avviso
                 if(authSect) authSect.style.display = 'block';
-                if(pendSect) pendSect.style.display = 'block';
-            } else {
-                // Nessun accesso: mostra contenitore auth e modulo di richiesta
-                if(authSect) authSect.style.display = 'block';
-                if(reqSect) reqSect.style.display = 'block';
-                
-                if(document.getElementById('rot-req-nome')) document.getElementById('rot-req-nome').value = uData.nome || '';
-                if(document.getElementById('rot-req-cognome')) document.getElementById('rot-req-cognome').value = uData.cognome || '';
-                if(document.getElementById('rot-req-matricola')) document.getElementById('rot-req-matricola').value = uData.matricola || '';
-                if(document.getElementById('rot-req-omonimia')) document.getElementById('rot-req-omonimia').value = uData.progressivo || '';
+                if(warnLog) warnLog.style.display = 'block'; 
             }
-        } else { 
-            // Non loggato: mostra avviso
-            if(authSect) authSect.style.display = 'block';
-            if(warnLog) warnLog.style.display = 'block'; 
+        } catch(e) {
+            console.error("Errore durante l'inizializzazione delle rotazioni:", e);
+        } finally {
+            nascondiCaricamentoRotazioni();
         }
     };
 

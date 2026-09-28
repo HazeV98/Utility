@@ -234,8 +234,7 @@
         "icon": "fa-solid fa-book",
         "defaultColor": "#fd7e14",
         "conditions": [
-            "admin",
-            "collab"
+            "tutti"
         ],
         "excludeConditions": [],
         "isModule": true,

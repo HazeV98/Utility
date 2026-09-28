@@ -229,6 +229,21 @@
         "splitModule": true
     },
     {
+        "id": "storie",
+        "label": "Storie dal TPL",
+        "icon": "fa-solid fa-book",
+        "defaultColor": "#fd7e14",
+        "conditions": [
+            "admin",
+            "collab"
+        ],
+        "excludeConditions": [],
+        "isModule": true,
+        "moduleId": "storie",
+        "moduleName": "storie",
+        "splitModule": false
+    },
+    {
         "id": "vademecum",
         "label": "Vademecum",
         "icon": "fa-solid fa-book",
@@ -394,20 +409,5 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
-    },
-    {
-        "id": "storie",
-        "label": "Storie dal TPL",
-        "icon": "fa-solid fa-book",
-        "defaultColor": "#fd7e14",
-        "conditions": [
-            "admin",
-            "collab"
-        ],
-        "excludeConditions": [],
-        "isModule": true,
-        "moduleId": "storie",
-        "moduleName": "storie",
-        "splitModule": false
     }
 ]

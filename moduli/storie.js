@@ -196,7 +196,7 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 document.getElementById('storie-edit-id').value = "";
                 document.getElementById('storie-in-testo').value = "";
                 
-                document.getElementById('storie-in-nome').value = "";
+                document.getElementById('storie-in-nome').value = userDataPrivate.storieNomeVisualizzato || "";
                 document.getElementById('storie-in-anonimo').checked = false;
                 document.getElementById('storie-in-nome').disabled = false;
             }
@@ -245,6 +245,14 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                     });
                 } else {
                     await addDoc(collection(db, "storie"), postData);
+                }
+
+                // Ricorda il nome visualizzato per le pubblicazioni successive
+                if (!isAnon && nomeVis && nomeVis !== userDataPrivate.storieNomeVisualizzato) {
+                    try {
+                        await updateDoc(doc(db, "utenti", currentUserUid), { storieNomeVisualizzato: nomeVis });
+                        userDataPrivate.storieNomeVisualizzato = nomeVis;
+                    } catch (err) { console.error("Errore salvataggio nome visualizzato", err); }
                 }
                 
                 document.getElementById('modal-storie-publish').style.display = 'none';

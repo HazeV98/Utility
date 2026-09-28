@@ -119,7 +119,7 @@ export function initUIStorie() {
             
             <textarea id="storie-in-testo" class="input-storie" placeholder="C'era una volta durante il turno..." rows="8" style="resize: vertical;"></textarea>
             
-            <input type="text" id="storie-in-nome" autocomplete="off" class="input-storie" placeholder="Nome Visualizzato (es. Il Marinaio Mascherato)">
+            <input type="text" id="storie-in-nome" autocomplete="off" class="input-storie" placeholder="Nome Visualizzato">
             
             <div class="anon-divider">OPPURE</div>
             

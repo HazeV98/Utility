@@ -106,7 +106,7 @@ export function initUIStorie() {
             <h2 style="margin-top:0; font-weight: 900;">Raccolta Storie TPL</h2>
             <p style="margin-bottom: 25px; color: var(--text-main); line-height: 1.6; font-size: 15px;">
                 Quante volte abbiamo detto "con tutte le cose che ci capitano potremmo scriverci un libro"<br><br>
-                Questo è il posto dove raccogliere aneddoti, situazioni assurde o divertenti vissute durante i turni. Puoi scegliere di pubblicare col tuo nome o in totale anonimato. Con il pulsante pdf potrai esportare la raccolta per avere un pdf come fosse il nostro libro di storie assurde. 
+                Questo è il posto dove raccogliere aneddoti, situazioni assurde o divertenti vissute durante i turni. Puoi scegliere di pubblicare col tuo nome o in totale anonimato. Con il tasto <i class="fa-solid fa-file-pdf"></i> potrai esportare la raccolta per avere un pdf come fosse il nostro libro di storie assurde. 
             </p>
             <button class="btn-action" style="width: 100%; font-size: 16px; border-radius: 12px; padding: 14px;" onclick="window.storieAPI.accettaBenvenuto()">Inizia a Leggere</button>
         </div>

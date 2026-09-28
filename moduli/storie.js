@@ -119,7 +119,7 @@ export function initUIStorie() {
             
             <textarea id="storie-in-testo" class="input-storie" placeholder="C'era una volta durante il turno..." rows="8" style="resize: vertical;"></textarea>
             
-            <input type="text" id="storie-in-nome" autocomplete="off" class="input-storie" placeholder="Nome Visualizzato">
+            <input type="text" id="storie-in-nome" autocomplete="off" class="input-storie" placeholder="Nome visualizzato">
             
             <div class="anon-divider">OPPURE</div>
             
@@ -196,8 +196,7 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 document.getElementById('storie-edit-id').value = "";
                 document.getElementById('storie-in-testo').value = "";
                 
-                let defaultNome = userDataPrivate.nome || "Utente";
-                document.getElementById('storie-in-nome').value = defaultNome;
+                document.getElementById('storie-in-nome').value = "";
                 document.getElementById('storie-in-anonimo').checked = false;
                 document.getElementById('storie-in-nome').disabled = false;
             }

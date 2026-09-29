@@ -175,6 +175,19 @@
             background: var(--border);
         }
 
+        .timeline-parte-header {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 20px 0 15px 0;
+            text-transform: uppercase;
+            background: #eef2f7;
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 6px;
+            position: relative;
+        }
+
         .activity-card {
             background: var(--card-bg);
             border-radius: 10px;
@@ -236,10 +249,28 @@
             text-transform: uppercase;
         }
 
-        .type-linea { border: 2px solid; }
+        /* Stile modificato per la linea: diventa un cerchio */
+        .type-linea { 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 2px solid;
+            font-size: 12px;
+            padding: 0;
+        }
+        
         .type-vuoto { background: #e2e8f0; color: #475569; }
         .type-pausa { background: #fef3c7; color: #d97706; }
         .type-altro { background: #f1f5f9; color: #64748b; }
+
+        .type-rebecchino {
+            background: #ede9fe;
+            color: #6d28d9;
+            border: 2px solid #8b5cf6;
+        }
 
         .act-notes {
             margin-top: 10px;
@@ -254,7 +285,6 @@
             font-size: 12px;
             color: var(--primary);
             font-weight: 600;
-            margin-top: 4px;
         }
 
         .turno-part-row {
@@ -302,23 +332,6 @@
             font-size: 18px;
         }
 
-        .act-part {
-            display: inline-block;
-            margin-left: 6px;
-            padding: 3px 7px;
-            border-radius: 10px;
-            background: #eef2f7;
-            color: var(--text-muted);
-            font-size: 10px;
-            font-weight: 800;
-        }
-
-        .type-rebecchino {
-            background: #ede9fe;
-            color: #6d28d9;
-            border: 2px solid #8b5cf6;
-        }
-
         .error-msg {
             background: #fee2e2;
             color: #b91c1c;
@@ -359,13 +372,9 @@
     <div id="results-container"></div>
 
     <script>
-        // Imposta la data odierna di default al caricamento della pagina
         document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
-
-        // Definizione API_URL uguale al modulo bateolivelite_2.js
         const API_URL = 'https://api.bateolive.stream';
 
-        // Configurazione colori ACTV dal modulo BateoLive
         const ACTV_COLORS = {
             '1': { bg: '#ffffff', text: '#000000', border: '#000000' },
             '2': { bg: '#e3001b', text: '#ffffff', border: '#e3001b' },
@@ -407,26 +416,20 @@
                 return;
             }
 
-            // Concateniamo il dominio assoluto con i parametri richiesti dal backend
             const fetchUrl = `${API_URL}/api/v1/turno?codice=${encodeURIComponent(codice)}&data=${encodeURIComponent(dataGiorno)}`; 
 
             try {
                 const response = await fetch(fetchUrl);
-                
-                // Se il server restituisce una pagina HTML al posto del JSON, lo intercettiamo subito
                 const contentType = response.headers.get("content-type");
                 if (contentType && contentType.indexOf("application/json") === -1) {
                      throw new Error("Il server ha restituito HTML invece di JSON. Verifica il routing di /api/v1/turno.");
                 }
-
                 const responseData = await response.json();
                 
-                // Se la risposta non è OK (es. 400, 404, 409), mostra il messaggio d'errore fornito dal backend
                 if (!response.ok) {
                     throw new Error(responseData.error || `Errore di connessione al server (${response.status})`);
                 }
                 
-                // Passa l'oggetto nidificato 'turno' alla funzione di rendering esistente
                 renderTurno(responseData.turno);
                 
             } catch (error) {
@@ -435,35 +438,28 @@
             }
         }
 
-        // Converte gli ID interni del JSON nel codice usato dall'app.
-        // Esempi:
-        //   4.1_1  -> 4P01
-        //   1_13   -> 1C13
-        //   2_15   -> 2C15
-        //   5.1_2  -> 5P02
         function convertiCodiceTurno(idTurno) {
             if (!idTurno) return "";
-
             const id = String(idTurno).trim().toUpperCase();
-
-            // Se è già nel formato dell'app, non modificarlo.
             if (/^[0-9]+[CPB]\d{2}$/.test(id)) return id;
-
-            // Gli ID del JSON hanno forma LINEA_NUMERO[_eventuale-validità].
             const match = id.match(/^(\d+)(?:\.\d+)?_(\d+)/);
             if (!match) return id;
-
             const linea = match[1];
             const numero = String(parseInt(match[2], 10)).padStart(2, "0");
-
-            // La logica del calendario.js usa C per le linee 1/2 e P per le altre.
             const lettera = (linea === "1" || linea === "2") ? "C" : "P";
-
             return `${linea}${lettera}${numero}`;
         }
 
-        // Riunisce le due tratte che rappresentano un'unica corsa
-        // spezzata dalla divisione della tabella orari a Museo.
+        // Helper per generare dinamicamente il codice turno da un oggetto (es. imbarca/consegna)
+        function generaCodiceTurnoBreve(turno, linea) {
+            if (!turno || !linea) return "";
+            const match = String(linea).match(/^(\d+)/);
+            const lineaBase = match ? match[1] : String(linea);
+            const lettera = (lineaBase === "1" || lineaBase === "2") ? "C" : "P";
+            const numero = String(turno).padStart(2, "0");
+            return `${lineaBase}${lettera}${numero}`;
+        }
+
         function unisciRebecchini(corse) {
             const ordinate = [...(corse || [])].sort((a, b) => a.ordine - b.ordine);
             const risultato = [];
@@ -500,20 +496,13 @@
                     risultato.push(corrente);
                 }
             }
-
             return risultato;
         }
 
         function renderTurno(turno) {
             const container = document.getElementById('results-container');
-
-            // 1. Codice turno nel formato usato dall'app.
             const codiceTurno = convertiCodiceTurno(turno.id);
-
-            // 2. Prima riuniamo le eventuali corse "rebecchino", poi
-            // uniamo le corse alle altre attività e ordiniamo tutto.
             const corseVisualizzate = unisciRebecchini(turno.corse_linea || []);
-
             const tutteLeAttivita = [
                 ...corseVisualizzate,
                 ...(turno.altre_attivita || [])
@@ -521,8 +510,6 @@
 
             tutteLeAttivita.sort((a, b) => a.ordine - b.ordine);
 
-            // 3. Per i turni spezzati mostriamo tutte le parti del turno,
-            // ciascuna con il proprio inizio e fine.
             const parti = Array.isArray(turno.parti) && turno.parti.length > 0
                 ? turno.parti
                 : [{
@@ -588,54 +575,57 @@
                 <div class="timeline">
             `;
 
-            // 4. Generazione Timeline Cronologica.
+            let currentParte = null;
+
             tutteLeAttivita.forEach(act => {
                 const isRebecchino = act.tipo_attivita === "rebecchino";
-                const isCorsa = !isRebecchino && act.hasOwnProperty('linea');
+                
+                // Generazione divisori per le parti direttamente nella timeline
+                if (parti.length > 1 && act.parte && act.parte !== currentParte) {
+                    currentParte = act.parte;
+                    html += `<div class="timeline-parte-header">Parte ${currentParte}</div>`;
+                }
 
-                let typeClass = "type-altro";
-                let typeLabel = act.tipo || "Attività";
-                let styleInline = "";
+                let topLabelHtml = "";
+                let bottomLabelHtml = "";
 
+                // 1. Gestione etichette in alto (cerchio colorato linea)
+                if (act.hasOwnProperty('linea')) {
+                    const styleInline = getLineStyle(act.linea);
+                    topLabelHtml = `<span class="act-type type-linea" style="${styleInline}">${act.linea}</span>`;
+                }
+
+                // 2. Gestione etichette in basso a destra (Non di linea o Rebecchino)
                 if (isRebecchino) {
-                    typeClass = "type-rebecchino";
-                    typeLabel = "Rebecchino";
-                    styleInline = "";
-                } else if (isCorsa) {
-                    typeClass = "type-linea";
-                    typeLabel = `Linea ${act.linea}`;
-                    styleInline = getLineStyle(act.linea);
-                } else if (act.categoria === "spostamento_a_vuoto" || (act.tipo && act.tipo.includes("TRASFERIMENTO"))) {
-                    typeClass = "type-vuoto";
-                    typeLabel = act.tipo;
-                } else if (act.categoria === "altra_attivita" && act.tipo && act.tipo.includes("PASTO")) {
-                    typeClass = "type-pausa";
-                    typeLabel = act.tipo;
+                    bottomLabelHtml = `<span class="act-type type-rebecchino">Rebecchino</span>`;
+                } else if (!act.hasOwnProperty('linea')) {
+                    let typeClass = "type-altro";
+                    let typeLabel = act.tipo || "Attività";
+                    
+                    if (act.categoria === "spostamento_a_vuoto" || (act.tipo && act.tipo.includes("TRASFERIMENTO"))) {
+                        typeClass = "type-vuoto";
+                        typeLabel = act.tipo;
+                    } else if (act.categoria === "altra_attivita" && act.tipo && act.tipo.includes("PASTO")) {
+                        typeClass = "type-pausa";
+                        typeLabel = act.tipo;
+                    }
+                    bottomLabelHtml = `<span class="act-type ${typeClass}">${typeLabel}</span>`;
                 }
 
-                let parteHtml = "";
-                if (parti.length > 1 && act.parte) {
-                    parteHtml = `<span class="act-part">Parte ${act.parte}</span>`;
-                }
-
-                // Note.
+                // Note
                 let noteHtml = '';
                 if (act.note && act.note.length > 0) {
                     const testiNote = act.note.map(n => n.testo).join(" - ");
-                    noteHtml += `<div class="act-notes"><i class="fa-solid fa-triangle-exclamation"></i> ${testiNote}</div>`;
+                    noteHtml = `<div class="act-notes"><i class="fa-solid fa-triangle-exclamation"></i> ${testiNote}</div>`;
                 }
 
-                // Consegne / imbarchi.
+                // Consegne / imbarchi (modificato per usare il codice turno breve)
                 let handoffHtml = '';
                 if (act.imbarca) {
-                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-to-bracket"></i> Imbarca da: T${act.imbarca.turno} L.${act.imbarca.linea}</div>`;
+                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-to-bracket"></i> Imbarca da: ${generaCodiceTurnoBreve(act.imbarca.turno, act.imbarca.linea)}</div>`;
                 }
                 if (act.consegna) {
-                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-from-bracket"></i> Consegna a: T${act.consegna.turno} L.${act.consegna.linea}</div>`;
-                }
-
-                if (handoffHtml) {
-                    handoffHtml = `<div class="act-handoff">${handoffHtml}</div>`;
+                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-from-bracket"></i> Consegna a: ${generaCodiceTurnoBreve(act.consegna.turno, act.consegna.linea)}</div>`;
                 }
 
                 html += `
@@ -645,12 +635,18 @@
                             <span class="act-duration">${act.durata_min} min</span>
                         </div>
                         <div class="act-route">
-                            <span class="act-type ${typeClass}" style="${styleInline}">${typeLabel}</span>
-                            ${parteHtml}
-                            <span>${act.da} <i class="fa-solid fa-caret-right" style="color:#cbd5e1; margin:0 5px;"></i> ${act.a}</span>
+                            ${topLabelHtml}
+                            <span>${act.da || ''} <i class="fa-solid fa-caret-right" style="color:#cbd5e1; margin:0 5px;"></i> ${act.a || ''}</span>
                         </div>
-                        ${handoffHtml}
                         ${noteHtml}
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: ${(handoffHtml || bottomLabelHtml) ? '10px' : '0'};">
+                            <div class="act-handoff">
+                                ${handoffHtml}
+                            </div>
+                            <div>
+                                ${bottomLabelHtml}
+                            </div>
+                        </div>
                     </div>
                 `;
             });
@@ -661,3 +657,4 @@
     </script>
 </body>
 </html>
+ 

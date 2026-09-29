@@ -123,9 +123,12 @@
         }
 
         .turno-meta {
-            font-size: 13px;
-            color: var(--text-muted);
+            font-size: 14px;
+            color: var(--text-main);
             text-align: right;
+            background: #f1f5f9;
+            padding: 5px 12px;
+            border-radius: 8px;
         }
 
         .turno-locations {
@@ -249,7 +252,6 @@
             text-transform: uppercase;
         }
 
-        /* Stile modificato per la linea: diventa un cerchio */
         .type-linea { 
             display: inline-flex;
             align-items: center;
@@ -430,7 +432,8 @@
                     throw new Error(responseData.error || `Errore di connessione al server (${response.status})`);
                 }
                 
-                renderTurno(responseData.turno);
+                // Passiamo anche il codice inserito dall'utente per la deduzione della formattazione
+                renderTurno(responseData.turno, codice);
                 
             } catch (error) {
                 showError(error.message);
@@ -438,26 +441,77 @@
             }
         }
 
-        function convertiCodiceTurno(idTurno) {
-            if (!idTurno) return "";
-            const id = String(idTurno).trim().toUpperCase();
-            if (/^[0-9]+[CPB]\d{2}$/.test(id)) return id;
-            const match = id.match(/^(\d+)(?:\.\d+)?_(\d+)/);
-            if (!match) return id;
-            const linea = match[1];
-            const numero = String(parseInt(match[2], 10)).padStart(2, "0");
-            const lettera = (linea === "1" || linea === "2") ? "C" : "P";
-            return `${linea}${lettera}${numero}`;
+        // Determina se il codice cercato dall'utente appartiene al formato di un Marinaio
+        function verificaSeMarinaio(codiceInput) {
+            if (!codiceInput) return false;
+            const cod = String(codiceInput).trim().toUpperCase();
+            
+            // 1. Linee a singola cifra con lettera B (es. 4B01, 1B12)
+            if (/^[1-9]B\d{2}$/.test(cod)) return true;
+            
+            // 2. Linee complesse
+            const match = cod.match(/^([A-Z0-9]+?)(\d{2})$/);
+            if (match) {
+                const prefisso = match[1];
+                const num = parseInt(match[2], 10);
+                
+                // Escludiamo il caso in cui il prefisso sia "4P" o "1C" ecc...
+                if (/^[1-9][CP]$/.test(prefisso)) return false;
+                
+                // La linea PO è sempre da marinaio
+                if (prefisso === "PO") return true;
+                
+                // Tutte le altre linee se il numero finale è >= 50
+                if (num >= 50) return true;
+            }
+            return false;
         }
 
-        // Helper per generare dinamicamente il codice turno da un oggetto (es. imbarca/consegna)
-        function generaCodiceTurnoBreve(turno, linea) {
-            if (!turno || !linea) return "";
-            const match = String(linea).match(/^(\d+)/);
-            const lineaBase = match ? match[1] : String(linea);
-            const lettera = (lineaBase === "1" || lineaBase === "2") ? "C" : "P";
-            const numero = String(turno).padStart(2, "0");
-            return `${lineaBase}${lettera}${numero}`;
+        // Helper unificato per formattare i codici turno (principali e imbarchi/consegne) basato sulla ricerca
+        function formattaCodiceTurno(linea, numero, isMarinaio) {
+            if (!linea || numero === undefined || numero === null) return "";
+            
+            const lineaBase = String(linea).trim().toUpperCase();
+            let num = parseInt(numero, 10);
+            
+            // Fallback se il numero non è leggibile
+            if (isNaN(num)) return `${lineaBase}${numero}`;
+
+            // Regex per intercettare le linee a 1 cifra (es. "1", "2", "4.1" -> estrae "1", "2", "4")
+            const matchSingola = lineaBase.match(/^([1-9])(?:\.\d+)?$/);
+
+            if (matchSingola) {
+                const numLinea = matchSingola[1];
+                let lettera = "P";
+                if (isMarinaio) {
+                    lettera = "B";
+                } else {
+                    lettera = (numLinea === "1" || numLinea === "2") ? "C" : "P";
+                }
+                return `${numLinea}${lettera}${String(num).padStart(2, "0")}`;
+            } else {
+                // Gestione di linee a due cifre o lettere (11, 12, PT, M1, N, PO...)
+                if (isMarinaio && lineaBase !== "PO") {
+                    if (num < 50) num += 50;
+                }
+                return `${lineaBase}${String(num).padStart(2, "0")}`;
+            }
+        }
+
+        function convertiCodiceTurno(idTurno, isMarinaio) {
+            if (!idTurno) return "";
+            const id = String(idTurno).trim().toUpperCase();
+            
+            // Se è già nel formato atteso app (es. 4P01, 1101, NM02)
+            if (/^[A-Z0-9]+[CPB]?\d{2}$/.test(id)) return id;
+
+            // Formato JSON: LINEA_NUMERO (es. 12_1, 4.1_3)
+            const match = id.match(/^([A-Z0-9\.]+)_(\d+)$/);
+            if (match) {
+                return formattaCodiceTurno(match[1], match[2], isMarinaio);
+            }
+            
+            return id;
         }
 
         function unisciRebecchini(corse) {
@@ -499,9 +553,13 @@
             return risultato;
         }
 
-        function renderTurno(turno) {
+        function renderTurno(turno, codiceCercato) {
             const container = document.getElementById('results-container');
-            const codiceTurno = convertiCodiceTurno(turno.id);
+            
+            // Deduciamo il tipo di formattazione dal codice cercato dall'utente
+            const isMarinaio = verificaSeMarinaio(codiceCercato);
+            
+            const codiceTurno = convertiCodiceTurno(turno.id, isMarinaio);
             const corseVisualizzate = unisciRebecchini(turno.corse_linea || []);
             const tutteLeAttivita = [
                 ...corseVisualizzate,
@@ -561,16 +619,10 @@
                     <div class="turno-header">
                         <h2 class="turno-title">Turno ${codiceTurno}</h2>
                         <div class="turno-meta">
-                            <div>${turno.tipologia}</div>
-                            <div><strong>Equipaggio:</strong> ${turno.equipaggio}</div>
+                            <div><strong>Durata turno:</strong> ${turno.durata} h</div>
                         </div>
                     </div>
-
                     ${partiHtml}
-
-                    <div style="font-size: 13px; text-align: center; color: var(--text-muted); margin-top:10px;">
-                        Durata totale: <strong>${turno.durata} h</strong>
-                    </div>
                 </div>
                 <div class="timeline">
             `;
@@ -580,7 +632,6 @@
             tutteLeAttivita.forEach(act => {
                 const isRebecchino = act.tipo_attivita === "rebecchino";
                 
-                // Generazione divisori per le parti direttamente nella timeline
                 if (parti.length > 1 && act.parte && act.parte !== currentParte) {
                     currentParte = act.parte;
                     html += `<div class="timeline-parte-header">Parte ${currentParte}</div>`;
@@ -589,13 +640,11 @@
                 let topLabelHtml = "";
                 let bottomLabelHtml = "";
 
-                // 1. Gestione etichette in alto (cerchio colorato linea)
                 if (act.hasOwnProperty('linea')) {
                     const styleInline = getLineStyle(act.linea);
                     topLabelHtml = `<span class="act-type type-linea" style="${styleInline}">${act.linea}</span>`;
                 }
 
-                // 2. Gestione etichette in basso a destra (Non di linea o Rebecchino)
                 if (isRebecchino) {
                     bottomLabelHtml = `<span class="act-type type-rebecchino">Rebecchino</span>`;
                 } else if (!act.hasOwnProperty('linea')) {
@@ -612,20 +661,20 @@
                     bottomLabelHtml = `<span class="act-type ${typeClass}">${typeLabel}</span>`;
                 }
 
-                // Note
                 let noteHtml = '';
                 if (act.note && act.note.length > 0) {
                     const testiNote = act.note.map(n => n.testo).join(" - ");
                     noteHtml = `<div class="act-notes"><i class="fa-solid fa-triangle-exclamation"></i> ${testiNote}</div>`;
                 }
 
-                // Consegne / imbarchi (modificato per usare il codice turno breve)
                 let handoffHtml = '';
                 if (act.imbarca) {
-                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-to-bracket"></i> Imbarca da: ${generaCodiceTurnoBreve(act.imbarca.turno, act.imbarca.linea)}</div>`;
+                    const codImbarca = formattaCodiceTurno(act.imbarca.linea, act.imbarca.turno, isMarinaio);
+                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-to-bracket"></i> Imbarca da: ${codImbarca}</div>`;
                 }
                 if (act.consegna) {
-                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-from-bracket"></i> Consegna a: ${generaCodiceTurnoBreve(act.consegna.turno, act.consegna.linea)}</div>`;
+                    const codConsegna = formattaCodiceTurno(act.consegna.linea, act.consegna.turno, isMarinaio);
+                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-from-bracket"></i> Consegna a: ${codConsegna}</div>`;
                 }
 
                 html += `
@@ -657,4 +706,3 @@
     </script>
 </body>
 </html>
- 

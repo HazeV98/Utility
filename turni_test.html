@@ -300,6 +300,9 @@
         // Imposta la data odierna di default al caricamento della pagina
         document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
 
+        // Definizione API_URL uguale al modulo bateolivelite_2.js
+        const API_URL = 'https://api.bateolive.stream';
+
         // Configurazione colori ACTV dal modulo BateoLive
         const ACTV_COLORS = {
             '1': { bg: '#ffffff', text: '#000000', border: '#000000' },
@@ -342,11 +345,18 @@
                 return;
             }
 
-            // Costruzione dell'URL con i parametri richiesti dal backend
-            const API_URL = `/api/v1/turno?codice=${encodeURIComponent(codice)}&data=${encodeURIComponent(dataGiorno)}`; 
+            // Concateniamo il dominio assoluto con i parametri richiesti dal backend
+            const fetchUrl = `${API_URL}/api/v1/turno?codice=${encodeURIComponent(codice)}&data=${encodeURIComponent(dataGiorno)}`; 
 
             try {
-                const response = await fetch(API_URL);
+                const response = await fetch(fetchUrl);
+                
+                // Se il server restituisce una pagina HTML al posto del JSON, lo intercettiamo subito
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") === -1) {
+                     throw new Error("Il server ha restituito HTML invece di JSON. Verifica il routing di /api/v1/turno.");
+                }
+
                 const responseData = await response.json();
                 
                 // Se la risposta non è OK (es. 400, 404, 409), mostra il messaggio d'errore fornito dal backend
@@ -461,4 +471,3 @@
     </script>
 </body>
 </html>
- 

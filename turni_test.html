@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Visualizzatore Turni ACTV</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #00529b;
+            --bg-color: #f4f7f9;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --border: #e0e6ed;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            background-color: var(--primary);
+            color: white;
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            box-sizing: border-box;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .search-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin: 20px;
+            width: 90%;
+            max-width: 500px;
+            display: flex;
+            gap: 10px;
+            box-sizing: border-box;
+        }
+
+        .search-container input {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+        }
+
+        .search-container input[type="date"] {
+            flex-grow: 0;
+            width: 150px;
+        }
+
+        .search-container input:focus {
+            border-color: var(--primary);
+        }
+
+        .search-container button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0 20px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .search-container button:hover {
+            background-color: #003d73;
+        }
+
+        #results-container {
+            width: 90%;
+            max-width: 600px;
+            margin-bottom: 40px;
+        }
+
+        .turno-summary {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--primary);
+        }
+
+        .turno-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .turno-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .turno-meta {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        .turno-locations {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .location-block {
+            text-align: center;
+        }
+
+        .location-time {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .location-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .location-arrow {
+            color: #cbd5e1;
+            font-size: 20px;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 10px;
+            bottom: 10px;
+            width: 2px;
+            background: var(--border);
+        }
+
+        .activity-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+        }
+
+        .activity-card::before {
+            content: '';
+            position: absolute;
+            left: -25px;
+            top: 20px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 3px solid var(--bg-color);
+        }
+
+        .act-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .act-time {
+            font-weight: 800;
+            font-size: 15px;
+            color: var(--text-main);
+        }
+        
+        .act-duration {
+            font-size: 12px;
+            color: var(--text-muted);
+            background: #f1f5f9;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+
+        .act-route {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .act-type {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .type-linea { border: 2px solid; }
+        .type-vuoto { background: #e2e8f0; color: #475569; }
+        .type-pausa { background: #fef3c7; color: #d97706; }
+        .type-altro { background: #f1f5f9; color: #64748b; }
+
+        .act-notes {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border);
+            font-size: 12px;
+            color: #d97706;
+            font-weight: 600;
+        }
+        
+        .act-handoff {
+            font-size: 12px;
+            color: var(--primary);
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .error-msg {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+            margin: 0 20px 20px 20px;
+            width: 90%;
+            max-width: 500px;
+            box-sizing: border-box;
+        }
+        
+        @media (max-width: 480px) {
+            .search-container {
+                flex-direction: column;
+            }
+            .search-container input[type="date"] {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Visualizzatore Turni</h1>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="shift-input" placeholder="Codice Turno (es. 4P03)" onkeypress="if(event.key === 'Enter') cercaTurno()">
+        <input type="date" id="date-input">
+        <button onclick="cercaTurno()"><i class="fa-solid fa-magnifying-glass"></i></button>
+    </div>
+
+    <div id="error-box" class="error-msg"></div>
+    <div id="results-container"></div>
+
+    <script>
+        // Imposta la data odierna di default al caricamento della pagina
+        document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
+
+        // Configurazione colori ACTV dal modulo BateoLive
+        const ACTV_COLORS = {
+            '1': { bg: '#ffffff', text: '#000000', border: '#000000' },
+            '2': { bg: '#e3001b', text: '#ffffff', border: '#e3001b' },
+            '2/': { bg: '#e3001b', text: '#ffffff', border: '#e3001b' },
+            '3': { bg: '#ff8c00', text: '#000000', border: '#ff8c00' },
+            '4.1': { bg: '#bd429b', text: '#ffffff', border: '#bd429b' },
+            '4.2': { bg: '#bd429b', text: '#ffffff', border: '#bd429b' },
+            '5.1': { bg: '#60b9a6', text: '#000000', border: '#60b9a6' },
+            '5.2': { bg: '#60b9a6', text: '#000000', border: '#60b9a6' },
+            '6': { bg: '#0070bc', text: '#ffffff', border: '#0070bc' },
+            'N': { bg: '#1c355e', text: '#ffffff', border: '#1c355e' },
+            '11': { bg: '#f49ab4', text: '#000000', border: '#f49ab4' }
+        };
+
+        function getLineStyle(linea) {
+            const c = ACTV_COLORS[linea] || { bg: '#ffffff', text: '#000000', border: '#333333' };
+            return `background-color: ${c.bg}; color: ${c.text}; border-color: ${c.border};`;
+        }
+
+        function showError(msg) {
+            const errBox = document.getElementById('error-box');
+            errBox.textContent = msg;
+            errBox.style.display = 'block';
+            document.getElementById('results-container').innerHTML = '';
+        }
+
+        async function cercaTurno() {
+            document.getElementById('error-box').style.display = 'none';
+            
+            const codice = document.getElementById('shift-input').value.trim();
+            const dataGiorno = document.getElementById('date-input').value;
+            
+            if (!codice) {
+                showError("Inserisci un codice turno valido.");
+                return;
+            }
+            if (!dataGiorno) {
+                showError("Seleziona una data valida.");
+                return;
+            }
+
+            // Costruzione dell'URL con i parametri richiesti dal backend
+            const API_URL = `/api/v1/turno?codice=${encodeURIComponent(codice)}&data=${encodeURIComponent(dataGiorno)}`; 
+
+            try {
+                const response = await fetch(API_URL);
+                const responseData = await response.json();
+                
+                // Se la risposta non è OK (es. 400, 404, 409), mostra il messaggio d'errore fornito dal backend
+                if (!response.ok) {
+                    throw new Error(responseData.error || `Errore di connessione al server (${response.status})`);
+                }
+                
+                // Passa l'oggetto nidificato 'turno' alla funzione di rendering esistente
+                renderTurno(responseData.turno);
+                
+            } catch (error) {
+                showError(error.message);
+                console.error("Fetch error:", error);
+            }
+        }
+
+        function renderTurno(turno) {
+            const container = document.getElementById('results-container');
+            
+            // 1. Unione e ordinamento cronologico delle attività
+            const tutteLeAttivita = [
+                ...(turno.corse_linea || []),
+                ...(turno.altre_attivita || [])
+            ];
+            
+            // Ordiniamo tramite il campo "ordine" nativo del JSON
+            tutteLeAttivita.sort((a, b) => a.ordine - b.ordine);
+
+            // 2. Costruzione HTML Riepilogo
+            let html = `
+                <div class="turno-summary">
+                    <div class="turno-header">
+                        <h2 class="turno-title">Turno ${turno.id}</h2>
+                        <div class="turno-meta">
+                            <div>${turno.tipologia}</div>
+                            <div><strong>Equipaggio:</strong> ${turno.equipaggio}</div>
+                        </div>
+                    </div>
+                    <div class="turno-locations">
+                        <div class="location-block">
+                            <div class="location-time">${turno.inizio_turno.ora}</div>
+                            <div class="location-name">${turno.inizio_turno.luogo}</div>
+                        </div>
+                        <div class="location-arrow"><i class="fa-solid fa-arrow-right-long"></i></div>
+                        <div class="location-block">
+                            <div class="location-time">${turno.fine_turno.ora}</div>
+                            <div class="location-name">${turno.fine_turno.luogo}</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 13px; text-align: center; color: var(--text-muted); margin-top:10px;">
+                        Durata totale: <strong>${turno.durata} h</strong>
+                    </div>
+                </div>
+                <div class="timeline">
+            `;
+
+            // 3. Generazione Timeline Cronologica
+            tutteLeAttivita.forEach(act => {
+                const isCorsa = act.hasOwnProperty('linea');
+                
+                // Determinazione classe visiva
+                let typeClass = "type-altro";
+                let typeLabel = act.tipo || "Attività";
+                let styleInline = "";
+
+                if (isCorsa) {
+                    typeClass = "type-linea";
+                    typeLabel = `Linea ${act.linea}`;
+                    styleInline = getLineStyle(act.linea);
+                } else if (act.categoria === "spostamento_a_vuoto" || act.tipo.includes("TRASFERIMENTO")) {
+                    typeClass = "type-vuoto";
+                    typeLabel = act.tipo;
+                } else if (act.categoria === "altra_attivita" && act.tipo.includes("PASTO")) {
+                    typeClass = "type-pausa";
+                    typeLabel = act.tipo;
+                }
+
+                // Note e Consegne/Imbarchi
+                let noteHtml = '';
+                if (act.note && act.note.length > 0) {
+                    const testiNote = act.note.map(n => n.testo).join(" - ");
+                    noteHtml += `<div class="act-notes"><i class="fa-solid fa-triangle-exclamation"></i> ${testiNote}</div>`;
+                }
+
+                let handoffHtml = '';
+                if (act.imbarca) handoffHtml += `<div><i class="fa-solid fa-arrow-right-to-bracket"></i> Imbarca da: T${act.imbarca.turno} L.${act.imbarca.linea}</div>`;
+                if (act.consegna) handoffHtml += `<div><i class="fa-solid fa-arrow-right-from-bracket"></i> Consegna a: T${act.consegna.turno} L.${act.consegna.linea}</div>`;
+                
+                if (handoffHtml) {
+                    handoffHtml = `<div class="act-handoff">${handoffHtml}</div>`;
+                }
+
+                html += `
+                    <div class="activity-card">
+                        <div class="act-header">
+                            <span class="act-time">${act.partenza} - ${act.arrivo}</span>
+                            <span class="act-duration">${act.durata_min} min</span>
+                        </div>
+                        <div class="act-route">
+                            <span class="act-type ${typeClass}" style="${styleInline}">${typeLabel}</span>
+                            <span>${act.da} <i class="fa-solid fa-caret-right" style="color:#cbd5e1; margin:0 5px;"></i> ${act.a}</span>
+                        </div>
+                        ${handoffHtml}
+                        ${noteHtml}
+                    </div>
+                `;
+            });
+
+            html += `</div>`; // Chiude timeline
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
+ 

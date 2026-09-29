@@ -201,39 +201,60 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
-            align-items: center;
+            align-items: flex-start;
+            gap: 10px;
         }
 
         .act-time {
             font-weight: 800;
             font-size: 15px;
             color: var(--text-main);
+            white-space: nowrap;
         }
-        
-        .act-duration {
-            font-size: 12px;
-            color: var(--text-muted);
-            background: #f1f5f9;
-            padding: 3px 8px;
-            border-radius: 12px;
+
+        .act-header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 3px;
+            min-width: 0;
+            text-align: right;
+        }
+
+        .act-notes-inline {
+            font-size: 11px;
+            color: #d97706;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+
+        .act-notes-inline i {
+            margin-right: 3px;
         }
 
         .act-route {
             font-size: 14px;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 18px;
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-wrap: wrap;
         }
 
         .act-type {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
+            box-sizing: border-box;
+            border-radius: 50%;
             font-size: 11px;
             font-weight: 800;
-            text-transform: uppercase;
+            text-transform: none;
+            line-height: 1;
         }
 
         .type-linea { border: 2px solid; }
@@ -241,20 +262,32 @@
         .type-pausa { background: #fef3c7; color: #d97706; }
         .type-altro { background: #f1f5f9; color: #64748b; }
 
-        .act-notes {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px dashed var(--border);
-            font-size: 12px;
-            color: #d97706;
-            font-weight: 600;
+        .act-bottom {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+            min-height: 18px;
+        }
+
+        .act-duration {
+            font-size: 11px;
+            color: var(--text-muted);
+            background: #f1f5f9;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: 700;
         }
         
         .act-handoff {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--primary);
-            font-weight: 600;
+            font-weight: 700;
             margin-top: 4px;
+        }
+
+        .act-handoff i {
+            margin-right: 3px;
         }
 
         .turno-part-row {
@@ -302,22 +335,27 @@
             font-size: 18px;
         }
 
-        .act-part {
-            display: inline-block;
-            margin-left: 6px;
-            padding: 3px 7px;
-            border-radius: 10px;
-            background: #eef2f7;
-            color: var(--text-muted);
-            font-size: 10px;
+        .timeline-part-title {
+            font-size: 12px;
             font-weight: 800;
+            color: var(--primary);
+            margin: 4px 0 10px;
+            padding-left: 2px;
+            text-transform: uppercase;
         }
 
         .type-rebecchino {
             background: #ede9fe;
             color: #6d28d9;
             border: 2px solid #8b5cf6;
+            width: auto;
+            min-width: 0;
+            height: 30px;
+            padding: 0 9px;
+            border-radius: 15px;
+            text-transform: none;
         }
+
 
         .error-msg {
             background: #fee2e2;
@@ -530,129 +568,104 @@
                     fine: turno.fine_turno
                 }];
 
-            let partiHtml = "";
-            if (parti.length === 1) {
-                const p = parti[0];
-                partiHtml = `
-                    <div class="turno-locations">
-                        <div class="location-block">
-                            <div class="location-time">${p.inizio.ora}</div>
-                            <div class="location-name">${p.inizio.luogo}</div>
-                        </div>
-                        <div class="location-arrow"><i class="fa-solid fa-arrow-right-long"></i></div>
-                        <div class="location-block">
-                            <div class="location-time">${p.fine.ora}</div>
-                            <div class="location-name">${p.fine.luogo}</div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                partiHtml = `
-                    <div style="margin-bottom:10px;">
-                        ${parti.map((p, index) => `
-                            <div class="turno-part-row">
-                                <div class="turno-part-label">Parte ${index + 1}</div>
-                                <div class="turno-part-location">
-                                    <div class="turno-part-time">${p.inizio.ora}</div>
-                                    <div class="turno-part-place">${p.inizio.luogo}</div>
-                                </div>
-                                <div class="turno-part-arrow">
-                                    <i class="fa-solid fa-arrow-right-long"></i>
-                                </div>
-                                <div class="turno-part-location">
-                                    <div class="turno-part-time">${p.fine.ora}</div>
-                                    <div class="turno-part-place">${p.fine.luogo}</div>
-                                </div>
-                            </div>
-                        `).join("")}
-                    </div>
-                `;
-            }
-
             let html = `
                 <div class="turno-summary">
                     <div class="turno-header">
                         <h2 class="turno-title">Turno ${codiceTurno}</h2>
                         <div class="turno-meta">
-                            <div>${turno.tipologia}</div>
-                            <div><strong>Equipaggio:</strong> ${turno.equipaggio}</div>
+                            <div><strong>Durata turno:</strong> ${turno.durata} h</div>
                         </div>
-                    </div>
-
-                    ${partiHtml}
-
-                    <div style="font-size: 13px; text-align: center; color: var(--text-muted); margin-top:10px;">
-                        Durata totale: <strong>${turno.durata} h</strong>
                     </div>
                 </div>
                 <div class="timeline">
             `;
 
             // 4. Generazione Timeline Cronologica.
-            tutteLeAttivita.forEach(act => {
-                const isRebecchino = act.tipo_attivita === "rebecchino";
-                const isCorsa = !isRebecchino && act.hasOwnProperty('linea');
+            // Le attività vengono raggruppate per parte solo quando il turno ha più parti.
+            const gruppiParti = parti.length > 1
+                ? parti.map((_, index) => ({
+                    numero: index + 1,
+                    attivita: tutteLeAttivita.filter(act => Number(act.parte) === index + 1)
+                })).filter(g => g.attivita.length > 0)
+                : [{ numero: null, attivita: tutteLeAttivita }];
 
-                let typeClass = "type-altro";
-                let typeLabel = act.tipo || "Attività";
-                let styleInline = "";
-
-                if (isRebecchino) {
-                    typeClass = "type-rebecchino";
-                    typeLabel = "Rebecchino";
-                    styleInline = "";
-                } else if (isCorsa) {
-                    typeClass = "type-linea";
-                    typeLabel = `Linea ${act.linea}`;
-                    styleInline = getLineStyle(act.linea);
-                } else if (act.categoria === "spostamento_a_vuoto" || (act.tipo && act.tipo.includes("TRASFERIMENTO"))) {
-                    typeClass = "type-vuoto";
-                    typeLabel = act.tipo;
-                } else if (act.categoria === "altra_attivita" && act.tipo && act.tipo.includes("PASTO")) {
-                    typeClass = "type-pausa";
-                    typeLabel = act.tipo;
+            gruppiParti.forEach(gruppo => {
+                if (gruppo.numero !== null) {
+                    html += `<div class="timeline-part-title">Parte ${gruppo.numero}</div>`;
                 }
 
-                let parteHtml = "";
-                if (parti.length > 1 && act.parte) {
-                    parteHtml = `<span class="act-part">Parte ${act.parte}</span>`;
-                }
+                gruppo.attivita.forEach(act => {
+                    const isRebecchino = act.tipo_attivita === "rebecchino";
+                    const isCorsa = !isRebecchino && act.hasOwnProperty('linea');
 
-                // Note.
-                let noteHtml = '';
-                if (act.note && act.note.length > 0) {
-                    const testiNote = act.note.map(n => n.testo).join(" - ");
-                    noteHtml += `<div class="act-notes"><i class="fa-solid fa-triangle-exclamation"></i> ${testiNote}</div>`;
-                }
+                    let typeClass = "type-altro";
+                    let typeLabel = act.tipo || "Attività";
+                    let styleInline = "";
+                    let rebecchinoLineaHtml = "";
 
-                // Consegne / imbarchi.
-                let handoffHtml = '';
-                if (act.imbarca) {
-                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-to-bracket"></i> Imbarca da: T${act.imbarca.turno} L.${act.imbarca.linea}</div>`;
-                }
-                if (act.consegna) {
-                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-from-bracket"></i> Consegna a: T${act.consegna.turno} L.${act.consegna.linea}</div>`;
-                }
+                    if (isRebecchino) {
+                        typeClass = "type-rebecchino";
+                        typeLabel = "Rebecchino";
+                        const lineaRebecchino = act.linea || act.linea_servizio || act.linea_da || "";
+                        if (lineaRebecchino) {
+                            rebecchinoLineaHtml = `<span class="act-type type-linea" style="${getLineStyle(lineaRebecchino)}">${lineaRebecchino}</span>`;
+                        }
+                    } else if (isCorsa) {
+                        typeClass = "type-linea";
+                        typeLabel = String(act.linea);
+                        styleInline = getLineStyle(act.linea);
+                    } else if (act.categoria === "spostamento_a_vuoto" || (act.tipo && act.tipo.includes("TRASFERIMENTO"))) {
+                        typeClass = "type-vuoto";
+                        typeLabel = act.tipo;
+                    } else if (act.categoria === "altra_attivita" && act.tipo && act.tipo.includes("PASTO")) {
+                        typeClass = "type-pausa";
+                        typeLabel = act.tipo;
+                    }
 
-                if (handoffHtml) {
-                    handoffHtml = `<div class="act-handoff">${handoffHtml}</div>`;
-                }
+                    // Note a destra degli orari.
+                    let noteInlineHtml = '';
+                    if (act.note && act.note.length > 0) {
+                        const testiNote = act.note.map(n => n.testo).filter(Boolean).join(" - ");
+                        if (testiNote) {
+                            noteInlineHtml = `<div class="act-notes-inline"><i class="fa-solid fa-triangle-exclamation"></i>${testiNote}</div>`;
+                        }
+                    }
 
-                html += `
-                    <div class="activity-card">
-                        <div class="act-header">
-                            <span class="act-time">${act.partenza} - ${act.arrivo}</span>
-                            <span class="act-duration">${act.durata_min} min</span>
+                    // Imbarco/consegna: al posto della dicitura mostriamo il codice del turno collegato.
+                    let handoffHtml = '';
+                    if (act.imbarca) {
+                        const codiceImbarca = convertiCodiceTurno(`${act.imbarca.linea || ''}_${act.imbarca.turno || ''}`);
+                        handoffHtml += `<div><i class="fa-solid fa-arrow-right-to-bracket"></i>${codiceImbarca}</div>`;
+                    }
+                    if (act.consegna) {
+                        const codiceConsegna = convertiCodiceTurno(`${act.consegna.linea || ''}_${act.consegna.turno || ''}`);
+                        handoffHtml += `<div><i class="fa-solid fa-arrow-right-from-bracket"></i>${codiceConsegna}</div>`;
+                    }
+
+                    if (handoffHtml) {
+                        handoffHtml = `<div class="act-handoff">${handoffHtml}</div>`;
+                    }
+
+                    html += `
+                        <div class="activity-card">
+                            <div class="act-header">
+                                <span class="act-time">${act.partenza} - ${act.arrivo}</span>
+                                <div class="act-header-right">
+                                    ${noteInlineHtml}
+                                    ${handoffHtml}
+                                </div>
+                            </div>
+                            <div class="act-route">
+                                <span class="act-type ${typeClass}" style="${styleInline}">${typeLabel}</span>
+                                ${rebecchinoLineaHtml}
+                                <span>${act.da} <i class="fa-solid fa-caret-right" style="color:#cbd5e1; margin:0 5px;"></i> ${act.a}</span>
+                            </div>
+                            <div class="act-bottom">
+                                <span class="act-duration">${act.durata_min} min</span>
+                            </div>
                         </div>
-                        <div class="act-route">
-                            <span class="act-type ${typeClass}" style="${styleInline}">${typeLabel}</span>
-                            ${parteHtml}
-                            <span>${act.da} <i class="fa-solid fa-caret-right" style="color:#cbd5e1; margin:0 5px;"></i> ${act.a}</span>
-                        </div>
-                        ${handoffHtml}
-                        ${noteHtml}
-                    </div>
-                `;
+                    `;
+                });
             });
 
             html += `</div>`;

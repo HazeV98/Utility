@@ -257,6 +257,68 @@
             margin-top: 4px;
         }
 
+        .turno-part-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: #f8fafc;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 7px;
+        }
+
+        .turno-part-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .turno-part-label {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            min-width: 55px;
+        }
+
+        .turno-part-location {
+            text-align: center;
+            flex: 1;
+        }
+
+        .turno-part-time {
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .turno-part-place {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        .turno-part-arrow {
+            color: #cbd5e1;
+            font-size: 18px;
+        }
+
+        .act-part {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 3px 7px;
+            border-radius: 10px;
+            background: #eef2f7;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .type-rebecchino {
+            background: #ede9fe;
+            color: #6d28d9;
+            border: 2px solid #8b5cf6;
+        }
+
         .error-msg {
             background: #fee2e2;
             color: #b91c1c;
@@ -373,39 +435,152 @@
             }
         }
 
+        // Converte gli ID interni del JSON nel codice usato dall'app.
+        // Esempi:
+        //   4.1_1  -> 4P01
+        //   1_13   -> 1C13
+        //   2_15   -> 2C15
+        //   5.1_2  -> 5P02
+        function convertiCodiceTurno(idTurno) {
+            if (!idTurno) return "";
+
+            const id = String(idTurno).trim().toUpperCase();
+
+            // Se è già nel formato dell'app, non modificarlo.
+            if (/^[0-9]+[CPB]\d{2}$/.test(id)) return id;
+
+            // Gli ID del JSON hanno forma LINEA_NUMERO[_eventuale-validità].
+            const match = id.match(/^(\d+)(?:\.\d+)?_(\d+)/);
+            if (!match) return id;
+
+            const linea = match[1];
+            const numero = String(parseInt(match[2], 10)).padStart(2, "0");
+
+            // La logica del calendario.js usa C per le linee 1/2 e P per le altre.
+            const lettera = (linea === "1" || linea === "2") ? "C" : "P";
+
+            return `${linea}${lettera}${numero}`;
+        }
+
+        // Riunisce le due tratte che rappresentano un'unica corsa
+        // spezzata dalla divisione della tabella orari a Museo.
+        function unisciRebecchini(corse) {
+            const ordinate = [...(corse || [])].sort((a, b) => a.ordine - b.ordine);
+            const risultato = [];
+
+            for (let i = 0; i < ordinate.length; i++) {
+                const corrente = ordinate[i];
+                const successiva = ordinate[i + 1];
+
+                const eRebecchino =
+                    successiva &&
+                    String(corrente.a || "").trim().toUpperCase() === "MUSEO" &&
+                    String(successiva.da || "").trim().toUpperCase() === "MUSEO" &&
+                    String(corrente.arrivo || "") === String(successiva.partenza || "");
+
+                if (eRebecchino) {
+                    const note = [
+                        ...(corrente.note || []),
+                        ...(successiva.note || [])
+                    ];
+
+                    risultato.push({
+                        ...corrente,
+                        a: successiva.a,
+                        arrivo: successiva.arrivo,
+                        arrivo_min: successiva.arrivo_min,
+                        durata_min: (corrente.durata_min || 0) + (successiva.durata_min || 0),
+                        tipo_attivita: "rebecchino",
+                        note,
+                        consegna: successiva.consegna || corrente.consegna || null
+                    });
+
+                    i++;
+                } else {
+                    risultato.push(corrente);
+                }
+            }
+
+            return risultato;
+        }
+
         function renderTurno(turno) {
             const container = document.getElementById('results-container');
-            
-            // 1. Unione e ordinamento cronologico delle attività
+
+            // 1. Codice turno nel formato usato dall'app.
+            const codiceTurno = convertiCodiceTurno(turno.id);
+
+            // 2. Prima riuniamo le eventuali corse "rebecchino", poi
+            // uniamo le corse alle altre attività e ordiniamo tutto.
+            const corseVisualizzate = unisciRebecchini(turno.corse_linea || []);
+
             const tutteLeAttivita = [
-                ...(turno.corse_linea || []),
+                ...corseVisualizzate,
                 ...(turno.altre_attivita || [])
             ];
-            
-            // Ordiniamo tramite il campo "ordine" nativo del JSON
+
             tutteLeAttivita.sort((a, b) => a.ordine - b.ordine);
 
-            // 2. Costruzione HTML Riepilogo
+            // 3. Per i turni spezzati mostriamo tutte le parti del turno,
+            // ciascuna con il proprio inizio e fine.
+            const parti = Array.isArray(turno.parti) && turno.parti.length > 0
+                ? turno.parti
+                : [{
+                    inizio: turno.inizio_turno,
+                    fine: turno.fine_turno
+                }];
+
+            let partiHtml = "";
+            if (parti.length === 1) {
+                const p = parti[0];
+                partiHtml = `
+                    <div class="turno-locations">
+                        <div class="location-block">
+                            <div class="location-time">${p.inizio.ora}</div>
+                            <div class="location-name">${p.inizio.luogo}</div>
+                        </div>
+                        <div class="location-arrow"><i class="fa-solid fa-arrow-right-long"></i></div>
+                        <div class="location-block">
+                            <div class="location-time">${p.fine.ora}</div>
+                            <div class="location-name">${p.fine.luogo}</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                partiHtml = `
+                    <div style="margin-bottom:10px;">
+                        ${parti.map((p, index) => `
+                            <div class="turno-part-row">
+                                <div class="turno-part-label">Parte ${index + 1}</div>
+                                <div class="turno-part-location">
+                                    <div class="turno-part-time">${p.inizio.ora}</div>
+                                    <div class="turno-part-place">${p.inizio.luogo}</div>
+                                </div>
+                                <div class="turno-part-arrow">
+                                    <i class="fa-solid fa-arrow-right-long"></i>
+                                </div>
+                                <div class="turno-part-location">
+                                    <div class="turno-part-time">${p.fine.ora}</div>
+                                    <div class="turno-part-place">${p.fine.luogo}</div>
+                                </div>
+                            </div>
+                        `).join("")}
+                    </div>
+                `;
+            }
+
             let html = `
                 <div class="turno-summary">
                     <div class="turno-header">
-                        <h2 class="turno-title">Turno ${turno.id}</h2>
+                        <h2 class="turno-title">Turno ${codiceTurno}</h2>
                         <div class="turno-meta">
                             <div>${turno.tipologia}</div>
                             <div><strong>Equipaggio:</strong> ${turno.equipaggio}</div>
                         </div>
                     </div>
-                    <div class="turno-locations">
-                        <div class="location-block">
-                            <div class="location-time">${turno.inizio_turno.ora}</div>
-                            <div class="location-name">${turno.inizio_turno.luogo}</div>
-                        </div>
-                        <div class="location-arrow"><i class="fa-solid fa-arrow-right-long"></i></div>
-                        <div class="location-block">
-                            <div class="location-time">${turno.fine_turno.ora}</div>
-                            <div class="location-name">${turno.fine_turno.luogo}</div>
-                        </div>
-                    </div>
+
+                    ${partiHtml}
+
                     <div style="font-size: 13px; text-align: center; color: var(--text-muted); margin-top:10px;">
                         Durata totale: <strong>${turno.durata} h</strong>
                     </div>
@@ -413,38 +588,52 @@
                 <div class="timeline">
             `;
 
-            // 3. Generazione Timeline Cronologica
+            // 4. Generazione Timeline Cronologica.
             tutteLeAttivita.forEach(act => {
-                const isCorsa = act.hasOwnProperty('linea');
-                
-                // Determinazione classe visiva
+                const isRebecchino = act.tipo_attivita === "rebecchino";
+                const isCorsa = !isRebecchino && act.hasOwnProperty('linea');
+
                 let typeClass = "type-altro";
                 let typeLabel = act.tipo || "Attività";
                 let styleInline = "";
 
-                if (isCorsa) {
+                if (isRebecchino) {
+                    typeClass = "type-rebecchino";
+                    typeLabel = "Rebecchino";
+                    styleInline = "";
+                } else if (isCorsa) {
                     typeClass = "type-linea";
                     typeLabel = `Linea ${act.linea}`;
                     styleInline = getLineStyle(act.linea);
-                } else if (act.categoria === "spostamento_a_vuoto" || act.tipo.includes("TRASFERIMENTO")) {
+                } else if (act.categoria === "spostamento_a_vuoto" || (act.tipo && act.tipo.includes("TRASFERIMENTO"))) {
                     typeClass = "type-vuoto";
                     typeLabel = act.tipo;
-                } else if (act.categoria === "altra_attivita" && act.tipo.includes("PASTO")) {
+                } else if (act.categoria === "altra_attivita" && act.tipo && act.tipo.includes("PASTO")) {
                     typeClass = "type-pausa";
                     typeLabel = act.tipo;
                 }
 
-                // Note e Consegne/Imbarchi
+                let parteHtml = "";
+                if (parti.length > 1 && act.parte) {
+                    parteHtml = `<span class="act-part">Parte ${act.parte}</span>`;
+                }
+
+                // Note.
                 let noteHtml = '';
                 if (act.note && act.note.length > 0) {
                     const testiNote = act.note.map(n => n.testo).join(" - ");
                     noteHtml += `<div class="act-notes"><i class="fa-solid fa-triangle-exclamation"></i> ${testiNote}</div>`;
                 }
 
+                // Consegne / imbarchi.
                 let handoffHtml = '';
-                if (act.imbarca) handoffHtml += `<div><i class="fa-solid fa-arrow-right-to-bracket"></i> Imbarca da: T${act.imbarca.turno} L.${act.imbarca.linea}</div>`;
-                if (act.consegna) handoffHtml += `<div><i class="fa-solid fa-arrow-right-from-bracket"></i> Consegna a: T${act.consegna.turno} L.${act.consegna.linea}</div>`;
-                
+                if (act.imbarca) {
+                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-to-bracket"></i> Imbarca da: T${act.imbarca.turno} L.${act.imbarca.linea}</div>`;
+                }
+                if (act.consegna) {
+                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-from-bracket"></i> Consegna a: T${act.consegna.turno} L.${act.consegna.linea}</div>`;
+                }
+
                 if (handoffHtml) {
                     handoffHtml = `<div class="act-handoff">${handoffHtml}</div>`;
                 }
@@ -457,6 +646,7 @@
                         </div>
                         <div class="act-route">
                             <span class="act-type ${typeClass}" style="${styleInline}">${typeLabel}</span>
+                            ${parteHtml}
                             <span>${act.da} <i class="fa-solid fa-caret-right" style="color:#cbd5e1; margin:0 5px;"></i> ${act.a}</span>
                         </div>
                         ${handoffHtml}
@@ -465,7 +655,7 @@
                 `;
             });
 
-            html += `</div>`; // Chiude timeline
+            html += `</div>`;
             container.innerHTML = html;
         }
     </script>

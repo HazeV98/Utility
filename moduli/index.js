@@ -355,22 +355,38 @@ window.controllaPromemoria = async () => {
     } catch(e) { console.error("Errore badge promemoria:", e); }
 };
 
-// --- STORIE: storie di altri utenti pubblicate dopo l'ultimo accesso al modulo ---
-// Stesso schema della bacheca: ultimo accesso salvato sia su Firestore che in localStorage.
+// --- STORIE: storie di altri utenti e commenti ai propri post o a quelli seguiti ---
 window.controllaStorie = async () => {
     if (!auth.currentUser) { window.aggiornaBadgeUI('storie', 0); return; }
     try {
         const fbAccess = parseInt(window.currentUserData?.ultimo_accesso_storie || 0);
         const localAccess = parseInt(localStorage.getItem('ultimo_accesso_storie') || 0);
         const ultimoAccesso = Math.max(fbAccess, localAccess);
-
-        const q = query(collection(db, "storie"), where("timestamp", ">", Timestamp.fromMillis(ultimoAccesso)));
-        const snap = await getDocs(q);
         let count = 0;
-        snap.forEach(d => { if (d.data().autoreId !== auth.currentUser.uid) count++; }); // le proprie storie non contano
+
+        // 1. Nuove storie pubblicate da altri
+        const qStorie = query(collection(db, "storie"), where("timestamp", ">", Timestamp.fromMillis(ultimoAccesso)));
+        const snapStorie = await getDocs(qStorie);
+        snapStorie.forEach(d => { if (d.data().autoreId !== auth.currentUser.uid) count++; });
+
+        // 2. Nuovi commenti ai TUOI post (da parte di terzi)
+        const qComPropri = query(collection(db, "storie"), where("autoreId", "==", auth.currentUser.uid), where("lastCommentTimestamp", ">", Timestamp.fromMillis(ultimoAccesso)));
+        const snapComPropri = await getDocs(qComPropri);
+        snapComPropri.forEach(d => { if (d.data().lastCommentAuthor !== auth.currentUser.uid) count++; });
+
+        // 3. Nuovi commenti ai post a cui hai messo la campanellina (da parte di terzi)
+        const qComSeguiti = query(collection(db, "storie"), where("followers", "array-contains", auth.currentUser.uid), where("lastCommentTimestamp", ">", Timestamp.fromMillis(ultimoAccesso)));
+        const snapComSeguiti = await getDocs(qComSeguiti);
+        snapComSeguiti.forEach(d => { 
+            const data = d.data();
+            // Conta solo se il post non è già tuo (calcolato sopra) e il commento non è tuo
+            if (data.autoreId !== auth.currentUser.uid && data.lastCommentAuthor !== auth.currentUser.uid) count++; 
+        });
+
         window.aggiornaBadgeUI('storie', count);
     } catch(e) { console.error("Errore badge storie:", e); }
 };
+
 
 // Segna tutte le storie come lette (chiamata all'apertura del modulo e quando arrivano storie a modulo aperto).
 window.segnaStorieLette = async () => {

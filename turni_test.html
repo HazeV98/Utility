@@ -363,6 +363,7 @@
             background: var(--card-bg); width: 100%; max-width: 560px; max-height: 88vh;
             border-radius: 18px 18px 0 0; display: flex; flex-direction: column;
             box-shadow: 0 -8px 30px rgba(0,0,0,0.25);
+            position: relative; /* per lo scroll corretto */
         }
         @media (min-width: 600px) {
             .corsa-overlay { align-items: center; }
@@ -378,7 +379,7 @@
             border: none; background: #eef2f6; color: var(--text-main); width: 34px; height: 34px;
             border-radius: 50%; font-size: 16px; cursor: pointer; flex: none;
         }
-        .corsa-corpo { overflow-y: auto; padding: 14px 18px 22px; }
+        .corsa-corpo { overflow-y: auto; padding: 14px 18px 22px; position: relative; }
         .corsa-stato { text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 14px; }
         .corsa-stato.errore { color: #b42318; }
         .fermata { display: flex; align-items: center; gap: 12px; padding: 9px 0; position: relative; }
@@ -596,8 +597,8 @@
                         tipo_attivita: "rebecchino",
                         note,
                         consegna: successiva.consegna || corrente.consegna || null,
-                        rebecchino_prima_corsa: corrente,   // Salvo la corsa 1 intatta
-                        rebecchino_seconda_corsa: successiva // Salvo la corsa 2 intatta
+                        rebecchino_prima_corsa: corrente,   
+                        rebecchino_seconda_corsa: successiva 
                     });
 
                     i++;
@@ -655,22 +656,18 @@
             try {
                 let dati;
                 
-                // Gestione separata per i rebecchini uniti
                 if (act.tipo_attivita === "rebecchino" && act.rebecchino_prima_corsa && act.rebecchino_seconda_corsa) {
-                    // Fetch corsa 1
                     let dati1 = await fetchCorsaSingola(act.rebecchino_prima_corsa);
                     if (mio !== richiestaCorsa) return;
 
-                    // Fetch corsa 2
                     let dati2 = await fetchCorsaSingola(act.rebecchino_seconda_corsa);
                     if (mio !== richiestaCorsa) return;
 
-                    // Uniamo le fermate: la prima fino a Museo, la seconda da dopo Museo
                     let f1 = dati1.fermate.slice(0, dati1.tratta.a + 1);
                     let f2 = dati2.fermate.slice(dati2.tratta.da + 1);
 
                     dati = {
-                        ...dati1, // Manteniamo la struttura base della prima corsa
+                        ...dati1, 
                         fermate: f1.concat(f2),
                         tratta: {
                             da: dati1.tratta.da,
@@ -678,7 +675,6 @@
                         }
                     };
                 } else {
-                    // Corsa normale
                     dati = await fetchCorsaSingola(act);
                     if (mio !== richiestaCorsa) return;
                 }
@@ -695,21 +691,40 @@
             const { fermate, tratta, corsa } = dati;
             document.getElementById('corsa-sotto').textContent =
                 `${act.partenza} - ${act.arrivo} · ${dataIt(dataCorrente)} ${corsa && corsa.direzione ? '· verso ' + corsa.direzione : ''}`;
+            
             const righe = fermate.map((f, i) => {
                 const nel = i >= tratta.da && i <= tratta.a;
                 const ultima = i === fermate.length - 1;
                 const ora = ultima ? f.arrivo : f.partenza;
                 const sosta = !ultima && f.arrivo !== f.partenza ? `<small>arr. ${f.arrivo}</small>` : '';
-                const estremo = i === tratta.da ? 'Salita' : (i === tratta.a ? 'Discesa' : '');
-                return `<div class="fermata${nel ? ' nel-turno' : ''}">
+                
+                // Aggiornamento etichette Inizio / Fine
+                const estremo = i === tratta.da ? 'Inizio' : (i === tratta.a ? 'Fine' : '');
+                
+                // Aggiungiamo un id specifico per la fermata di inizio per lo scroll
+                const idInizio = i === tratta.da ? ' id="fermata-inizio-scroll"' : '';
+
+                return `<div class="fermata${nel ? ' nel-turno' : ''}"${idInizio}>
                     <span class="fermata-punto"></span>
                     <span class="fermata-nome">${esc(f.nome)}${estremo ? ` <span class="fermata-estremo">· ${estremo}</span>` : ''}</span>
                     <span class="fermata-ora">${ora}${f.oltre_mezzanotte ? '<span class="giorno-dopo">+1</span>' : ''}${sosta}</span>
                 </div>`;
             }).join('');
+            
             const parziale = tratta.da > 0 || tratta.a < fermate.length - 1;
-            document.getElementById('corsa-corpo').innerHTML = righe +
+            const corpo = document.getElementById('corsa-corpo');
+            
+            corpo.innerHTML = righe +
                 `<div class="corsa-legenda">${parziale ? 'In blu il tratto della tua corsa; le altre fermate sono del resto del percorso.' : 'Tutte le fermate della corsa.'}</div>`;
+                
+            // Effettua lo scorrimento automatico alla fermata di Inizio
+            setTimeout(() => {
+                const startFermata = document.getElementById('fermata-inizio-scroll');
+                if (startFermata && corpo) {
+                    // Posiziona l'elemento in cima rispettando il padding superiore del contenitore
+                    corpo.scrollTo({ top: startFermata.offsetTop - 14, behavior: 'smooth' });
+                }
+            }, 50);
         }
 
         function chiudiCorsa() {

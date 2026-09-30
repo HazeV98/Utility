@@ -853,7 +853,7 @@
                 let handoffHtml = '';
                 if (act.imbarca) {
                     const codImbarca = formattaCodiceTurno(act.imbarca.linea, act.imbarca.turno, isMarinaio);
-                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-to-bracket"></i> Imbarca da: ${codImbarca}</div>`;
+                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-to-bracket"></i> Consegnata da: ${codImbarca}</div>`;
                 }
                 if (act.consegna) {
                     const codConsegna = formattaCodiceTurno(act.consegna.linea, act.consegna.turno, isMarinaio);

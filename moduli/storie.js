@@ -1,4 +1,4 @@
-import { doc, getDoc, collection, getDocs, query, addDoc, updateDoc, deleteDoc, orderBy, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { doc, getDoc, collection, getDocs, query, addDoc, updateDoc, deleteDoc, orderBy, serverTimestamp, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // ==========================================
 // 1. INIEZIONE UI STORIE
@@ -234,6 +234,8 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                     autoreReale: datiReali,
                     testo: testo,
                     likes: [], // Array inizializzato per i Mi Piace
+                    followers: [], // Array per chi attiva le notifiche su questo post
+                    commentiCount: 0, // Contatore commenti
                     timestamp: idModifica ? undefined : serverTimestamp()
                 };
 
@@ -275,7 +277,7 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             }
         },
 
-        // --- SEZIONE SOCIAL: LIKES & COMMENTI ---
+        // --- SEZIONE SOCIAL: LIKES, NOTIFICHE & COMMENTI ---
         toggleLike: async function(storiaId) {
             const post = posts.find(p => p.id === storiaId);
             if (!post) return;
@@ -292,6 +294,22 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             try {
                 await updateDoc(doc(db, "storie", storiaId), { likes: likesCorrenti });
             } catch (e) { console.error("Errore aggiornamento like", e); }
+        },
+        
+        toggleNotifica: async function(storiaId) {
+            const post = posts.find(p => p.id === storiaId);
+            if (!post) return;
+            
+            let followersCorrenti = post.followers || [];
+            if (followersCorrenti.includes(currentUserUid)) {
+                followersCorrenti = followersCorrenti.filter(uid => uid !== currentUserUid); // Rimuovi notifica
+            } else {
+                followersCorrenti.push(currentUserUid); // Attiva notifica
+            }
+            
+            try {
+                await updateDoc(doc(db, "storie", storiaId), { followers: followersCorrenti });
+            } catch (e) { console.error("Errore aggiornamento notifiche", e); }
         },
 
         apriCommenti: function(storiaId) {
@@ -360,12 +378,21 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 let numOmo = userDataPrivate.progressivo ? ` ${userDataPrivate.progressivo}` : "";
                 let nomeAutore = `${userDataPrivate.nome || 'Utente'} ${userDataPrivate.cognome || ''}${numOmo}`.trim();
 
+                // Aggiungi commento
                 await addDoc(collection(db, "storie", storiaId, "commenti"), {
                     autoreId: currentUserUid,
                     autoreNome: nomeAutore,
                     testo: testo,
                     timestamp: serverTimestamp()
                 });
+                
+                // Aggiorna contatore e timestamp ultimo commento nella storia padre
+                await updateDoc(doc(db, "storie", storiaId), {
+                    commentiCount: increment(1),
+                    lastCommentTimestamp: serverTimestamp(),
+                    lastCommentAuthor: currentUserUid
+                });
+
                 input.value = ""; // Pulisci campo
             } catch(e) { console.error("Errore salvataggio commento", e); }
         },
@@ -374,6 +401,10 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             if(confirm("Vuoi eliminare questo commento?")) {
                 try {
                     await deleteDoc(doc(db, "storie", storiaId, "commenti", commentoId));
+                    // Decrementa contatore
+                    await updateDoc(doc(db, "storie", storiaId), {
+                        commentiCount: increment(-1)
+                    });
                 } catch(e) { console.error("Errore eliminazione commento", e); }
             }
         },
@@ -464,6 +495,10 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             let likesCorrenti = p.likes || [];
             let hasLiked = likesCorrenti.includes(currentUserUid);
             let likeCount = likesCorrenti.length;
+            
+            let commentCount = p.commentiCount || 0;
+            let followers = p.followers || [];
+            let isFollowing = followers.includes(currentUserUid);
 
             html += `
             <div class="storie-post">
@@ -485,7 +520,10 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                             <i class="${hasLiked ? 'fa-solid' : 'fa-regular'} fa-heart"></i> ${likeCount}
                         </button>
                         <button class="btn-social" onclick="window.storieAPI.apriCommenti('${p.id}')" title="Commenti">
-                            <i class="fa-regular fa-comment"></i>
+                            <i class="fa-regular fa-comment"></i> ${commentCount}
+                        </button>
+                        <button class="btn-social" style="color: ${isFollowing ? '#f39c12' : 'var(--text-muted)'}" onclick="window.storieAPI.toggleNotifica('${p.id}')" title="Notifiche Commenti">
+                            <i class="${isFollowing ? 'fa-solid' : 'fa-regular'} fa-bell"></i>
                         </button>
                     </div>
                     
@@ -527,4 +565,3 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
         document.getElementById('storie-feed').innerHTML = '<div style="color:var(--danger); text-align:center; padding: 20px; font-weight:bold;">Errore di caricamento. Riprova più tardi.</div>';
     });
 }
- 

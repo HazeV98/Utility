@@ -123,12 +123,66 @@
         }
 
         .turno-meta {
-            font-size: 14px;
-            color: var(--text-main);
+            font-size: 13px;
+            color: var(--text-muted);
             text-align: right;
-            background: #f1f5f9;
-            padding: 5px 12px;
-            border-radius: 8px;
+        }
+
+        /* Finestra con le fermate di una corsa */
+        .activity-card.cliccabile { cursor: pointer; }
+        .activity-card.cliccabile:active { background: #f1f5f9; }
+        .act-fermate-hint { font-size: 12px; color: var(--primary); font-weight: 600; margin-top: 8px; }
+
+        .corsa-overlay {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(15, 23, 42, 0.55);
+            display: none; align-items: flex-end; justify-content: center;
+        }
+        .corsa-overlay.aperto { display: flex; }
+        .corsa-modal {
+            background: var(--card-bg); width: 100%; max-width: 560px; max-height: 88vh;
+            border-radius: 18px 18px 0 0; display: flex; flex-direction: column;
+            box-shadow: 0 -8px 30px rgba(0,0,0,0.25);
+        }
+        @media (min-width: 600px) {
+            .corsa-overlay { align-items: center; }
+            .corsa-modal { border-radius: 18px; max-height: 80vh; }
+        }
+        .corsa-head {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+            padding: 16px 18px 12px; border-bottom: 1px solid var(--border);
+        }
+        .corsa-titolo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 700; font-size: 16px; }
+        .corsa-sotto { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-weight: 400; }
+        .corsa-chiudi {
+            border: none; background: #eef2f6; color: var(--text-main); width: 34px; height: 34px;
+            border-radius: 50%; font-size: 16px; cursor: pointer; flex: none;
+        }
+        .corsa-corpo { overflow-y: auto; padding: 14px 18px 22px; }
+        .corsa-stato { text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 14px; }
+        .corsa-stato.errore { color: #b42318; }
+        .fermata { display: flex; align-items: center; gap: 12px; padding: 9px 0; position: relative; }
+        .fermata::before { content: ''; position: absolute; left: 5px; top: 0; bottom: 0; width: 2px; background: #dbe3ea; }
+        .fermata:first-child::before { top: 50%; }
+        .fermata:last-child::before { bottom: 50%; }
+        .fermata-punto { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid #b8c4d0; flex: none; position: relative; z-index: 1; }
+        .fermata.nel-turno .fermata-punto { background: var(--primary); border-color: var(--primary); }
+        .fermata-nome { flex: 1; font-size: 14px; color: var(--text-muted); }
+        .fermata.nel-turno .fermata-nome { color: var(--text-main); font-weight: 600; }
+        .fermata-ora { font-variant-numeric: tabular-nums; font-size: 14px; color: var(--text-muted); text-align: right; }
+        .fermata.nel-turno .fermata-ora { color: var(--text-main); font-weight: 700; }
+        .fermata-ora small { display: block; font-size: 11px; font-weight: 400; color: var(--text-muted); }
+        .giorno-dopo { font-size: 10px; color: #b42318; font-weight: 700; margin-left: 3px; }
+        .fermata-estremo { font-size: 11px; color: var(--primary); font-weight: 700; text-transform: uppercase; }
+        .corsa-legenda { font-size: 12px; color: var(--text-muted); margin-top: 10px; }
+
+        .parte-label {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 6px 2px;
         }
 
         .turno-locations {
@@ -176,19 +230,6 @@
             bottom: 10px;
             width: 2px;
             background: var(--border);
-        }
-
-        .timeline-parte-header {
-            font-size: 14px;
-            font-weight: 800;
-            color: var(--primary);
-            margin: 20px 0 15px 0;
-            text-transform: uppercase;
-            background: #eef2f7;
-            display: inline-block;
-            padding: 5px 12px;
-            border-radius: 6px;
-            position: relative;
         }
 
         .activity-card {
@@ -252,27 +293,10 @@
             text-transform: uppercase;
         }
 
-        .type-linea { 
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 26px;
-            height: 26px;
-            border-radius: 50%;
-            border: 2px solid;
-            font-size: 12px;
-            padding: 0;
-        }
-        
+        .type-linea { border: 2px solid; }
         .type-vuoto { background: #e2e8f0; color: #475569; }
         .type-pausa { background: #fef3c7; color: #d97706; }
         .type-altro { background: #f1f5f9; color: #64748b; }
-
-        .type-rebecchino {
-            background: #ede9fe;
-            color: #6d28d9;
-            border: 2px solid #8b5cf6;
-        }
 
         .act-notes {
             margin-top: 10px;
@@ -287,51 +311,7 @@
             font-size: 12px;
             color: var(--primary);
             font-weight: 600;
-        }
-
-        .turno-part-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            background: #f8fafc;
-            padding: 12px 15px;
-            border-radius: 8px;
-            margin-bottom: 7px;
-        }
-
-        .turno-part-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .turno-part-label {
-            font-size: 11px;
-            font-weight: 800;
-            color: var(--primary);
-            text-transform: uppercase;
-            min-width: 55px;
-        }
-
-        .turno-part-location {
-            text-align: center;
-            flex: 1;
-        }
-
-        .turno-part-time {
-            font-size: 18px;
-            font-weight: 800;
-        }
-
-        .turno-part-place {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-top: 3px;
-        }
-
-        .turno-part-arrow {
-            color: #cbd5e1;
-            font-size: 18px;
+            margin-top: 4px;
         }
 
         .error-msg {
@@ -373,10 +353,27 @@
     <div id="error-box" class="error-msg"></div>
     <div id="results-container"></div>
 
+    <div class="corsa-overlay" id="corsa-overlay" onclick="if (event.target === this) chiudiCorsa()">
+        <div class="corsa-modal" role="dialog" aria-modal="true" aria-labelledby="corsa-titolo">
+            <div class="corsa-head">
+                <div>
+                    <div class="corsa-titolo" id="corsa-titolo"></div>
+                    <div class="corsa-sotto" id="corsa-sotto"></div>
+                </div>
+                <button class="corsa-chiudi" onclick="chiudiCorsa()" aria-label="Chiudi"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="corsa-corpo" id="corsa-corpo"></div>
+        </div>
+    </div>
+
     <script>
+        // Imposta la data odierna di default al caricamento della pagina
         document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
+
+        // Definizione API_URL uguale al modulo bateolivelite_2.js
         const API_URL = 'https://api.bateolive.stream';
 
+        // Configurazione colori ACTV dal modulo BateoLive
         const ACTV_COLORS = {
             '1': { bg: '#ffffff', text: '#000000', border: '#000000' },
             '2': { bg: '#e3001b', text: '#ffffff', border: '#e3001b' },
@@ -418,22 +415,28 @@
                 return;
             }
 
+            // Concateniamo il dominio assoluto con i parametri richiesti dal backend
             const fetchUrl = `${API_URL}/api/v1/turno?codice=${encodeURIComponent(codice)}&data=${encodeURIComponent(dataGiorno)}`; 
 
             try {
                 const response = await fetch(fetchUrl);
+                
+                // Se il server restituisce una pagina HTML al posto del JSON, lo intercettiamo subito
                 const contentType = response.headers.get("content-type");
                 if (contentType && contentType.indexOf("application/json") === -1) {
                      throw new Error("Il server ha restituito HTML invece di JSON. Verifica il routing di /api/v1/turno.");
                 }
+
                 const responseData = await response.json();
                 
+                // Se la risposta non è OK (es. 400, 404, 409), mostra il messaggio d'errore fornito dal backend
                 if (!response.ok) {
                     throw new Error(responseData.error || `Errore di connessione al server (${response.status})`);
                 }
                 
-                // Passiamo anche il codice inserito dall'utente per la deduzione della formattazione
-                renderTurno(responseData.turno, codice);
+                // Passa l'oggetto nidificato 'turno' alla funzione di rendering esistente
+                dataCorrente = dataGiorno;
+                renderTurno(responseData.turno, responseData.codice);
                 
             } catch (error) {
                 showError(error.message);
@@ -441,144 +444,129 @@
             }
         }
 
-        // Determina se il codice cercato dall'utente appartiene al formato di un Marinaio
-        function verificaSeMarinaio(codiceInput) {
-            if (!codiceInput) return false;
-            const cod = String(codiceInput).trim().toUpperCase();
-            
-            // 1. Linee a singola cifra con lettera B (es. 4B01, 1B12)
-            if (/^[1-9]B\d{2}$/.test(cod)) return true;
-            
-            // 2. Linee complesse
-            const match = cod.match(/^([A-Z0-9]+?)(\d{2})$/);
-            if (match) {
-                const prefisso = match[1];
-                const num = parseInt(match[2], 10);
-                
-                // Escludiamo il caso in cui il prefisso sia "4P" o "1C" ecc...
-                if (/^[1-9][CP]$/.test(prefisso)) return false;
-                
-                // La linea PO è sempre da marinaio
-                if (prefisso === "PO") return true;
-                
-                // Tutte le altre linee se il numero finale è >= 50
-                if (num >= 50) return true;
-            }
-            return false;
-        }
-
-        // Helper unificato per formattare i codici turno (principali e imbarchi/consegne) basato sulla ricerca
-        function formattaCodiceTurno(linea, numero, isMarinaio) {
-            if (!linea || numero === undefined || numero === null) return "";
-            
-            const lineaBase = String(linea).trim().toUpperCase();
-            let num = parseInt(numero, 10);
-            
-            // Fallback se il numero non è leggibile
-            if (isNaN(num)) return `${lineaBase}${numero}`;
-
-            // Regex per intercettare le linee a 1 cifra (es. "1", "2", "4.1" -> estrae "1", "2", "4")
-            const matchSingola = lineaBase.match(/^([1-9])(?:\.\d+)?$/);
-
-            if (matchSingola) {
-                const numLinea = matchSingola[1];
-                let lettera = "P";
-                if (isMarinaio) {
-                    lettera = "B";
-                } else {
-                    lettera = (numLinea === "1" || numLinea === "2") ? "C" : "P";
-                }
-                return `${numLinea}${lettera}${String(num).padStart(2, "0")}`;
+        // Codice turno con le regole di calendario.js:
+        //  - linee 1-9 (anche 4.1, 5.1): cifra + lettera + numero a 2 cifre; lettera C per le linee 1 e 2, P per le altre
+        //    (es. linea 4.1 turno 1 -> 4P01); il codice del marinaio usa la B (4B01)
+        //  - le altre linee: linea + numero a 2 cifre (es. linea 14 turno 3 -> 1403; M1 turno 1 -> M101)
+        //  - se il codice cercato e' la forma per il marinaio (4B01) o con numero + 50 (1453), resta quello cercato
+        function codiceTurno(turno, codiceCercato) {
+            const nn = String(turno.turno).padStart(2, '0');
+            const cifra = String(turno.linea).split('.')[0];
+            const cercato = String(codiceCercato || '').toUpperCase().split('_')[0];
+            let codice;
+            if (/^[1-9]$/.test(cifra)) {
+                codice = `${cifra}${(cifra === '1' || cifra === '2') ? 'C' : 'P'}${nn}`;
+                if (cercato === `${cifra}B${nn}`) return cercato;
             } else {
-                // Gestione di linee a due cifre o lettere (11, 12, PT, M1, N, PO...)
-                if (isMarinaio && lineaBase !== "PO") {
-                    if (num < 50) num += 50;
+                codice = `${turno.linea}${nn}`;
+                const m = cercato.match(/^(.+?)(\d{2})$/);
+                if (m && parseInt(m[2], 10) >= 50 && m[1] === String(turno.linea) && parseInt(m[2], 10) - 50 === turno.turno) return cercato;
+            }
+            return codice;
+        }
+        // ---------------- Finestra con le fermate di una corsa ----------------
+        let dataCorrente = null;        // giorno del turno mostrato (YYYY-MM-DD)
+        let attivitaCorrenti = [];      // attivita' del turno mostrato
+        const cacheCorse = new Map();   // richiesta -> risposta, per non ripetere la stessa chiamata
+        let richiestaCorsa = 0;         // scarta le risposte di una finestra gia' chiusa o sostituita
+
+        function esc(t) {
+            return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        const dataIt = iso => iso.split('-').reverse().join('/');
+
+        async function apriCorsa(ordine) {
+            const act = attivitaCorrenti.find(a => a.ordine === ordine);
+            if (!act || !act.linea || !dataCorrente) return;
+            const mio = ++richiestaCorsa;
+
+            const stile = getLineStyle(act.linea);
+            document.getElementById('corsa-titolo').innerHTML =
+                `<span class="act-type type-linea" style="${stile}">Linea ${esc(act.linea)}</span><span>${esc(act.da)} → ${esc(act.a)}</span>`;
+            document.getElementById('corsa-sotto').textContent = `${act.partenza} - ${act.arrivo} · ${dataIt(dataCorrente)}`;
+            const corpo = document.getElementById('corsa-corpo');
+            corpo.innerHTML = '<div class="corsa-stato"><i class="fa-solid fa-spinner fa-spin"></i> Carico le fermate…</div>';
+            document.getElementById('corsa-overlay').classList.add('aperto');
+            document.body.style.overflow = 'hidden';
+
+            const params = new URLSearchParams({
+                linea: act.linea, data: dataCorrente,
+                partenza_min: act.partenza_min, arrivo_min: act.arrivo_min,
+                da: act.da, a: act.a
+            });
+            const url = `${API_URL}/api/v1/corsa?${params}`;
+            try {
+                let dati = cacheCorse.get(url);
+                if (!dati) {
+                    const resp = await fetch(url);
+                    const tipo = resp.headers.get('content-type');
+                    if (tipo && tipo.indexOf('application/json') === -1) throw new Error('Il server ha restituito HTML invece di JSON. Verifica il routing di /api/v1/corsa.');
+                    dati = await resp.json();
+                    if (!resp.ok) {
+                        if (dati.gtfs) throw new Error(`Gli orari delle fermate sono disponibili solo dal ${dataIt(dati.gtfs.dal.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'))} al ${dataIt(dati.gtfs.al.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'))}.`);
+                        throw new Error(dati.error || `Errore di connessione al server (${resp.status})`);
+                    }
+                    cacheCorse.set(url, dati);
                 }
-                return `${lineaBase}${String(num).padStart(2, "0")}`;
+                if (mio !== richiestaCorsa) return;
+                mostraFermate(dati, act);
+            } catch (e) {
+                if (mio !== richiestaCorsa) return;
+                corpo.innerHTML = `<div class="corsa-stato errore"><i class="fa-solid fa-circle-exclamation"></i> ${esc(e.message)}</div>`;
+                console.error('Errore corsa:', e);
             }
         }
 
-        function convertiCodiceTurno(idTurno, isMarinaio) {
-            if (!idTurno) return "";
-            const id = String(idTurno).trim().toUpperCase();
-            
-            // Se è già nel formato atteso app (es. 4P01, 1101, NM02)
-            if (/^[A-Z0-9]+[CPB]?\d{2}$/.test(id)) return id;
-
-            // Formato JSON: LINEA_NUMERO (es. 12_1, 4.1_3)
-            const match = id.match(/^([A-Z0-9\.]+)_(\d+)$/);
-            if (match) {
-                return formattaCodiceTurno(match[1], match[2], isMarinaio);
-            }
-            
-            return id;
+        function mostraFermate(dati, act) {
+            const { fermate, tratta, corsa } = dati;
+            document.getElementById('corsa-sotto').textContent =
+                `${act.partenza} - ${act.arrivo} · ${dataIt(dataCorrente)} · verso ${corsa.direzione}`;
+            const righe = fermate.map((f, i) => {
+                const nel = i >= tratta.da && i <= tratta.a;
+                const ultima = i === fermate.length - 1;
+                const ora = ultima ? f.arrivo : f.partenza;
+                const sosta = !ultima && f.arrivo !== f.partenza ? `<small>arr. ${f.arrivo}</small>` : '';
+                const estremo = i === tratta.da ? 'Salita' : (i === tratta.a ? 'Discesa' : '');
+                return `<div class="fermata${nel ? ' nel-turno' : ''}">
+                    <span class="fermata-punto"></span>
+                    <span class="fermata-nome">${esc(f.nome)}${estremo ? ` <span class="fermata-estremo">· ${estremo}</span>` : ''}</span>
+                    <span class="fermata-ora">${ora}${f.oltre_mezzanotte ? '<span class="giorno-dopo">+1</span>' : ''}${sosta}</span>
+                </div>`;
+            }).join('');
+            const parziale = tratta.da > 0 || tratta.a < fermate.length - 1;
+            document.getElementById('corsa-corpo').innerHTML = righe +
+                `<div class="corsa-legenda">${parziale ? 'In blu il tratto della tua corsa; le altre fermate sono del resto del percorso.' : 'Tutte le fermate della corsa.'}</div>`;
         }
 
-        function unisciRebecchini(corse) {
-            const ordinate = [...(corse || [])].sort((a, b) => a.ordine - b.ordine);
-            const risultato = [];
-
-            for (let i = 0; i < ordinate.length; i++) {
-                const corrente = ordinate[i];
-                const successiva = ordinate[i + 1];
-
-                const eRebecchino =
-                    successiva &&
-                    String(corrente.a || "").trim().toUpperCase() === "MUSEO" &&
-                    String(successiva.da || "").trim().toUpperCase() === "MUSEO" &&
-                    String(corrente.arrivo || "") === String(successiva.partenza || "");
-
-                if (eRebecchino) {
-                    const note = [
-                        ...(corrente.note || []),
-                        ...(successiva.note || [])
-                    ];
-
-                    risultato.push({
-                        ...corrente,
-                        a: successiva.a,
-                        arrivo: successiva.arrivo,
-                        arrivo_min: successiva.arrivo_min,
-                        durata_min: (corrente.durata_min || 0) + (successiva.durata_min || 0),
-                        tipo_attivita: "rebecchino",
-                        note,
-                        consegna: successiva.consegna || corrente.consegna || null
-                    });
-
-                    i++;
-                } else {
-                    risultato.push(corrente);
-                }
-            }
-            return risultato;
+        function chiudiCorsa() {
+            richiestaCorsa++;
+            document.getElementById('corsa-overlay').classList.remove('aperto');
+            document.body.style.overflow = '';
         }
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') chiudiCorsa();
+            if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('cliccabile')) { e.preventDefault(); e.target.click(); }
+        });
 
         function renderTurno(turno, codiceCercato) {
             const container = document.getElementById('results-container');
             
-            // Deduciamo il tipo di formattazione dal codice cercato dall'utente
-            const isMarinaio = verificaSeMarinaio(codiceCercato);
-            
-            const codiceTurno = convertiCodiceTurno(turno.id, isMarinaio);
-            const corseVisualizzate = unisciRebecchini(turno.corse_linea || []);
+            // 1. Unione e ordinamento cronologico delle attività
             const tutteLeAttivita = [
-                ...corseVisualizzate,
+                ...(turno.corse_linea || []),
                 ...(turno.altre_attivita || [])
             ];
-
+            
+            // Ordiniamo tramite il campo "ordine" nativo del JSON
             tutteLeAttivita.sort((a, b) => a.ordine - b.ordine);
+            attivitaCorrenti = tutteLeAttivita;
 
-            const parti = Array.isArray(turno.parti) && turno.parti.length > 0
+            // Parti del turno: un turno spezzato ne ha due, ognuna con il proprio inizio e la propria fine
+            const parti = (turno.parti && turno.parti.length)
                 ? turno.parti
-                : [{
-                    inizio: turno.inizio_turno,
-                    fine: turno.fine_turno
-                }];
-
-            let partiHtml = "";
-            if (parti.length === 1) {
-                const p = parti[0];
-                partiHtml = `
+                : [{ inizio: turno.inizio_turno, fine: turno.fine_turno }];
+            const partiHtml = parti.map((p, i) => `
+                    ${parti.length > 1 ? `<div class="parte-label">${i + 1}ª parte</div>` : ''}
                     <div class="turno-locations">
                         <div class="location-block">
                             <div class="location-time">${p.inizio.ora}</div>
@@ -589,118 +577,80 @@
                             <div class="location-time">${p.fine.ora}</div>
                             <div class="location-name">${p.fine.luogo}</div>
                         </div>
-                    </div>
-                `;
-            } else {
-                partiHtml = `
-                    <div style="margin-bottom:10px;">
-                        ${parti.map((p, index) => `
-                            <div class="turno-part-row">
-                                <div class="turno-part-label">Parte ${index + 1}</div>
-                                <div class="turno-part-location">
-                                    <div class="turno-part-time">${p.inizio.ora}</div>
-                                    <div class="turno-part-place">${p.inizio.luogo}</div>
-                                </div>
-                                <div class="turno-part-arrow">
-                                    <i class="fa-solid fa-arrow-right-long"></i>
-                                </div>
-                                <div class="turno-part-location">
-                                    <div class="turno-part-time">${p.fine.ora}</div>
-                                    <div class="turno-part-place">${p.fine.luogo}</div>
-                                </div>
-                            </div>
-                        `).join("")}
-                    </div>
-                `;
-            }
-
+                    </div>`).join('');
+            // 2. Costruzione HTML Riepilogo
             let html = `
                 <div class="turno-summary">
                     <div class="turno-header">
-                        <h2 class="turno-title">Turno ${codiceTurno}</h2>
+                        <h2 class="turno-title">Turno ${codiceTurno(turno, codiceCercato)}</h2>
                         <div class="turno-meta">
-                            <div><strong>Durata turno:</strong> ${turno.durata} h</div>
+                            <div>${turno.tipologia}</div>
+                            <div><strong>Equipaggio:</strong> ${turno.equipaggio}</div>
                         </div>
                     </div>
                     ${partiHtml}
+                    <div style="font-size: 13px; text-align: center; color: var(--text-muted); margin-top:10px;">
+                        Durata totale: <strong>${turno.durata} h</strong>
+                    </div>
                 </div>
                 <div class="timeline">
             `;
 
-            let currentParte = null;
-
+            // 3. Generazione Timeline Cronologica
             tutteLeAttivita.forEach(act => {
-                const isRebecchino = act.tipo_attivita === "rebecchino";
+                const isCorsa = act.hasOwnProperty('linea');
                 
-                if (parti.length > 1 && act.parte && act.parte !== currentParte) {
-                    currentParte = act.parte;
-                    html += `<div class="timeline-parte-header">Parte ${currentParte}</div>`;
+                // Determinazione classe visiva
+                let typeClass = "type-altro";
+                let typeLabel = act.tipo || "Attività";
+                let styleInline = "";
+
+                if (isCorsa) {
+                    typeClass = "type-linea";
+                    typeLabel = `Linea ${act.linea}`;
+                    styleInline = getLineStyle(act.linea);
+                } else if (act.categoria === "spostamento_a_vuoto" || act.tipo.includes("TRASFERIMENTO")) {
+                    typeClass = "type-vuoto";
+                    typeLabel = act.tipo;
+                } else if (act.categoria === "altra_attivita" && act.tipo.includes("PASTO")) {
+                    typeClass = "type-pausa";
+                    typeLabel = act.tipo;
                 }
 
-                let topLabelHtml = "";
-                let bottomLabelHtml = "";
-
-                if (act.hasOwnProperty('linea')) {
-                    const styleInline = getLineStyle(act.linea);
-                    topLabelHtml = `<span class="act-type type-linea" style="${styleInline}">${act.linea}</span>`;
-                }
-
-                if (isRebecchino) {
-                    bottomLabelHtml = `<span class="act-type type-rebecchino">Rebecchino</span>`;
-                } else if (!act.hasOwnProperty('linea')) {
-                    let typeClass = "type-altro";
-                    let typeLabel = act.tipo || "Attività";
-                    
-                    if (act.categoria === "spostamento_a_vuoto" || (act.tipo && act.tipo.includes("TRASFERIMENTO"))) {
-                        typeClass = "type-vuoto";
-                        typeLabel = act.tipo;
-                    } else if (act.categoria === "altra_attivita" && act.tipo && act.tipo.includes("PASTO")) {
-                        typeClass = "type-pausa";
-                        typeLabel = act.tipo;
-                    }
-                    bottomLabelHtml = `<span class="act-type ${typeClass}">${typeLabel}</span>`;
-                }
-
+                // Note e Consegne/Imbarchi
                 let noteHtml = '';
                 if (act.note && act.note.length > 0) {
                     const testiNote = act.note.map(n => n.testo).join(" - ");
-                    noteHtml = `<div class="act-notes"><i class="fa-solid fa-triangle-exclamation"></i> ${testiNote}</div>`;
+                    noteHtml += `<div class="act-notes"><i class="fa-solid fa-triangle-exclamation"></i> ${testiNote}</div>`;
                 }
 
                 let handoffHtml = '';
-                if (act.imbarca) {
-                    const codImbarca = formattaCodiceTurno(act.imbarca.linea, act.imbarca.turno, isMarinaio);
-                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-to-bracket"></i> Imbarca da: ${codImbarca}</div>`;
-                }
-                if (act.consegna) {
-                    const codConsegna = formattaCodiceTurno(act.consegna.linea, act.consegna.turno, isMarinaio);
-                    handoffHtml += `<div><i class="fa-solid fa-arrow-right-from-bracket"></i> Consegna a: ${codConsegna}</div>`;
+                if (act.imbarca) handoffHtml += `<div><i class="fa-solid fa-arrow-right-to-bracket"></i> Imbarca da: T${act.imbarca.turno} L.${act.imbarca.linea}</div>`;
+                if (act.consegna) handoffHtml += `<div><i class="fa-solid fa-arrow-right-from-bracket"></i> Consegna a: T${act.consegna.turno} L.${act.consegna.linea}</div>`;
+                
+                if (handoffHtml) {
+                    handoffHtml = `<div class="act-handoff">${handoffHtml}</div>`;
                 }
 
+                const apri = isCorsa ? ` cliccabile" onclick="apriCorsa(${act.ordine})" role="button" tabindex="0"` : '"';
                 html += `
-                    <div class="activity-card">
+                    <div class="activity-card${apri}>
                         <div class="act-header">
                             <span class="act-time">${act.partenza} - ${act.arrivo}</span>
                             <span class="act-duration">${act.durata_min} min</span>
                         </div>
                         <div class="act-route">
-                            ${topLabelHtml}
-                            <span>${act.da || ''} <i class="fa-solid fa-caret-right" style="color:#cbd5e1; margin:0 5px;"></i> ${act.a || ''}</span>
+                            <span class="act-type ${typeClass}" style="${styleInline}">${typeLabel}</span>
+                            <span>${act.da} <i class="fa-solid fa-caret-right" style="color:#cbd5e1; margin:0 5px;"></i> ${act.a}</span>
                         </div>
+                        ${handoffHtml}
                         ${noteHtml}
-                        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: ${(handoffHtml || bottomLabelHtml) ? '10px' : '0'};">
-                            <div class="act-handoff">
-                                ${handoffHtml}
-                            </div>
-                            <div>
-                                ${bottomLabelHtml}
-                            </div>
-                        </div>
+                        ${isCorsa ? '<div class="act-fermate-hint"><i class="fa-solid fa-list-ul"></i> Fermate e orari</div>' : ''}
                     </div>
                 `;
             });
 
-            html += `</div>`;
+            html += `</div>`; // Chiude timeline
             container.innerHTML = html;
         }
     </script>

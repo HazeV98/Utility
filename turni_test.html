@@ -596,7 +596,8 @@
                         tipo_attivita: "rebecchino",
                         note,
                         consegna: successiva.consegna || corrente.consegna || null,
-                        rebecchino_seconda_corsa: successiva
+                        rebecchino_prima_corsa: corrente,   // Salvo la corsa 1 intatta
+                        rebecchino_seconda_corsa: successiva // Salvo la corsa 2 intatta
                     });
 
                     i++;
@@ -652,24 +653,34 @@
             document.body.style.overflow = 'hidden';
 
             try {
-                let dati = await fetchCorsaSingola(act);
-                if (mio !== richiestaCorsa) return;
+                let dati;
+                
+                // Gestione separata per i rebecchini uniti
+                if (act.tipo_attivita === "rebecchino" && act.rebecchino_prima_corsa && act.rebecchino_seconda_corsa) {
+                    // Fetch corsa 1
+                    let dati1 = await fetchCorsaSingola(act.rebecchino_prima_corsa);
+                    if (mio !== richiestaCorsa) return;
 
-                if (act.tipo_attivita === "rebecchino" && act.rebecchino_seconda_corsa) {
+                    // Fetch corsa 2
                     let dati2 = await fetchCorsaSingola(act.rebecchino_seconda_corsa);
                     if (mio !== richiestaCorsa) return;
 
-                    let f1 = dati.fermate;
-                    let f2 = dati2.fermate.slice(1);
+                    // Uniamo le fermate: la prima fino a Museo, la seconda da dopo Museo
+                    let f1 = dati1.fermate.slice(0, dati1.tratta.a + 1);
+                    let f2 = dati2.fermate.slice(dati2.tratta.da + 1);
 
                     dati = {
-                        ...dati,
+                        ...dati1, // Manteniamo la struttura base della prima corsa
                         fermate: f1.concat(f2),
                         tratta: {
-                            da: dati.tratta.da,
-                            a: (f1.length - 1) + dati2.tratta.a
+                            da: dati1.tratta.da,
+                            a: (f1.length - 1) + (dati2.tratta.a - dati2.tratta.da)
                         }
                     };
+                } else {
+                    // Corsa normale
+                    dati = await fetchCorsaSingola(act);
+                    if (mio !== richiestaCorsa) return;
                 }
 
                 mostraFermate(dati, act);
@@ -866,4 +877,3 @@
     </script>
 </body>
 </html>
- 

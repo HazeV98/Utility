@@ -698,34 +698,50 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
         // 2. TIMELINE E LOGICA TEMPO REALE
         let htmlTimeline = "";
         let currentParte = null;
-        
+
         const now = new Date();
-        const isOggi = dataGiorno === dateToLocalISO(now);
-        let nowMin = now.getHours() * 60 + now.getMinutes();
+        const [annoG, meseG, giornoG] = dataGiorno.split('-').map(Number);
+
         let evidenzaTrovata = false;
+        let previousRawStart = -1;
+        let dayOffsetDays = 0;
 
         tutteLeAttivita.forEach(act => {
             const isRebecchino = act.tipo_attivita === "rebecchino";
             const isCorsa = act.hasOwnProperty('linea');
-            
+
             if (parti.length > 1 && act.parte && act.parte !== currentParte) {
                 currentParte = act.parte;
                 htmlTimeline += `<div class="timeline-parte-header">Parte ${currentParte}</div>`;
             }
 
-            // Calcolo classe di stato (passato, corrente/futuro)
             let statusClass = "";
-            if (isOggi && act.partenza && act.arrivo) {
+
+            if (act.partenza && act.arrivo) {
                 let [hP, mP] = act.partenza.split(':').map(Number);
                 let [hA, mA] = act.arrivo.split(':').map(Number);
-                let startMin = hP * 60 + mP;
-                let endMin = hA * 60 + mA;
-                if (endMin < startMin) endMin += 24 * 60; // Giorno successivo
-                
-                let nowMinCalc = nowMin;
-                if (now.getHours() < 4 && startMin > 18 * 60) nowMinCalc += 24 * 60;
 
-                if (nowMinCalc > endMin) {
+                let rawStart = hP * 60 + mP;
+                let rawEnd = hA * 60 + mA;
+
+                // Se l'orario di inizio fa un salto all'indietro (es. da 23:30 a 00:15), scatta il giorno logico successivo
+                if (previousRawStart !== -1 && rawStart < previousRawStart - 12 * 60) {
+                    dayOffsetDays += 1;
+                }
+                previousRawStart = rawStart;
+
+                // Creazione oggetti Date assoluti per un confronto chirurgico
+                let actStartDate = new Date(annoG, meseG - 1, giornoG + dayOffsetDays, hP, mP);
+
+                let endDayOffset = dayOffsetDays;
+                // Se la singola attività scavalca la mezzanotte (es. 23:45 -> 00:30)
+                if (rawEnd < rawStart) {
+                    endDayOffset += 1;
+                }
+                let actEndDate = new Date(annoG, meseG - 1, giornoG + endDayOffset, hA, mA);
+
+                // Confronto diretto tra la fine dell'attività e l'orario attuale esatto
+                if (now > actEndDate) {
                     statusClass = "act-past";
                 } else if (!evidenzaTrovata) {
                     statusClass = "act-current";
@@ -746,7 +762,7 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
             } else if (!isCorsa) {
                 let typeClass = "type-altro";
                 let typeLabel = act.tipo || "Attività";
-                if (act.categoria === "spostamento_a_vuoto" || (act.tipo && act.tipo.includes("TRASFERIMENTO"))) { typeClass = "type-vuoto"; typeLabel = act.tipo; } 
+                if (act.categoria === "spostamento_a_vuoto" || (act.tipo && act.tipo.includes("TRASFERIMENTO"))) { typeClass = "type-vuoto"; typeLabel = act.tipo; }
                 else if (act.categoria === "altra_attivita" && act.tipo && act.tipo.includes("PASTO")) { typeClass = "type-pausa"; typeLabel = act.tipo; }
                 bottomLabelHtml = `<span class="act-type ${typeClass}">${typeLabel}</span>`;
             }
@@ -790,20 +806,6 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
         });
 
         document.getElementById('dash-timeline-container').innerHTML = htmlTimeline;
-        
-        // Se c'è un elemento in evidenza, assicura che il contenitore timeline sia visibile se è oggi, altrimenti lascialo chiuso
-        if (isOggi) {
-            document.getElementById('dash-turno-expand-btn').classList.add('expanded');
-            document.getElementById('dash-timeline-container').style.display = 'block';
-            
-            // Scroll alla current activity (delay per permettere il rendering del DOM)
-            setTimeout(() => {
-                const currentEl = document.querySelector('.act-current');
-                if (currentEl) {
-                    currentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }, 300);
-        }
     }
 
     // --- FUNZIONI MODAL CORSA DASHBOARD ---
@@ -1140,7 +1142,7 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
                 if (wCode >= 1 && wCode <= 3) icona = '⛅';
                 if (wCode >= 45 && wCode <= 48) icona = '🌫️';
                 if (wCode >= 51 && wCode <= 67) icona = '🌧️';
-                if (wCode >= 71 && wCode <= 77) icona = '❄️️';
+                if (wCode >= 71 && wCode <= 77) icona = '❄';
                 if (wCode >= 80 && wCode <= 82) icona = '🌦️';
                 if (wCode >= 95) icona = '⛈️';
 

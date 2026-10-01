@@ -408,16 +408,5 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
-    },
-    {
-        "id": "turni_test",
-        "label": "Test turni",
-        "icon": "fa-solid fa-gear",
-        "defaultColor": "#dc3545",
-        "conditions": [
-            "admin"
-        ],
-        "excludeConditions": [],
-        "href": "turni_test.html"
     }
 ]

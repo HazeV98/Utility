@@ -297,10 +297,13 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
         },
         
         toggleNotifica: async function(storiaId) {
+                toggleNotifica: async function(storiaId) {
             const post = posts.find(p => p.id === storiaId);
             if (!post) return;
             
-            let followersCorrenti = post.followers || [];
+            // Crea una copia pulita dell'array per evitare errori di referenza
+            let followersCorrenti = Array.isArray(post.followers) ? [...post.followers] : [];
+            
             if (followersCorrenti.includes(currentUserUid)) {
                 followersCorrenti = followersCorrenti.filter(uid => uid !== currentUserUid); // Rimuovi notifica
             } else {
@@ -309,8 +312,12 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             
             try {
                 await updateDoc(doc(db, "storie", storiaId), { followers: followersCorrenti });
-            } catch (e) { console.error("Errore aggiornamento notifiche", e); }
+            } catch (e) { 
+                console.error("Errore aggiornamento notifiche", e);
+                alert("Impossibile attivare la notifica. Il problema sono le Regole di Sicurezza di Firebase che impediscono la modifica dei post altrui.");
+            }
         },
+
 
         apriCommenti: function(storiaId) {
             document.getElementById('storie-active-comment-id').value = storiaId;

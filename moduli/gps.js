@@ -317,7 +317,7 @@ export function initUIGPS() {
     const uiHTML = `
     <style>
         .gps-body { flex: 1; overflow-y: auto; overflow-x: hidden; width: 100%; display: flex; flex-direction: column; gap: 14px; }
-        .gps-clock { text-align: center; font-size: 34px; line-height: 1; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: 1px; color: var(--text-main); margin: 0 0 12px; }
+        .gps-clock { text-align: center; font-size: 42px; line-height: 1; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: 1px; color: var(--text-main); margin: 0 0 12px; }
 
         .gps-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .gps-metric { text-align: center; padding: 6px; min-width: 0; }
@@ -372,13 +372,12 @@ export function initUIGPS() {
         <div class="modal-content" style="max-width: 440px; height: 85vh; display: flex; flex-direction: column; padding: 20px; position: relative;">
             <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted); z-index: 20;" onclick="document.getElementById('modal-gps-main').style.display='none'"></i>
 
-            <div id="gps-clock" class="gps-clock">00:00:00</div>
-
             <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; margin-bottom: 16px; padding-bottom: 15px; padding-right: 36px; border-bottom: 1px solid var(--border-color);">
                 <i class="fa-solid fa-location-crosshairs"></i> Turno: <span id="gps-turno-val">--</span>
             </h3>
 
             <div class="gps-body">
+                <div id="gps-clock" class="gps-clock">00:00:00</div>
                 <div class="gps-metrics">
                     <div class="gps-metric">
                         <div id="gps-speed-val" class="gps-metric-val">0.0</div>
@@ -636,7 +635,7 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     }
 
     function htmlAttivita(act, tipo, direzione) {
-        const titoli = { 'in corso': 'Attività in corso', 'prossima': 'Prossima attività' };
+        const titoli = { 'in corso': '', 'prossima': 'Prossima attività' };
         let etichetta;
         if (eCorsa(act)) {
             etichetta = `<span class="gps-linea" style="${getLineStyle(act.linea)}">${esc(act.linea)}</span>`;
@@ -647,7 +646,7 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
         }
         return `
             <div class="gps-act">
-                <div class="gps-act-head"><span>${titoli[tipo] || ''}</span>${etichetta}</div>
+                <div class="gps-act-head">${etichetta}</div>
                 <div class="gps-act-row">
                     <div class="gps-act-blocco"><div class="gps-act-ora">${esc(act.partenza)}</div><div class="gps-act-luogo">${esc(act.da || '')}</div></div>
                     <div class="gps-act-freccia"><i class="fa-solid fa-arrow-right-long"></i></div>

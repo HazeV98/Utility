@@ -254,12 +254,13 @@
     },
     {
         "id": "gps",
-        "label": "Tachimetro",
-        "icon": "fa-solid fa-location-arrow",
+        "label": "Gps",
+        "icon": "fa-solid fa-route",
         "defaultColor": "#0066cc",
         "conditions": [
             "tutti"
         ],
+        "excludeConditions": [],
         "isModule": true,
         "moduleId": "gps",
         "moduleName": "gps",

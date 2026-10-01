@@ -174,6 +174,14 @@ export function initUIBateoLive() {
         .bv-nav-turno { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 36px; height: 26px; padding: 0 4px; box-sizing: border-box; border-radius: 6px; background: #1c355e; color: #fff; font-size: 12px; font-weight: 800; line-height: 1; }
         .bv-nav-turno small { font-size: 7px; font-weight: 700; letter-spacing: 0.5px; opacity: 0.8; }
         .bv-nav-linea { flex: none; min-width: 26px; height: 26px; padding: 0 4px; box-sizing: border-box; border-radius: 13px; border: 2px solid; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
+        .bv-nav-act-row { align-items: flex-start; }
+        .bv-nav-id { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .bv-nav-blocco { flex: 1; min-width: 0; }
+        .bv-nav-ora { font-size: 16px; font-weight: 800; color: #111; line-height: 1.1; font-variant-numeric: tabular-nums; }
+        .bv-nav-luogo { font-size: 11px; font-weight: 600; color: #555; line-height: 1.15; margin-top: 1px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+        .bv-nav-freccia { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding-top: 3px; color: #999; font-size: 13px; }
+        .bv-nav-reb { font-size: 8px; font-weight: 800; color: #8b5cf6; }
+        .bv-nav-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #666; margin-bottom: 3px; }
         .bv-nav-dest { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .bv-nav-msg { white-space: normal; font-size: 12px; font-weight: 600; color: #555; }
         .bv-nav-pre { flex: none; font-size: 12px; font-weight: 800; color: #00529b; }
@@ -1774,17 +1782,19 @@ function htmlMessaggioNav(testo) {
 }
 
 function htmlAttivitaNav(act, tipo, direzione, nowMin) {
-    let corpo;
-    if (eCorsa(act)) {
-        const dest = direzione || act.a || '';
-        const pre = tipo === 'prossima' ? `<span class="bv-nav-pre">${esc(act.partenza)}</span>` : '';
-        const reb = act.tipo_attivita === 'rebecchino' ? '<span class="bv-nav-pill">Reb.</span>' : '';
-        corpo = `${badgeLineaNav(lineaDellAttivita(act, nowMin))}${reb}${pre}<span class="bv-nav-dest">→ ${esc(dest)}</span>`;
-    } else {
-        const pre = tipo === 'prossima' ? `${esc(act.partenza)} · ` : '';
-        corpo = `<span class="bv-nav-pill">${esc(act.tipo || 'Attività')}</span><span class="bv-nav-dest">${pre}${esc(act.da || '')}</span>`;
-    }
-    return `<div class="bv-nav-act-row">${pillTurnoNav()}${corpo}</div>`;
+    // a sinistra turno e linea impilati; a destra orario e luogo di partenza → arrivo (il luogo va a capo, non si taglia)
+    let sinistra;
+    if (eCorsa(act)) sinistra = badgeLineaNav(lineaDellAttivita(act, nowMin));
+    else sinistra = `<span class="bv-nav-pill">${esc(act.tipo || 'Attività')}</span>`;
+    const reb = act.tipo_attivita === 'rebecchino' ? '<span class="bv-nav-reb">REB</span>' : '';
+    const blocco = (ora, luogo) => `<div class="bv-nav-blocco"><div class="bv-nav-ora">${esc(ora)}</div><div class="bv-nav-luogo">${esc(luogo || '')}</div></div>`;
+    const tag = tipo === 'prossima' ? '<div class="bv-nav-tag">Prossima attività</div>' : '';
+    return `${tag}<div class="bv-nav-act-row">
+        <div class="bv-nav-id">${pillTurnoNav()}${sinistra}</div>
+        ${blocco(act.partenza, act.da)}
+        <div class="bv-nav-freccia"><i class="fa-solid fa-arrow-right-long"></i>${reb}</div>
+        ${blocco(act.arrivo, act.a)}
+    </div>`;
 }
 
 function impostaAttivitaNav(html) {

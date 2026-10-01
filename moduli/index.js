@@ -369,18 +369,25 @@ window.controllaStorie = async () => {
         const snapStorie = await getDocs(qStorie);
         snapStorie.forEach(d => { if (d.data().autoreId !== auth.currentUser.uid) count++; });
 
-        // 2. Nuovi commenti ai TUOI post (da parte di terzi)
-        const qComPropri = query(collection(db, "storie"), where("autoreId", "==", auth.currentUser.uid), where("lastCommentTimestamp", ">", Timestamp.fromMillis(ultimoAccesso)));
+        // 2. Nuovi commenti ai TUOI post
+        // Rimuoviamo il where() sulla data e filtriamo in JS per non richiedere indici composti
+        const qComPropri = query(collection(db, "storie"), where("autoreId", "==", auth.currentUser.uid));
         const snapComPropri = await getDocs(qComPropri);
-        snapComPropri.forEach(d => { if (d.data().lastCommentAuthor !== auth.currentUser.uid) count++; });
+        snapComPropri.forEach(d => { 
+            const data = d.data();
+            if (data.lastCommentTimestamp && data.lastCommentTimestamp.toMillis() > ultimoAccesso) {
+                if (data.lastCommentAuthor !== auth.currentUser.uid) count++;
+            }
+        });
 
-        // 3. Nuovi commenti ai post a cui hai messo la campanellina (da parte di terzi)
-        const qComSeguiti = query(collection(db, "storie"), where("followers", "array-contains", auth.currentUser.uid), where("lastCommentTimestamp", ">", Timestamp.fromMillis(ultimoAccesso)));
+        // 3. Nuovi commenti ai post a cui hai messo la campanellina
+        const qComSeguiti = query(collection(db, "storie"), where("followers", "array-contains", auth.currentUser.uid));
         const snapComSeguiti = await getDocs(qComSeguiti);
         snapComSeguiti.forEach(d => { 
             const data = d.data();
-            // Conta solo se il post non è già tuo (calcolato sopra) e il commento non è tuo
-            if (data.autoreId !== auth.currentUser.uid && data.lastCommentAuthor !== auth.currentUser.uid) count++; 
+            if (data.lastCommentTimestamp && data.lastCommentTimestamp.toMillis() > ultimoAccesso) {
+                if (data.autoreId !== auth.currentUser.uid && data.lastCommentAuthor !== auth.currentUser.uid) count++; 
+            }
         });
 
         window.aggiornaBadgeUI('storie', count);

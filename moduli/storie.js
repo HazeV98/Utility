@@ -297,7 +297,6 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
         },
         
         toggleNotifica: async function(storiaId) {
-                toggleNotifica: async function(storiaId) {
             const post = posts.find(p => p.id === storiaId);
             if (!post) return;
             
@@ -317,7 +316,6 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 alert("Impossibile attivare la notifica. Il problema sono le Regole di Sicurezza di Firebase che impediscono la modifica dei post altrui.");
             }
         },
-
 
         apriCommenti: function(storiaId) {
             document.getElementById('storie-active-comment-id').value = storiaId;

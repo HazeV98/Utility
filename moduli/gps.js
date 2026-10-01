@@ -208,14 +208,36 @@ function proietta(rt, x, y, ultimaAlong, nowSec, atteso) {
         const i0 = cercaSegmento(rt.cum, ultimaAlong - FINESTRA_INDIETRO_M);
         const i1 = cercaSegmento(rt.cum, ultimaAlong + FINESTRA_AVANTI_M);
         const previsto = atteso != null ? atteso : ultimaAlong;
-        let best = null;
+        const candidatiLocali = [];
+        let migliorScarto = Infinity;
         for (let i = i0; i <= i1; i++) {
             const c = valuta(i);
             if (c.scarto > FUORI_PERCORSO_M) continue;
-            c.costo = c.scarto + PESO_CONTINUITA * Math.abs(c.along - previsto);
-            if (!best || c.costo < best.costo) best = c;
+            candidatiLocali.push(c);
+            if (c.scarto < migliorScarto) migliorScarto = c.scarto;
         }
-        if (best) return best;
+        if (candidatiLocali.length) {
+            // Nei punti in cui andata e ritorno si sovrappongono (es. Colonna a Murano)
+            // la sola distanza geometrica non basta: i due passaggi possono essere a pochi
+            // metri ma molto distanti lungo il giro. In questi casi usiamo anche la posizione
+            // prevista dall'orario per evitare di saltare direttamente al passaggio successivo.
+            const ambigui = candidatiLocali.filter(c => c.scarto <= migliorScarto + 25);
+            if (ambigui.length > 1) {
+                const attesa = alongDaOrario(rt, nowSec);
+                ambigui.forEach(c => {
+                    c.costo = c.scarto
+                        + PESO_CONTINUITA * Math.abs(c.along - previsto)
+                        + 0.80 * Math.abs(c.along - attesa);
+                });
+                ambigui.sort((a, b) => a.costo - b.costo);
+                return ambigui[0];
+            }
+            candidatiLocali.sort((a, b) =>
+                (a.scarto + PESO_CONTINUITA * Math.abs(a.along - previsto)) -
+                (b.scarto + PESO_CONTINUITA * Math.abs(b.along - previsto))
+            );
+            return candidatiLocali[0];
+        }
     }
 
     // ricerca su tutto il percorso: un candidato per ogni passaggio della linea vicino al punto
@@ -295,9 +317,10 @@ export function initUIGPS() {
     const uiHTML = `
     <style>
         .gps-body { flex: 1; overflow-y: auto; overflow-x: hidden; width: 100%; display: flex; flex-direction: column; gap: 14px; }
+        .gps-clock { text-align: center; font-size: 34px; line-height: 1; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: 1px; color: var(--text-main); margin: 0 0 12px; }
 
         .gps-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .gps-metric { text-align: center; padding: 14px 6px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md, 12px); background: rgba(128, 128, 128, 0.05); min-width: 0; }
+        .gps-metric { text-align: center; padding: 6px; min-width: 0; }
         .gps-metric-val { font-size: 54px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -1px; color: var(--primary); }
         .gps-metric-sub { font-size: 13px; font-weight: 700; color: var(--text-muted); margin-top: 8px; }
         #gps-delay-val.tardi { color: var(--danger, #dc3545); }
@@ -305,7 +328,7 @@ export function initUIGPS() {
         #gps-delay-val.puntuale { color: var(--success, #10b981); }
         #gps-delay-val.spento { color: var(--text-muted); opacity: 0.5; }
 
-        .gps-act { border: 1px solid var(--border-color); border-radius: var(--radius-md, 12px); padding: 14px; background: rgba(128, 128, 128, 0.05); }
+        .gps-act { padding: 4px 0; }
         .gps-act-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; font-weight: 700; color: var(--text-muted); flex-wrap: wrap; }
         .gps-act-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: center; }
         .gps-act-blocco { flex: 1; min-width: 0; }
@@ -348,6 +371,8 @@ export function initUIGPS() {
     <div id="modal-gps-main" class="modal-overlay" style="display:none;" onclick="window.chiudiSuSfondo(event, 'modal-gps-main')">
         <div class="modal-content" style="max-width: 440px; height: 85vh; display: flex; flex-direction: column; padding: 20px; position: relative;">
             <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted); z-index: 20;" onclick="document.getElementById('modal-gps-main').style.display='none'"></i>
+
+            <div id="gps-clock" class="gps-clock">00:00:00</div>
 
             <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; margin-bottom: 16px; padding-bottom: 15px; padding-right: 36px; border-bottom: 1px solid var(--border-color);">
                 <i class="fa-solid fa-location-crosshairs"></i> Turno: <span id="gps-turno-val">--</span>
@@ -393,6 +418,7 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     const nextBox = document.getElementById('gps-next-box');
     const statusDiv = document.getElementById('gps-status');
     const btnAttiva = document.getElementById('btn-attiva-gps');
+    const clockVal = document.getElementById('gps-clock');
 
     // ---------------------------------------------------------------- stato
     let watchId = null;
@@ -845,6 +871,12 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     if (btnAttiva) btnAttiva.addEventListener('click', inizializzaGPS);
 
     // ---------------------------------------------------------------- apertura e aggiornamento periodico
+    function aggiornaOrologio() {
+        if (!clockVal) return;
+        const d = new Date();
+        clockVal.textContent = `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+    }
+
     function serveRicaricare() {
         if (!turnoCorrente || !oraRif) return true;
         const ora = new Date();
@@ -854,10 +886,13 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     }
 
     setInterval(() => {
+        aggiornaOrologio();
         if (!modal || modal.style.display === 'none') return;
         if (serveRicaricare() && Date.now() - ultimoTentativoTurno > 5000) caricaTurno();
         else render();
     }, 1000);
+
+    aggiornaOrologio();
 
     window.apriModaleGPS = function () {
         modal.style.display = 'flex';

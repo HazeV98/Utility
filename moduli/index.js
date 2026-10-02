@@ -1302,6 +1302,79 @@ window.resetPasswordUtenteAutenticato = async () => {
 
 
 // ============================================================================
+// SCHERMO SEMPRE ACCESO (Wake Lock) - GPS, BateoLive, BateoLive Lite
+// Si attiva da solo quando uno dei 3 modali è visibile e si rilascia alla chiusura,
+// qualunque sia il pulsante usato per chiuderlo (nessuna modifica ai moduli).
+// ============================================================================
+const WakeLockModuli = {
+    modaliIds: ['modal-gps-main', 'modal-bateolive-main', 'modal-navigatore-main'],
+    sentinel: null,
+    inRichiesta: false,
+    osservati: new Set(),
+
+    inUso() {
+        return this.modaliIds.some(id => {
+            const el = document.getElementById(id);
+            return !!el && getComputedStyle(el).display !== 'none';
+        });
+    },
+
+    async sync() {
+        if (!('wakeLock' in navigator)) return;
+
+        if (this.inUso()) {
+            if (this.sentinel || this.inRichiesta || document.visibilityState !== 'visible') return;
+            this.inRichiesta = true;
+            try {
+                const lock = await navigator.wakeLock.request('screen');
+                lock.addEventListener('release', () => { if (this.sentinel === lock) this.sentinel = null; });
+                this.sentinel = lock;
+                // il modale potrebbe essere stato chiuso mentre aspettavamo
+                if (!this.inUso()) await this.rilascia();
+            } catch (e) {
+                console.warn('Wake Lock non disponibile:', e);
+            } finally {
+                this.inRichiesta = false;
+            }
+        } else {
+            await this.rilascia();
+        }
+    },
+
+    async rilascia() {
+        const lock = this.sentinel;
+        this.sentinel = null;
+        if (lock) { try { await lock.release(); } catch (e) {} }
+    },
+
+    osserva() {
+        this.modaliIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el || this.osservati.has(id)) return;
+            this.osservati.add(id);
+            new MutationObserver(() => this.sync()).observe(el, { attributes: true, attributeFilter: ['style'] });
+        });
+        this.sync();
+    },
+
+    init() {
+        // i modali vengono creati al primo avvio del modulo (lazy-load): li agganciamo appena compaiono nel body
+        this.osserva();
+        const bodyObs = new MutationObserver(() => {
+            this.osserva();
+            if (this.osservati.size === this.modaliIds.length) bodyObs.disconnect();
+        });
+        bodyObs.observe(document.body, { childList: true });
+
+        // il browser rilascia il lock quando la pagina va in background: lo richiediamo al ritorno
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') this.sync();
+        });
+    }
+};
+WakeLockModuli.init();
+
+// ============================================================================
 // AUTH E START
 // ============================================================================
 onAuthStateChanged(auth, async (user) => {

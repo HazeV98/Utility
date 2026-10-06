@@ -81,20 +81,25 @@ const loadScript = (src) => new Promise((resolve, reject) => {
 });
 
 // ---- Statistiche Umami: il tracker parte solo quando si apre questo modulo ----
+// auto-track disattivato: non si conta la pagina contenitore (/utility/index.html),
+// ogni apertura viene registrata come pagina virtuale con un URL proprio del modulo.
 const UMAMI_SRC = 'https://api.bateolive.stream/stats/script.js';
 const UMAMI_ID = '2b1a80cf-f9e6-4173-9ff3-0c1adefe19e3';
 const UMAMI_HOST = 'https://api.bateolive.stream/stats';
 
-function tracciaApertura(nome) {
+function tracciaApertura(urlVirtuale, titolo) {
+    const invia = () => window.umami && window.umami.track((p) => ({ ...p, url: urlVirtuale, title: titolo }));
     try {
-        if (window.umami) { window.umami.track(nome); return; }
-        if (document.querySelector(`script[src="${UMAMI_SRC}"]`)) return;
+        if (window.umami) { invia(); return; }
+        const esistente = document.querySelector(`script[src="${UMAMI_SRC}"]`);
+        if (esistente) { esistente.addEventListener('load', invia); return; }
         const s = document.createElement('script');
         s.defer = true;
         s.src = UMAMI_SRC;
         s.dataset.websiteId = UMAMI_ID;
         s.dataset.hostUrl = UMAMI_HOST;
-        s.onload = () => { if (window.umami) window.umami.track(nome); };
+        s.dataset.autoTrack = 'false';
+        s.onload = invia;
         document.head.appendChild(s);
     } catch (e) { /* il tracciamento non deve mai rompere l'app */ }
 }
@@ -375,7 +380,7 @@ export function initUINavigatore() {
 // INIZIALIZZAZIONE E MOTORE
 // ==========================================
 export async function avviaMotoreNavigatore(db, auth, userData) {
-    tracciaApertura('navigatore-lite');
+    tracciaApertura('/navigatore-lite', 'BateoLive Lite');
     currentUserId = (auth && auth.currentUser) ? auth.currentUser.uid : 'user_' + Math.random().toString(36).substr(2, 9);
     currentUserName = (userData && userData.nome) ? userData.nome : "Collega";
     userMansione = (userData && userData.mansione) || null;

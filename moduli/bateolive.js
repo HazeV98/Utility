@@ -179,6 +179,15 @@ export function initUIBateoLive() {
             --bv-sea: #1b2733;
         }
 
+        /* Tema forzato dal tasto sole/luna (solo per la sessione): sostituisce i colori presi dall'app */
+        #modal-bateolive-main.bv-forza-chiaro { color-scheme: light; --bv-surface: #ffffff; --bv-text: #1e293b; --bv-muted: #64748b; --bv-border: #e2e8f0; --bv-primary: #00529b; --bv-danger: #dc3545; --bv-ok: #28a745; }
+        #modal-bateolive-main.bv-forza-scuro { color-scheme: dark; --bv-surface: #1c2430; --bv-text: #e8edf3; --bv-muted: #9aa7b8; --bv-border: #334155; --bv-primary: #3b82f6; --bv-danger: #ef4444; --bv-ok: #22c55e; }
+        .bv-fab-tema i.swap { animation: bv-tema-swap 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+        @keyframes bv-tema-swap {
+            0% { transform: rotate(-90deg) scale(0.3); opacity: 0; }
+            100% { transform: none; opacity: 1; }
+        }
+
         #modal-bateolive-main { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: var(--bv-surface); color: var(--bv-text); display: none; flex-direction: column; font-family: inherit; overflow: hidden; }
         #modal-bateolive-main button, #modal-bateolive-main input { font-family: inherit; }
         #modal-bateolive-main button:focus-visible { outline: 2px solid var(--bv-primary); outline-offset: 2px; }
@@ -187,6 +196,7 @@ export function initUIBateoLive() {
         #bv-map { width: 200%; height: 200%; position: absolute; top: -50%; left: -50%; z-index: 1; transition: transform 0.2s linear; background: var(--bv-sea); font-family: inherit; }
 
         /* Mappa base in tema scuro: tile OSM invertite (il satellitare resta com'è) */
+        .bv-tiles-osm { transition: filter 0.4s ease; }
         #modal-bateolive-main.bv-dark .bv-tiles-osm { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.75); }
 
         /* Popup Leaflet (altri utenti) */
@@ -211,12 +221,12 @@ export function initUIBateoLive() {
         .bv-fab { font-size: 18px; }
         .bv-fab.active { background: var(--bv-primary); border-color: var(--bv-primary); color: #fff; }
         .bv-fab:hover { transform: scale(1.05); }
-        .bv-fab-container { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; pointer-events: none; }
+        .bv-fab-container { position: absolute; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; pointer-events: none; }
         /* Colonna tasti richiudibile: a cascata dal basso quando si apre, dall'alto quando si chiude */
         .bv-fab-container .bv-fab { pointer-events: auto; opacity: 1; transform: none; transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.15), opacity 0.22s ease, background 0.2s, color 0.2s; }
         .bv-fab-container.chiuso .bv-fab { opacity: 0; transform: translateY(26px) scale(0.5); pointer-events: none; transition: transform 0.22s ease-in, opacity 0.18s ease, background 0.2s, color 0.2s; }
         .bv-fab-container:not(.chiuso) .bv-fab:hover { transform: scale(1.05); }
-        .bv-fab-menu { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); right: 20px; z-index: 1000; font-size: 18px; }
+        .bv-fab-menu { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); left: 20px; z-index: 1000; font-size: 18px; }
         .bv-fab-menu i { transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
         .bv-fab-menu.active i { transform: rotate(135deg); }
 
@@ -234,7 +244,7 @@ export function initUIBateoLive() {
         .bv-compass-center-line { position: absolute; left: 50%; top: 0; width: 3px; height: 30px; background: var(--bv-danger); transform: translateX(-50%); z-index: 10; border-radius: 2px; }
 
         /* ---------- HUD velocità + navigatore (compatto, stessa struttura di prima) ---------- */
-        .bv-hud-speed { position: absolute; bottom: calc(87px + env(safe-area-inset-bottom, 0px)); right: 20px; background: var(--bv-glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 12px 18px; border-radius: 16px; border: 1px solid var(--bv-border); box-shadow: var(--bv-shadow); z-index: 1000; display: none; }
+        .bv-hud-speed { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); right: 20px; background: var(--bv-glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 12px 18px; border-radius: 16px; border: 1px solid var(--bv-border); box-shadow: var(--bv-shadow); z-index: 1000; display: none; }
         .bv-speed-wrapper { display: flex; align-items: baseline; justify-content: center; gap: 5px; }
         .bv-speed-val { font-size: 42px; font-weight: 900; color: var(--bv-primary); line-height: 0.9; font-variant-numeric: tabular-nums; }
         .bv-speed-unit { font-size: 16px; font-weight: bold; color: var(--bv-muted); }
@@ -463,7 +473,8 @@ export function initUIBateoLive() {
         @media (prefers-reduced-motion: reduce) {
             #bv-drawer, #bv-drawer.open { transition: none; }
             .bv-st.corrente .bv-st-node { animation: none; }
-            .bv-fab-container .bv-fab, .bv-fab-container.chiuso .bv-fab, .bv-fab-menu i { transition: none; }
+            .bv-fab-container .bv-fab, .bv-fab-container.chiuso .bv-fab, .bv-fab-menu i, .bv-tiles-osm { transition: none; }
+            .bv-fab-tema i.swap { animation: none; }
         }
     </style>
 
@@ -530,6 +541,9 @@ export function initUIBateoLive() {
             </div>
             <div id="bv-fab-layers" class="bv-fab" onclick="cambiaStileBvMappa()" title="Cambia stile cartografico">
                 <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div id="bv-fab-tema" class="bv-fab bv-fab-tema" onclick="toggleBvTema()" role="button" title="Passa al tema scuro" aria-label="Passa al tema scuro">
+                <i class="fa-solid fa-moon"></i>
             </div>
             <div id="bv-fab-unit" class="bv-fab" onclick="apriBateoLiveUnitModal()" title="Configura unità" style="display: none;">
                 <i class="fa-solid fa-ship"></i>
@@ -657,6 +671,7 @@ export function initUIBateoLive() {
     window.cambiaStileBvMappa = cambiaStileBvMappa;
     window.toggleBvNavigatore = toggleBvNavigatore;
     window.toggleBvMenu = toggleBvMenu;
+    window.toggleBvTema = toggleBvTema;
     window.apriRewind = apriRewind;
     window.chiudiRewind = chiudiRewind;
     window.indietroBateoLive = indietroBateoLive;
@@ -704,15 +719,44 @@ export function initUIBateoLive() {
 // ---- Tema chiaro/scuro: segue le variabili dell'app (come dashboard.js) ----
 // Legge il colore reale di --surface e, se è scuro, accende la classe bv-dark (mappa scura, colori testo adatti).
 let bvTemaObserver = null;
+// Tema forzato col tasto sole/luna: vale solo finché la pagina resta aperta, non viene salvato (null = segue l'app)
+let bvTemaForzato = null;
 
-function bvAggiornaTema() {
+function bvAggiornaIconaTema(scuro, anima) {
+    const btn = document.getElementById('bv-fab-tema');
+    const ico = btn && btn.querySelector('i');
+    if (!ico) return;
+    ico.className = scuro ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    const testo = scuro ? 'Passa al tema chiaro' : 'Passa al tema scuro';
+    btn.title = testo;
+    btn.setAttribute('aria-label', testo);
+    if (anima) { void ico.offsetWidth; ico.classList.add('swap'); }
+}
+
+function bvAggiornaTema(anima) {
     const root = document.getElementById('modal-bateolive-main');
     const probe = document.getElementById('bv-theme-probe');
     if (!root || !probe) return;
-    const m = getComputedStyle(probe).backgroundColor.match(/[\d.]+/g);
-    if (!m || m.length < 3) return;
-    const [r, g, b] = m.map(Number);
-    root.classList.toggle('bv-dark', (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5);
+    let scuro;
+    if (bvTemaForzato) {
+        scuro = bvTemaForzato === 'dark';
+    } else {
+        const m = getComputedStyle(probe).backgroundColor.match(/[\d.]+/g);
+        if (!m || m.length < 3) return;
+        const [r, g, b] = m.map(Number);
+        scuro = (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5;
+    }
+    root.classList.toggle('bv-forza-scuro', bvTemaForzato === 'dark');
+    root.classList.toggle('bv-forza-chiaro', bvTemaForzato === 'light');
+    root.classList.toggle('bv-dark', scuro);
+    bvAggiornaIconaTema(scuro, anima === true);
+}
+
+function toggleBvTema() {
+    const root = document.getElementById('modal-bateolive-main');
+    if (!root) return;
+    bvTemaForzato = root.classList.contains('bv-dark') ? 'light' : 'dark';
+    bvAggiornaTema(true);
 }
 
 function avviaOsservatoreTema() {
@@ -2697,8 +2741,9 @@ async function rwCaricaChunk(c) {
         if (sessione !== rewind.sessione) return;                 // nel frattempo si è cambiato giorno o si è usciti
         for (const [id, bt] of Object.entries(dati.boats || {})) {
             let tb = rewind.boats.get(id);
-            if (!tb) { tb = { line: bt.line, pts: [] }; rewind.boats.set(id, tb); }
+            if (!tb) { tb = { line: bt.line, label: bt.label || null, pts: [] }; rewind.boats.set(id, tb); }
             if (bt.line && bt.line !== '-') tb.line = bt.line;
+            if (bt.label) tb.label = bt.label;
             tb.pts = rwUnisci(tb.pts, bt.pts);
         }
         rewind.loaded.add(c);
@@ -2873,9 +2918,13 @@ async function rwApriBarca(id) {
     const date = rewind.date, t = rewind.t;
     activeSelection = { type: 'rewind', id };
     const linea = b ? b.line : '-';
-    const sub = `Rewind alle ${rwOra(t, true)}`;
+    // Nome dell'unità: dallo storico del server, altrimenti dall'elenco live (la flotta è la stessa)
+    const nomeUnita = (b && b.label) || (globalBoats.find(x => x.id === id) || {}).label || null;
+    const titolo = nomeUnita || `Linea ${linea}`;
+    const sottotitolo = (l) => `${nomeUnita ? `Linea ${l} · ` : ''}Rewind alle ${rwOra(t, true)}`;
+    const sub = sottotitolo(linea);
     const opts = { badge: bvDotLinea(linea), sub };
-    openBateoLiveDrawer(`Linea ${linea}`, '<p class="bv-empty">Caricamento…</p>', opts);
+    openBateoLiveDrawer(titolo, '<p class="bv-empty">Caricamento…</p>', opts);
     const ancora = () => activeSelection && activeSelection.type === 'rewind' && activeSelection.id === id && rewind.attivo;
     try {
         const r1 = await fetch(`${API_URL}/api/history/${date}/trips?boat=${encodeURIComponent(id)}`);
@@ -2884,7 +2933,7 @@ async function rwApriBarca(id) {
         if (!ancora()) return;
         let corsa = corse.find(c => c.first - 600 <= t && t <= c.last + 600);
         if (!corsa) corsa = [...corse].reverse().find(c => c.first <= t);
-        if (!corsa) { openBateoLiveDrawer(`Linea ${linea}`, '<p class="bv-empty">Nessuna corsa registrata per questa unità in questo momento.</p>', opts); return; }
+        if (!corsa) { openBateoLiveDrawer(titolo, '<p class="bv-empty">Nessuna corsa registrata per questa unità in questo momento.</p>', opts); return; }
         const r2 = await fetch(`${API_URL}/api/history/${date}/trip/${encodeURIComponent(corsa.trip)}`);
         if (!r2.ok) throw new Error('HTTP ' + r2.status);
         const det = await r2.json();
@@ -2907,10 +2956,13 @@ async function rwApriBarca(id) {
         });
         html += `</div>`;
         const lineaFinale = det.line || linea;
-        openBateoLiveDrawer(`Linea ${lineaFinale}`, html, { badge: bvDotLinea(lineaFinale), sub, focusKey: `rw-${id}-${corsa.trip}` });
+        const nomeFinale = nomeUnita || det.boatLabel || null;
+        const titoloFinale = nomeFinale || `Linea ${lineaFinale}`;
+        const subFinale = `${nomeFinale ? `Linea ${lineaFinale} · ` : ''}Rewind alle ${rwOra(t, true)}`;
+        openBateoLiveDrawer(titoloFinale, html, { badge: bvDotLinea(lineaFinale), sub: subFinale, focusKey: `rw-${id}-${corsa.trip}` });
     } catch (e) {
         console.error('Rewind: dettaglio battello', e);
-        if (ancora()) openBateoLiveDrawer(`Linea ${linea}`, '<p class="bv-empty err">Impossibile caricare il dettaglio.</p>', opts);
+        if (ancora()) openBateoLiveDrawer(titolo, '<p class="bv-empty err">Impossibile caricare il dettaglio.</p>', opts);
     }
 }
 

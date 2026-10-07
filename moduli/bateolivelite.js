@@ -168,7 +168,7 @@ export function initUINavigatore() {
             0% { transform: rotate(-90deg) scale(0.3); opacity: 0; }
             100% { transform: none; opacity: 1; }
         }
-        #modal-navigatore-main { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: var(--bv-surface); color: var(--bv-text); display: none; flex-direction: column; font-family: inherit; overflow: hidden; }
+        #modal-navigatore-main { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; background: var(--bv-surface); color: var(--bv-text); display: none; flex-direction: column; font-family: inherit; overflow: hidden; }
         #modal-navigatore-main button, #modal-navigatore-main input { font-family: inherit; }
         #modal-navigatore-main button:focus-visible { outline: 2px solid var(--bv-primary); outline-offset: 2px; }
         #nav-map-wrapper { flex-grow: 1; position: relative; overflow: hidden; background: var(--bv-sea); z-index: 1; }

@@ -425,6 +425,12 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
         return isSensibile ? "NPL" : t;
     }
 
+    // Turni che non devono mai dare match compagno: quelli mostrati come NPL (assenze) e DISP
+    function turnoEscludeMatch(turnoStr) {
+        const t = applicaFiltroPrivacy(turnoStr);
+        return t === "NPL" || /\bDISP\b/.test(t);
+    }
+
     // Funzione per impostare e gestire l'ordinamento
     window.impostaOrdinamentoVarianti = function(tipo) {
         window.ordineVariantiAttuale = tipo;
@@ -606,7 +612,7 @@ export function avviaMotoreVarianti(db, auth, userDataPrivate) {
                 let isTheirMarinaio = mTheir.includes('marinaio') || mTheir.includes('timoniere');
                 
                 let isMate = false;
-                if (res.id !== currentUser.uid) {
+                if (res.id !== currentUser.uid && !turnoEscludeMatch(mioTurnoOggi) && !turnoEscludeMatch(stringaSicuraTurno)) {
                     if (compagniPossibili.includes(stringaSicuraTurno)) {
                         isMate = true; 
                     } else if (stringaSicuraTurno === mioTurnoClean && (isMioMarinaio !== isTheirMarinaio)) {

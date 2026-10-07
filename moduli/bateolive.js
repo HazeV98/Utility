@@ -211,7 +211,14 @@ export function initUIBateoLive() {
         .bv-fab { font-size: 18px; }
         .bv-fab.active { background: var(--bv-primary); border-color: var(--bv-primary); color: #fff; }
         .bv-fab:hover { transform: scale(1.05); }
-        .bv-fab-container { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; }
+        .bv-fab-container { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; pointer-events: none; }
+        /* Colonna tasti richiudibile: a cascata dal basso quando si apre, dall'alto quando si chiude */
+        .bv-fab-container .bv-fab { pointer-events: auto; opacity: 1; transform: none; transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.15), opacity 0.22s ease, background 0.2s, color 0.2s; }
+        .bv-fab-container.chiuso .bv-fab { opacity: 0; transform: translateY(26px) scale(0.5); pointer-events: none; transition: transform 0.22s ease-in, opacity 0.18s ease, background 0.2s, color 0.2s; }
+        .bv-fab-container:not(.chiuso) .bv-fab:hover { transform: scale(1.05); }
+        .bv-fab-menu { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); right: 20px; z-index: 1000; font-size: 18px; }
+        .bv-fab-menu i { transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+        .bv-fab-menu.active i { transform: rotate(135deg); }
 
         .bv-error-banner { position: absolute; top: calc(20px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%) translateY(-20px); z-index: 1500; background: var(--bv-danger); color: #fff; padding: 10px 18px; border-radius: 12px; font-size: 13px; font-weight: 600; box-shadow: var(--bv-shadow); display: flex; align-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; max-width: 85%; text-align: center; }
         .bv-error-banner.active { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -227,7 +234,7 @@ export function initUIBateoLive() {
         .bv-compass-center-line { position: absolute; left: 50%; top: 0; width: 3px; height: 30px; background: var(--bv-danger); transform: translateX(-50%); z-index: 10; border-radius: 2px; }
 
         /* ---------- HUD velocità + navigatore (compatto, stessa struttura di prima) ---------- */
-        .bv-hud-speed { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); right: 20px; background: var(--bv-glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 12px 18px; border-radius: 16px; border: 1px solid var(--bv-border); box-shadow: var(--bv-shadow); z-index: 1000; display: none; }
+        .bv-hud-speed { position: absolute; bottom: calc(87px + env(safe-area-inset-bottom, 0px)); right: 20px; background: var(--bv-glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 12px 18px; border-radius: 16px; border: 1px solid var(--bv-border); box-shadow: var(--bv-shadow); z-index: 1000; display: none; }
         .bv-speed-wrapper { display: flex; align-items: baseline; justify-content: center; gap: 5px; }
         .bv-speed-val { font-size: 42px; font-weight: 900; color: var(--bv-primary); line-height: 0.9; font-variant-numeric: tabular-nums; }
         .bv-speed-unit { font-size: 16px; font-weight: bold; color: var(--bv-muted); }
@@ -402,6 +409,7 @@ export function initUIBateoLive() {
 
         /* ---------- Rewind ---------- */
         #modal-bateolive-main.rewind-on .bv-fab-container,
+        #modal-bateolive-main.rewind-on .bv-fab-menu,
         #modal-bateolive-main.rewind-on .bv-hud-compass,
         #modal-bateolive-main.rewind-on .bv-hud-speed,
         #modal-bateolive-main.rewind-on .bv-hud-status,
@@ -455,6 +463,7 @@ export function initUIBateoLive() {
         @media (prefers-reduced-motion: reduce) {
             #bv-drawer, #bv-drawer.open { transition: none; }
             .bv-st.corrente .bv-st-node { animation: none; }
+            .bv-fab-container .bv-fab, .bv-fab-container.chiuso .bv-fab, .bv-fab-menu i { transition: none; }
         }
     </style>
 
@@ -506,7 +515,7 @@ export function initUIBateoLive() {
             <span id="bv-error-banner-text">Impossibile collegarsi al server. Verifica la connessione.</span>
         </div>
 
-        <div class="bv-fab-container">
+        <div class="bv-fab-container chiuso">
             <div id="bv-fab-gps" class="bv-fab" onclick="toggleBvGPS()" title="Attiva/Disattiva GPS">
                 <i class="fa-solid fa-satellite-dish"></i>
             </div>
@@ -528,6 +537,11 @@ export function initUIBateoLive() {
             <div id="bv-fab-rewind" class="bv-fab" onclick="apriRewind()" title="Rewind: rivedi i movimenti passati"><i class="fa-solid fa-clock-rotate-left"></i></div>
             <div class="bv-fab" onclick="apriBateoLiveSearchModal()" title="Cerca mezzo o fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
             <div class="bv-fab" onclick="apriBateoLiveFilterModal()" title="Filtra linee"><i class="fa-solid fa-filter"></i></div>
+        </div>
+
+        <!-- Apre/chiude la colonna dei tasti (chiusa di base) -->
+        <div id="bv-fab-menu" class="bv-fab bv-fab-menu" onclick="toggleBvMenu()" role="button" aria-expanded="false" aria-label="Mostra i tasti" title="Mostra i tasti">
+            <i class="fa-solid fa-plus"></i>
         </div>
 
         <div id="bv-drawer">
@@ -642,6 +656,7 @@ export function initUIBateoLive() {
     window.toggleBvMapRotation = toggleBvMapRotation;
     window.cambiaStileBvMappa = cambiaStileBvMappa;
     window.toggleBvNavigatore = toggleBvNavigatore;
+    window.toggleBvMenu = toggleBvMenu;
     window.apriRewind = apriRewind;
     window.chiudiRewind = chiudiRewind;
     window.indietroBateoLive = indietroBateoLive;
@@ -817,6 +832,30 @@ function cambiaStileBvMappa() {
             hudStatus.style.display = 'none';
         }
     }, 2000);
+}
+
+// Apre/chiude la colonna dei tasti. Delay a cascata: in apertura parte il tasto più vicino al fondo, in chiusura quello in alto.
+let menuFabAperto = false;
+let menuFabTimer = null;
+function toggleBvMenu(forza = null) {
+    const cont = document.querySelector('#modal-bateolive-main .bv-fab-container');
+    const btn = document.getElementById('bv-fab-menu');
+    if (!cont || !btn) return;
+    const apri = forza !== null ? !!forza : !menuFabAperto;
+    menuFabAperto = apri;
+    const visibili = [...cont.children].filter(el => el.style.display !== 'none');
+    visibili.forEach((el, i) => {
+        const dalBasso = visibili.length - 1 - i;
+        el.style.transitionDelay = ((apri ? dalBasso : i) * 40) + 'ms';
+    });
+    cont.classList.toggle('chiuso', !apri);
+    btn.classList.toggle('active', apri);
+    btn.setAttribute('aria-expanded', String(apri));
+    const testo = apri ? 'Nascondi i tasti' : 'Mostra i tasti';
+    btn.setAttribute('aria-label', testo);
+    btn.title = testo;
+    clearTimeout(menuFabTimer);
+    menuFabTimer = setTimeout(() => visibili.forEach(el => { el.style.transitionDelay = ''; }), 700);
 }
 
 function toggleBvCenterMap(forceState = null) {
@@ -1089,6 +1128,7 @@ function chiudiBateoLive() {
     document.getElementById('bv-fab-nav').style.display = 'none';
     document.getElementById('bv-fab-unit').style.display = 'none';
     fermaNavigatore();
+    toggleBvMenu(false);
     document.getElementById('bv-fab-gps').classList.remove('active');
     
     courseUp = false;

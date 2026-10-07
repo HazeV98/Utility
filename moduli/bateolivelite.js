@@ -2,6 +2,7 @@
 // BateoLive lite - JS MODULE
 // Include il navigatore di turno (ex gps.js): ritardo/anticipo, attività in corso, prossima fermata,
 // tendina fermate e rotta della linea sulla mappa.
+// Grafica: stessa di bateolive.js (variabili tema dell'app, chiaro/scuro, tasto + e tasto sole/luna).
 // ==========================================
 
 import {
@@ -127,98 +128,184 @@ export function initUINavigatore() {
 
     const uiHTML = `
     <style>
-        #modal-navigatore-main { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: #e0e0e0; display: none; flex-direction: column; overflow: hidden; font-family: 'Inter', sans-serif; }
-        
-        #nav-map-wrapper { flex-grow: 1; position: relative; overflow: hidden; background: #aad3df; z-index: 1; }
-        #nav-map { width: 200%; height: 200%; position: absolute; top: -50%; left: -50%; z-index: 1; transition: transform 0.2s linear; }
-        
-        .nav-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer; transform: rotate(var(--marker-rotation, 0deg)); transition: transform 0.2s linear; }
-        .nav-stop-icon { background: #ffffff; border: 2.5px solid #00529b; border-radius: 50%; width: 14px; height: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; }
-        .nav-line-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; border: 2px solid; flex-shrink: 0; box-sizing: border-box; }
-        .other-user-icon { background: #28a745; border: 2.5px solid #ffffff; border-radius: 50%; width: 20px; height: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); transform: rotate(var(--marker-rotation, 0deg)); transition: transform 0.2s linear; }
-
-        .nav-back-btn { position: absolute; top: calc(20px + env(safe-area-inset-top)); left: 20px; z-index: 1000; width: 45px; height: 45px; border-radius: 50%; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; color: #00529b; }
-        .nav-fab-container { position: absolute; bottom: 30px; left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; }
-        .nav-fab { width: 45px; height: 45px; border-radius: 50%; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; color: #00529b; transition: all 0.2s; }
-        .nav-fab.active { background: #00529b; color: white; }
-
-        .hud-compass-container { position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: 250px; height: 60px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; z-index: 1000; display: flex; align-items: center; justify-content: center; display: none; }
+        #modal-navigatore-main {
+            --bv-surface: var(--surface, #ffffff);
+            --bv-glass: var(--bv-surface);
+            --bv-text: var(--text-main, #1e293b);
+            --bv-muted: var(--text-muted, #64748b);
+            --bv-border: var(--border-color, #e2e8f0);
+            --bv-primary: var(--primary, #00529b);
+            --bv-danger: var(--danger, #dc3545);
+            --bv-ok: var(--success, #28a745);
+            --bv-ok-t: #15803d;
+            --bv-bad-t: #b42318;
+            --bv-warn-t: #b45309;
+            --bv-fill: rgba(128, 128, 128, 0.08);
+            --bv-fill-2: rgba(128, 128, 128, 0.16);
+            --bv-tint: rgba(0, 82, 155, 0.1);
+            --bv-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            --bv-radius: var(--radius-md, 14px);
+            --bv-sea: #aad3df;
+        }
+        @supports (color: color-mix(in srgb, red, blue)) {
+            #modal-navigatore-main {
+                --bv-glass: color-mix(in srgb, var(--bv-surface) 92%, transparent);
+                --bv-tint: color-mix(in srgb, var(--bv-primary) 12%, transparent);
+            }
+        }
+        #modal-navigatore-main.nav-dark {
+            color-scheme: dark;
+            --bv-ok-t: #4ade80;
+            --bv-bad-t: #ff7b72;
+            --bv-warn-t: #fbbf24;
+            --bv-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+            --bv-sea: #1b2733;
+        }
+        #modal-navigatore-main.nav-forza-chiaro { color-scheme: light; --bv-surface: #ffffff; --bv-text: #1e293b; --bv-muted: #64748b; --bv-border: #e2e8f0; --bv-primary: #00529b; --bv-danger: #dc3545; --bv-ok: #28a745; }
+        #modal-navigatore-main.nav-forza-scuro { color-scheme: dark; --bv-surface: #1c2430; --bv-text: #e8edf3; --bv-muted: #9aa7b8; --bv-border: #334155; --bv-primary: #3b82f6; --bv-danger: #ef4444; --bv-ok: #22c55e; }
+        .nav-fab-tema i.swap { animation: nav-tema-swap 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+        @keyframes nav-tema-swap {
+            0% { transform: rotate(-90deg) scale(0.3); opacity: 0; }
+            100% { transform: none; opacity: 1; }
+        }
+        #modal-navigatore-main { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: var(--bv-surface); color: var(--bv-text); display: none; flex-direction: column; font-family: inherit; overflow: hidden; }
+        #modal-navigatore-main button, #modal-navigatore-main input { font-family: inherit; }
+        #modal-navigatore-main button:focus-visible { outline: 2px solid var(--bv-primary); outline-offset: 2px; }
+        #nav-map-wrapper { flex-grow: 1; position: relative; overflow: hidden; background: var(--bv-sea); z-index: 1; }
+        #nav-map { width: 200%; height: 200%; position: absolute; top: -50%; left: -50%; z-index: 1; transition: transform 0.2s linear; background: var(--bv-sea); font-family: inherit; }
+        .nav-tiles-osm { transition: filter 0.4s ease; }
+        #modal-navigatore-main.nav-dark .nav-tiles-osm { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.75); }
+        #modal-navigatore-main .leaflet-popup-content-wrapper, #modal-navigatore-main .leaflet-popup-tip { background: var(--bv-surface); color: var(--bv-text); box-shadow: var(--bv-shadow); }
+        #modal-navigatore-main .leaflet-popup-content { margin: 10px 14px; font-size: 13px; line-height: 1.4; }
+        #modal-navigatore-main .leaflet-container a.leaflet-popup-close-button { color: var(--bv-muted); }
+        .nav-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 2px 8px rgba(0,0,0,0.45); cursor: pointer; transform: rotate(var(--marker-rotation, 0deg)); transition: transform 0.2s linear, scale 0.2s ease; }
+        .nav-boat-icon:hover { scale: 1.15; }
+        .nav-stop-icon { background: var(--bv-surface); border: 2.5px solid var(--bv-primary); border-radius: 50%; width: 14px; height: 14px; box-sizing: border-box; box-shadow: 0 1px 5px rgba(0,0,0,0.4); cursor: pointer; transition: scale 0.2s ease; }
+        .nav-stop-icon:hover { scale: 1.4; }
+        .nav-line-dot { min-width: 24px; height: 24px; padding: 0 4px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; border: 2px solid; flex-shrink: 0; box-sizing: border-box; line-height: 1; }
+        .nav-back-btn, .nav-fab { width: 45px; height: 45px; border-radius: 50%; background: var(--bv-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--bv-border); box-shadow: var(--bv-shadow); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--bv-primary); transition: transform 0.2s, background 0.2s, color 0.2s; }
+        .nav-back-btn { position: absolute; top: calc(20px + env(safe-area-inset-top, 0px)); left: 20px; z-index: 1000; font-size: 20px; }
+        .nav-fab { font-size: 18px; }
+        .nav-fab.active { background: var(--bv-primary); border-color: var(--bv-primary); color: #fff; }
+        .nav-fab:hover { transform: scale(1.05); }
+        .nav-fab-container { position: absolute; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; pointer-events: none; }
+        .nav-fab-container .nav-fab { pointer-events: auto; opacity: 1; transform: none; transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.15), opacity 0.22s ease, background 0.2s, color 0.2s; }
+        .nav-fab-container.chiuso .nav-fab { opacity: 0; transform: translateY(26px) scale(0.5); pointer-events: none; transition: transform 0.22s ease-in, opacity 0.18s ease, background 0.2s, color 0.2s; }
+        .nav-fab-container:not(.chiuso) .nav-fab:hover { transform: scale(1.05); }
+        .nav-fab-menu { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); left: 20px; z-index: 1000; font-size: 18px; }
+        .nav-fab-menu i { transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+        .nav-fab-menu.active i { transform: rotate(135deg); }
+        .hud-compass-container { position: absolute; top: calc(15px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); width: 250px; height: 60px; background: var(--bv-glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid var(--bv-border); box-shadow: var(--bv-shadow); overflow: hidden; z-index: 1000; align-items: center; justify-content: center; display: none; }
         .compass-tape { position: absolute; top: 10px; left: 0; height: 100%; display: flex; transition: transform 0.15s linear; }
         .compass-mark { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; width: 60px; flex-shrink: 0; }
-        .tick { width: 2px; height: 8px; background: #666; margin-bottom: 4px; border-radius: 2px; }
-        .tick.major { height: 16px; background: #00529b; width: 3px; }
-        .compass-label { color: #666; font-size: 12px; font-weight: 600; }
-        .compass-label.major { color: #333; font-size: 14px; font-weight: 900; }
-        .compass-center-line { position: absolute; left: 50%; top: 0; width: 3px; height: 30px; background: #e3001b; transform: translateX(-50%); z-index: 10; border-radius: 2px; }
-        
-        .hud-speed-container { position: absolute; bottom: 30px; right: 20px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); padding: 12px 18px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1000; display: none; }
+        .tick { width: 2px; height: 8px; background: var(--bv-muted); opacity: 0.7; margin-bottom: 4px; border-radius: 2px; }
+        .tick.major { height: 16px; background: var(--bv-primary); opacity: 1; width: 3px; }
+        .compass-label { color: var(--bv-muted); font-size: 12px; font-weight: 600; }
+        .compass-label.major { color: var(--bv-text); font-size: 14px; font-weight: 900; }
+        .compass-center-line { position: absolute; left: 50%; top: 0; width: 3px; height: 30px; background: var(--bv-danger); transform: translateX(-50%); z-index: 10; border-radius: 2px; }
+        .hud-speed-container { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); right: 20px; background: var(--bv-glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 12px 18px; border-radius: 16px; border: 1px solid var(--bv-border); box-shadow: var(--bv-shadow); z-index: 1000; display: none; }
         .speed-wrapper { display: flex; align-items: baseline; justify-content: center; gap: 5px; }
-        .speed-val { font-size: 42px; font-weight: 900; color: #00529b; line-height: 0.9; }
-        .speed-unit { font-size: 16px; font-weight: bold; color: #666; }
-
-        /* Navigatore di turno: dentro il riquadro velocità, impilato verso l'alto */
+        .speed-val { font-size: 42px; font-weight: 900; color: var(--bv-primary); line-height: 0.9; font-variant-numeric: tabular-nums; }
+        .speed-unit { font-size: 16px; font-weight: bold; color: var(--bv-muted); }
         .hud-speed-container [hidden] { display: none !important; }
         .hud-speed-container.nav-on { width: min(290px, calc(100vw - 110px)); box-sizing: border-box; padding: 8px 12px 10px; }
         .hud-speed-container.nav-on .speed-wrapper { justify-content: flex-start; }
         .hud-speed-container.nav-on .speed-val { font-size: 36px; }
         .nvg-extra { display: none; flex-direction: column; gap: 6px; margin-bottom: 6px; }
         .hud-speed-container.nav-on .nvg-extra { display: flex; }
-        .nvg-delay { display: none; margin-left: auto; font-size: 30px; font-weight: 900; line-height: 0.9; font-variant-numeric: tabular-nums; padding-left: 10px; border-left: 1px solid rgba(0,0,0,0.12); }
+        .nvg-delay { display: none; margin-left: auto; font-size: 30px; font-weight: 900; line-height: 0.9; font-variant-numeric: tabular-nums; padding-left: 10px; border-left: 1px solid var(--bv-border); }
         .hud-speed-container.nav-on .nvg-delay { display: inline-block; }
-        .nvg-delay.tardi { color: #e53935; }
-        .nvg-delay.presto { color: #f39c12; }
-        .nvg-delay.puntuale { color: #43a047; }
-        .nvg-delay.spento { color: #999; opacity: 0.6; }
-        .nvg-lista { display: none; position: relative; max-height: 34vh; overflow-y: auto; border-bottom: 1px solid rgba(0,0,0,0.08); padding-bottom: 4px; }
+        .nvg-delay.tardi { color: var(--bv-bad-t); }
+        .nvg-delay.presto { color: var(--bv-warn-t); }
+        .nvg-delay.puntuale { color: var(--bv-ok-t); }
+        .nvg-delay.spento { color: var(--bv-muted); opacity: 0.7; }
+        .nvg-lista { display: none; position: relative; max-height: 34vh; overflow-y: auto; border-bottom: 1px solid var(--bv-border); padding-bottom: 4px; }
         .nvg-lista.aperta { display: block; }
-        .nvg-toggle { width: 100%; border: none; background: transparent; color: #00529b; font-size: 15px; line-height: 1; padding: 2px 0; cursor: pointer; }
+        .nvg-toggle { width: 100%; border: none; background: transparent; color: var(--bv-primary); font-size: 15px; line-height: 1; padding: 2px 0; cursor: pointer; }
         .nvg-toggle i { transition: transform 0.25s; }
         .nvg-toggle.aperto i { transform: rotate(180deg); }
         .nvg-next { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
         .nvg-next-txt { flex: 1; min-width: 0; }
-        .nvg-next-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #666; }
-        .nvg-next-nome { font-size: 15px; font-weight: 800; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .nvg-next-ora { flex: none; font-size: 20px; font-weight: 900; color: #00529b; font-variant-numeric: tabular-nums; }
-        .nvg-act-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
-        .nvg-turno { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 36px; height: 26px; padding: 0 4px; box-sizing: border-box; border-radius: 6px; background: #1c355e; color: #fff; font-size: 12px; font-weight: 800; line-height: 1; }
-        .nvg-turno small { font-size: 7px; font-weight: 700; letter-spacing: 0.5px; opacity: 0.8; }
+        .nvg-next-label { font-size: 11px; font-weight: 600; color: var(--bv-muted); }
+        .nvg-next-nome { font-size: 15px; font-weight: 800; color: var(--bv-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .nvg-next-ora { flex: none; font-size: 20px; font-weight: 900; color: var(--bv-primary); font-variant-numeric: tabular-nums; }
+        .nvg-act-row { display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
+        .nvg-turno { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 36px; height: 26px; padding: 0 4px; box-sizing: border-box; border-radius: 6px; background: var(--bv-primary); color: #fff; font-size: 12px; font-weight: 800; line-height: 1; }
+        .nvg-turno small { font-size: 8px; font-weight: 700; letter-spacing: 0.3px; opacity: 0.85; }
         .nvg-linea { flex: none; min-width: 26px; height: 26px; padding: 0 4px; box-sizing: border-box; border-radius: 13px; border: 2px solid; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
-        .nvg-act-row { align-items: flex-start; }
         .nvg-id { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; }
         .nvg-blocco { flex: 1; min-width: 0; }
-        .nvg-ora { font-size: 16px; font-weight: 800; color: #111; line-height: 1.1; font-variant-numeric: tabular-nums; }
-        .nvg-luogo { font-size: 11px; font-weight: 600; color: #555; line-height: 1.15; margin-top: 1px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-        .nvg-freccia { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding-top: 3px; color: #999; font-size: 13px; }
+        .nvg-ora { font-size: 16px; font-weight: 800; color: var(--bv-text); line-height: 1.1; font-variant-numeric: tabular-nums; }
+        .nvg-luogo { font-size: 11px; font-weight: 600; color: var(--bv-muted); line-height: 1.15; margin-top: 1px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+        .nvg-freccia { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding-top: 3px; color: var(--bv-muted); font-size: 13px; }
         .nvg-reb { font-size: 8px; font-weight: 800; color: #8b5cf6; }
-        .nvg-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #666; margin-bottom: 3px; }
-        .nvg-dest { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .nvg-msg { white-space: normal; font-size: 12px; font-weight: 600; color: #555; }
-        .nvg-pre { flex: none; font-size: 12px; font-weight: 800; color: #00529b; }
-        .nvg-pill { flex: none; font-size: 10px; font-weight: 800; padding: 3px 6px; border-radius: 6px; background: rgba(100,116,139,0.15); color: #555; }
-        .nvg-warn { color: #d97706; }
-        .nvg-fermata { display: flex; align-items: center; gap: 8px; padding: 5px 4px; margin: 0 -4px; font-size: 13px; color: #222; }
+        .nvg-tag { font-size: 11px; font-weight: 600; color: var(--bv-muted); margin-bottom: 3px; }
+        .nvg-dest { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: var(--bv-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .nvg-msg { white-space: normal; font-size: 12px; font-weight: 600; color: var(--bv-muted); }
+        .nvg-pre { flex: none; font-size: 12px; font-weight: 800; color: var(--bv-primary); }
+        .nvg-pill { flex: none; font-size: 10px; font-weight: 800; padding: 3px 6px; border-radius: 6px; background: var(--bv-fill-2); color: var(--bv-muted); }
+        .nvg-warn { color: var(--bv-warn-t); }
+        .nvg-fermata { display: flex; align-items: center; gap: 8px; padding: 5px 4px; margin: 0 -4px; font-size: 13px; color: var(--bv-text); }
         .nvg-fermata.passata { opacity: 0.45; }
-        .nvg-fermata.prossima { font-weight: 800; background: rgba(0,82,155,0.08); border-radius: 6px; }
-        .nvg-punto { flex: none; width: 8px; height: 8px; box-sizing: border-box; border-radius: 50%; border: 2px solid #00529b; background: #fff; }
+        .nvg-fermata.prossima { font-weight: 800; background: var(--bv-tint); border-radius: 6px; }
+        .nvg-punto { flex: none; width: 8px; height: 8px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--bv-primary); background: var(--bv-surface); }
         .nvg-fnome { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .nvg-fora { flex: none; font-weight: 700; font-variant-numeric: tabular-nums; }
-        .nvg-fora.fine { color: #00529b; }
-
-        .hud-status { position: absolute; top: calc(85px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 1500; background: rgba(0,0,0,0.6); color: white; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        
-        .nav-submodal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
-        .nav-submodal-overlay.active { display: flex; }
-        .nav-submodal { background: white; padding: 20px; border-radius: 16px; width: 90%; max-width: 320px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; }
+        .nvg-fora.fine { color: var(--bv-primary); }
+        .hud-status { position: absolute; top: calc(85px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 1500; background: rgba(0,0,0,0.6); color: white; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .nav-submodal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); opacity: 0; transition: opacity 0.2s ease; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); box-sizing: border-box; }
+        .nav-submodal-overlay.active { display: flex; opacity: 1; }
+        .nav-submodal { background: var(--bv-surface); color: var(--bv-text); padding: 20px; border-radius: 18px; border: 1px solid var(--bv-border); width: 90%; max-width: 320px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 10px 34px rgba(0,0,0,0.35); position: relative; }
+        .nav-submodal h3 { margin: 0 0 15px; color: var(--bv-text); font-size: 17px; font-weight: 800; flex-shrink: 0; }
         .nav-search-container { position: relative; flex-shrink: 0; }
-        .nav-submodal input[type="text"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 15px; box-sizing: border-box; outline: none; font-size: 14px; font-family: 'Inter', sans-serif; }
-        .nav-btn { background: #00529b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 15px; font-family: 'Inter', sans-serif; }
-        .nav-btn.error { background: #e53935; }
-        .nav-suggestions-dropdown { position: absolute; top: 48px; left: 0; right: 0; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); max-height: 220px; overflow-y: auto; z-index: 10; display: none; border: 1px solid #ddd; }
+        .nav-submodal input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--bv-border); background: var(--bv-fill); color: var(--bv-text); margin-bottom: 15px; box-sizing: border-box; outline: none; font-size: 14px; }
+        .nav-submodal input[type="text"]::placeholder { color: var(--bv-muted); opacity: 0.8; }
+        .nav-submodal input[type="text"]:focus { border-color: var(--bv-primary); box-shadow: 0 0 0 3px var(--bv-tint); }
+        .nav-btn { background: var(--bv-primary); color: #fff; border: none; padding: 12px; width: 100%; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 14px; transition: filter 0.2s; flex-shrink: 0; margin-top: 15px; }
+        .nav-btn:hover { filter: brightness(0.92); }
+        .nav-btn.error { background: var(--bv-danger); }
+        .nav-suggestions-dropdown { position: absolute; top: 48px; left: 0; right: 0; background: var(--bv-surface); border-radius: 12px; box-shadow: var(--bv-shadow); max-height: 220px; overflow-y: auto; z-index: 10; display: none; border: 1px solid var(--bv-border); }
         .nav-suggestions-dropdown.active { display: block; }
-        .nav-suggestion-item { padding: 12px 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; }
-    </style>
+        .nav-suggestion-item { padding: 12px 15px; border-bottom: 1px solid var(--bv-border); cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; color: var(--bv-text); }
+        .nav-suggestion-item:last-child { border-bottom: none; }
+        .nav-suggestion-item:hover { background: var(--bv-tint); color: var(--bv-primary); }
+        .nav-sugg-ico { width: 18px; text-align: center; color: var(--bv-primary); font-size: 14px; }
+        .nav-suggestion-item.vuoto { justify-content: center; color: var(--bv-muted); cursor: default; }
+        .nav-suggestion-item.vuoto:hover { background: transparent; color: var(--bv-muted); }
+        .nav-filter-list { display: flex; flex-direction: column; overflow-y: auto; padding-right: 5px; flex-grow: 1; }
+        .nav-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--bv-border); }
+        .nav-toggle-row:last-child { border-bottom: none; }
+        .nav-toggle-info { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 14px; color: var(--bv-text); }
+        .nav-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .nav-switch input { opacity: 0; width: 0; height: 0; }
+        .nav-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(128, 128, 128, 0.4); transition: .3s; border-radius: 34px; }
+        .nav-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.25); }
+        .nav-switch input:checked + .nav-slider { background-color: var(--bv-ok); }
+        .nav-switch input:checked + .nav-slider:before { transform: translateX(20px); }
+        .nav-switch input:focus-visible + .nav-slider { outline: 2px solid var(--bv-primary); outline-offset: 2px; }
+        #modal-navigatore-main ::-webkit-scrollbar { width: 6px; }
+        #modal-navigatore-main ::-webkit-scrollbar-track { background: transparent; }
+        #modal-navigatore-main ::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.4); border-radius: 10px; }
+
+        /* Popup unità / fermate */
+        .nav-pop { display: flex; align-items: center; gap: 10px; min-width: 130px; }
+        .nav-pop .nav-line-dot { min-width: 36px; height: 36px; border-radius: 18px; font-size: 13px; }
+        .nav-pop-ico { flex: none; width: 36px; height: 36px; border-radius: 12px; background: var(--bv-tint); color: var(--bv-primary); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .nav-pop-txt { min-width: 0; }
+        .nav-pop-title { font-size: 14px; font-weight: 800; line-height: 1.25; color: var(--bv-text); overflow-wrap: anywhere; }
+        .nav-pop-sub { margin-top: 1px; font-size: 12px; font-weight: 500; color: var(--bv-muted); }
+        .nav-pop-user { text-align: center; font-size: 13px; line-height: 1.4; color: var(--bv-text); }
+        .nav-label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--bv-muted); }
+
+        @media (prefers-reduced-motion: reduce) {
+            .nav-fab-container .nav-fab, .nav-fab-container.chiuso .nav-fab, .nav-fab-menu i, .nav-tiles-osm { transition: none; }
+            .nav-fab-tema i.swap { animation: none; }
+        }
+        </style>
 
     <div id="modal-navigatore-main">
+        <!-- serve solo a leggere il colore di superficie del tema e capire se è scuro -->
+        <div id="nav-theme-probe" style="display:none; background: var(--bv-surface);" aria-hidden="true"></div>
         <div class="nav-back-btn" onclick="chiudiNavigatore()" title="Torna al menu"><i class="fa-solid fa-arrow-left"></i></div>
 
         <div id="nav-map-wrapper">
@@ -252,35 +339,43 @@ export function initUINavigatore() {
             </div>
         </div>
 
-        <div class="nav-fab-container">
+        <div class="nav-fab-container chiuso">
             <div id="fab-gps" class="nav-fab" onclick="toggleGPS()" title="Attiva/Disattiva GPS">
                 <i class="fa-solid fa-satellite-dish"></i>
             </div>
-            <div id="fab-center" class="nav-fab" onclick="toggleCenterMap()" title="Centra sulla Posizione" style="display: none;">
+            <div id="fab-center" class="nav-fab" onclick="toggleCenterMap()" title="Centra sulla posizione" style="display: none;">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 2L4 20L12 17L20 20L12 2Z"/></svg>
             </div>
-            <div id="fab-rotate" class="nav-fab" onclick="toggleMapRotation()" title="Rotazione Mappa (Rotta in alto)" style="display: none;">
+            <div id="fab-rotate" class="nav-fab" onclick="toggleMapRotation()" title="Rotazione mappa (rotta in alto)" style="display: none;">
                 <i class="fa-regular fa-compass"></i>
             </div>
             <div id="fab-nav" class="nav-fab active" onclick="toggleNavigatoreRotta()" title="Navigatore turno" style="display: none;">
                 <i class="fa-solid fa-route"></i>
             </div>
-            <div id="fab-layers" class="nav-fab" onclick="cambiaStileMappa()" title="Cambia Stile Cartografico">
+            <div id="fab-layers" class="nav-fab" onclick="cambiaStileMappa()" title="Cambia stile cartografico">
                 <i class="fa-solid fa-layer-group"></i>
             </div>
-            <div id="fab-unit" class="nav-fab" onclick="apriNavigatoreUnitModal()" title="Configura Unità" style="display: none;">
+            <div id="fab-tema" class="nav-fab nav-fab-tema" onclick="toggleNavTema()" role="button" title="Passa al tema scuro" aria-label="Passa al tema scuro">
+                <i class="fa-solid fa-moon"></i>
+            </div>
+            <div id="fab-unit" class="nav-fab" onclick="apriNavigatoreUnitModal()" title="Configura unità" style="display: none;">
                 <i class="fa-solid fa-ship"></i>
             </div>
-            <div class="nav-fab" onclick="apriNavigatoreSearchModal()" title="Cerca Mezzo o Fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
-            <div class="nav-fab" onclick="apriNavigatoreFilterModal()" title="Filtra Linee"><i class="fa-solid fa-filter"></i></div>
+            <div class="nav-fab" onclick="apriNavigatoreSearchModal()" title="Cerca mezzo o fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
+            <div class="nav-fab" onclick="apriNavigatoreFilterModal()" title="Filtra linee"><i class="fa-solid fa-filter"></i></div>
+        </div>
+
+        <!-- Apre/chiude la colonna dei tasti (chiusa di base) -->
+        <div id="fab-menu" class="nav-fab nav-fab-menu" onclick="toggleNavMenu()" role="button" aria-expanded="false" aria-label="Mostra i tasti" title="Mostra i tasti">
+            <i class="fa-solid fa-plus"></i>
         </div>
 
         <!-- Sottomodale Configurazione Unità -->
         <div id="nav-unit-modal" class="nav-submodal-overlay" onclick="chiudiNavigatoreModals(event)">
             <div class="nav-submodal" onclick="event.stopPropagation()">
-                <h3 style="margin-top:0; color:#00529b;">Configurazione Unità</h3>
+                <h3>Configurazione unità</h3>
                 <div style="margin-bottom: 12px;">
-                    <label style="font-size: 12px; font-weight: 600; color: #666; display: block; margin-bottom: 4px;">Nome Unità / Mezzo</label>
+                    <label class="nav-label" for="nav-unit-name-input">Nome unità / mezzo</label>
                     <input type="text" id="nav-unit-name-input" placeholder="Es. M/B 1, M/S 200" autocomplete="off">
                 </div>
                 <button class="nav-btn" onclick="salvaNavigatoreConfigUnita()">Salva</button>
@@ -289,7 +384,7 @@ export function initUINavigatore() {
 
         <div id="nav-search-modal" class="nav-submodal-overlay" onclick="chiudiNavigatoreModals(event)">
             <div class="nav-submodal" onclick="event.stopPropagation()">
-                <h3 style="margin-top:0; color:#00529b;">Cerca Mezzo / Fermata</h3>
+                <h3>Cerca mezzo o fermata</h3>
                 <div class="nav-search-container">
                     <input type="text" id="nav-search-input" placeholder="Es. Rialto, 4.2..." autocomplete="off">
                     <div id="nav-search-suggestions" class="nav-suggestions-dropdown"></div>
@@ -300,9 +395,9 @@ export function initUINavigatore() {
         
         <div id="nav-filter-modal" class="nav-submodal-overlay" onclick="chiudiNavigatoreModals(event)">
             <div class="nav-submodal" onclick="event.stopPropagation()">
-                <h3 style="margin-top:0; color:#00529b;">Filtra Linee</h3>
-                <div id="nav-filter-list" style="overflow-y:auto; flex-grow:1; max-height:50vh;"></div>
-                <button class="nav-btn" onclick="applicaNavigatoreFilter()">Applica Filtro</button>
+                <h3>Filtra linee</h3>
+                <div id="nav-filter-list" class="nav-filter-list" style="max-height:50vh;"></div>
+                <button class="nav-btn" onclick="applicaNavigatoreFilter()">Applica filtro</button>
             </div>
         </div>
     </div>
@@ -340,19 +435,19 @@ export function initUINavigatore() {
         
         mBoats.slice(0, 4).forEach(b => {
             const c = getLineColors(b.line);
-            const dotHtml = `<div class="nav-line-dot" style="background-color: ${c.bg}; color: ${c.text}; border-color: ${c.border}; width: 18px; height: 18px; font-size: 8px;">${b.line}</div>`;
+            const dotHtml = `<div class="nav-line-dot" style="background-color: ${c.bg}; color: ${c.text}; border-color: ${c.border};">${esc(b.line)}</div>`;
             html += `<div class="nav-suggestion-item" onclick="selezionaNavigatoreSuggestion('boat', '${b.id}')">
-                        ${dotHtml} <span>${b.label}</span>
+                        ${dotHtml} <span>${esc(b.label)}</span>
                      </div>`;
         });
         
         mStops.slice(0, 4).forEach(s => {
             html += `<div class="nav-suggestion-item" onclick="selezionaNavigatoreSuggestion('stop', '${s.id}')">
-                        ⚓ <span>${s.name}</span>
+                        <i class="fa-solid fa-anchor nav-sugg-ico"></i> <span>${esc(s.name)}</span>
                      </div>`;
         });
         
-        if(!html) html = `<div class="nav-suggestion-item" style="color:#999; justify-content: center;">Nessun risultato trovato</div>`;
+        if(!html) html = `<div class="nav-suggestion-item vuoto">Nessun risultato trovato</div>`;
         
         suggBox.innerHTML = html;
         suggBox.classList.add('active');
@@ -372,6 +467,8 @@ export function initUINavigatore() {
     window.applicaNavigatoreFilter = applicaNavigatoreFilter;
     window.selezionaNavigatoreSuggestion = selezionaNavigatoreSuggestion;
     window.toggleNavigatoreRotta = toggleNavigatoreRotta;
+    window.toggleNavTema = toggleNavTema;
+    window.toggleNavMenu = toggleNavMenu;
 
     document.getElementById('nvg-toggle').addEventListener('click', toggleListaFermate);
 }
@@ -379,6 +476,88 @@ export function initUINavigatore() {
 // ==========================================
 // INIZIALIZZAZIONE E MOTORE
 // ==========================================
+// ---- Tema chiaro/scuro: segue le variabili dell'app (come dashboard.js) ----
+// Legge il colore reale di --surface e, se è scuro, accende la classe nav-dark (mappa scura, colori testo adatti).
+let navTemaObserver = null;
+// Tema forzato col tasto sole/luna: vale solo finché la pagina resta aperta, non viene salvato (null = segue l'app)
+let navTemaForzato = null;
+
+function navAggiornaIconaTema(scuro, anima) {
+    const btn = document.getElementById('fab-tema');
+    const ico = btn && btn.querySelector('i');
+    if (!ico) return;
+    ico.className = scuro ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    const testo = scuro ? 'Passa al tema chiaro' : 'Passa al tema scuro';
+    btn.title = testo;
+    btn.setAttribute('aria-label', testo);
+    if (anima) { void ico.offsetWidth; ico.classList.add('swap'); }
+}
+
+function navAggiornaTema(anima) {
+    const root = document.getElementById('modal-navigatore-main');
+    const probe = document.getElementById('nav-theme-probe');
+    if (!root || !probe) return;
+    let scuro;
+    if (navTemaForzato) {
+        scuro = navTemaForzato === 'dark';
+    } else {
+        const m = getComputedStyle(probe).backgroundColor.match(/[\d.]+/g);
+        if (!m || m.length < 3) return;
+        const [r, g, b] = m.map(Number);
+        scuro = (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5;
+    }
+    root.classList.toggle('nav-forza-scuro', navTemaForzato === 'dark');
+    root.classList.toggle('nav-forza-chiaro', navTemaForzato === 'light');
+    root.classList.toggle('nav-dark', scuro);
+    navAggiornaIconaTema(scuro, anima === true);
+}
+
+function toggleNavTema() {
+    const root = document.getElementById('modal-navigatore-main');
+    if (!root) return;
+    navTemaForzato = root.classList.contains('nav-dark') ? 'light' : 'dark';
+    navAggiornaTema(true);
+}
+
+function avviaOsservatoreTema() {
+    navAggiornaTema();
+    if (navTemaObserver) return;
+    try {
+        navTemaObserver = new MutationObserver(navAggiornaTema);
+        const opz = { attributes: true, attributeFilter: ['class', 'data-theme', 'data-bs-theme', 'style'] };
+        navTemaObserver.observe(document.documentElement, opz);
+        navTemaObserver.observe(document.body, opz);
+        if (window.matchMedia) {
+            const mq = window.matchMedia('(prefers-color-scheme: dark)');
+            if (mq.addEventListener) mq.addEventListener('change', navAggiornaTema);
+        }
+    } catch (e) { /* il tema non deve mai rompere la mappa */ }
+}
+
+// Apre/chiude la colonna dei tasti. Delay a cascata: in apertura parte il tasto più vicino al fondo, in chiusura quello in alto.
+let menuFabAperto = false;
+let menuFabTimer = null;
+function toggleNavMenu(forza = null) {
+    const cont = document.querySelector('#modal-navigatore-main .nav-fab-container');
+    const btn = document.getElementById('fab-menu');
+    if (!cont || !btn) return;
+    const apri = forza !== null ? !!forza : !menuFabAperto;
+    menuFabAperto = apri;
+    const visibili = [...cont.children].filter(el => el.style.display !== 'none');
+    visibili.forEach((el, i) => {
+        const dalBasso = visibili.length - 1 - i;
+        el.style.transitionDelay = ((apri ? dalBasso : i) * 40) + 'ms';
+    });
+    cont.classList.toggle('chiuso', !apri);
+    btn.classList.toggle('active', apri);
+    btn.setAttribute('aria-expanded', String(apri));
+    const testo = apri ? 'Nascondi i tasti' : 'Mostra i tasti';
+    btn.setAttribute('aria-label', testo);
+    btn.title = testo;
+    clearTimeout(menuFabTimer);
+    menuFabTimer = setTimeout(() => visibili.forEach(el => { el.style.transitionDelay = ''; }), 700);
+}
+
 export async function avviaMotoreNavigatore(db, auth, userData) {
     tracciaApertura('/navigatore-lite', 'BateoLive Lite');
     currentUserId = (auth && auth.currentUser) ? auth.currentUser.uid : 'user_' + Math.random().toString(36).substr(2, 9);
@@ -387,11 +566,12 @@ export async function avviaMotoreNavigatore(db, auth, userData) {
 
     initUINavigatore();
     document.getElementById('modal-navigatore-main').style.display = 'flex';
+    avviaOsservatoreTema();
     
     await loadMapDependencies();
     
     if (!map) {
-        baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+        baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, className: 'nav-tiles-osm' });
         baseSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
         nauticLayer = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxZoom: 18 });
 
@@ -447,6 +627,7 @@ function chiudiNavigatore() {
     document.getElementById('fab-unit').style.display = 'none';
     document.getElementById('fab-nav').style.display = 'none';
     fermaNavigatore();
+    toggleNavMenu(false);
     
     courseUp = false;
     followUser = false;
@@ -477,7 +658,7 @@ function cambiaStileMappa() {
 
     if (currentMapMode === 0) {
         map.addLayer(baseOSM);
-        hudStatus.innerText = "Mappa Base Nautica";
+        hudStatus.innerText = "Mappa base nautica";
     } else if (currentMapMode === 1) {
         map.addLayer(baseSat);
         hudStatus.innerText = "Mappa Satellitare";
@@ -577,7 +758,8 @@ function toggleGPS() {
         document.getElementById('fab-nav').style.display = 'flex';
         avviaNavigatore();
         
-        toggleCenterMap(true); 
+        toggleCenterMap(true);
+        toggleMapRotation(true);   // col GPS acceso la mappa ruota subito con la rotta
         speedHistory = [];
         
         watchId = navigator.geolocation.watchPosition(elaboraPosizioneGPS, (err) => {
@@ -613,7 +795,7 @@ function elaboraPosizioneGPS(position) {
 
     const svgArrow = `
     <div style="transform: rotate(${validHeading}deg); width:32px; height:32px; display:flex; align-items:center; justify-content:center; filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.5)); transition: transform 0.2s linear;">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="#00529b" stroke="white" stroke-width="1.5" stroke-linejoin="round">
+        <svg width="28" height="28" viewBox="0 0 24 24" style="fill:var(--bv-primary)" stroke="white" stroke-width="1.5" stroke-linejoin="round">
             <path d="M12 2L4 20L12 17L20 20L12 2Z"/>
         </svg>
     </div>`;
@@ -695,13 +877,13 @@ async function sincronizzaPosizioneAltriUtenti() {
 
             if (uLine) {
                 const c = getLineColors(uLine.toUpperCase());
-                iconHtml = `<div class="nav-boat-icon" style="background-color: ${c.bg}; color: ${c.text}; border: 3px solid #28a745; width: 26px; height: 26px; box-sizing: border-box;">${uLine}</div>`;
+                iconHtml = `<div class="nav-boat-icon" style="background-color: ${c.bg}; color: ${c.text}; border: 3px solid var(--bv-ok); width: 26px; height: 26px; box-sizing: border-box;">${uLine}</div>`;
                 iconSize = [26, 26];
                 iconAnchor = [13, 13];
             } else {
                 iconHtml = `
                 <div style="transform: rotate(${uHeading}deg); width:32px; height:32px; display:flex; align-items:center; justify-content:center; filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.5)); transition: transform 0.2s linear;">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="#28a745" stroke="white" stroke-width="1.5" stroke-linejoin="round">
+                    <svg width="28" height="28" viewBox="0 0 24 24" style="fill:var(--bv-ok)" stroke="white" stroke-width="1.5" stroke-linejoin="round">
                         <path d="M12 2L4 20L12 17L20 20L12 2Z"/>
                     </svg>
                 </div>`;
@@ -709,9 +891,9 @@ async function sincronizzaPosizioneAltriUtenti() {
 
             const icon = L.divIcon({ html: iconHtml, className: '', iconSize: iconSize, iconAnchor: iconAnchor });
 
-            let popupContent = `<div style="text-align:center;">Velocità: ${parseFloat(u.speed || 0).toFixed(1)} km/h</div>`;
+            let popupContent = `<div class="nav-pop-user">Velocità: ${parseFloat(u.speed || 0).toFixed(1)} km/h</div>`;
             if (u.nome && u.nome !== currentUserName) {
-                popupContent = `<div style="text-align:center;"><b>${u.nome}</b><br>Velocità: ${parseFloat(u.speed || 0).toFixed(1)} km/h</div>`;
+                popupContent = `<div class="nav-pop-user"><b>${esc(u.nome)}</b><br>Velocità: ${parseFloat(u.speed || 0).toFixed(1)} km/h</div>`;
             }
 
             if (otherUsersMarkers[uid]) {
@@ -750,7 +932,7 @@ async function loadStops() {
         const stopIcon = L.divIcon({ className: 'nav-stop-icon', iconSize: [14, 14], iconAnchor: [7, 7] });
         globalStops.forEach(stop => {
             const marker = L.marker([stop.lat, stop.lon], { icon: stopIcon }).addTo(map);
-            marker.bindPopup(`<div style="font-family:'Inter', sans-serif; font-weight:600; text-align:center; font-size:13px;">⚓ ${stop.name}</div>`);
+            marker.bindPopup(`<div class="nav-pop"><span class="nav-pop-ico"><i class="fa-solid fa-anchor"></i></span><div class="nav-pop-txt"><div class="nav-pop-title">${esc(stop.name)}</div><div class="nav-pop-sub">Fermata</div></div></div>`);
             oms.addMarker(marker); 
         });
     } catch(e) { console.error("Errore fermate:", e); }
@@ -788,7 +970,7 @@ function renderOrHideBoatMarker(boat) {
     const iconHtml = `<div class="nav-boat-icon" style="background-color: ${c.bg}; color: ${c.text}; border: 2.5px solid ${c.border}; width: 26px; height: 26px; box-sizing: border-box;">${boat.line}</div>`;
     const customBoatIcon = L.divIcon({ html: iconHtml, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
 
-    const popupContent = `<div style="text-align:center; padding:2px;"><div style="font-size:11px; color:#666;">Linea <strong style="font-size:14px;">${boat.line}</strong></div><div style="font-weight:600; font-size:14px; margin-top:6px;">${boat.label}</div></div>`;
+    const popupContent = `<div class="nav-pop"><span class="nav-line-dot" style="background-color:${c.bg};color:${c.text};border-color:${c.border};">${esc(boat.line)}</span><div class="nav-pop-txt"><div class="nav-pop-title">${esc(boat.label)}</div><div class="nav-pop-sub">${boat.line === '-' ? 'Unità' : 'Linea ' + esc(boat.line)}</div></div></div>`;
 
     if (boatMarkers[boat.id]) {
         boatMarkers[boat.id].setLatLng([boat.lat, boat.lon]);
@@ -836,7 +1018,18 @@ function apriNavigatoreFilterModal() {
         let html = '';
         lines.forEach(line => {
             const isChecked = currentFilterLines.length === 0 || currentFilterLines.includes(line) ? 'checked' : '';
-            html += `<div><label><input type="checkbox" value="${line}" class="nav-line-filter-cb" ${isChecked}> Linea ${line}</label></div><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">`;
+            const c = getLineColors(line);
+            html += `
+            <div class="nav-toggle-row">
+                <div class="nav-toggle-info">
+                    <div class="nav-line-dot" style="background-color: ${c.bg}; color: ${c.text}; border-color: ${c.border};">${esc(line)}</div>
+                    <span>Linea ${esc(line)}</span>
+                </div>
+                <label class="nav-switch">
+                    <input type="checkbox" value="${esc(line)}" class="nav-line-filter-cb" ${isChecked}>
+                    <span class="nav-slider"></span>
+                </label>
+            </div>`;
         });
         document.getElementById('nav-filter-list').innerHTML = html;
     } catch(e) {}
@@ -879,7 +1072,7 @@ function selezionaNavigatoreSuggestion(type, id) {
 
     if (type === 'stop') {
         const stop = globalStops.find(s => s.id === id);
-        if (stop) { map.setView([stop.lat, stop.lon], 16); L.popup().setLatLng([stop.lat, stop.lon]).setContent(`⚓ ${stop.name}`).openOn(map); }
+        if (stop) { map.setView([stop.lat, stop.lon], 16); L.popup().setLatLng([stop.lat, stop.lon]).setContent(`<div class="nav-pop"><span class="nav-pop-ico"><i class="fa-solid fa-anchor"></i></span><div class="nav-pop-txt"><div class="nav-pop-title">${esc(stop.name)}</div><div class="nav-pop-sub">Fermata</div></div></div>`).openOn(map); }
     } else if (type === 'boat') {
         const boat = globalBoats.find(b => b.id === id);
         if(boat) { map.setView([boat.lat, boat.lon], 16); if (boatMarkers[boat.id]) boatMarkers[boat.id].openPopup(); }

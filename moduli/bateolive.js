@@ -980,6 +980,7 @@ function toggleBvGPS() {
         avviaNavigatore();
         
         toggleBvCenterMap(true);
+        toggleBvMapRotation(true);   // col GPS acceso la mappa ruota subito con la rotta
         speedHistory = [];
         
         watchId = navigator.geolocation.watchPosition(elaboraBvPosizioneGPS, (err) => {

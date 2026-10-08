@@ -105,7 +105,24 @@
     {
       "nome": "Tipo 2",
       "imgUrl": "assets/planimetrie/planimetria_1787435860560_L1788921217280.png",
-      "pins": []
+      "pins": [
+        {
+          "id": "pin_1791462343826",
+          "lat": 758.9128110661469,
+          "lng": 1300.5403912417253,
+          "tipo": "singolo",
+          "nomeContenitore": null,
+          "elementi": [
+            {
+              "schedaId": "sch_1787592024172",
+              "qta": 1
+            }
+          ],
+          "size": 20,
+          "iconaContenitore": "fa-solid fa-box-open",
+          "immagineContenitore": null
+        }
+      ]
     }
   ],
   "schedeNave": [

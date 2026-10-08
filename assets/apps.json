@@ -243,20 +243,6 @@
         "splitModule": false
     },
     {
-        "id": "vademecum",
-        "label": "Vademecum",
-        "icon": "fa-solid fa-book",
-        "defaultColor": "#8e8e93",
-        "conditions": [
-            "admin"
-        ],
-        "excludeConditions": [],
-        "isModule": true,
-        "moduleId": "vademecum",
-        "moduleName": "vademecum",
-        "splitModule": false
-    },
-    {
         "id": "gps",
         "label": "Gps",
         "icon": "fa-solid fa-route",

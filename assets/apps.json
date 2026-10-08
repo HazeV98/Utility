@@ -250,7 +250,11 @@
         "conditions": [
             "admin"
         ],
-        "href": "vademecum.html"
+        "excludeConditions": [],
+        "isModule": true,
+        "moduleId": "vademecum",
+        "moduleName": "vademecum",
+        "splitModule": false
     },
     {
         "id": "gps",

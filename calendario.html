@@ -297,6 +297,12 @@
         select:focus, input:focus { border-color: var(--primary); outline: none; }
         .btn { padding: 16px; border: none; border-radius: 16px; color: white; cursor: pointer; width: 100%; margin-top: 10px; font-weight: 700; font-size: 15px; font-family: 'Inter', sans-serif; transition: transform 0.1s, opacity 0.2s; }
         .btn:active { transform: scale(0.97); }
+        /* Pulsanti tondi del turno: immagine e dettagli */
+        .azioni-turno { display: flex; justify-content: center; gap: 18px; margin-bottom: 15px; }
+        .btn-tondo { width: 56px; height: 56px; border-radius: 50%; border: none; color: white; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.1s, opacity 0.2s; }
+        .btn-tondo:active { transform: scale(0.93); }
+        /* la finestra dettagli turno (turno-view.js) deve stare sopra le modali del calendario (z-index 9999) */
+        :root { --tv-z-turno: 9999; }
         .btn-reset { padding: 12px 15px; width: auto; font-size: 14px; }
         .instruction-text { font-size: 15px; line-height: 1.6; color: var(--text-muted); margin-bottom: 10px; }
         
@@ -552,7 +558,10 @@
     <div class="modal-content">
         <h3 id="modalDateCollega" style="margin-top:0;">Data</h3>
         <div id="infoTurniAreaCollega" style="font-size:0.9em; margin-bottom:15px; padding:12px; background:var(--bg); border: 1px solid var(--border-color); border-radius:14px; text-align:left; color:var(--text-muted);"></div>
-        <button id="btnVisualizzaTurnoCollega" class="btn" style="background: #2dce89; margin-bottom: 15px; display: none;" onclick="apriImmagineTurno()"><i class="fa-regular fa-image"></i> Mostra Immagine Turno</button>
+        <div id="azioniTurnoCollega" class="azioni-turno" style="display: none;">
+            <button id="btnImmagineTurnoCollega" class="btn-tondo" style="background: #2dce89;" onclick="apriImmagineTurno()" title="Mostra immagine turno" aria-label="Mostra immagine turno"><i class="fa-regular fa-image"></i></button>
+            <button id="btnDettaglioTurnoCollega" class="btn-tondo" style="background: var(--primary);" onclick="apriDettaglioTurnoView()" title="Dettagli turno" aria-label="Dettagli turno"><i class="fa-solid fa-list-ul"></i></button>
+        </div>
         <button class="btn" style="background: var(--bg); color: var(--text-muted);" onclick="chiudiDettaglioTurnoCollegaModal()">Chiudi</button>
     </div>
 </div>
@@ -980,7 +989,10 @@
         
         <div id="infoTurniArea" style="font-size:0.9em; margin-bottom:15px; padding:12px; background:var(--bg); border: 1px solid var(--border-color); border-radius:14px; text-align:left; color:var(--text-muted); display:none;"></div>
         
-        <button id="btnVisualizzaTurno" class="btn" style="background: #2dce89; margin-bottom: 15px; display: none;" onclick="apriImmagineTurno()"><i class="fa-regular fa-image"></i> Mostra Immagine Turno</button>
+        <div id="azioniTurno" class="azioni-turno" style="display: none;">
+            <button id="btnImmagineTurno" class="btn-tondo" style="background: #2dce89;" onclick="apriImmagineTurno()" title="Mostra immagine turno" aria-label="Mostra immagine turno"><i class="fa-regular fa-image"></i></button>
+            <button id="btnDettaglioTurno" class="btn-tondo" style="background: var(--primary);" onclick="apriDettaglioTurnoView()" title="Dettagli turno" aria-label="Dettagli turno"><i class="fa-solid fa-list-ul"></i></button>
+        </div>
         
         <input type="text" id="singleTurnoSelect" placeholder="Inserisci il turno" oninput="this.value = this.value.toUpperCase(); abilitaSalvataggio();" onkeydown="if(event.key === 'Enter') salvaCambioSingolo();">
         

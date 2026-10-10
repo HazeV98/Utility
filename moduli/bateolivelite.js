@@ -210,6 +210,8 @@ export function initUINavigatore() {
         .hud-speed-container [hidden] { display: none !important; }
         .hud-speed-container.nav-on { width: min(290px, calc(100vw - 110px)); box-sizing: border-box; padding: 8px 12px 10px; }
         .hud-speed-container.nav-on .speed-wrapper { justify-content: flex-start; }
+        .nvg-turno-slot { display: none; align-self: center; }
+        .hud-speed-container.nav-on .nvg-turno-slot { display: flex; }
         .hud-speed-container.nav-on .speed-val { font-size: 36px; }
         .nvg-extra { display: none; flex-direction: column; gap: 6px; margin-bottom: 6px; }
         .hud-speed-container.nav-on .nvg-extra { display: flex; }
@@ -233,7 +235,6 @@ export function initUINavigatore() {
         .nvg-turno { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 36px; height: 26px; padding: 0 4px; box-sizing: border-box; border-radius: 6px; background: var(--bv-primary); color: #fff; font-size: 12px; font-weight: 800; line-height: 1; }
         .nvg-turno small { font-size: 8px; font-weight: 700; letter-spacing: 0.3px; opacity: 0.85; }
         .nvg-linea { flex: none; min-width: 26px; height: 26px; padding: 0 4px; box-sizing: border-box; border-radius: 13px; border: 2px solid; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
-        .nvg-id { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; }
         .nvg-blocco { flex: 1; min-width: 0; }
         .nvg-ora { font-size: 16px; font-weight: 800; color: var(--bv-text); line-height: 1.1; font-variant-numeric: tabular-nums; }
         .nvg-luogo { font-size: 11px; font-weight: 600; color: var(--bv-muted); line-height: 1.15; margin-top: 1px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
@@ -333,6 +334,7 @@ export function initUINavigatore() {
                 <div id="nvg-act"></div>
             </div>
             <div class="speed-wrapper">
+                <span id="nvg-turno-slot" class="nvg-turno-slot"></span>
                 <span id="speed-val" class="speed-val">0.0</span>
                 <span class="speed-unit">km/h</span>
                 <span id="nvg-delay" class="nvg-delay spento" title="Ritardo / anticipo">--</span>
@@ -836,18 +838,31 @@ function elaboraPosizioneGPS(position) {
 function inviaPosizionePersonale(lat, lon, speed, heading) {
     if (!currentUserId) return;
 
+    const body = {
+        id: currentUserId,
+        lat: lat,
+        lon: lon,
+        speed: speed,
+        heading: heading,
+        nome: customUnitName || '', // solo il nome unità: mai il nome dell'utente (privacy)
+        line: customLine || '',
+        nav: corsaCondivisa || null // ritardo e prossima fermata della corsa (senza turno)
+    };
+    // le fermate della corsa si mandano solo quando cambiano e, per sicurezza, ogni 30 s
+    if (corsaCondivisa && fermateCondivise) {
+        const adesso = Date.now();
+        if (ultimaStaticaInviata.k !== corsaCondivisa.k || adesso - ultimaStaticaInviata.ts > 30000) {
+            body.corsa = { k: corsaCondivisa.k, fermate: fermateCondivise.map(f => [f.nome, Math.round(f.arr), Math.round(f.dep)]) };
+            ultimaStaticaInviata = { k: corsaCondivisa.k, ts: adesso };
+        }
+    } else {
+        ultimaStaticaInviata = { k: null, ts: 0 };
+    }
+
     fetch(`${API_URL}/api/users/location`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            id: currentUserId,
-            lat: lat,
-            lon: lon,
-            speed: speed,
-            heading: heading,
-            nome: customUnitName || currentUserName,
-            line: customLine || ''
-        })
+        body: JSON.stringify(body)
     }).catch(err => console.error("Errore invio posizione:", err));
 }
 
@@ -1398,6 +1413,16 @@ let ritardoSmussato = null;
 let firmaLista = '';
 let listaAperta = false;
 let htmlAttPrecedente = '';
+// Dati della corsa condivisi con gli altri utenti (mai nome utente né codice turno):
+// corsaCondivisa = stato dinamico a ogni invio; fermateCondivise = fermate della corsa, inviate solo quando cambiano.
+let corsaCondivisa = null;
+let fermateCondivise = null;
+let ultimaStaticaInviata = { k: null, ts: 0 };
+function hashCorsa(s) {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36);
+}
 
 let rottaLayer = null;                 // rotta della linea sulla mappa
 let rottaKey = null;
@@ -1607,11 +1632,11 @@ function pillTurnoNav() {
 }
 
 function htmlMessaggioNav(testo) {
-    return `<div class="nvg-act-row">${pillTurnoNav()}<span class="nvg-dest nvg-msg">${testo}</span></div>`;
+    return `<div class="nvg-act-row"><span class="nvg-dest nvg-msg">${testo}</span></div>`;
 }
 
 function htmlAttivitaNav(act, tipo, direzione, nowMin) {
-    // a sinistra turno e linea impilati; a destra orario e luogo di partenza → arrivo (il luogo va a capo, non si taglia)
+    // a sinistra la linea (il turno sta a sinistra della velocità); a destra orario e luogo di partenza → arrivo (il luogo va a capo, non si taglia)
     let sinistra;
     if (eCorsa(act)) sinistra = badgeLineaNav(lineaDellAttivita(act, nowMin));
     else sinistra = `<span class="nvg-pill">${esc(act.tipo || 'Attività')}</span>`;
@@ -1619,7 +1644,7 @@ function htmlAttivitaNav(act, tipo, direzione, nowMin) {
     const blocco = (ora, luogo) => `<div class="nvg-blocco"><div class="nvg-ora">${esc(ora)}</div><div class="nvg-luogo">${esc(luogo || '')}</div></div>`;
     const tag = tipo === 'prossima' ? '<div class="nvg-tag">Prossima attività</div>' : '';
     return `${tag}<div class="nvg-act-row">
-        <div class="nvg-id">${pillTurnoNav()}${sinistra}</div>
+        ${sinistra}
         ${blocco(act.partenza, act.da)}
         <div class="nvg-freccia"><i class="fa-solid fa-arrow-right-long"></i>${reb}</div>
         ${blocco(act.arrivo, act.a)}
@@ -1627,6 +1652,10 @@ function htmlAttivitaNav(act, tipo, direzione, nowMin) {
 }
 
 function impostaAttivitaNav(html) {
+    // il turno sta a sinistra della velocità, fuori dal riquadro attività
+    const slotTurno = navEl('nvg-turno-slot');
+    const pillTurno = pillTurnoNav();
+    if (slotTurno && slotTurno.innerHTML !== pillTurno) slotTurno.innerHTML = pillTurno;
     if (html === htmlAttPrecedente) return;
     htmlAttPrecedente = html;
     navEl('nvg-act').innerHTML = html;
@@ -1765,7 +1794,7 @@ function renderNavigatore() {
     if (!gpsAttivo) return;
 
     const messaggio = (testo) => {
-        customLine = '';
+        customLine = ''; corsaCondivisa = null; fermateCondivise = null;
         impostaAttivitaNav(htmlMessaggioNav(testo));
         mostraProssima(false);
         disegnaRitardoNav(null);
@@ -1794,6 +1823,7 @@ function renderNavigatore() {
 
     // linea comunicata agli altri: solo durante la corsa
     customLine = (tipo === 'in corso' && eCorsa(act)) ? lineaDellAttivita(act, nowMin) : '';
+    corsaCondivisa = null; fermateCondivise = null;
 
     impostaAttivitaNav(htmlAttivitaNav(act, tipo, serve && percorsoStato === 'ok' ? direzioneCorsa : '', nowMin));
 
@@ -1813,6 +1843,10 @@ function renderNavigatore() {
             nav = trovaProssimaDaOrario(percorso, nowSec);
         }
         disegnaProssimaNav(nav, tipo === 'in corso' && gpsPos.fuori);
+        if (tipo === 'in corso' && eCorsa(act)) {
+            corsaCondivisa = { k: hashCorsa(String(attKey)), linea: customLine, idx: nav.idx, stato: nav.stato, ritardo: ritardo == null ? null : Math.round(ritardo), fuori: !!gpsPos.fuori };
+            fermateCondivise = percorso.fermate;
+        }
     } else if (serve && percorsoStato === 'errore') {
         mostraProssima(true, 'Fermate non disponibili');
     } else if (serve) {
@@ -1832,7 +1866,7 @@ function tickNavigatore() {
 }
 
 function azzeraStatoNavigatore() {
-    turnoCorrente = null; oraRif = null;
+    turnoCorrente = null; oraRif = null; corsaCondivisa = null; fermateCondivise = null;
     attKey = null; percorso = null; percorsoStato = 'nessuno'; direzioneCorsa = ''; lineaCorsa = '';
     tokenPercorso++;
     minimoFermata = 0; ritardoSmussato = null; firmaLista = ''; htmlAttPrecedente = '';

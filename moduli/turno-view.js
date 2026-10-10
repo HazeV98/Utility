@@ -392,9 +392,9 @@ export function creaVistaTurno(container, { espansa = false } = {}) {
 
     let attivita = [];
     let richiesta = 0;
-    let ctx = { codice: '', data: '' };
+    let ctx = { codice: '', data: '', apriImmagine: null };
 
-    el.btnImg.addEventListener('click', () => apriImmagineTurno(ctx.codice, ctx.data));
+    el.btnImg.addEventListener('click', () => ctx.apriImmagine ? ctx.apriImmagine() : apriImmagineTurno(ctx.codice, ctx.data));
     el.expand.addEventListener('click', () => {
         const aperta = el.expand.classList.toggle('expanded');
         el.timeline.style.display = aperta ? 'block' : 'none';
@@ -413,6 +413,10 @@ export function creaVistaTurno(container, { espansa = false } = {}) {
         const card = ev.target.closest('.tv-act.cliccabile');
         if (card) { ev.preventDefault(); apriDaCard(card); }
     });
+
+    const TESTO_VARIANTE = '<i class="fa-solid fa-circle-exclamation"></i> Variante in corso: vedi il turno corretto nella sezione turni.';
+    const TESTO_OFFLINE = '<i class="fa-solid fa-triangle-exclamation"></i> Dettagli del turno non disponibili al momento: puoi aprire l\'immagine con il pulsante in alto.';
+    function mostraAvviso(html) { el.avviso.innerHTML = html; el.avviso.style.display = 'block'; }
 
     function mostraCaricamento(on) {
         el.loading.style.display = on ? 'block' : 'none';
@@ -529,11 +533,13 @@ export function creaVistaTurno(container, { espansa = false } = {}) {
      * @param {string}  opts.codice    codice turno (es. "4P03")
      * @param {string}  opts.data      data ISO "YYYY-MM-DD"
      * @param {boolean} opts.variante  true = giorno con varianti: niente dettagli né immagine, solo avviso
+     * @param {Function} opts.apriImmagine  opzionale: funzione chiamata dal pulsante immagine al posto di quella
+     *                                      predefinita (es. il visualizzatore del modulo Turni)
      */
-    async function carica({ codice, data, variante = false }) {
+    async function carica({ codice, data, variante = false, apriImmagine = null }) {
         const mio = ++richiesta;
         const cod = String(codice || '').trim();
-        ctx = { codice: cod, data };
+        ctx = { codice: cod, data, apriImmagine };
         attivita = [];
 
         el.riepilogo.innerHTML = '';
@@ -547,7 +553,7 @@ export function creaVistaTurno(container, { espansa = false } = {}) {
 
         // riposo / turni senza corse: solo il codice
         if (!cod || TURNI_SENZA_CORSE.includes(cod.toUpperCase())) { mostraCaricamento(false); return; }
-        if (variante) { el.avviso.style.display = 'block'; mostraCaricamento(false); return; }
+        if (variante) { mostraAvviso(TESTO_VARIANTE); mostraCaricamento(false); return; }
 
         mostraCaricamento(true);
         try {
@@ -561,6 +567,7 @@ export function creaVistaTurno(container, { espansa = false } = {}) {
             if (mio !== richiesta) return;
             // fallback: codice + pulsante immagine anche se l'API fallisce
             console.error("Fetch API turno fallita, fallback solo immagine", err);
+            mostraAvviso(TESTO_OFFLINE);
         }
         mostraCaricamento(false);
         el.btnImg.style.display = 'flex';
@@ -572,7 +579,7 @@ export function creaVistaTurno(container, { espansa = false } = {}) {
 // ==========================================
 // 6. FINESTRA DEL TURNO (punto d'ingresso per gli altri moduli)
 // ==========================================
-export function apriTurno({ codice, data, variante = false }) {
+export function apriTurno({ codice, data, variante = false, apriImmagine = null }) {
     ensureUI();
     if (!vistaModale) vistaModale = creaVistaTurno(document.getElementById('tv-turno-body'), { espansa: true });
 
@@ -582,7 +589,7 @@ export function apriTurno({ codice, data, variante = false }) {
 
     document.getElementById('tv-turno-body').scrollTop = 0;
     document.getElementById('tv-turno-overlay').classList.add('aperto');
-    return vistaModale.carica({ codice, data, variante });
+    return vistaModale.carica({ codice, data, variante, apriImmagine });
 }
 
 export function chiudiTurno() { if (document.getElementById('tv-root')) chiudi('turno'); }

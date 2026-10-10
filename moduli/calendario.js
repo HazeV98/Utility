@@ -5,6 +5,7 @@ import {
     DATA_INIZIO_NUOVI_TURNI, dateToLocalISO, stringToNum, creaDataSicura, convertiTurnoPerMansione,
     isGiornoRiposoBase, trovaChiaveEsatta, cachePerData, calcolaTurnoBase, ferieDelGiorno, caricaDatiTurni
 } from "./turni-core.js"; // logica turni condivisa con dashboard e gps: va importato sempre con questo stesso percorso
+import { apriTurno } from "./turno-view.js"; // finestra con tutti i dati del turno (condivisa con dashboard e turni)
 
 const firebaseConfig = {
     apiKey: "AIzaSyDpamGt2bsT6TJMwnerIUTSfCVFBTJtos4",
@@ -117,6 +118,7 @@ let imgBaseFallback = "";
 let pzInstance = null; 
 let tempColoreAltro = "";
 let variantiData = {};
+let turnoViewCtx = null; // { codice, data, variante } del giorno aperto: lo usa il pulsante "dettagli turno"
 
 // --- FUNZIONI MENU DESTRO E MODIFICA MULTIPLA ---
 function apriMenuDestro() {
@@ -502,7 +504,7 @@ async function apriDettaglioGiornoCollega(date) {
         document.getElementById('modalDateCollega').innerText = formattaData(date);
         document.getElementById('infoTurniAreaCollega').innerHTML = htmlInfo;
 
-        const btnImmagine = document.getElementById('btnVisualizzaTurnoCollega');
+        const azioniTurno = document.getElementById('azioniTurnoCollega');
         let isRiposo = (codiceBase === 'RI' || codiceBase === 'RIPOSO' || codiceBase === 'AL');
 
         if (!isRiposo && codiceBase && codiceBase !== 'DISP' && codiceBase !== 'NESSUN TURNO') {
@@ -519,11 +521,13 @@ async function apriDettaglioGiornoCollega(date) {
                 currentImagePath = `turni_${dataAttiva}/${codiceBase}.jpg`;
                 imgBaseFallback = "";
             }
-            btnImmagine.style.display = 'block';
+            azioniTurno.style.display = 'flex';
+            turnoViewCtx = { codice: codiceBase, data: date, variante: giornoHaVarianti(date) };
         } else {
             currentImagePath = "";
             imgBaseFallback = "";
-            btnImmagine.style.display = 'none';
+            azioniTurno.style.display = 'none';
+            turnoViewCtx = null;
         }
     } catch(e) {
         console.error("Errore dettaglio turno collega:", e);
@@ -1779,7 +1783,7 @@ async function gestisciInterazione(date) {
         infoArea.style.display = "block"; 
         popolaCambio();
         
-        const btnImmagine = document.getElementById('btnVisualizzaTurno'); 
+        const azioniTurno = document.getElementById('azioniTurno'); 
         let isRiposo = (codiceBase === 'RI' || codiceBase === 'RIPOSO' || codiceBase === 'AL');
         
         if (!isRiposo && codiceBase !== 'DISP' && codiceBase !== 'NESSUN TURNO') {
@@ -1796,11 +1800,13 @@ async function gestisciInterazione(date) {
                 currentImagePath = `turni_${dataAttiva}/${codiceBase}.jpg`; 
                 imgBaseFallback = ""; 
             }
-            btnImmagine.style.display = 'block';
+            azioniTurno.style.display = 'flex';
+            turnoViewCtx = { codice: codiceBase, data: date, variante: giornoHaVarianti(date) };
         } else { 
             currentImagePath = ""; 
             imgBaseFallback = ""; 
-            btnImmagine.style.display = 'none'; 
+            azioniTurno.style.display = 'none';
+            turnoViewCtx = null; 
         }
         document.getElementById('editModal').style.display = 'block';
     }
@@ -1917,6 +1923,16 @@ function salvaAltro() {
     }
     
     salvaERicarica(); 
+}
+
+function giornoHaVarianti(date) {
+    return !!(AVVISO_VARIANTI && variantiData && Object.prototype.hasOwnProperty.call(variantiData, date));
+}
+
+// Pulsante "lista": finestra con tutti i dati del turno; il suo pulsante immagine riusa il visualizzatore del calendario
+function apriDettaglioTurnoView() {
+    if (!turnoViewCtx) return;
+    apriTurno({ ...turnoViewCtx, apriImmagine: apriImmagineTurno });
 }
 
 function apriImmagineTurno() { 
@@ -2809,6 +2825,7 @@ window.togglePermessoSPAltro = togglePermessoSPAltro;
 window.selezionaColoreAltro = selezionaColoreAltro;
 window.salvaAltro = salvaAltro;
 window.apriImmagineTurno = apriImmagineTurno;
+window.apriDettaglioTurnoView = apriDettaglioTurnoView;
 window.chiudiImageModal = chiudiImageModal;
 window.chiudiSeSfondo = chiudiSeSfondo;
 window.chiudiEditSeSfondo = chiudiEditSeSfondo;

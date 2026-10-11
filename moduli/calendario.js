@@ -572,6 +572,29 @@ function salvaMansione() {
 }
 
 // --- GESTIONE FERIE PROGRAMMATE ---
+let tempFerieColore = "";
+
+function aggiornaSelezioneColoreFerie() {
+    document.querySelectorAll('#ferieColoreContainer .color-circle').forEach(c => {
+        c.classList.toggle('selected', (c.getAttribute('data-color') || "") === tempFerieColore);
+    });
+}
+
+function selezionaColoreFerie(hex, el) {
+    tempFerieColore = hex || "";
+    aggiornaSelezioneColoreFerie();
+}
+
+function eventoFerie(titolo, dStr) {
+    let colore = state.ferie && state.ferie.colore;
+    if (!colore) return { title: titolo, start: dStr, allDay: true, className: 'bg-ferie', myOrder: 1 };
+    return {
+        title: titolo, start: dStr, allDay: true, className: 'bg-ferie-custom', myOrder: 1,
+        backgroundColor: colore, borderColor: colore,
+        textColor: (colore === '#f1c40f') ? '#32325d' : '#ffffff'
+    };
+}
+
 function apriFerieModal() {
     chiudiMenuDestro();
     let estSelect = document.getElementById('ferieEstiveBase');
@@ -600,6 +623,9 @@ function apriFerieModal() {
 
     document.getElementById('ferieScambioAnno').addEventListener('change', (e) => aggiornaScambiUI(e.target.value));
     
+    tempFerieColore = state.ferie?.colore || "";
+    aggiornaSelezioneColoreFerie();
+
     switchFerieTab('base');
     document.getElementById('ferieModal').style.display = 'block';
 }
@@ -651,6 +677,7 @@ function salvaFerie() {
     state.ferie.baseAnno = annoBase;
     state.ferie.baseEstiva = parseInt(document.getElementById('ferieEstiveBase').value);
     state.ferie.baseInvernale = parseInt(document.getElementById('ferieInvernaliBase').value);
+    if (tempFerieColore) state.ferie.colore = tempFerieColore; else delete state.ferie.colore;
 
     let annoScambio = document.getElementById('ferieScambioAnno').value;
     if (annoScambio) {
@@ -1426,7 +1453,9 @@ async function inizializzaApp() {
         state.ferie = { version: VERSIONE_FERIE, scambi: {} };
     } else if (state.ferie.version !== VERSIONE_FERIE) {
         let avevaConfigurato = state.ferie.baseAnno !== undefined;
+        let coloreFerieSalvato = state.ferie.colore;
         state.ferie = { version: VERSIONE_FERIE, scambi: {} };
+        if (coloreFerieSalvato) state.ferie.colore = coloreFerieSalvato;
         let boost = new Date().getTime() + 5000;
         salvaLocal(boost);
         if (avevaConfigurato) {
@@ -2222,7 +2251,7 @@ function calcolaTurni(vistaStartObj = null, vistaEndObj = null) {
         
         let ferieAssegnate = getFerieGiorno(dStr); 
         if (ferieAssegnate) { 
-            evs.push({ title: ferieAssegnate, start: dStr, allDay: true, className: 'bg-ferie', myOrder: 1 }); 
+            evs.push(eventoFerie(ferieAssegnate, dStr)); 
         }
         
         let customColor = (state.colori && state.colori[dStr]) ? state.colori[dStr] : null;
@@ -2331,7 +2360,7 @@ function calcolaTurni(vistaStartObj = null, vistaEndObj = null) {
         if (currMod >= startNum && currMod < endNum && !processati.has(dStr)) {
             let ferieAssegnate = getFerieGiorno(dStr); 
             if (ferieAssegnate) { 
-                evs.push({ title: ferieAssegnate, start: dStr, allDay: true, className: 'bg-ferie', myOrder: 1 }); 
+                evs.push(eventoFerie(ferieAssegnate, dStr)); 
             }
             
             let customColor = (state.colori && state.colori[dStr]) ? state.colori[dStr] : null;
@@ -2793,6 +2822,7 @@ window.apriFerieModal = apriFerieModal;
 window.switchFerieTab = switchFerieTab;
 window.chiudiFerieModal = chiudiFerieModal;
 window.salvaFerie = salvaFerie;
+window.selezionaColoreFerie = selezionaColoreFerie;
 window.resetFerie = resetFerie;
 window.elaboraPdfBibbia = elaboraPdfBibbia;
 window.chiudiPdfSyncModal = chiudiPdfSyncModal;

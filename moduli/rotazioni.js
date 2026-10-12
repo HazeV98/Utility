@@ -952,7 +952,7 @@ export function avviaMotoreRotazioni(db, auth) {
 
                     const nomeLabel = `${u.cognome || ''} ${u.nome || ''} ${u.progressivo || ''}`.replace(/\s+/g, ' ').trim();
                     const chiave = calcolaChiaveCascataRot(y, m, giorniMese, cfgData, turniBase);
-                    return { nome: nomeLabel || 'Sconosciuto', turniBase, turniDisplay, isMarinaio, chiave };
+                    return { nome: nomeLabel || 'Sconosciuto', turniBase, turniDisplay, isMarinaio, mansioneNota: mansione.trim() !== '', chiave };
                 } catch (e) { console.error("Errore calcolo turni per rotazione mancante", e); return null; }
             }));
 
@@ -997,7 +997,12 @@ export function avviaMotoreRotazioni(db, auth) {
             });
 
             let righe = Object.values(gruppiPerFirma).map(g => {
-                const nomi = g.nomi.slice().sort((a, b) => a.localeCompare(b));
+                // Ordine dei nomi nell'armo: prima il preposto (mansione nota e non marinaio/timoniere), sotto il marinaio.
+                // Se la mansione non e' stata identificata l'utente sta in mezzo; a pari ruolo vale l'ordine alfabetico.
+                const rangoMansione = mm => !mm.mansioneNota ? 1 : (mm.isMarinaio ? 2 : 0);
+                const nomi = g.membri.slice()
+                    .sort((a, b) => (rangoMansione(a) - rangoMansione(b)) || a.nome.localeCompare(b.nome))
+                    .map(mm => mm.nome);
                 // Turni uniti: per ogni giorno preferisce il codice mostrato da un membro non-marinaio
                 // (convenzione del documento ufficiale, es. "4P04"), altrimenti usa il primo valore valido disponibile.
                 const turniUniti = {};

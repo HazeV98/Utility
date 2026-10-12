@@ -46,7 +46,7 @@
         "isModule": true,
         "moduleId": "rotazioni",
         "moduleName": "rotazioni",
-        "splitModule": true
+        "splitModule": false
     },
     {
         "id": "turni",

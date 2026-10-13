@@ -196,7 +196,13 @@ export function initUINavigatore() {
         .nav-fab-container:not(.chiuso) .nav-fab:hover { transform: scale(1.05); }
         .nav-fab-menu { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); left: 20px; z-index: 1000; font-size: 18px; }
         .nav-fab-menu i { transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
-        .nav-fab-menu.active i { transform: rotate(135deg); }
+        .nav-fab-menu.active i { transform: rotate(180deg); }
+        /* ---------- Tasti zoom (in basso a destra, sopra l'HUD velocità se visibile) ---------- */
+        .nav-zoom { position: absolute; right: 20px; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+        .nav-zoom .nav-fab { font-size: 18px; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+        .nav-zoom .nav-fab.disabled { opacity: 0.35; pointer-events: none; }
+        #modal-navigatore-main.hud-box .nav-zoom { bottom: calc(30px + env(safe-area-inset-bottom, 0px) + var(--bv-hud-box-h, 0px) + 12px); }
+        #modal-navigatore-main.hud-nav .nav-zoom { bottom: calc(var(--bv-hud-h, 0px) + 14px); }
         .hud-compass-container { display: none !important; position: absolute; top: calc(15px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); width: 250px; height: 60px; background: var(--bv-glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid var(--bv-border); box-shadow: var(--bv-shadow); overflow: hidden; z-index: 1000; align-items: center; justify-content: center; display: none; }
         .compass-tape { position: absolute; top: 10px; left: 0; height: 100%; display: flex; transition: transform 0.15s linear; }
         .compass-mark { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; width: 60px; flex-shrink: 0; }
@@ -376,7 +382,13 @@ export function initUINavigatore() {
 
         <!-- Apre/chiude la colonna dei tasti (chiusa di base) -->
         <div id="fab-menu" class="nav-fab nav-fab-menu" onclick="toggleNavMenu()" role="button" aria-expanded="false" aria-label="Mostra i tasti" title="Mostra i tasti">
-            <i class="fa-solid fa-plus"></i>
+            <i class="fa-solid fa-chevron-up"></i>
+        </div>
+
+        <!-- Zoom mappa: passo fine, tarato per viste da ~250 a ~1000 m davanti -->
+        <div class="nav-zoom">
+            <div id="nav-zoom-in" class="nav-fab" onclick="zoomNavMappa(1)" role="button" aria-label="Avvicina la mappa" title="Zoom +"><i class="fa-solid fa-plus"></i></div>
+            <div id="nav-zoom-out" class="nav-fab" onclick="zoomNavMappa(-1)" role="button" aria-label="Allontana la mappa" title="Zoom -"><i class="fa-solid fa-minus"></i></div>
         </div>
 
         <!-- Sottomodale Configurazione Unità -->
@@ -478,6 +490,7 @@ export function initUINavigatore() {
     window.toggleNavigatoreRotta = toggleNavigatoreRotta;
     window.toggleNavTema = toggleNavTema;
     window.toggleNavMenu = toggleNavMenu;
+    window.zoomNavMappa = zoomNavMappa;
 
     document.getElementById('nvg-toggle').addEventListener('click', toggleListaFermate);
     avviaOrologioHud();
@@ -616,8 +629,12 @@ export async function avviaMotoreNavigatore(db, auth, userData) {
         map = L.map('nav-map', { 
             attributionControl: false, 
             zoomControl: false,
+            zoomSnap: 0.25,
+            zoomDelta: 0.5,
             layers: [baseOSM, nauticLayer]
         }).setView([45.4371, 12.3326], 13);
+        map.on('zoomend zoomlevelschange', aggiornaNavZoomBtn);
+        aggiornaNavZoomBtn();
 
         // rotta della linea: sopra le tile, sotto marker di unità e fermate, non intercetta i click
         map.createPane('nav-rotta');
@@ -715,6 +732,21 @@ function cambiaStileMappa() {
             hudStatus.style.display = 'none';
         }
     }, 2000);
+}
+
+// Zoom a passi di mezzo livello (~x1.41): da 250 a 1000 m davanti sono 4 tocchi, abbastanza fine per rifinire la vista
+const ZOOM_PASSO = 0.5;
+function zoomNavMappa(verso) {
+    if (!map) return;
+    const z = map.getZoom() + verso * ZOOM_PASSO;
+    map.setZoom(Math.min(map.getMaxZoom(), Math.max(map.getMinZoom(), z)));
+}
+
+function aggiornaNavZoomBtn() {
+    if (!map) return;
+    const zin = document.getElementById('nav-zoom-in'), zout = document.getElementById('nav-zoom-out');
+    if (zin) zin.classList.toggle('disabled', map.getZoom() >= map.getMaxZoom() - 0.01);
+    if (zout) zout.classList.toggle('disabled', map.getZoom() <= map.getMinZoom() + 0.01);
 }
 
 function toggleCenterMap(forceState = null) {
@@ -2012,6 +2044,9 @@ function aggiornaSpazioHud() {
     const pieno = h > 0 && hud.classList.contains('nav-on');
     root.classList.toggle('hud-nav', pieno);
     root.style.setProperty('--bv-hud-h', pieno ? h + 'px' : '0px');
+    const riquadro = h > 0 && !pieno;
+    root.classList.toggle('hud-box', riquadro);
+    root.style.setProperty('--bv-hud-box-h', riquadro ? h + 'px' : '0px');
 }
 
 function avviaOrologioHud() {

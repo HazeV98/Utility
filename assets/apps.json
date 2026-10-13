@@ -231,7 +231,7 @@
     },
     {
         "id": "storie",
-        "label": "Storie dal TPL",
+        "label": "Bacheca Utility",
         "icon": "fa-solid fa-book",
         "defaultColor": "#fd7e14",
         "conditions": [

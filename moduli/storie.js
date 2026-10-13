@@ -3,6 +3,16 @@ import { doc, getDoc, collection, getDocs, query, addDoc, updateDoc, deleteDoc, 
 // ==========================================
 // 1. INIEZIONE UI STORIE
 // ==========================================
+// Neutralizza l'HTML nei testi inseriti dagli utenti prima di mostrarli
+function esc(v) {
+    return String(v ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 export function initUIStorie() {
     if (document.getElementById('modal-storie-main')) return;
     
@@ -68,6 +78,26 @@ export function initUIStorie() {
         .storie-badge.nessuna { color: var(--text-muted); background: rgba(0, 0, 0, 0.06); }
         .storie-info-item { text-align: left; margin-bottom: 18px; font-size: 14px; line-height: 1.6; color: var(--text-main); }
         .storie-info-item b { display: block; margin-bottom: 4px; font-size: 15px; }
+
+        /* Evidenziazione post raggiunto da notifica/profilo */
+        .storie-post { transition: box-shadow 0.3s, border-color 0.3s; }
+        .storie-post.storie-highlight { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.35); }
+
+        /* Notifiche */
+        .storie-notif-badge { display: none; position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 800; align-items: center; justify-content: center; }
+        .storie-notif-item { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--surface); margin-bottom: 10px; cursor: pointer; transition: background 0.2s; }
+        .storie-notif-item:hover { background: rgba(0,0,0,0.04); }
+        .storie-notif-item.unread { border-left: 4px solid var(--primary); background: rgba(52, 152, 219, 0.07); }
+        .storie-notif-icon { width: 38px; height: 38px; border-radius: 50%; background: rgba(52, 152, 219, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .storie-notif-title { font-size: 14px; font-weight: 800; color: var(--text-main); }
+        .storie-notif-item:not(.unread) .storie-notif-title { font-weight: 600; }
+        .storie-notif-preview { font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+        .storie-notif-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+
+        /* Profilo */
+        .storie-mini-post { background: var(--surface); padding: 14px; border-radius: 14px; margin-bottom: 12px; border: 1px solid var(--border-color); cursor: pointer; }
+        .storie-mini-text { font-size: 14px; line-height: 1.5; color: var(--text-main); white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+        .storie-mini-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     </style>
 
     <div id="modal-storie-main" class="modal-overlay" style="display:none;" onclick="window.storieAPI.chiudiSfondo(event, 'modal-storie-main')">
@@ -83,9 +113,18 @@ export function initUIStorie() {
                     <button class="btn-icon-only btn-pdf" onclick="window.storieAPI.esportaPDF()" title="Esporta le storie in PDF">
                         <i class="fa-solid fa-file-pdf"></i>
                     </button>
+                    <div style="display:flex; gap:10px; align-items:center;">
                     <button class="btn-icon-only" style="color: var(--primary); border-color: var(--primary);" onclick="window.storieAPI.apriPubblica()" title="Nuovo post">
                         <i class="fa-solid fa-plus"></i>
                     </button>
+                    <button class="btn-icon-only" onclick="window.storieAPI.apriProfilo()" title="I miei post">
+                        <i class="fa-solid fa-user"></i>
+                    </button>
+                    <button class="btn-icon-only" style="position: relative;" onclick="window.storieAPI.apriNotifiche()" title="Notifiche">
+                        <i class="fa-regular fa-bell"></i>
+                        <span id="storie-notif-badge" class="storie-notif-badge">0</span>
+                    </button>
+                    </div>
                 </div>
             </div>
 
@@ -103,6 +142,14 @@ export function initUIStorie() {
             
             <div id="storie-comments-list" style="flex: 1; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
             
+            <div style="display: flex; gap: 10px; align-items: center; width: 100%; margin-bottom: 10px;">
+                <input type="text" id="storie-in-commento-nome" autocomplete="off" class="input-storie" placeholder="Nome visualizzato" style="margin-bottom: 0; flex: 1; padding: 8px 12px;">
+                <label class="checkbox-wrapper" style="margin-bottom: 0; white-space: nowrap; font-size: 13px;">
+                    <input type="checkbox" id="storie-in-commento-anonimo" onchange="window.storieAPI.toggleAnonimoCommento()">
+                    Anonimo
+                </label>
+            </div>
+
             <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
                 <textarea id="storie-in-commento" class="input-storie" placeholder="Scrivi un commento..." style="margin-bottom: 0; flex: 1; resize: none; border-radius: 20px; padding: 12px 15px;" rows="1"></textarea>
                 <input type="hidden" id="storie-active-comment-id">
@@ -171,6 +218,28 @@ export function initUIStorie() {
             <button class="btn-action" style="width: 100%; border-radius: 12px; padding: 12px; font-size: 15px;" onclick="window.storieAPI.chiudiInfo()">Ho capito</button>
         </div>
     </div>
+
+    <!-- Modale Profilo (i miei post) -->
+    <div id="modal-storie-profile" class="modal-overlay" style="display:none; z-index: 9998;" onclick="window.storieAPI.chiudiSfondo(event, 'modal-storie-profile')">
+        <div class="modal-content" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column; padding: 25px; position: relative;">
+            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-storie-profile').style.display='none'"></i>
+            <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; margin-bottom: 6px;"><i class="fa-solid fa-user"></i> I miei post</h3>
+            <div id="storie-profilo-sommario" style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;"></div>
+            <div id="storie-profilo-list" style="flex: 1; overflow-y: auto; padding-right: 5px;"></div>
+        </div>
+    </div>
+
+    <!-- Modale Notifiche -->
+    <div id="modal-storie-notifs" class="modal-overlay" style="display:none; z-index: 9998;" onclick="window.storieAPI.chiudiSfondo(event, 'modal-storie-notifs')">
+        <div class="modal-content" style="max-width: 500px; height: 80vh; display: flex; flex-direction: column; padding: 25px; position: relative;">
+            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-storie-notifs').style.display='none'"></i>
+            <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; margin-bottom: 10px;"><i class="fa-regular fa-bell"></i> Notifiche</h3>
+            <div style="margin-bottom: 15px;">
+                <button class="btn-storie btn-storie-ed" style="background: rgba(52, 152, 219, 0.12); color: var(--primary);" onclick="window.storieAPI.segnaTutteLette()"><i class="fa-solid fa-check-double"></i> Segna tutte come lette</button>
+            </div>
+            <div id="storie-notifs-list" style="flex: 1; overflow-y: auto; padding-right: 5px;"></div>
+        </div>
+    </div>
     `;
     document.body.insertAdjacentHTML('beforeend', uiHTML);
 }
@@ -184,6 +253,136 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
     let currentUserUid = auth.currentUser.uid;
     let unsubscribeStorie = null;
     let unsubscribeCommenti = null;
+
+    // Stato di lettura delle notifiche del modulo (per utente, su questo dispositivo)
+    const NOTIF_KEY = 'storie_notif_' + currentUserUid;
+    let statoNotif = { seen: {} };
+    try {
+        const raw = localStorage.getItem(NOTIF_KEY);
+        if (raw) statoNotif = JSON.parse(raw);
+    } catch (e) { /* storage non disponibile */ }
+    if (!statoNotif || typeof statoNotif.seen !== 'object' || !statoNotif.seen) statoNotif = { seen: {} };
+    function salvaStatoNotif() {
+        try { localStorage.setItem(NOTIF_KEY, JSON.stringify(statoNotif)); } catch (e) { /* ignora */ }
+    }
+
+    function badgeCategoria(p) {
+        const cat = (p.categoria === 'storia' || p.categoria === 'pensiero') ? p.categoria : 'nessuna';
+        const label = { storia: 'Storia', pensiero: 'Pensiero', nessuna: 'Da classificare' }[cat];
+        const icon = { storia: 'fa-book', pensiero: 'fa-lightbulb', nessuna: 'fa-tag' }[cat];
+        return `<span class="storie-badge ${cat}"><i class="fa-solid ${icon}"></i> ${label}</span>`;
+    }
+
+    function dataBreve(ms) {
+        return new Date(ms).toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Una notifica per post: l'ultimo commento di un altro utente su un mio post o su un post che seguo
+    function costruisciNotifiche() {
+        const out = [];
+        posts.forEach(p => {
+            const ts = p.lastCommentTimestamp?.toMillis?.() || 0;
+            if (!ts || p.lastCommentAuthor === currentUserUid) return;
+            const mio = p.autoreId === currentUserUid;
+            const seguito = Array.isArray(p.followers) && p.followers.includes(currentUserUid);
+            if (!mio && !seguito) return;
+            out.push({
+                postId: p.id,
+                ts: ts,
+                tipo: mio ? 'tuo' : 'seguito',
+                anteprima: p.testo || '',
+                unread: ts > (statoNotif.seen[p.id] || 0)
+            });
+        });
+        out.sort((a, b) => b.ts - a.ts);
+        return out;
+    }
+
+    function renderNotifiche(notifiche) {
+        const cont = document.getElementById('storie-notifs-list');
+        if (!cont) return;
+        if (notifiche.length === 0) {
+            cont.innerHTML = '<div style="text-align:center; padding: 40px; color: var(--text-muted); font-weight: bold;"><i class="fa-regular fa-bell-slash" style="font-size: 36px; margin-bottom: 12px; opacity: 0.5; display:block;"></i>Nessuna notifica.<div style="font-size: 12px; font-weight: normal; margin-top: 6px;">Qui vedrai i commenti ai tuoi post e ai post che segui.</div></div>';
+            return;
+        }
+        cont.innerHTML = notifiche.map(n => {
+            const titolo = n.tipo === 'tuo' ? 'Nuovo commento al tuo post' : 'Nuovo commento a un post che segui';
+            const anteprima = esc(n.anteprima.length > 90 ? n.anteprima.slice(0, 90) + '…' : n.anteprima);
+            return `
+            <div class="storie-notif-item ${n.unread ? 'unread' : ''}" onclick="window.storieAPI.apriNotifica('${n.postId}')">
+                <div class="storie-notif-icon"><i class="fa-solid fa-comment-dots"></i></div>
+                <div style="flex: 1; min-width: 0;">
+                    <div class="storie-notif-title">${titolo}</div>
+                    <div class="storie-notif-preview">${anteprima}</div>
+                    <div class="storie-post-date" style="margin-top: 4px;">${dataBreve(n.ts)}</div>
+                </div>
+                ${n.unread ? '<span class="storie-notif-dot"></span>' : ''}
+            </div>`;
+        }).join('');
+    }
+
+    function aggiornaNotifiche() {
+        const notifiche = costruisciNotifiche();
+        const nonLette = notifiche.filter(n => n.unread).length;
+        const badge = document.getElementById('storie-notif-badge');
+        if (badge) {
+            badge.innerText = nonLette > 99 ? '99+' : String(nonLette);
+            badge.style.display = nonLette > 0 ? 'flex' : 'none';
+        }
+        const modal = document.getElementById('modal-storie-notifs');
+        if (modal && modal.style.display === 'flex') renderNotifiche(notifiche);
+    }
+
+    function segnaNotificaLetta(postId) {
+        const n = costruisciNotifiche().find(x => x.postId === postId);
+        if (!n || !n.unread) return;
+        statoNotif.seen[postId] = n.ts;
+        salvaStatoNotif();
+        aggiornaNotifiche();
+    }
+
+    function renderProfilo() {
+        const modal = document.getElementById('modal-storie-profile');
+        if (!modal || modal.style.display !== 'flex') return;
+        const miei = posts.filter(p => p.autoreId === currentUserUid);
+        const nStorie = miei.filter(p => p.categoria === 'storia').length;
+        const nPensieri = miei.filter(p => p.categoria === 'pensiero').length;
+        document.getElementById('storie-profilo-sommario').innerText =
+            `${miei.length} post pubblicati · ${nStorie} storie · ${nPensieri} pensieri`;
+
+        const cont = document.getElementById('storie-profilo-list');
+        if (miei.length === 0) {
+            cont.innerHTML = '<div style="text-align:center; padding: 40px; color: var(--text-muted); font-weight: bold;"><i class="fa-regular fa-pen-to-square" style="font-size: 36px; margin-bottom: 12px; opacity: 0.5; display:block;"></i>Non hai ancora pubblicato nulla.</div>';
+            return;
+        }
+        cont.innerHTML = miei.map(p => {
+            const dateStr = p.timestamp ? p.timestamp.toDate().toLocaleString('it-IT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Pubblicato ora';
+            const likes = (p.likes || []).length;
+            const comm = p.commentiCount || 0;
+            const firma = p.isAnonimo
+                ? '<span><i class="fa-solid fa-user-secret"></i> Anonimo</span>'
+                : `<span><i class="fa-solid fa-user-pen"></i> ${esc(p.nomeVisualizzato)}</span>`;
+            return `
+            <div class="storie-mini-post" onclick="window.storieAPI.vaiAlPost('${p.id}')">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap: 8px; margin-bottom: 8px;">
+                    ${badgeCategoria(p)}
+                    <span class="storie-post-date">${dateStr}</span>
+                </div>
+                <div class="storie-mini-text">${esc(p.testo)}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap: 8px; margin-top: 12px;">
+                    <div class="storie-mini-meta">
+                        <span><i class="fa-regular fa-heart"></i> ${likes}</span>
+                        <span><i class="fa-regular fa-comment"></i> ${comm}</span>
+                        ${firma}
+                    </div>
+                    <div class="storie-actions" onclick="event.stopPropagation()">
+                        <button class="btn-storie btn-storie-ed" onclick="window.storieAPI.gestisciStoria('${p.id}', 'edit')" title="Modifica"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn-storie btn-storie-del" onclick="window.storieAPI.gestisciStoria('${p.id}', 'delete')" title="Elimina"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
 
     window.storieAPI = {
         chiudiSfondo: function(event, id) {
@@ -423,9 +622,65 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             }
         },
 
+        // --- PROFILO E NOTIFICHE ---
+        apriProfilo: function() {
+            document.getElementById('modal-storie-profile').style.display = 'flex';
+            renderProfilo();
+        },
+
+        apriNotifiche: function() {
+            document.getElementById('modal-storie-notifs').style.display = 'flex';
+            renderNotifiche(costruisciNotifiche());
+        },
+
+        vaiAlPost: function(postId) {
+            const el = document.getElementById('storie-post-' + postId);
+            if (!el) {
+                alert("Questo post non esiste più.");
+                return;
+            }
+            document.getElementById('modal-storie-profile').style.display = 'none';
+            document.getElementById('modal-storie-notifs').style.display = 'none';
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('storie-highlight');
+            setTimeout(() => el.classList.remove('storie-highlight'), 2500);
+        },
+
+        apriNotifica: function(postId) {
+            segnaNotificaLetta(postId);
+            this.vaiAlPost(postId);
+        },
+
+        segnaTutteLette: function() {
+            costruisciNotifiche().forEach(n => { statoNotif.seen[n.postId] = n.ts; });
+            salvaStatoNotif();
+            aggiornaNotifiche();
+        },
+
+        toggleAnonimoCommento: function() {
+            const isAnon = document.getElementById('storie-in-commento-anonimo').checked;
+            const inputNome = document.getElementById('storie-in-commento-nome');
+            if (isAnon) {
+                inputNome.value = "";
+                inputNome.disabled = true;
+            } else {
+                inputNome.value = userDataPrivate.storieNomeVisualizzato || "";
+                inputNome.disabled = false;
+            }
+        },
+
         apriCommenti: function(storiaId) {
             document.getElementById('storie-active-comment-id').value = storiaId;
             document.getElementById('modal-storie-comments').style.display = 'flex';
+
+            // Valori di default del compositore commento
+            document.getElementById('storie-in-commento-anonimo').checked = false;
+            const inNome = document.getElementById('storie-in-commento-nome');
+            inNome.disabled = false;
+            inNome.value = userDataPrivate.storieNomeVisualizzato || "";
+
+            // Aprire i commenti di un post segna come letta la sua notifica
+            segnaNotificaLetta(storiaId);
             
             if (unsubscribeCommenti) { unsubscribeCommenti(); }
             
@@ -455,21 +710,36 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 return;
             }
             
+            const post = posts.find(p => p.id === storiaId);
+            const isPostAuthor = !!post && post.autoreId === currentUserUid;
+
             let html = '';
             commenti.forEach(c => {
                 let dateStr = c.timestamp ? c.timestamp.toDate().toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : "Ora";
                 const isOwner = c.autoreId === currentUserUid;
+                // Possono eliminare: l'autore del commento, l'autore del post e l'admin
+                const puoEliminare = isOwner || isAdmin || isPostAuthor;
+
+                let adminBlock = '';
+                if (isAdmin && c.autoreReale) {
+                    let numOmo = c.autoreReale.progressivo ? ` ${c.autoreReale.progressivo}` : "";
+                    adminBlock = `
+                        <div class="storie-admin-data" style="display: block; margin: 0 0 8px 0;">
+                            <i class="fa-solid fa-shield-halved"></i> <b>Admin Info:</b> ${esc(c.autoreReale.nome)} ${esc(c.autoreReale.cognome)}${esc(numOmo)} | Matr: ${esc(c.autoreReale.matricola)}
+                        </div>`;
+                }
                 
                 html += `
                     <div class="comment-box">
                         <div class="comment-header">
-                            <span><i class="fa-solid fa-user" style="font-size:10px; margin-right:4px;"></i> ${c.autoreNome}</span>
+                            <span><i class="fa-solid ${c.isAnonimo ? 'fa-user-secret' : 'fa-user'}" style="font-size:10px; margin-right:4px;"></i> ${esc(c.autoreNome)}</span>
                             <div style="display:flex; gap: 10px; align-items:center;">
                                 <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">${dateStr}</span>
-                                ${(isOwner || isAdmin) ? `<i class="fa-solid fa-trash" style="cursor:pointer; color: var(--danger);" onclick="window.storieAPI.eliminaCommento('${storiaId}', '${c.id}')" title="Elimina commento"></i>` : ''}
+                                ${puoEliminare ? `<i class="fa-solid fa-trash" style="cursor:pointer; color: var(--danger);" onclick="window.storieAPI.eliminaCommento('${storiaId}', '${c.id}')" title="Elimina commento"></i>` : ''}
                             </div>
                         </div>
-                        <div class="comment-text">${c.testo}</div>
+                        ${adminBlock}
+                        <div class="comment-text">${esc(c.testo)}</div>
                     </div>
                 `;
             });
@@ -481,18 +751,30 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             const storiaId = document.getElementById('storie-active-comment-id').value;
             const input = document.getElementById('storie-in-commento');
             const testo = input.value.trim();
+            const isAnon = document.getElementById('storie-in-commento-anonimo').checked;
+            const nomeVis = document.getElementById('storie-in-commento-nome').value.trim();
             
             if (!testo || !storiaId) return;
+            if (!isAnon && !nomeVis) {
+                alert("Inserisci un nome visualizzato o scegli di commentare in anonimo.");
+                return;
+            }
             
             try {
-                // Prepara il nome per intero con l'eventuale numero omonimia (progressivo)
-                let numOmo = userDataPrivate.progressivo ? ` ${userDataPrivate.progressivo}` : "";
-                let nomeAutore = `${userDataPrivate.nome || 'Utente'} ${userDataPrivate.cognome || ''}${numOmo}`.trim();
+                // Dati reali dell'autore: visibili solo nell'interfaccia admin
+                const datiReali = {
+                    nome: userDataPrivate.nome || "",
+                    cognome: userDataPrivate.cognome || "",
+                    matricola: userDataPrivate.matricola || "",
+                    progressivo: userDataPrivate.progressivo || ""
+                };
 
                 // Aggiungi commento
                 await addDoc(collection(db, "storie", storiaId, "commenti"), {
                     autoreId: currentUserUid,
-                    autoreNome: nomeAutore,
+                    autoreNome: isAnon ? "Anonimo" : nomeVis,
+                    isAnonimo: isAnon,
+                    autoreReale: datiReali,
                     testo: testo,
                     timestamp: serverTimestamp()
                 });
@@ -503,6 +785,14 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                     lastCommentTimestamp: serverTimestamp(),
                     lastCommentAuthor: currentUserUid
                 });
+
+                // Ricorda il nome visualizzato per i prossimi post/commenti
+                if (!isAnon && nomeVis !== userDataPrivate.storieNomeVisualizzato) {
+                    try {
+                        await updateDoc(doc(db, "utenti", currentUserUid), { storieNomeVisualizzato: nomeVis });
+                        userDataPrivate.storieNomeVisualizzato = nomeVis;
+                    } catch (err) { console.error("Errore salvataggio nome visualizzato", err); }
+                }
 
                 input.value = ""; // Pulisci campo
             } catch(e) { console.error("Errore salvataggio commento", e); }
@@ -560,10 +850,10 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 htmlPDF += `
                     <div style="margin-bottom: 40px; page-break-inside: avoid;">
                         <h4 style="font-size: 18px; color: #2980b9; margin-bottom: 5px; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px;">
-                            Racconto di ${p.nomeVisualizzato}
+                            Racconto di ${esc(p.nomeVisualizzato)}
                         </h4>
                         <p style="font-size: 12px; color: #7f8c8d; margin-bottom: 15px;">${dateStr}</p>
-                        <p style="font-size: 15px; line-height: 1.8; text-align: justify; white-space: pre-wrap;">${p.testo}</p>
+                        <p style="font-size: 15px; line-height: 1.8; text-align: justify; white-space: pre-wrap;">${esc(p.testo)}</p>
                     </div>
                 `;
             });
@@ -599,7 +889,7 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 let numOmo = p.autoreReale.progressivo ? ` ${p.autoreReale.progressivo}` : "";
                 adminBlock = `
                 <div class="storie-admin-data" style="display: block;">
-                    <i class="fa-solid fa-shield-halved"></i> <b>Admin Info:</b> ${p.autoreReale.nome} ${p.autoreReale.cognome}${numOmo} | Matr: ${p.autoreReale.matricola}
+                    <i class="fa-solid fa-shield-halved"></i> <b>Admin Info:</b> ${esc(p.autoreReale.nome)} ${esc(p.autoreReale.cognome)}${esc(numOmo)} | Matr: ${esc(p.autoreReale.matricola)}
                 </div>`;
             }
             
@@ -612,23 +902,20 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             let followers = p.followers || [];
             let isFollowing = followers.includes(currentUserUid);
 
-            const cat = (p.categoria === 'storia' || p.categoria === 'pensiero') ? p.categoria : 'nessuna';
-            const catLabel = { storia: 'Storia', pensiero: 'Pensiero', nessuna: 'Da classificare' }[cat];
-            const catIcon = { storia: 'fa-book', pensiero: 'fa-lightbulb', nessuna: 'fa-tag' }[cat];
-            const badgeCat = `<span class="storie-badge ${cat}"><i class="fa-solid ${catIcon}"></i> ${catLabel}</span>`;
+            const badgeCat = badgeCategoria(p);
 
             html += `
-            <div class="storie-post">
+            <div class="storie-post" id="storie-post-${p.id}">
                 <div class="storie-post-header">
                     <span class="storie-post-author">
-                        <i class="fa-solid ${p.isAnonimo ? 'fa-user-secret' : 'fa-user-pen'}" style="margin-right:5px;"></i> ${p.nomeVisualizzato}
+                        <i class="fa-solid ${p.isAnonimo ? 'fa-user-secret' : 'fa-user-pen'}" style="margin-right:5px;"></i> ${esc(p.nomeVisualizzato)}
                     </span>
                     <span class="storie-post-date" style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">${badgeCat}<span>${dateStr}</span></span>
                 </div>
                 
                 ${adminBlock}
                 
-                <div class="storie-post-body">${p.testo}</div>
+                <div class="storie-post-body">${esc(p.testo)}</div>
                 
                 <div class="storie-actions-wrapper">
                     <!-- Sezione Social (Sinistra) -->
@@ -671,6 +958,8 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             posts.push({ id: docSnap.id, ...docSnap.data() });
         });
         renderFeed(posts);
+        aggiornaNotifiche();
+        renderProfilo();
 
         // Nuove storie arrivate a modulo aperto: le sta vedendo, quindi risultano già lette
         const modaleAperto = document.getElementById('modal-storie-main')?.style.display === 'flex';

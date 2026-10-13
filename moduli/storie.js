@@ -55,6 +55,19 @@ export function initUIStorie() {
         
         .checkbox-wrapper { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; font-size: 14px; font-weight: bold; color: var(--text-main); cursor: pointer; }
         .checkbox-wrapper input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+
+        /* Categoria post */
+        .storie-cat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .storie-cat-toggle { display: flex; flex: 1; gap: 8px; }
+        .btn-cat { flex: 1; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--surface); color: var(--text-muted); font-weight: bold; font-size: 14px; font-family: inherit; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-cat.active { color: var(--primary); border-color: var(--primary); background: rgba(52, 152, 219, 0.1); }
+        .btn-cat:disabled { opacity: 0.6; cursor: not-allowed; }
+        .storie-badge { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+        .storie-badge.storia { color: #8e44ad; background: rgba(142, 68, 173, 0.12); }
+        .storie-badge.pensiero { color: #16a085; background: rgba(22, 160, 133, 0.12); }
+        .storie-badge.nessuna { color: var(--text-muted); background: rgba(0, 0, 0, 0.06); }
+        .storie-info-item { text-align: left; margin-bottom: 18px; font-size: 14px; line-height: 1.6; color: var(--text-main); }
+        .storie-info-item b { display: block; margin-bottom: 4px; font-size: 15px; }
     </style>
 
     <div id="modal-storie-main" class="modal-overlay" style="display:none;" onclick="window.storieAPI.chiudiSfondo(event, 'modal-storie-main')">
@@ -62,15 +75,15 @@ export function initUIStorie() {
             <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-storie-main').style.display='none'"></i>
             
             <h3 style="margin-top: 0; color: var(--primary); font-weight: 900; margin-bottom: 15px; display:flex; align-items:center; gap:10px;">
-                <i class="fa-solid fa-book-open"></i> Storie dal TPL
+                <i class="fa-solid fa-thumbtack"></i> Bacheca Utility
             </h3>
 
             <div class="storie-header">
                 <div class="storie-top-bar">
-                    <button class="btn-icon-only btn-pdf" onclick="window.storieAPI.esportaPDF()" title="Esporta come Libro PDF">
+                    <button class="btn-icon-only btn-pdf" onclick="window.storieAPI.esportaPDF()" title="Esporta le storie in PDF">
                         <i class="fa-solid fa-file-pdf"></i>
                     </button>
-                    <button class="btn-icon-only" style="color: var(--primary); border-color: var(--primary);" onclick="window.storieAPI.apriPubblica()" title="Aggiungi Storia">
+                    <button class="btn-icon-only" style="color: var(--primary); border-color: var(--primary);" onclick="window.storieAPI.apriPubblica()" title="Nuovo post">
                         <i class="fa-solid fa-plus"></i>
                     </button>
                 </div>
@@ -101,23 +114,32 @@ export function initUIStorie() {
     </div>
 
     <div id="modal-storie-welcome" class="modal-overlay" style="display:none; z-index: 10001; background: rgba(0,0,0,0.85);">
-        <div class="modal-content" style="max-width: 420px; text-align: center; padding: 40px 30px;">
-            <i class="fa-solid fa-book" style="font-size: 55px; color: var(--primary); margin-bottom: 25px;"></i>
-            <h2 style="margin-top:0; font-weight: 900;">Raccolta Storie TPL</h2>
+        <div class="modal-content" style="max-width: 420px; max-height: 90vh; overflow-y: auto; text-align: center; padding: 40px 30px;">
+            <i class="fa-solid fa-thumbtack" style="font-size: 55px; color: var(--primary); margin-bottom: 25px;"></i>
+            <h2 style="margin-top:0; font-weight: 900;">Bacheca Utility</h2>
             <p style="margin-bottom: 25px; color: var(--text-main); line-height: 1.6; font-size: 15px;">
-                Quante volte abbiamo detto "con tutte le cose che ci capitano potremmo scriverci un libro"<br><br>
-                Questo è il posto dove raccogliere aneddoti, situazioni assurde o divertenti vissute durante i turni. Puoi scegliere di pubblicare col tuo nome o in totale anonimato. Con il tasto <i class="fa-solid fa-file-pdf"></i> potrai esportare la raccolta per avere un pdf come fosse il nostro libro di storie assurde. 
+                Benvenuto, in questo modulo potrai pubblicare e condividere pensieri o episodi particolari successi a lavoro con i colleghi. Quante volte abbiamo detto che con quello che succede potremmo scriverci un libro? Qui si potrà salvare un pdf in cui saranno raccolti tutti i post segnati come storia.<br><br>
+                Potrai pubblicare pensieri e storie in anonimo o scrivendo un alias o il tuo nome.
             </p>
-            <button class="btn-action" style="width: 100%; font-size: 16px; border-radius: 12px; padding: 14px;" onclick="window.storieAPI.accettaBenvenuto()">Inizia a Leggere</button>
+            <button class="btn-action" style="width: 100%; font-size: 16px; border-radius: 12px; padding: 14px;" onclick="window.storieAPI.accettaBenvenuto()">Entra nella Bacheca</button>
         </div>
     </div>
 
     <div id="modal-storie-publish" class="modal-overlay" style="display:none; z-index: 9999;">
         <div class="modal-content" style="max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 25px; position: relative;">
             <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-storie-publish').style.display='none'"></i>
-            <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; margin-bottom: 20px;"><span id="storie-pub-title">Scrivi una Storia</span></h3>
+            <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; margin-bottom: 20px;"><span id="storie-pub-title">Nuovo Post</span></h3>
             
-            <textarea id="storie-in-testo" class="input-storie" placeholder="C'era una volta durante il turno..." rows="8" style="resize: vertical;"></textarea>
+            <div class="storie-cat-row">
+                <div class="storie-cat-toggle">
+                    <button type="button" id="storie-cat-pensiero" class="btn-cat" onclick="window.storieAPI.setCategoria('pensiero')"><i class="fa-solid fa-lightbulb"></i> Pensiero</button>
+                    <button type="button" id="storie-cat-storia" class="btn-cat" onclick="window.storieAPI.setCategoria('storia')"><i class="fa-solid fa-book"></i> Storia</button>
+                </div>
+                <button type="button" class="btn-icon-only" style="width: 38px; height: 38px; font-size: 15px;" onclick="window.storieAPI.apriInfo()" title="Che tipo di post scegliere?"><i class="fa-solid fa-circle-info"></i></button>
+            </div>
+            <input type="hidden" id="storie-in-categoria">
+
+            <textarea id="storie-in-testo" class="input-storie" placeholder="Scrivi qui..." rows="8" style="resize: vertical;"></textarea>
             
             <input type="text" id="storie-in-nome" autocomplete="off" class="input-storie" placeholder="Nome visualizzato">
             
@@ -129,7 +151,24 @@ export function initUIStorie() {
             </label>
             
             <input type="hidden" id="storie-edit-id">
-            <button class="btn-action" style="width: 100%; margin-top: 5px; border-radius: 12px; padding: 14px; font-size: 15px;" onclick="window.storieAPI.salvaStoria()">Pubblica Storia</button>
+            <button id="storie-pub-btn" class="btn-action" style="width: 100%; margin-top: 5px; border-radius: 12px; padding: 14px; font-size: 15px;" onclick="window.storieAPI.salvaStoria()">Pubblica</button>
+        </div>
+    </div>
+
+    <!-- Modale Info categorie -->
+    <div id="modal-storie-info" class="modal-overlay" style="display:none; z-index: 10002;" onclick="window.storieAPI.chiudiSfondo(event, 'modal-storie-info')">
+        <div class="modal-content" style="max-width: 420px; padding: 30px 25px; position: relative;">
+            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="window.storieAPI.chiudiInfo()"></i>
+            <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; margin-bottom: 20px;"><i class="fa-solid fa-circle-info"></i> Che tipo di post?</h3>
+            <div class="storie-info-item">
+                <b><i class="fa-solid fa-lightbulb" style="color:#16a085;"></i> Pensiero</b>
+                Per un semplice pensiero che vuoi condividere con i colleghi.
+            </div>
+            <div class="storie-info-item">
+                <b><i class="fa-solid fa-book" style="color:#8e44ad;"></i> Storia</b>
+                Per raccontare un episodio successo a lavoro, che poi si potrà unire alle altre storie dei colleghi.
+            </div>
+            <button class="btn-action" style="width: 100%; border-radius: 12px; padding: 12px; font-size: 15px;" onclick="window.storieAPI.chiudiInfo()">Ho capito</button>
         </div>
     </div>
     `;
@@ -159,9 +198,9 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
         
         accettaBenvenuto: async function() {
             try {
-                await updateDoc(doc(db, "utenti", currentUserUid), { storieWelcomeSeen: true });
+                await updateDoc(doc(db, "utenti", currentUserUid), { bachecaWelcomeSeen: true });
                 document.getElementById('modal-storie-welcome').style.display = 'none';
-                userDataPrivate.storieWelcomeSeen = true;
+                userDataPrivate.bachecaWelcomeSeen = true;
             } catch (e) { console.error("Errore salvataggio benvenuto", e); }
         },
 
@@ -176,29 +215,73 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             }
         },
 
+        setCategoria: function(cat) {
+            document.getElementById('storie-in-categoria').value = cat || "";
+            document.getElementById('storie-cat-pensiero').classList.toggle('active', cat === 'pensiero');
+            document.getElementById('storie-cat-storia').classList.toggle('active', cat === 'storia');
+            const ta = document.getElementById('storie-in-testo');
+            if (cat === 'storia') ta.placeholder = "C'era una volta durante il turno...";
+            else if (cat === 'pensiero') ta.placeholder = "Cosa vuoi condividere con i colleghi?";
+            else ta.placeholder = "Scrivi qui...";
+        },
+
+        apriInfo: function() {
+            document.getElementById('modal-storie-info').style.display = 'flex';
+        },
+
+        chiudiInfo: function() {
+            document.getElementById('modal-storie-info').style.display = 'none';
+        },
+
         apriPubblica: function(postToEdit = null) {
+            const elTesto = document.getElementById('storie-in-testo');
+            const elNome = document.getElementById('storie-in-nome');
+            const elAnon = document.getElementById('storie-in-anonimo');
+            const btnPensiero = document.getElementById('storie-cat-pensiero');
+            const btnStoria = document.getElementById('storie-cat-storia');
+            const btnPub = document.getElementById('storie-pub-btn');
+
+            // Reset stato campi
+            elTesto.disabled = false;
+            elAnon.disabled = false;
+            btnPensiero.disabled = false;
+            btnStoria.disabled = false;
+
             if (postToEdit) {
-                document.getElementById('storie-pub-title').innerText = "Modifica Storia";
+                // L'admin che non e' l'autore puo' cambiare solo la categoria
+                const soloCategoria = isAdmin && postToEdit.autoreId !== currentUserUid;
+
+                document.getElementById('storie-pub-title').innerText = soloCategoria ? "Classifica Post" : "Modifica Post";
+                btnPub.innerText = "Salva";
                 document.getElementById('storie-edit-id').value = postToEdit.id;
-                document.getElementById('storie-in-testo').value = postToEdit.testo;
-                
+                elTesto.value = postToEdit.testo;
+                this.setCategoria(postToEdit.categoria === 'storia' || postToEdit.categoria === 'pensiero' ? postToEdit.categoria : "");
+
                 if (postToEdit.isAnonimo) {
-                    document.getElementById('storie-in-anonimo').checked = true;
-                    document.getElementById('storie-in-nome').value = "";
-                    document.getElementById('storie-in-nome').disabled = true;
+                    elAnon.checked = true;
+                    elNome.value = "";
+                    elNome.disabled = true;
                 } else {
-                    document.getElementById('storie-in-anonimo').checked = false;
-                    document.getElementById('storie-in-nome').value = postToEdit.nomeVisualizzato;
-                    document.getElementById('storie-in-nome').disabled = false;
+                    elAnon.checked = false;
+                    elNome.value = postToEdit.nomeVisualizzato;
+                    elNome.disabled = false;
+                }
+
+                if (soloCategoria) {
+                    elTesto.disabled = true;
+                    elNome.disabled = true;
+                    elAnon.disabled = true;
                 }
             } else {
-                document.getElementById('storie-pub-title').innerText = "Nuova Storia";
+                document.getElementById('storie-pub-title').innerText = "Nuovo Post";
+                btnPub.innerText = "Pubblica";
                 document.getElementById('storie-edit-id').value = "";
-                document.getElementById('storie-in-testo').value = "";
-                
-                document.getElementById('storie-in-nome').value = userDataPrivate.storieNomeVisualizzato || "";
-                document.getElementById('storie-in-anonimo').checked = false;
-                document.getElementById('storie-in-nome').disabled = false;
+                elTesto.value = "";
+                this.setCategoria('pensiero');
+
+                elNome.value = userDataPrivate.storieNomeVisualizzato || "";
+                elAnon.checked = false;
+                elNome.disabled = false;
             }
 
             document.getElementById('modal-storie-publish').style.display = 'flex';
@@ -208,10 +291,31 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             const isAnon = document.getElementById('storie-in-anonimo').checked;
             let nomeVis = document.getElementById('storie-in-nome').value.trim();
             const testo = document.getElementById('storie-in-testo').value.trim();
+            const categoria = document.getElementById('storie-in-categoria').value;
             const idModifica = document.getElementById('storie-edit-id').value;
 
+            if (categoria !== 'storia' && categoria !== 'pensiero') {
+                alert("Scegli se il post è un pensiero o una storia.");
+                return;
+            }
+
+            // Admin su post altrui: aggiorna solo la categoria
+            if (idModifica) {
+                const postEsistente = posts.find(p => p.id === idModifica);
+                if (postEsistente && isAdmin && postEsistente.autoreId !== currentUserUid) {
+                    try {
+                        await updateDoc(doc(db, "storie", idModifica), { categoria: categoria });
+                        document.getElementById('modal-storie-publish').style.display = 'none';
+                    } catch (e) {
+                        console.error("Errore aggiornamento categoria", e);
+                        alert("Errore durante il salvataggio. Controlla le Regole di Sicurezza di Firebase: l'admin deve poter aggiornare il campo categoria.");
+                    }
+                    return;
+                }
+            }
+
             if (!testo) {
-                alert("Non puoi pubblicare una storia vuota.");
+                alert("Non puoi pubblicare un post vuoto.");
                 return;
             }
             if (!isAnon && !nomeVis) {
@@ -232,6 +336,7 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                     isAnonimo: isAnon,
                     nomeVisualizzato: isAnon ? "Anonimo" : nomeVis,
                     autoreReale: datiReali,
+                    categoria: categoria,
                     testo: testo,
                     likes: [], // Array inizializzato per i Mi Piace
                     followers: [], // Array per chi attiva le notifiche su questo post
@@ -243,6 +348,7 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                     await updateDoc(doc(db, "storie", idModifica), {
                         isAnonimo: isAnon,
                         nomeVisualizzato: isAnon ? "Anonimo" : nomeVis,
+                        categoria: categoria,
                         testo: testo
                     });
                 } else {
@@ -259,7 +365,7 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 
                 document.getElementById('modal-storie-publish').style.display = 'none';
             } catch (e) {
-                console.error("Errore salvataggio storia", e);
+                console.error("Errore salvataggio post", e);
                 alert("Errore durante il salvataggio.");
             }
         },
@@ -269,7 +375,7 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 const post = posts.find(p => p.id === id);
                 if(post) this.apriPubblica(post);
             } else if (act === 'delete') {
-                if(confirm("Sei sicuro di voler eliminare questa storia per sempre?")) {
+                if(confirm("Sei sicuro di voler eliminare questo post per sempre?")) {
                     try {
                         await deleteDoc(doc(db, "storie", id));
                     } catch (e) { console.error("Errore eliminazione storia", e); }
@@ -427,8 +533,9 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
         },
 
         generaDocumento: function() {
-            if (posts.length === 0) {
-                alert("Non ci sono storie da esportare.");
+            const storieDaEsportare = posts.filter(p => p.categoria === 'storia');
+            if (storieDaEsportare.length === 0) {
+                alert("Non ci sono ancora storie da esportare. Nel PDF finiscono solo i post segnati come Storia.");
                 return;
             }
 
@@ -446,7 +553,7 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                 <div class="html2pdf__page-break"></div>
             `;
 
-            const storieOrdinate = [...posts].reverse(); 
+            const storieOrdinate = [...storieDaEsportare].reverse(); 
 
             storieOrdinate.forEach((p, index) => {
                 let dateStr = p.timestamp ? p.timestamp.toDate().toLocaleDateString('it-IT') : "";
@@ -478,7 +585,7 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
     function renderFeed(listaPosts) {
         const feed = document.getElementById('storie-feed');
         if (listaPosts.length === 0) {
-            feed.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted); font-weight:bold;"><i class="fa-solid fa-book" style="font-size:40px; margin-bottom: 15px; opacity:0.5; display:block;"></i> Nessuna storia ancora pubblicata.</div>';
+            feed.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted); font-weight:bold;"><i class="fa-solid fa-book" style="font-size:40px; margin-bottom: 15px; opacity:0.5; display:block;"></i> Nessun post ancora pubblicato.</div>';
             return;
         }
 
@@ -505,13 +612,18 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
             let followers = p.followers || [];
             let isFollowing = followers.includes(currentUserUid);
 
+            const cat = (p.categoria === 'storia' || p.categoria === 'pensiero') ? p.categoria : 'nessuna';
+            const catLabel = { storia: 'Storia', pensiero: 'Pensiero', nessuna: 'Da classificare' }[cat];
+            const catIcon = { storia: 'fa-book', pensiero: 'fa-lightbulb', nessuna: 'fa-tag' }[cat];
+            const badgeCat = `<span class="storie-badge ${cat}"><i class="fa-solid ${catIcon}"></i> ${catLabel}</span>`;
+
             html += `
             <div class="storie-post">
                 <div class="storie-post-header">
                     <span class="storie-post-author">
                         <i class="fa-solid ${p.isAnonimo ? 'fa-user-secret' : 'fa-user-pen'}" style="margin-right:5px;"></i> ${p.nomeVisualizzato}
                     </span>
-                    <span class="storie-post-date">${dateStr}</span>
+                    <span class="storie-post-date" style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">${badgeCat}<span>${dateStr}</span></span>
                 </div>
                 
                 ${adminBlock}
@@ -535,7 +647,7 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
                     <!-- Sezione Azioni (Destra) -->
                     ${(isOwner || isAdmin) ? `
                     <div class="storie-actions">
-                        ${isOwner ? `<button class="btn-storie btn-storie-ed" onclick="window.storieAPI.gestisciStoria('${p.id}', 'edit')" title="Modifica"><i class="fa-solid fa-pen"></i></button>` : ''}
+                        <button class="btn-storie btn-storie-ed" onclick="window.storieAPI.gestisciStoria('${p.id}', 'edit')" title="${isOwner ? 'Modifica' : 'Classifica'}"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn-storie btn-storie-del" onclick="window.storieAPI.gestisciStoria('${p.id}', 'delete')" title="Elimina"><i class="fa-solid fa-trash"></i></button>
                     </div>
                     ` : ''}
@@ -548,7 +660,7 @@ export function avviaMotoreStorie(db, auth, userDataPrivate) {
 
     document.getElementById('modal-storie-main').style.display = 'flex';
 
-    if (!userDataPrivate.storieWelcomeSeen) {
+    if (!userDataPrivate.bachecaWelcomeSeen) {
         document.getElementById('modal-storie-welcome').style.display = 'flex';
     }
 

@@ -13,7 +13,9 @@ import {
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js"; // stessa versione del calendario: così le istanze sono compatibili
 
 const API_URL = 'https://api.bateolive.stream';
-let globalBoats = []; 
+let globalBoats = [];
+// Posizioni simulate dall'orario (corse non rilevate dal GPS): disattivate di base, la scelta resta salvata
+let navMostraSimulate = (() => { try { return localStorage.getItem('bv_mostra_simulate') === '1'; } catch (e) { return false; } })(); 
 let globalStops = [];
 let map = null;
 let oms = null;
@@ -182,6 +184,9 @@ export function initUINavigatore() {
         #modal-navigatore-main .leaflet-container a.leaflet-popup-close-button { color: var(--bv-muted); }
         .nav-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 2px 8px rgba(0,0,0,0.45); cursor: pointer; transform: rotate(var(--marker-rotation, 0deg)); transition: transform 0.2s linear, scale 0.2s ease; }
         .nav-boat-icon:hover { scale: 1.15; }
+        /* Unità simulata dall'orario (non rilevata dal GPS): contorno blu e badge S */
+        .nav-boat-sim { position: relative; border: 2.5px solid #2f81f7; box-shadow: 0 0 0 2px rgba(47, 129, 247, 0.35), 0 2px 8px rgba(0,0,0,0.45); }
+        .nav-sim-badge { position: absolute; top: -8px; right: -8px; width: 15px; height: 15px; box-sizing: border-box; border-radius: 50%; background: #2f81f7; color: #fff; border: 1.5px solid #fff; font-size: 9px; font-weight: 800; line-height: 1; display: flex; align-items: center; justify-content: center; }
         .nav-stop-icon { background: var(--bv-surface); border: 2.5px solid var(--bv-primary); border-radius: 50%; width: 14px; height: 14px; box-sizing: border-box; box-shadow: 0 1px 5px rgba(0,0,0,0.4); cursor: pointer; transition: scale 0.2s ease; }
         .nav-stop-icon:hover { scale: 1.4; }
         .nav-line-dot { min-width: 24px; height: 24px; padding: 0 4px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; border: 2px solid; flex-shrink: 0; box-sizing: border-box; line-height: 1; }
@@ -376,6 +381,7 @@ export function initUINavigatore() {
             <div id="fab-unit" class="nav-fab" onclick="apriNavigatoreUnitModal()" title="Configura unità" style="display: none;">
                 <i class="fa-solid fa-ship"></i>
             </div>
+            <div id="fab-sim" class="nav-fab" onclick="toggleNavSimulate()" role="button" aria-pressed="false" title="Mostra le posizioni simulate dall'orario" aria-label="Mostra le posizioni simulate dall'orario"><i class="fa-solid fa-calendar-days"></i></div>
             <div class="nav-fab" onclick="apriNavigatoreSearchModal()" title="Cerca mezzo o fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
             <div class="nav-fab" onclick="apriNavigatoreFilterModal()" title="Filtra linee"><i class="fa-solid fa-filter"></i></div>
         </div>
@@ -450,7 +456,7 @@ export function initUINavigatore() {
         }
         
         const mStops = globalStops.filter(s => s.name.toLowerCase().includes(q));
-        const mBoats = globalBoats.filter(b => b.line.toLowerCase() === q || b.label.toLowerCase().includes(q));
+        const mBoats = globalBoats.filter(b => b.line.toLowerCase() === q || (!b.simulated && b.label.toLowerCase().includes(q)));
         
         let html = '';
         
@@ -490,6 +496,8 @@ export function initUINavigatore() {
     window.toggleNavigatoreRotta = toggleNavigatoreRotta;
     window.toggleNavTema = toggleNavTema;
     window.toggleNavMenu = toggleNavMenu;
+    window.toggleNavSimulate = toggleNavSimulate;
+    aggiornaFabSimulate();
     window.zoomNavMappa = zoomNavMappa;
 
     document.getElementById('nvg-toggle').addEventListener('click', toggleListaFermate);
@@ -1051,17 +1059,19 @@ function renderOrHideBoatMarker(boat) {
 
     const c = boat.line === '-' ? { bg: '#000000', text: '#ffffff', border: '#ffffff' } : getLineColors(boat.line.toUpperCase());
 
-    const iconHtml = `<div class="nav-boat-icon" style="background-color: ${c.bg}; color: ${c.text}; border: 2.5px solid ${c.border}; width: 26px; height: 26px; box-sizing: border-box;">${boat.line}</div>`;
+    const iconHtml = boat.simulated
+        ? `<div class="nav-boat-icon nav-boat-sim" style="background-color: ${c.bg}; color: ${c.text}; width: 26px; height: 26px; box-sizing: border-box;">${boat.line}<span class="nav-sim-badge">S</span></div>`
+        : `<div class="nav-boat-icon" style="background-color: ${c.bg}; color: ${c.text}; border: 2.5px solid ${c.border}; width: 26px; height: 26px; box-sizing: border-box;">${boat.line}</div>`;
     const customBoatIcon = L.divIcon({ html: iconHtml, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
 
-    const popupContent = `<div class="nav-pop"><span class="nav-line-dot" style="background-color:${c.bg};color:${c.text};border-color:${c.border};">${esc(boat.line)}</span><div class="nav-pop-txt"><div class="nav-pop-title">${esc(boat.label)}</div><div class="nav-pop-sub">${boat.line === '-' ? 'Unità' : 'Linea ' + esc(boat.line)}</div></div></div>`;
+    const popupContent = `<div class="nav-pop"><span class="nav-line-dot" style="background-color:${c.bg};color:${c.text};border-color:${c.border};">${esc(boat.line)}</span><div class="nav-pop-txt"><div class="nav-pop-title">${esc(boat.label)}</div><div class="nav-pop-sub">${boat.line === '-' ? 'Unità' : 'Linea ' + esc(boat.line)}${boat.simulated ? ' · posizione stimata' : ''}</div></div></div>`;
 
     if (boatMarkers[boat.id]) {
         boatMarkers[boat.id].setLatLng([boat.lat, boat.lon]);
         boatMarkers[boat.id].setIcon(customBoatIcon);
         boatMarkers[boat.id].getPopup() ? boatMarkers[boat.id].getPopup().setContent(popupContent) : boatMarkers[boat.id].bindPopup(popupContent);
     } else {
-        const marker = L.marker([boat.lat, boat.lon], { icon: customBoatIcon, zIndexOffset: 1000 }).addTo(map);
+        const marker = L.marker([boat.lat, boat.lon], { icon: customBoatIcon, zIndexOffset: boat.simulated ? 500 : 1000 }).addTo(map);
         marker.bindPopup(popupContent);
         oms.addMarker(marker);
         boatMarkers[boat.id] = marker;
@@ -1075,13 +1085,49 @@ function aggiornaVisibilitaBarcheActv() {
     globalBoats.forEach(boat => renderOrHideBoatMarker(boat));
 }
 
+function aggiornaFabSimulate() {
+    const fab = document.getElementById('fab-sim');
+    if (!fab) return;
+    fab.classList.toggle('active', navMostraSimulate);
+    fab.setAttribute('aria-pressed', navMostraSimulate ? 'true' : 'false');
+    const t = navMostraSimulate ? 'Nascondi le posizioni simulate' : "Mostra le posizioni simulate dall'orario";
+    fab.title = t;
+    fab.setAttribute('aria-label', t);
+}
+
+function toggleNavSimulate() {
+    navMostraSimulate = !navMostraSimulate;
+    try { localStorage.setItem('bv_mostra_simulate', navMostraSimulate ? '1' : '0'); } catch (e) {}
+    aggiornaFabSimulate();
+    if (!navMostraSimulate) {
+        // spegnendo, le unità simulate spariscono subito senza aspettare il prossimo aggiornamento
+        globalBoats = globalBoats.filter(b => !b.simulated);
+        Object.keys(boatMarkers).forEach(id => {
+            if (!id.startsWith('sim-')) return;
+            oms.removeMarker(boatMarkers[id]);
+            map.removeLayer(boatMarkers[id]);
+            delete boatMarkers[id];
+        });
+    }
+    fetchAndUpdateBoats();
+}
+
 async function fetchAndUpdateBoats() {
     if (!map) return;
     try {
-        const response = await fetch(`${API_URL}/api/vaporetti/live`);
+        const response = await fetch(`${API_URL}/api/vaporetti/live${navMostraSimulate ? '?sim=1' : ''}`);
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const boats = await response.json();
         globalBoats = boats;
+
+        // le unità sparite dal feed (o corse simulate finite) non devono restare ferme in mappa
+        const idsAttuali = new Set(boats.map(b => b.id));
+        Object.keys(boatMarkers).forEach(id => {
+            if (idsAttuali.has(id)) return;
+            oms.removeMarker(boatMarkers[id]);
+            map.removeLayer(boatMarkers[id]);
+            delete boatMarkers[id];
+        });
 
         boats.forEach(boat => renderOrHideBoatMarker(boat));
     } catch (error) { console.error("Errore Vaporetti:", error); }

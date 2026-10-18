@@ -209,6 +209,7 @@ export function initUIBateoLive() {
         /* Marker */
         .bv-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 2px 8px rgba(0,0,0,0.45); cursor: pointer; transform: rotate(var(--marker-rotation, 0deg)); transition: transform 0.2s linear, scale 0.2s ease; }
         .bv-boat-icon:hover { scale: 1.15; }
+        .bv-fab-s { font-weight: 800; font-size: 19px; line-height: 1; font-family: inherit; }
         /* Unità simulata dall'orario (non rilevata dal GPS): contorno blu e badge S */
         .bv-boat-sim { position: relative; border: 2.5px solid #2f81f7; box-shadow: 0 0 0 2px rgba(47, 129, 247, 0.35), 0 2px 8px rgba(0,0,0,0.45); }
         .bv-sim-badge { position: absolute; top: -8px; right: -8px; width: 15px; height: 15px; box-sizing: border-box; border-radius: 50%; background: #2f81f7; color: #fff; border: 1.5px solid #fff; font-size: 9px; font-weight: 800; line-height: 1; display: flex; align-items: center; justify-content: center; }
@@ -582,7 +583,7 @@ export function initUIBateoLive() {
             <div id="bv-fab-unit" class="bv-fab" onclick="apriBateoLiveUnitModal()" title="Configura unità" style="display: none;">
                 <i class="fa-solid fa-ship"></i>
             </div>
-            <div id="bv-fab-sim" class="bv-fab" onclick="toggleBvSimulate()" role="button" aria-pressed="false" title="Mostra le posizioni simulate dall'orario" aria-label="Mostra le posizioni simulate dall'orario"><i class="fa-solid fa-calendar-days"></i></div>
+            <div id="bv-fab-sim" class="bv-fab" onclick="toggleBvSimulate()" role="button" aria-pressed="false" title="Mostra le posizioni simulate dall'orario" aria-label="Mostra le posizioni simulate dall'orario"><span class="bv-fab-s">S</span></div>
             <div id="bv-fab-rewind" class="bv-fab" onclick="apriRewind()" title="Rewind: rivedi i movimenti passati"><i class="fa-solid fa-clock-rotate-left"></i></div>
             <div class="bv-fab" onclick="apriBateoLiveSearchModal()" title="Cerca mezzo o fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
             <div class="bv-fab" onclick="apriBateoLiveFilterModal()" title="Filtra linee"><i class="fa-solid fa-filter"></i></div>
@@ -1679,9 +1680,11 @@ async function renderBoatDrawer(boat) {
             riepilogo = bvRiepilogo('Prossima fermata', prox.stopName, `<div class="bv-sum-time">${ora}</div>${getDelayBadge(prox.delay)}`);
         }
 
-        let html = boat.simulated
-            ? `<div class="bv-sim-note">${boat.lat ? 'Corsa non rilevata dal GPS: <b>posizione stimata</b> in base all\'orario programmato, il ritardo non è noto.' : 'Corsa non rilevata dal GPS: orari programmati, il ritardo non è noto.'}</div><div class="bv-timeline-title">Percorso corsa · orari programmati</div><div class="bv-tl">`
-            : `<div class="bv-timeline-title">Percorso corsa attuale</div><div class="bv-tl">`;
+        // corsa non rilevata dal GPS: l'avviso resta fissato in alto, sopra il riepilogo della prossima fermata
+        const simNote = boat.simulated
+            ? `<div class="bv-sim-note">${boat.lat ? 'Corsa non rilevata dal GPS: <b>posizione stimata</b> in base all\'orario programmato, il ritardo non è noto.' : 'Corsa non rilevata dal GPS: orari programmati, il ritardo non è noto.'}</div>`
+            : '';
+        let html = `<div class="bv-timeline-title">${boat.simulated ? 'Percorso corsa · orari programmati' : 'Percorso corsa attuale'}</div><div class="bv-tl">`;
         stopTimes.forEach((st, i) => {
             const isOffSchedule = Math.abs(Math.round(st.delay / 60)) >= 1;
 
@@ -1709,7 +1712,7 @@ async function renderBoatDrawer(boat) {
             html += bvRigaFermata(st.status, i === idxProx ? ' prossima' : '', st.stopName, orari, getDelayBadge(st.delay));
         });
         html += `</div>`;
-        openBateoLiveDrawer(boat.label, html, { ...opts, pinned: riepilogo });
+        openBateoLiveDrawer(boat.label, html, { ...opts, pinned: simNote + riepilogo });
     } catch (e) { console.error(e); }
 }
 

@@ -184,6 +184,7 @@ export function initUINavigatore() {
         #modal-navigatore-main .leaflet-container a.leaflet-popup-close-button { color: var(--bv-muted); }
         .nav-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 2px 8px rgba(0,0,0,0.45); cursor: pointer; transform: rotate(var(--marker-rotation, 0deg)); transition: transform 0.2s linear, scale 0.2s ease; }
         .nav-boat-icon:hover { scale: 1.15; }
+        .nav-fab-s { font-weight: 800; font-size: 19px; line-height: 1; font-family: inherit; }
         /* Unità simulata dall'orario (non rilevata dal GPS): contorno blu e badge S */
         .nav-boat-sim { position: relative; border: 2.5px solid #2f81f7; box-shadow: 0 0 0 2px rgba(47, 129, 247, 0.35), 0 2px 8px rgba(0,0,0,0.45); }
         .nav-sim-badge { position: absolute; top: -8px; right: -8px; width: 15px; height: 15px; box-sizing: border-box; border-radius: 50%; background: #2f81f7; color: #fff; border: 1.5px solid #fff; font-size: 9px; font-weight: 800; line-height: 1; display: flex; align-items: center; justify-content: center; }
@@ -381,7 +382,7 @@ export function initUINavigatore() {
             <div id="fab-unit" class="nav-fab" onclick="apriNavigatoreUnitModal()" title="Configura unità" style="display: none;">
                 <i class="fa-solid fa-ship"></i>
             </div>
-            <div id="fab-sim" class="nav-fab" onclick="toggleNavSimulate()" role="button" aria-pressed="false" title="Mostra le posizioni simulate dall'orario" aria-label="Mostra le posizioni simulate dall'orario"><i class="fa-solid fa-calendar-days"></i></div>
+            <div id="fab-sim" class="nav-fab" onclick="toggleNavSimulate()" role="button" aria-pressed="false" title="Mostra le posizioni simulate dall'orario" aria-label="Mostra le posizioni simulate dall'orario"><span class="nav-fab-s">S</span></div>
             <div class="nav-fab" onclick="apriNavigatoreSearchModal()" title="Cerca mezzo o fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
             <div class="nav-fab" onclick="apriNavigatoreFilterModal()" title="Filtra linee"><i class="fa-solid fa-filter"></i></div>
         </div>

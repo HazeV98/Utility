@@ -26,6 +26,13 @@ let currentFilterLines = [];
 let fetchInterval = null;
 let mapDepsLoaded = false;
 let activeSelection = null;
+// Telecamere in diretta: elenco dal server (data/webcam.json), segnalini in mappa, modalità modifica (solo admin)
+let authBateo = null;
+let webcams = [];
+const webcamMarkers = {};
+let webcamAdmin = false;
+let webcamModifica = false;
+let webcamInModifica = null; // id della telecamera nel modulo di modifica (null = nuova)
 // Nomi unità (normalizzati) inseriti manualmente da altri utenti: le unità ACTV corrispondenti vengono nascoste
 let hiddenActvUnitNames = new Set();
 
@@ -209,6 +216,22 @@ export function initUIBateoLive() {
         /* Marker */
         .bv-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 2px 8px rgba(0,0,0,0.45); cursor: pointer; transform: rotate(var(--marker-rotation, 0deg)); transition: transform 0.2s linear, scale 0.2s ease; }
         .bv-boat-icon:hover { scale: 1.15; }
+        /* Telecamere in diretta (YouTube) */
+        .bv-cam-icon { width: 30px; height: 30px; box-sizing: border-box; border-radius: 50%; background: #b91c1c; color: #fff; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; font-size: 13px; transform: rotate(var(--marker-rotation, 0deg)); }
+        .bv-cam-icon.modifica { outline: 2px dashed var(--bv-primary); outline-offset: 2px; }
+        .bv-cam-badge { width: 26px; height: 26px; border-radius: 50%; background: #b91c1c; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+        .bv-cam-player { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; overflow: hidden; }
+        .bv-cam-player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+        .bv-cam-link { display: block; margin-top: 12px; text-align: center; font-size: 13px; font-weight: 600; color: var(--bv-primary); text-decoration: none; }
+        .bv-cam-hint { margin: 10px 0 6px; font-size: 12px; line-height: 1.4; color: var(--bv-muted); }
+        .bv-cam-vuoto { padding: 16px 4px; font-size: 13px; color: var(--bv-muted); }
+        .bv-cam-riga { display: flex; align-items: center; gap: 10px; padding: 12px 4px; border-bottom: 1px solid var(--bv-border); cursor: pointer; color: var(--bv-text); font-size: 14px; }
+        .bv-cam-riga > div { min-width: 0; }
+        .bv-cam-riga small { display: block; color: var(--bv-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .bv-cam-coord { display: flex; gap: 10px; }
+        .bv-cam-coord > div { flex: 1; min-width: 0; }
+        .bv-cam-secondario { background: transparent; border: 1px solid var(--bv-border); color: var(--bv-text); padding: 9px; width: 100%; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 4px; }
+        .bv-cam-errore { color: var(--bv-danger); font-size: 13px; margin-top: 10px; }
         .bv-fab-s { font-weight: 800; font-size: 19px; line-height: 1; font-family: inherit; }
         /* Unità simulata dall'orario (non rilevata dal GPS): contorno blu e badge S */
         .bv-boat-sim { position: relative; border: 2.5px solid #2f81f7; box-shadow: 0 0 0 2px rgba(47, 129, 247, 0.35), 0 2px 8px rgba(0,0,0,0.45); }
@@ -583,6 +606,7 @@ export function initUIBateoLive() {
             <div id="bv-fab-unit" class="bv-fab" onclick="apriBateoLiveUnitModal()" title="Configura unità" style="display: none;">
                 <i class="fa-solid fa-ship"></i>
             </div>
+            <div id="bv-fab-cam-admin" class="bv-fab" style="display:none" onclick="toggleWebcamModifica()" role="button" aria-pressed="false" title="Modifica telecamere" aria-label="Modifica telecamere"><i class="fa-solid fa-pen-to-square"></i></div>
             <div id="bv-fab-sim" class="bv-fab" onclick="toggleBvSimulate()" role="button" aria-pressed="false" title="Mostra le posizioni simulate dall'orario" aria-label="Mostra le posizioni simulate dall'orario"><span class="bv-fab-s">S</span></div>
             <div id="bv-fab-rewind" class="bv-fab" onclick="apriRewind()" title="Rewind: rivedi i movimenti passati"><i class="fa-solid fa-clock-rotate-left"></i></div>
             <div class="bv-fab" onclick="apriBateoLiveSearchModal()" title="Cerca mezzo o fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
@@ -647,6 +671,29 @@ export function initUIBateoLive() {
         </div>
 
         <!-- Sottomodale Configurazione Unità -->
+        <!-- Telecamere: modulo di aggiunta/modifica (solo admin) -->
+        <div id="bv-cam-modal" class="bv-modal-overlay" onclick="chiudiWebcamModal(event)">
+            <div class="bv-modal" onclick="event.stopPropagation()">
+                <h3 id="bv-cam-modal-titolo">Telecamera</h3>
+                <div style="margin-bottom: 12px;">
+                    <label class="bv-label" for="bv-cam-nome">Nome (es. Hotel Danieli)</label>
+                    <input type="text" id="bv-cam-nome" maxlength="80" autocomplete="off">
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label class="bv-label" for="bv-cam-url">Link YouTube della diretta</label>
+                    <input type="text" id="bv-cam-url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" autocapitalize="off" spellcheck="false">
+                </div>
+                <div class="bv-cam-coord">
+                    <div><label class="bv-label" for="bv-cam-lat">Latitudine</label><input type="text" id="bv-cam-lat" inputmode="decimal" autocomplete="off"></div>
+                    <div><label class="bv-label" for="bv-cam-lon">Longitudine</label><input type="text" id="bv-cam-lon" inputmode="decimal" autocomplete="off"></div>
+                </div>
+                <button type="button" class="bv-cam-secondario" onclick="bvWebcamCentroMappa()">Usa il centro della mappa</button>
+                <div id="bv-cam-errore" class="bv-cam-errore" hidden></div>
+                <button type="button" class="bv-modal-btn" id="bv-cam-salva" onclick="bvWebcamSalva()">Salva</button>
+                <button type="button" class="bv-modal-btn error" id="bv-cam-elimina" onclick="bvWebcamElimina()" hidden>Elimina telecamera</button>
+            </div>
+        </div>
+
         <div id="bv-unit-modal" class="bv-modal-overlay" onclick="chiudiBateoLiveModals(event)">
             <div class="bv-modal" onclick="event.stopPropagation()">
                 <h3>Configurazione unità</h3>
@@ -721,6 +768,12 @@ export function initUIBateoLive() {
     window.apriRewind = apriRewind;
     window.chiudiRewind = chiudiRewind;
     window.indietroBateoLive = indietroBateoLive;
+    window.toggleWebcamModifica = toggleWebcamModifica;
+    window.apriFormWebcam = apriFormWebcam;
+    window.chiudiWebcamModal = chiudiWebcamModal;
+    window.bvWebcamCentroMappa = bvWebcamCentroMappa;
+    window.bvWebcamSalva = bvWebcamSalva;
+    window.bvWebcamElimina = bvWebcamElimina;
 
     document.getElementById('bv-nav-toggle').addEventListener('click', toggleListaFermate);
     avviaOrologioHud();
@@ -825,11 +878,13 @@ export async function avviaMotoreBateoLive(db, auth, userData, isAdmin) {
     tracciaApertura('/bateolive-completo', 'BateoLive');
     currentUserId = (auth && auth.currentUser) ? auth.currentUser.uid : 'user_' + Math.random().toString(36).substr(2, 9);
     currentUserName = (userData && userData.nome) ? userData.nome : "Collega";
+    authBateo = auth || null;
     userMansione = (userData && userData.mansione) || null;
     firestoreTurni.db = db || null;
     firestoreTurni.auth = auth || null;
 
     initUIBateoLive();
+    verificaRuoloAdmin(db, userData);
     document.getElementById('modal-bateolive-main').style.display = 'flex';
     avviaOsservatoreTema();
 
@@ -894,6 +949,7 @@ export async function avviaMotoreBateoLive(db, auth, userData, isAdmin) {
         });
 
         loadStops();
+        caricaWebcam();
         fetchAndUpdateBoats();
         fetchInterval = setInterval(() => {
             fetchAndUpdateBoats();
@@ -901,6 +957,7 @@ export async function avviaMotoreBateoLive(db, auth, userData, isAdmin) {
         }, 1500);
     } else {
         setTimeout(() => map.invalidateSize(), 100);
+        caricaWebcam();
         if (!fetchInterval) {
             fetchInterval = setInterval(() => {
                 fetchAndUpdateBoats();
@@ -1378,6 +1435,7 @@ function chiudiBateoLive() {
     if (rewind.attivo) chiudiRewind();
     document.getElementById('modal-bateolive-main').style.display = 'none';
     closeBateoLiveDrawer();
+    uscitaWebcam();
     if (watchId) navigator.geolocation.clearWatch(watchId);
     document.getElementById('bv-hud-compass').style.display = 'none';
     document.getElementById('bv-hud-speed').style.display = 'none';
@@ -1409,7 +1467,12 @@ function chiudiBateoLive() {
 let drawerFocusKey = null;
 
 function closeBateoLiveDrawer() {
+    const eraWebcam = activeSelection && activeSelection.type === 'webcam';
     activeSelection = null;
+    if (eraWebcam) { // togliere l'iframe ferma il video (altrimenti l'audio continua a finestra chiusa)
+        const c = document.getElementById('bv-drawer-content');
+        if (c) c.innerHTML = '';
+    }
     drawerFocusKey = null;
     const drawer = document.getElementById('bv-drawer');
     if (drawer) drawer.classList.remove('open');
@@ -1878,6 +1941,229 @@ function toggleBvSimulate() {
         });
     }
     fetchAndUpdateBoats();
+}
+
+// ==========================================
+// TELECAMERE IN DIRETTA (YouTube)
+// Segnalini sulla mappa che aprono la diretta di una telecamera. L'elenco sta sul server (data/webcam.json):
+// lettura per tutti, modifica solo per l'admin (il server verifica l'ID token Firebase e l'uid).
+// ==========================================
+function iconaWebcam() {
+    return L.divIcon({
+        html: `<div class="bv-cam-icon${webcamModifica ? ' modifica' : ''}"><i class="fa-solid fa-video"></i></div>`,
+        className: '', iconSize: [30, 30], iconAnchor: [15, 15]
+    });
+}
+
+function urlEmbedWebcam(w) {
+    const base = 'https://www.youtube-nocookie.com/embed/';
+    const p = 'autoplay=1&mute=1&playsinline=1&rel=0';
+    return w.tipo === 'canale'
+        ? `${base}live_stream?channel=${encodeURIComponent(w.ytId)}&${p}`
+        : `${base}${encodeURIComponent(w.ytId)}?${p}`;
+}
+
+function apriPlayerWebcam(w) {
+    activeSelection = { type: 'webcam', id: w.id };
+    const html = `<div class="bv-cam-player"><iframe src="${esc(urlEmbedWebcam(w))}" title="${esc(w.nome)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+        <a class="bv-cam-link" href="${esc(w.url)}" target="_blank" rel="noopener noreferrer">Apri su YouTube</a>`;
+    openBateoLiveDrawer(w.nome, html, { badge: '<span class="bv-cam-badge"><i class="fa-solid fa-video"></i></span>', sub: 'Telecamera in diretta' });
+}
+
+function disegnaWebcam() {
+    if (!map) return;
+    const ids = new Set(webcams.map(w => w.id));
+    Object.keys(webcamMarkers).forEach(id => {
+        if (ids.has(id)) return;
+        map.removeLayer(webcamMarkers[id]);
+        delete webcamMarkers[id];
+    });
+    webcams.forEach(w => {
+        let m = webcamMarkers[w.id];
+        if (!m) {
+            m = L.marker([w.lat, w.lon], { icon: iconaWebcam(), zIndexOffset: 300, draggable: webcamModifica, title: w.nome, keyboard: false }).addTo(map);
+            m.on('click', () => {
+                const c = webcams.find(x => x.id === w.id);
+                if (!c) return;
+                if (webcamModifica) apriFormWebcam(c.id); else apriPlayerWebcam(c);
+            });
+            m.on('dragend', () => salvaPosizioneWebcam(w.id));
+            webcamMarkers[w.id] = m;
+        } else {
+            m.setLatLng([w.lat, w.lon]);
+        }
+    });
+}
+
+async function caricaWebcam() {
+    try {
+        const r = await fetch(`${API_URL}/api/webcam`);
+        if (!r.ok) return;
+        const lista = await r.json();
+        if (!Array.isArray(lista)) return;
+        webcams = lista;
+        disegnaWebcam();
+    } catch (e) { /* senza rete restano quelle già in mappa */ }
+}
+
+async function bvTokenAdmin() {
+    try {
+        const u = authBateo && authBateo.currentUser;
+        return u ? await u.getIdToken() : null;
+    } catch (e) { return null; }
+}
+
+// L'icona di modifica compare solo con ruolo "admin" nel profilo (collezione utenti). Serve solo a mostrare il tasto:
+// il controllo vero lo fa il server a ogni modifica, leggendo il profilo con il token dell'utente.
+async function verificaRuoloAdmin(db, userData) {
+    let ruolo = userData && userData.ruolo;
+    if (ruolo === undefined && db && authBateo && authBateo.currentUser) {
+        try {
+            const snap = await getDoc(doc(db, 'utenti', authBateo.currentUser.uid));
+            ruolo = snap.exists() ? snap.data().ruolo : undefined;
+        } catch (e) { /* senza profilo leggibile niente modifica */ }
+    }
+    webcamAdmin = ruolo === 'admin';
+    const fab = document.getElementById('bv-fab-cam-admin');
+    if (fab) fab.style.display = webcamAdmin ? '' : 'none';
+    if (!webcamAdmin && webcamModifica) toggleWebcamModifica(false);
+}
+
+async function webcamApi(metodo, percorso, body) {
+    const token = await bvTokenAdmin();
+    if (!token) throw new Error('Accesso non disponibile: riapri BateoLive e riprova');
+    const r = await fetch(`${API_URL}${percorso}`, {
+        method: metodo,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: body ? JSON.stringify(body) : undefined
+    });
+    const dati = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(dati.errore || `Errore ${r.status}`);
+    return dati;
+}
+
+function impostaModificaWebcam() {
+    Object.values(webcamMarkers).forEach(m => {
+        m.setIcon(iconaWebcam());
+        if (m.dragging) { if (webcamModifica) m.dragging.enable(); else m.dragging.disable(); }
+    });
+}
+
+function toggleWebcamModifica(forza) {
+    if (!webcamAdmin && forza !== false) return;
+    webcamModifica = typeof forza === 'boolean' ? forza : !webcamModifica;
+    const fab = document.getElementById('bv-fab-cam-admin');
+    if (fab) { fab.classList.toggle('active', webcamModifica); fab.setAttribute('aria-pressed', webcamModifica ? 'true' : 'false'); }
+    impostaModificaWebcam();
+    if (webcamModifica) {
+        renderWebcamAdmin();
+    } else {
+        if (activeSelection && activeSelection.type === 'webcam-admin') closeBateoLiveDrawer();
+        chiudiWebcamModal();
+    }
+}
+
+function uscitaWebcam() {
+    if (webcamModifica) toggleWebcamModifica(false);
+    chiudiWebcamModal();
+}
+
+function renderWebcamAdmin() {
+    activeSelection = { type: 'webcam-admin' };
+    const righe = webcams.length
+        ? webcams.map(w => `<div class="bv-cam-riga" onclick="apriFormWebcam('${esc(w.id)}')"><span class="bv-cam-badge"><i class="fa-solid fa-video"></i></span><div><b>${esc(w.nome)}</b><small>${esc(w.url)}</small></div></div>`).join('')
+        : '<div class="bv-cam-vuoto">Nessuna telecamera: aggiungine una.</div>';
+    const html = `<button type="button" class="bv-modal-btn" style="margin-top:0" onclick="apriFormWebcam()"><i class="fa-solid fa-plus"></i> Aggiungi telecamera</button>
+        <div class="bv-cam-hint">Tocca un segnalino sulla mappa per modificarlo, trascinalo per spostarlo.</div>${righe}`;
+    openBateoLiveDrawer('Telecamere', html, { badge: '<span class="bv-cam-badge"><i class="fa-solid fa-video"></i></span>', sub: 'Modalità modifica' });
+}
+
+function apriFormWebcam(id) {
+    const w = id ? webcams.find(x => x.id === id) : null;
+    webcamInModifica = w ? w.id : null;
+    const c = map.getCenter();
+    document.getElementById('bv-cam-modal-titolo').textContent = w ? 'Modifica telecamera' : 'Nuova telecamera';
+    document.getElementById('bv-cam-nome').value = w ? w.nome : '';
+    document.getElementById('bv-cam-url').value = w ? w.url : '';
+    document.getElementById('bv-cam-lat').value = (w ? w.lat : c.lat).toFixed(6);
+    document.getElementById('bv-cam-lon').value = (w ? w.lon : c.lng).toFixed(6);
+    document.getElementById('bv-cam-elimina').hidden = !w;
+    document.getElementById('bv-cam-errore').hidden = true;
+    document.getElementById('bv-cam-modal').classList.add('active');
+    lockBateoLiveMap();
+}
+
+function chiudiWebcamModal(e) {
+    if (e && e.target && e.target.classList && !e.target.classList.contains('bv-modal-overlay')) return;
+    const m = document.getElementById('bv-cam-modal');
+    if (!m || !m.classList.contains('active')) return;
+    m.classList.remove('active');
+    unlockBateoLiveMap();
+}
+
+function bvWebcamCentroMappa() {
+    const c = map.getCenter();
+    document.getElementById('bv-cam-lat').value = c.lat.toFixed(6);
+    document.getElementById('bv-cam-lon').value = c.lng.toFixed(6);
+}
+
+function mostraErroreWebcam(msg) {
+    const el = document.getElementById('bv-cam-errore');
+    el.textContent = msg;
+    el.hidden = false;
+}
+
+async function bvWebcamSalva() {
+    const num = (id) => Number(String(document.getElementById(id).value).trim().replace(',', '.'));
+    const body = {
+        nome: document.getElementById('bv-cam-nome').value,
+        url: document.getElementById('bv-cam-url').value,
+        lat: num('bv-cam-lat'), lon: num('bv-cam-lon')
+    };
+    const btn = document.getElementById('bv-cam-salva');
+    btn.disabled = true;
+    document.getElementById('bv-cam-errore').hidden = true;
+    try {
+        const salvata = webcamInModifica
+            ? await webcamApi('PUT', `/api/webcam/${encodeURIComponent(webcamInModifica)}`, body)
+            : await webcamApi('POST', '/api/webcam', body);
+        const i = webcams.findIndex(x => x.id === salvata.id);
+        if (i >= 0) webcams[i] = salvata; else webcams.push(salvata);
+        disegnaWebcam();
+        chiudiWebcamModal();
+        if (webcamModifica) renderWebcamAdmin();
+    } catch (e) {
+        mostraErroreWebcam(e.message);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function bvWebcamElimina() {
+    if (!webcamInModifica || !confirm('Eliminare questa telecamera?')) return;
+    try {
+        await webcamApi('DELETE', `/api/webcam/${encodeURIComponent(webcamInModifica)}`);
+        webcams = webcams.filter(x => x.id !== webcamInModifica);
+        disegnaWebcam();
+        chiudiWebcamModal();
+        if (webcamModifica) renderWebcamAdmin();
+    } catch (e) {
+        mostraErroreWebcam(e.message);
+    }
+}
+
+// Segnalino trascinato: si salva la nuova posizione; se il server rifiuta torna dov'era
+async function salvaPosizioneWebcam(id) {
+    const m = webcamMarkers[id], w = webcams.find(x => x.id === id);
+    if (!m || !w) return;
+    const p = m.getLatLng();
+    try {
+        const salvata = await webcamApi('PUT', `/api/webcam/${encodeURIComponent(id)}`, { lat: p.lat, lon: p.lng });
+        Object.assign(w, salvata);
+    } catch (e) {
+        m.setLatLng([w.lat, w.lon]);
+        alert('Spostamento non salvato: ' + e.message);
+    }
 }
 
 async function fetchAndUpdateBoats() {

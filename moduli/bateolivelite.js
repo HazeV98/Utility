@@ -18,6 +18,9 @@ let globalBoats = [];
 let navMostraSimulate = (() => { try { return localStorage.getItem('bv_mostra_simulate') === '1'; } catch (e) { return false; } })(); 
 let globalStops = [];
 let map = null;
+// Telecamere in diretta (elenco dal server, solo visione)
+let webcams = [];
+const webcamMarkers = {};
 let oms = null;
 let boatMarkers = {};
 let otherUsersMarkers = {};
@@ -184,6 +187,12 @@ export function initUINavigatore() {
         #modal-navigatore-main .leaflet-container a.leaflet-popup-close-button { color: var(--bv-muted); }
         .nav-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 2px 8px rgba(0,0,0,0.45); cursor: pointer; transform: rotate(var(--marker-rotation, 0deg)); transition: transform 0.2s linear, scale 0.2s ease; }
         .nav-boat-icon:hover { scale: 1.15; }
+        /* Telecamere in diretta (YouTube) */
+        .nav-cam-icon { width: 30px; height: 30px; box-sizing: border-box; border-radius: 50%; background: #b91c1c; color: #fff; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; font-size: 13px; transform: rotate(var(--marker-rotation, 0deg)); }
+        .nav-cam-pop { width: 270px; max-width: 100%; }
+        .nav-cam-player { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 10px; overflow: hidden; margin-top: 8px; }
+        .nav-cam-player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+        .nav-cam-link { display: block; margin-top: 8px; text-align: center; font-size: 12px; font-weight: 600; color: var(--bv-primary); text-decoration: none; }
         .nav-fab-s { font-weight: 800; font-size: 19px; line-height: 1; font-family: inherit; }
         /* Unità simulata dall'orario (non rilevata dal GPS): contorno blu e badge S */
         .nav-boat-sim { position: relative; border: 2.5px solid #2f81f7; box-shadow: 0 0 0 2px rgba(47, 129, 247, 0.35), 0 2px 8px rgba(0,0,0,0.45); }
@@ -659,6 +668,7 @@ export async function avviaMotoreNavigatore(db, auth, userData) {
         });
 
         loadStops();
+        caricaWebcam();
         fetchAndUpdateBoats();
         
         fetchInterval = setInterval(() => {
@@ -1111,6 +1121,60 @@ function toggleNavSimulate() {
         });
     }
     fetchAndUpdateBoats();
+}
+
+// ==========================================
+// TELECAMERE IN DIRETTA (YouTube) - sola visione
+// Segnalini sulla mappa che aprono la diretta in un popup. L'elenco sta sul server (data/webcam.json) e si modifica
+// solo dalla versione completa di BateoLive. Il popup viene ricreato a ogni apertura e rimosso alla chiusura:
+// cosi' il video parte solo quando serve e si ferma chiudendolo.
+// ==========================================
+const escWc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function iconaWebcam() {
+    return L.divIcon({ html: '<div class="nav-cam-icon"><i class="fa-solid fa-video"></i></div>', className: '', iconSize: [30, 30], iconAnchor: [15, 15] });
+}
+
+function urlEmbedWebcam(w) {
+    const base = 'https://www.youtube-nocookie.com/embed/';
+    const p = 'autoplay=1&mute=1&playsinline=1&rel=0';
+    return w.tipo === 'canale'
+        ? `${base}live_stream?channel=${encodeURIComponent(w.ytId)}&${p}`
+        : `${base}${encodeURIComponent(w.ytId)}?${p}`;
+}
+
+function popupWebcam(w) {
+    return `<div class="nav-cam-pop"><div class="nav-pop-title">${escWc(w.nome)}</div><div class="nav-pop-sub">Telecamera in diretta</div>
+        <div class="nav-cam-player"><iframe src="${escWc(urlEmbedWebcam(w))}" title="${escWc(w.nome)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+        <a class="nav-cam-link" href="${escWc(w.url)}" target="_blank" rel="noopener noreferrer">Apri su YouTube</a></div>`;
+}
+
+function disegnaWebcam() {
+    if (!map) return;
+    const ids = new Set(webcams.map(w => w.id));
+    Object.keys(webcamMarkers).forEach(id => {
+        if (ids.has(id)) return;
+        map.removeLayer(webcamMarkers[id]);
+        delete webcamMarkers[id];
+    });
+    webcams.forEach(w => {
+        const m = webcamMarkers[w.id];
+        if (m) { m.setLatLng([w.lat, w.lon]); return; }
+        const nuovo = L.marker([w.lat, w.lon], { icon: iconaWebcam(), zIndexOffset: 300, title: w.nome, keyboard: false }).addTo(map);
+        nuovo.bindPopup(() => popupWebcam(webcams.find(x => x.id === w.id) || w), { minWidth: 270, maxWidth: 300 });
+        webcamMarkers[w.id] = nuovo;
+    });
+}
+
+async function caricaWebcam() {
+    try {
+        const r = await fetch(`${API_URL}/api/webcam`);
+        if (!r.ok) return;
+        const lista = await r.json();
+        if (!Array.isArray(lista)) return;
+        webcams = lista;
+        disegnaWebcam();
+    } catch (e) { /* senza rete restano quelle già in mappa */ }
 }
 
 async function fetchAndUpdateBoats() {

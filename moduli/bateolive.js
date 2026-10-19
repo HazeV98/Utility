@@ -1953,7 +1953,7 @@ function toggleBvSimulate() {
 function iconaWebcam() {
     return L.divIcon({
         html: `<div class="bv-cam-icon${webcamModifica ? ' modifica' : ''}"><i class="fa-solid fa-video"></i></div>`,
-        className: '', iconSize: [20, 20], iconAnchor: [15, 15]
+        className: '', iconSize: [30, 30], iconAnchor: [15, 15]
     });
 }
 

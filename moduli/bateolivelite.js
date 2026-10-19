@@ -190,7 +190,7 @@ export function initUINavigatore() {
         .nav-boat-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; box-shadow: 0 2px 8px rgba(0,0,0,0.45); cursor: pointer; transform: rotate(var(--marker-rotation, 0deg)); transition: transform 0.2s linear, scale 0.2s ease; }
         .nav-boat-icon:hover { scale: 1.15; }
         /* Telecamere in diretta (YouTube) */
-        .nav-cam-icon { width: 30px; height: 30px; box-sizing: border-box; border-radius: 50%; background: #b91c1c; color: #fff; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; font-size: 13px; transform: rotate(var(--marker-rotation, 0deg)); }
+        .nav-cam-icon { width: 21px; height: 21px; box-sizing: border-box; border-radius: 50%; background: #b91c1c; color: #fff; border: 1.5px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; font-size: 9px; transform: rotate(var(--marker-rotation, 0deg)); }
         .nav-cam-pop { width: 270px; max-width: 100%; }
         .nav-cam-player { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 10px; overflow: hidden; margin-top: 8px; }
         .nav-cam-player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
@@ -211,6 +211,16 @@ export function initUINavigatore() {
         .nav-fab-container .nav-fab { pointer-events: auto; opacity: 1; transform: none; transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.15), opacity 0.22s ease, background 0.2s, color 0.2s; }
         .nav-fab-container.chiuso .nav-fab { opacity: 0; transform: translateY(26px) scale(0.5); pointer-events: none; transition: transform 0.22s ease-in, opacity 0.18s ease, background 0.2s, color 0.2s; }
         .nav-fab-container:not(.chiuso) .nav-fab:hover { transform: scale(1.05); }
+        /* Etichette accanto ai tasti */
+        .nav-fab-container .nav-fab { position: relative; }
+        .nav-fab-lbl { display: none; position: absolute; top: 50%; left: calc(100% + 8px); transform: translateY(-50%); padding: 4px 10px; border-radius: 999px; background: var(--bv-surface); border: 1px solid var(--bv-border); box-shadow: var(--bv-shadow); color: var(--bv-text); font-size: 12px; font-weight: 700; line-height: 1.25; font-family: inherit; white-space: nowrap; max-width: min(170px, calc(50vw - 85px)); overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+        .nav-fab-container .nav-fab-lbl { display: block; }
+        /* Due lati dello schermo: i tasti non stanno più in una colonna, si alternano a sinistra e a destra, sfalsati in altezza (la posizione la calcola aggiornaFabLayout) */
+        .nav-fab-container.due-colonne { left: 20px; right: 20px; height: 0; display: block; }
+        .nav-fab-container.due-colonne .nav-fab { position: absolute; }
+        .nav-fab-container.due-colonne .nav-fab-sx { left: 0; }
+        .nav-fab-container.due-colonne .nav-fab-dx { right: 0; }
+        .nav-fab-container.due-colonne .nav-fab-dx .nav-fab-lbl { left: auto; right: calc(100% + 8px); }
         .nav-fab-menu { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); left: 20px; z-index: 1000; font-size: 18px; }
         .nav-fab-menu i { transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
         .nav-fab-menu.active i { transform: rotate(180deg); }
@@ -263,6 +273,11 @@ export function initUINavigatore() {
         .nvg-act-row { display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
         .nvg-turno { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 46px; height: 34px; padding: 0 5px; box-sizing: border-box; border-radius: 8px; background: var(--bv-primary); color: #fff; font-size: 15px; font-weight: 800; line-height: 1; }
         .nvg-turno small { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; opacity: 0.85; }
+        .nvg-turno-edit { flex: none; width: 34px; height: 34px; margin-left: 6px; padding: 0; box-sizing: border-box; border-radius: 8px; border: 1px solid var(--bv-border); background: var(--bv-fill); color: var(--bv-primary); font-size: 14px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; touch-action: manipulation; }
+        .nvg-turno-edit:active { filter: brightness(0.9); }
+        .nvg-turno.manuale { outline: 2px dashed var(--bv-primary); outline-offset: 2px; }
+        .nav-btn.secondario { background: transparent; color: var(--bv-text); border: 1px solid var(--bv-border); margin-top: 10px; }
+        .nav-turno-hint { margin: 0 0 4px; font-size: 12px; line-height: 1.4; color: var(--bv-muted); }
         .nvg-linea { flex: none; min-width: 34px; height: 34px; padding: 0 5px; box-sizing: border-box; border-radius: 17px; border: 2px solid; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
         .nvg-blocco { flex: 1; min-width: 0; }
         .nvg-ora { font-size: 21px; font-weight: 800; color: var(--bv-text); line-height: 1.1; font-variant-numeric: tabular-nums; }
@@ -374,28 +389,28 @@ export function initUINavigatore() {
         <div class="nav-fab-container chiuso">
             <div id="fab-gps" class="nav-fab" onclick="toggleGPS()" title="Attiva/Disattiva GPS">
                 <i class="fa-solid fa-satellite-dish"></i>
-            </div>
+            <span class="nav-fab-lbl">GPS</span></div>
             <div id="fab-center" class="nav-fab" onclick="toggleCenterMap()" title="Centra sulla posizione" style="display: none;">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 2L4 20L12 17L20 20L12 2Z"/></svg>
-            </div>
+            <span class="nav-fab-lbl">Centra</span></div>
             <div id="fab-rotate" class="nav-fab" onclick="toggleMapRotation()" title="Rotazione mappa (rotta in alto)" style="display: none;">
                 <i class="fa-regular fa-compass"></i>
-            </div>
+            <span class="nav-fab-lbl">Ruota mappa</span></div>
             <div id="fab-nav" class="nav-fab active" onclick="toggleNavigatoreRotta()" title="Navigatore turno" style="display: none;">
                 <i class="fa-solid fa-route"></i>
-            </div>
+            <span class="nav-fab-lbl">Navigatore</span></div>
             <div id="fab-layers" class="nav-fab" onclick="cambiaStileMappa()" title="Cambia stile cartografico">
                 <i class="fa-solid fa-layer-group"></i>
-            </div>
+            <span class="nav-fab-lbl">Stile mappa</span></div>
             <div id="fab-tema" class="nav-fab nav-fab-tema" onclick="toggleNavTema()" role="button" title="Passa al tema scuro" aria-label="Passa al tema scuro">
                 <i class="fa-solid fa-moon"></i>
-            </div>
+            <span class="nav-fab-lbl">Tema scuro</span></div>
             <div id="fab-unit" class="nav-fab" onclick="apriNavigatoreUnitModal()" title="Configura unità" style="display: none;">
                 <i class="fa-solid fa-ship"></i>
-            </div>
-            <div id="fab-sim" class="nav-fab" onclick="toggleNavSimulate()" role="button" aria-pressed="false" title="Mostra le posizioni simulate dall'orario" aria-label="Mostra le posizioni simulate dall'orario"><span class="nav-fab-s">S</span></div>
-            <div class="nav-fab" onclick="apriNavigatoreSearchModal()" title="Cerca mezzo o fermata"><i class="fa-solid fa-magnifying-glass"></i></div>
-            <div class="nav-fab" onclick="apriNavigatoreFilterModal()" title="Filtra linee"><i class="fa-solid fa-filter"></i></div>
+            <span class="nav-fab-lbl">Unità</span></div>
+            <div id="fab-sim" class="nav-fab" onclick="toggleNavSimulate()" role="button" aria-pressed="false" title="Mostra le posizioni simulate dall'orario" aria-label="Mostra le posizioni simulate dall'orario"><span class="nav-fab-s">S</span><span class="nav-fab-lbl">Simulati</span></div>
+            <div class="nav-fab" onclick="apriNavigatoreSearchModal()" title="Cerca mezzo o fermata"><i class="fa-solid fa-magnifying-glass"></i><span class="nav-fab-lbl">Cerca</span></div>
+            <div class="nav-fab" onclick="apriNavigatoreFilterModal()" title="Filtra linee"><i class="fa-solid fa-filter"></i><span class="nav-fab-lbl">Filtra linee</span></div>
         </div>
 
         <!-- Apre/chiude la colonna dei tasti (chiusa di base) -->
@@ -410,6 +425,20 @@ export function initUINavigatore() {
         </div>
 
         <!-- Sottomodale Configurazione Unità -->
+        <!-- Cambio turno al volo: carica la corsa di un altro turno -->
+        <div id="nav-turno-modal" class="nav-submodal-overlay" onclick="chiudiModificaTurnoNav(event)">
+            <div class="nav-submodal" onclick="event.stopPropagation()">
+                <h3>Cambia turno</h3>
+                <div style="margin-bottom: 12px;">
+                    <label class="nav-label" for="nav-turno-input">Codice del turno</label>
+                    <input type="text" id="nav-turno-input" placeholder="Codice turno" maxlength="24" autocomplete="off" autocapitalize="characters" spellcheck="false" onkeydown="if (event.key === 'Enter') applicaTurnoManuale();">
+                </div>
+                <div class="nav-turno-hint">Carica la corsa in corso di questo turno al posto del tuo. Vale finché non spegni il GPS.</div>
+                <button type="button" class="nav-btn" onclick="applicaTurnoManuale()">Carica</button>
+                <button type="button" class="nav-btn secondario" id="nav-turno-ripristina" onclick="ripristinaTurnoCalendario()" hidden>Torna al mio turno</button>
+            </div>
+        </div>
+
         <div id="nav-unit-modal" class="nav-submodal-overlay" onclick="chiudiNavigatoreModals(event)">
             <div class="nav-submodal" onclick="event.stopPropagation()">
                 <h3>Configurazione unità</h3>
@@ -508,6 +537,11 @@ export function initUINavigatore() {
     window.toggleNavigatoreRotta = toggleNavigatoreRotta;
     window.toggleNavTema = toggleNavTema;
     window.toggleNavMenu = toggleNavMenu;
+    avviaFabLayout();
+    window.apriModificaTurnoNav = apriModificaTurnoNav;
+    window.chiudiModificaTurnoNav = chiudiModificaTurnoNav;
+    window.applicaTurnoManuale = applicaTurnoManuale;
+    window.ripristinaTurnoCalendario = ripristinaTurnoCalendario;
     window.toggleNavSimulate = toggleNavSimulate;
     aggiornaFabSimulate();
     window.zoomNavMappa = zoomNavMappa;
@@ -533,6 +567,8 @@ function navAggiornaIconaTema(scuro, anima) {
     const testo = scuro ? 'Passa al tema chiaro' : 'Passa al tema scuro';
     btn.title = testo;
     btn.setAttribute('aria-label', testo);
+    const lbTema = btn.querySelector('.nav-fab-lbl');
+    if (lbTema) lbTema.textContent = scuro ? 'Tema chiaro' : 'Tema scuro';
     if (anima) { void ico.offsetWidth; ico.classList.add('swap'); }
 }
 
@@ -577,6 +613,72 @@ function avviaOsservatoreTema() {
     } catch (e) { /* il tema non deve mai rompere la mappa */ }
 }
 
+// ---------------------------------------------------------------- etichette e disposizione dei tasti
+// Se i tasti non entrano in una colonna (di solito con il navigatore aperto in basso) si dispongono sui due lati
+// dello schermo, alternati e sfalsati in altezza, così le etichette stanno a destra dei tasti di sinistra e a sinistra
+// di quelli di destra. A destra si sale sopra i tasti zoom.
+let fabLayoutRaf = 0, fabLayoutObs = null, fabLayoutRootObs = null;
+function richiediFabLayout() {
+    if (fabLayoutRaf) return;
+    fabLayoutRaf = requestAnimationFrame(() => { fabLayoutRaf = 0; aggiornaFabLayout(); });
+}
+
+function aggiornaFabLayout() {
+    const root = document.getElementById('modal-navigatore-main');
+    const cont = root && root.querySelector('.nav-fab-container');
+    if (!root || !cont || !root.clientHeight) return;
+    // si riparte dalla colonna singola e si misura se i tasti vanno a capo
+    cont.classList.remove('due-colonne');
+    [...cont.children].forEach(el => { el.classList.remove('nav-fab-sx', 'nav-fab-dx'); el.style.bottom = ''; });
+    const tasti = [...cont.children].filter(el => el.style.display !== 'none');
+    const aCapo = tasti.length > 1 && cont.getBoundingClientRect().width > 60;
+    if (aCapo) {
+        cont.classList.add('due-colonne');
+        const dalBasso = tasti.slice().reverse();
+        const base = cont.getBoundingClientRect().bottom;
+        const zoom = root.querySelector('.nav-zoom');
+        const zr = zoom ? zoom.getBoundingClientRect() : null;
+        const libero = zr && zr.height ? Math.max(0, base - zr.top + 12) : 0; // quanto salire a destra per stare sopra lo zoom
+        const back = root.querySelector('.nav-back-btn, .nav-profile-btn');
+        const limite = Math.max(back ? back.getBoundingClientRect().bottom + 12 : 0, root.getBoundingClientRect().top + 80);
+        const spazio = base - limite;
+        const nS = Math.ceil(dalBasso.length / 2), nD = Math.floor(dalBasso.length / 2);
+        // inizio dei tasti di destra: sfalsato di mezzo passo rispetto a quelli di sinistra
+        const inizioDx = (p) => p / 2 + p * Math.ceil(Math.max(0, libero - p / 2) / p);
+        let passo = 60;
+        for (; passo >= 52; passo -= 2) {
+            const cimaS = 45 + passo * (nS - 1);
+            const cimaD = nD ? inizioDx(passo) + 45 + passo * (nD - 1) : 0;
+            if (Math.max(cimaS, cimaD) <= spazio) break;
+        }
+        if (passo < 52) passo = 52;
+        const dx0 = inizioDx(passo);
+        dalBasso.forEach((el, j) => {
+            const sx = j % 2 === 0, k = Math.floor(j / 2);
+            el.classList.add(sx ? 'nav-fab-sx' : 'nav-fab-dx');
+            el.style.bottom = (sx ? k * passo : dx0 + k * passo) + 'px';
+        });
+    }
+    if (fabLayoutObs) fabLayoutObs.takeRecords(); // le modifiche appena fatte non devono far ripartire il calcolo
+}
+
+function avviaFabLayout() {
+    const root = document.getElementById('modal-navigatore-main');
+    const cont = root && root.querySelector('.nav-fab-container');
+    if (!root || !cont) return;
+    if (fabLayoutObs) fabLayoutObs.disconnect();
+    if (fabLayoutRootObs) fabLayoutRootObs.disconnect();
+    if (typeof MutationObserver === 'function') {
+        fabLayoutObs = new MutationObserver(richiediFabLayout);
+        fabLayoutObs.observe(cont, { attributes: true, attributeFilter: ['style'], subtree: true }); // tasti che compaiono/spariscono
+        fabLayoutRootObs = new MutationObserver(richiediFabLayout);
+        fabLayoutRootObs.observe(root, { attributes: true, attributeFilter: ['class', 'style'] }); // altezza HUD, apertura del modulo
+    }
+    window.removeEventListener('resize', richiediFabLayout);
+    window.addEventListener('resize', richiediFabLayout);
+    richiediFabLayout();
+}
+
 // Apre/chiude la colonna dei tasti. Delay a cascata: in apertura parte il tasto più vicino al fondo, in chiusura quello in alto.
 let menuFabAperto = false;
 let menuFabTimer = null;
@@ -599,6 +701,7 @@ function toggleNavMenu(forza = null) {
     btn.title = testo;
     clearTimeout(menuFabTimer);
     menuFabTimer = setTimeout(() => visibili.forEach(el => { el.style.transitionDelay = ''; }), 700);
+    aggiornaFabLayout();
 }
 
 export async function avviaMotoreNavigatore(db, auth, userData) {
@@ -1134,7 +1237,7 @@ function toggleNavSimulate() {
 const escWc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function iconaWebcam() {
-    return L.divIcon({ html: '<div class="nav-cam-icon"><i class="fa-solid fa-video"></i></div>', className: '', iconSize: [30, 30], iconAnchor: [15, 15] });
+    return L.divIcon({ html: '<div class="nav-cam-icon"><i class="fa-solid fa-video"></i></div>', className: '', iconSize: [21, 21], iconAnchor: [10.5, 10.5] });
 }
 
 function urlEmbedWebcam(w) {
@@ -1205,6 +1308,7 @@ function chiudiNavigatoreModals(e) {
     document.getElementById('nav-search-modal').classList.remove('active'); 
     document.getElementById('nav-filter-modal').classList.remove('active'); 
     document.getElementById('nav-unit-modal').classList.remove('active');
+    const tmTurno = document.getElementById('nav-turno-modal'); if (tmTurno) tmTurno.classList.remove('active');
     document.getElementById('nav-search-suggestions').classList.remove('active');
 }
 function apriNavigatoreSearchModal() { document.getElementById('nav-search-modal').classList.add('active'); }
@@ -1711,11 +1815,17 @@ async function caricaStatoTurni(forza = false) {
 }
 
 // Turno di un giorno: { data, codice, stato: 'ok' | 'riposo' | 'varianti' | 'errore', attivita[], turno }
-async function turnoDelGiorno(dStr) {
-    const state = await caricaStatoTurni();
-    const mansione = mansioneDaStato(state) || userMansione || await mansioneDalProfilo();
-    const manuale = !!(state.variazioni && state.variazioni[dStr]);
-    let codice = turnoEffettivo(dStr, state, datiTurni, mansione);
+async function turnoDelGiorno(dStr, forzato = null) {
+    let state = null, manuale = false, codice;
+    if (forzato) {
+        codice = forzato; // turno scelto a mano: niente calendario, niente ferie
+        manuale = true;
+    } else {
+        state = await caricaStatoTurni();
+        const mansione = mansioneDaStato(state) || userMansione || await mansioneDalProfilo();
+        manuale = !!(state.variazioni && state.variazioni[dStr]);
+        codice = turnoEffettivo(dStr, state, datiTurni, mansione);
+    }
     // ferie previste dalla rotazione ferie (come nel calendario): senza variazione manuale il turno diventa FEP
     if (!manuale && datiTurni && !["RI", "AL"].includes(String(codice).toUpperCase())) {
         const ferie = ferieDelGiorno(state, dStr, datiTurni.ferie);
@@ -1729,7 +1839,15 @@ async function turnoDelGiorno(dStr) {
     if (BLOCCA_SE_VARIANTI && haVarianti(datiTurni, dStr)) { esito.stato = 'varianti'; return esito; }
 
     try {
-        const dati = await fetchJson(`${API_URL}/api/v1/turno?codice=${encodeURIComponent(codice)}&data=${encodeURIComponent(dStr)}`);
+        const urlTurno = (cod) => `${API_URL}/api/v1/turno?codice=${encodeURIComponent(cod)}&data=${encodeURIComponent(dStr)}`;
+        let dati;
+        try {
+            dati = await fetchJson(urlTurno(codice));
+        } catch (e) {
+            // codice digitato a mano in minuscolo: si riprova in maiuscolo
+            if (forzato && codice !== codice.toUpperCase()) { codice = codice.toUpperCase(); esito.codice = codice; dati = await fetchJson(urlTurno(codice)); }
+            else throw e;
+        }
         esito.turno = dati.turno;
         esito.attivita = preparaAttivita(dati.turno);
     } catch (e) {
@@ -1774,13 +1892,13 @@ async function caricaTurno() {
         // di notte il turno in corso può essere quello iniziato ieri sera
         if (presto) {
             const ieriData = new Date(ora.getFullYear(), ora.getMonth(), ora.getDate() - 1, 12);
-            const ieri = await turnoDelGiorno(dateToLocalISO(ieriData));
+            const ieri = await turnoDelGiorno(dateToLocalISO(ieriData), turnoManuale);
             if (ieri.stato === 'ok' && ieri.attivita.length) {
                 const fine = Math.max(...ieri.attivita.map((a) => a._a));
                 if (secondiDalGiorno(ieri.data, ora) / 60 <= fine + 30) scelto = ieri;
             }
         }
-        if (!scelto) scelto = await turnoDelGiorno(oggi);
+        if (!scelto) scelto = await turnoDelGiorno(oggi, turnoManuale);
 
         // stesso turno di prima: si tengono percorso e fermate già caricati
         const uguale = turnoCorrente && scelto.data === turnoCorrente.data && scelto.codice === turnoCorrente.codice && scelto.stato === turnoCorrente.stato;
@@ -1890,9 +2008,51 @@ function badgeLineaNav(linea) {
     return `<span class="nvg-linea" style="background:${c.bg};color:${c.text};border-color:${c.border};">${esc(linea)}</span>`;
 }
 
+// Turno scelto a mano con il tasto modifica (null = turno del calendario). Vale finché non si spegne il GPS.
+let turnoManuale = null;
+
 function pillTurnoNav() {
-    if (!turnoCorrente) return '';
-    return `<span class="nvg-turno" title="Turno"><small>TURNO</small>${esc(turnoCorrente.codice)}</span>`;
+    const modifica = `<button type="button" class="nvg-turno-edit" onclick="apriModificaTurnoNav()" title="Cambia turno" aria-label="Cambia turno"><i class="fa-solid fa-pen"></i></button>`;
+    if (!turnoCorrente) return modifica;
+    return `<span class="nvg-turno${turnoManuale ? ' manuale' : ''}" title="Turno"><small>${turnoManuale ? 'MANUALE' : 'TURNO'}</small>${esc(turnoCorrente.codice)}</span>${modifica}`;
+}
+
+function apriModificaTurnoNav() {
+    const m = document.getElementById('nav-turno-modal'), inp = document.getElementById('nav-turno-input'), rip = document.getElementById('nav-turno-ripristina');
+    if (!m || !inp) return;
+    inp.value = turnoManuale || ((turnoCorrente && turnoCorrente.codice !== 'N/D') ? turnoCorrente.codice : '');
+    if (rip) rip.hidden = !turnoManuale;
+    m.classList.add('active');
+    setTimeout(() => { inp.focus(); inp.select(); }, 60);
+}
+
+function chiudiModificaTurnoNav(e) {
+    if (e && e.target && e.target.classList && !e.target.classList.contains('nav-submodal-overlay')) return;
+    const m = document.getElementById('nav-turno-modal');
+    if (m) m.classList.remove('active');
+}
+
+function applicaTurnoManuale() {
+    const inp = document.getElementById('nav-turno-input');
+    const v = inp ? inp.value.trim().replace(/\s+/g, ' ') : '';
+    chiudiModificaTurnoNav();
+    if (v) cambiaTurnoNav(v);
+}
+
+function ripristinaTurnoCalendario() {
+    chiudiModificaTurnoNav();
+    cambiaTurnoNav(null);
+}
+
+// Carica la corsa del turno indicato (o torna a quello del calendario con null)
+async function cambiaTurnoNav(codice) {
+    turnoManuale = codice;
+    turnoCorrente = null; // la schermata mostra "Carico il turno…" e riparte da zero
+    attKey = null; percorso = null; percorsoStato = 'nessuno'; minimoFermata = 0; firmaLista = ''; htmlAttPrecedente = '';
+    tokenPercorso++;
+    renderNavigatore();
+    for (let i = 0; i < 60 && inCaricamento; i++) await new Promise(r => setTimeout(r, 100)); // aspetta un eventuale caricamento già in corso
+    caricaTurno();
 }
 
 function htmlMessaggioNav(testo) {
@@ -1919,7 +2079,7 @@ function impostaAttivitaNav(html) {
     // il turno sta a sinistra della velocità, fuori dal riquadro attività
     const slotTurno = navEl('nvg-turno-slot');
     const pillTurno = pillTurnoNav();
-    if (slotTurno && slotTurno.innerHTML !== pillTurno) slotTurno.innerHTML = pillTurno;
+    if (slotTurno && slotTurno.dataset.html !== pillTurno) { slotTurno.innerHTML = pillTurno; slotTurno.dataset.html = pillTurno; }
     if (html === htmlAttPrecedente) return;
     htmlAttPrecedente = html;
     navEl('nvg-act').innerHTML = html;
@@ -2194,6 +2354,7 @@ function avviaNavigatore() {
 // chiamata quando si spegne il GPS o si chiude BateoLive
 function fermaNavigatore() {
     gpsAttivo = false;
+    turnoManuale = null;
     if (navTimer) { clearInterval(navTimer); navTimer = null; }
     azzeraStatoNavigatore();
     customLine = '';

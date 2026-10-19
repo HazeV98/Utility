@@ -74,7 +74,7 @@ const ACTV_COLORS = {
     '22': { bg: '#c4d82d', text: '#006600', border: '#006600' },
     'N':  { bg: '#1c355e', text: '#ffffff', border: '#1c355e' },
     'NMU':  { bg: '#1c355e', text: '#ffffff', border: '#1c355e' },
-    'NLN':  { bg: '#1c355e', text: '#ffffff', border: '#1c355e' }, 
+    'NLN':  { bg: '#1c355e', text: '#ffffff', border: '#1c355e' }
 };
 
 function getLineColors(lineId) {

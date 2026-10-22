@@ -314,6 +314,21 @@
         "folder": "Altre funzioni"
     },
     {
+        "id": "controllo_turni",
+        "label": "Analisi Turni",
+        "icon": "fa-solid fa-file-code",
+        "defaultColor": "#fd7e14",
+        "conditions": [
+            "admin"
+        ],
+        "excludeConditions": [],
+        "isModule": true,
+        "moduleId": "controllo_turni",
+        "moduleName": "controllo_turni",
+        "splitModule": false,
+        "folder": "Altre funzioni"
+    },
+    {
         "id": "contatti",
         "label": "Contatti",
         "icon": "fa-solid fa-id-card",
@@ -400,19 +415,5 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
-    },
-    {
-        "id": "controllo_turni",
-        "label": "Analisi Turni",
-        "icon": "fa-solid fa-file-code",
-        "defaultColor": "#fd7e14",
-        "conditions": [
-            "admin"
-        ],
-        "excludeConditions": [],
-        "isModule": true,
-        "moduleId": "controllo_turni",
-        "moduleName": "controllo_turni",
-        "splitModule": false
     }
 ]

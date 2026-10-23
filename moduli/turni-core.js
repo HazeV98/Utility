@@ -18,7 +18,7 @@ export const API_URL = 'https://api.bateolive.stream';
 
 // Data da cui vale la nuova rotazione: prima di questa data si usa state.history.
 // E' l'UNICO posto in cui va cambiata.
-export const DATA_INIZIO_NUOVI_TURNI = "2026-10-01";
+export const DATA_INIZIO_NUOVI_TURNI = "2026-11-01";
 
 // Codici di turno che non hanno corse da mostrare
 export const TURNI_SENZA_CORSE = ["RIPOSO", "RI", "DISP", "NPL", "AL", "FER", "FEP", "FES", "PRT", "KINF", "KMAL", "KNOP", "AVIS"];

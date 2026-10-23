@@ -47,17 +47,17 @@ window.syncToCloud = async (dati) => {
 // --- VARIABILI GLOBALI ---
 let ROT_FERIE_INV = [];
 let ROT_FERIE_EST = [];
-const VERSIONE_TURNI = "1.0.4"; 
+const VERSIONE_TURNI = "1.0.5"; 
 let VERSIONE_FERIE = "1.0.0"; 
 const AVVISO_VARIANTI = true;
 
 const RESET_DOPO_AGGIORNAMENTO = {
-        rot_fnove: false,
+        rot_fnove: true,
         spez_fnove: false,
-        rot_proma: true,
-        spez_proma: true,
+        rot_proma: false,
+        spez_proma: false,
         ris_proma: false,
-        rot_szaccaria: true,
+        rot_szaccaria: false,
         spez_szaccaria: false,
         rot_lido: false,
         spez_lido: false,

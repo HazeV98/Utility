@@ -245,7 +245,12 @@ export function calcolaTurnoBase(dStr, cfgData, dati) {
     if (cfgBase.depositoAttivo.startsWith('disp_')) return "DISP";
     if (!cfgBase.rotazioneStart) return "N/D";
 
-    let activeCfg = (cfgData.futureConfig && curr >= stringToNum(cfgData.futureConfig.dataInizio))
+    // futureConfig di un aggiornamento precedente (data di inizio anteriore a DATA_INIZIO_NUOVI_TURNI):
+    // dopo la nuova data, se l'utente ha gia' rifatto l'aggiornamento (c'e' history), non vale piu' e
+    // si usano rotazioneStart/turnoIndex appena scelti. Prima della nuova data resta valida.
+    const fcInizio = cfgData.futureConfig ? stringToNum(cfgData.futureConfig.dataInizio) : null;
+    const fcSuperata = !!(cfgData.history && !isPastUpdate && fcInizio !== null && fcInizio < stringToNum(DATA_INIZIO_NUOVI_TURNI));
+    let activeCfg = (cfgData.futureConfig && !fcSuperata && curr >= fcInizio)
         ? { start: cfgData.futureConfig.dataInizio, idx: cfgData.futureConfig.turnoIndex, tcPattern: cfgData.futureConfig.tcPattern }
         : { start: cfgBase.rotazioneStart, idx: cfgBase.turnoIndex, tcPattern: cfgBase.tcPattern };
 

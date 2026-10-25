@@ -14,7 +14,7 @@
 // cache dei dati tutta sua.
 // ==========================================
 
-export const API_URL = 'https://api.bateolive.stream';
+export const API_URL = 'https://utilitybe.homeserver.foo';
 
 // Data da cui vale la nuova rotazione: prima di questa data si usa state.history.
 // E' l'UNICO posto in cui va cambiata.

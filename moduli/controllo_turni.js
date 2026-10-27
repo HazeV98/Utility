@@ -8,7 +8,7 @@
 //   { "id": "controllo_turni", "isModule": true, "moduleName": "controllo_turni", "splitModule": false, ... }
 // ==========================================
 
-const API_URL = 'https://api.bateolive.stream';
+const API_URL = 'https://utilitybe.homeserver.foo';
 const BASE = `${API_URL}/api/v1/analisi`;
 const MAX_MB = 50;           // come ANALISI_PDF_MAX_MB sul server
 const POLL_MS = 700;

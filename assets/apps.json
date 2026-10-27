@@ -128,23 +128,6 @@
         "splitModule": true
     },
     {
-        "id": "bateolivelite",
-        "label": "BateoLive",
-        "icon": "fa-solid fa-map-location-dot",
-        "defaultColor": "#0066cc",
-        "conditions": [
-            "tutti"
-        ],
-        "excludeConditions": [
-            "vip",
-            "admin"
-        ],
-        "isModule": true,
-        "moduleId": "bateolivelite",
-        "moduleName": "bateolivelite",
-        "splitModule": false
-    },
-    {
         "id": "bateolive",
         "label": "BateoLive",
         "icon": "fa-solid fa-map-location-dot",

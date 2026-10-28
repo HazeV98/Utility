@@ -1,0 +1,66 @@
+{
+  "M206_LUN": [
+    {
+      "partenza_luogo": "DEP. F.TE NOVE",
+      "partenza_ora": "12:00",
+      "arrivo_luogo": "F.TE NOVE",
+      "arrivo_ora": "12:03"
+    },
+    {
+      "partenza_luogo": "F.TE NOVE",
+      "partenza_ora": "12:14",
+      "arrivo_luogo": "F.TE NOVE",
+      "arrivo_ora": "13:34"
+    },
+    {
+      "partenza_luogo": "F.TE NOVE",
+      "partenza_ora": "17:25",
+      "arrivo_luogo": "CHIESA",
+      "arrivo_ora": "18:05"
+    },
+    {
+      "partenza_luogo": "CHIESA",
+      "partenza_ora": "18:05",
+      "arrivo_luogo": "F.TE NOVE",
+      "arrivo_ora": "18:45"
+    },
+    {
+      "partenza_luogo": "F.TE NOVE",
+      "partenza_ora": "19:01",
+      "arrivo_luogo": "DEP. F.TE NOVE",
+      "arrivo_ora": "19:04"
+    }
+  ],
+  "M206_SAB-DOM": [
+    {
+      "partenza_luogo": "DEP. F.TE NOVE",
+      "partenza_ora": "12:00",
+      "arrivo_luogo": "F.TE NOVE",
+      "arrivo_ora": "12:03"
+    },
+    {
+      "partenza_luogo": "F.TE NOVE",
+      "partenza_ora": "12:14",
+      "arrivo_luogo": "F.TE NOVE",
+      "arrivo_ora": "13:34"
+    },
+    {
+      "partenza_luogo": "F.TE NOVE",
+      "partenza_ora": "17:25",
+      "arrivo_luogo": "CHIESA",
+      "arrivo_ora": "18:05"
+    },
+    {
+      "partenza_luogo": "CHIESA",
+      "partenza_ora": "18:05",
+      "arrivo_luogo": "F.TE NOVE",
+      "arrivo_ora": "18:45"
+    },
+    {
+      "partenza_luogo": "F.TE NOVE",
+      "partenza_ora": "19:01",
+      "arrivo_luogo": "DEP. F.TE NOVE",
+      "arrivo_ora": "19:04"
+    }
+  ]
+}

@@ -200,6 +200,18 @@
         "folder": "Orari"
     },
     {
+        "id": "arrivavenetort",
+        "label": "Orari Arriva veneto RT",
+        "icon": "fa-solid fa-bus-simple",
+        "defaultColor": "#6f42c1",
+        "conditions": [
+            "admin"
+        ],
+        "excludeConditions": [],
+        "href": "https://mobilityav.arriva.it/",
+        "folder": "Orari"
+    },
+    {
         "id": "documenti",
         "label": "Documenti",
         "icon": "fa-solid fa-file-lines",
@@ -399,16 +411,5 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
-    },
-    {
-        "id": "arrivavenetort",
-        "label": "Orari Arriva veneto RT",
-        "icon": "fa-solid fa-bus-simple",
-        "defaultColor": "#6f42c1",
-        "conditions": [
-            "admin"
-        ],
-        "excludeConditions": [],
-        "href": "https://mobilityav.arriva.it/"
     }
 ]

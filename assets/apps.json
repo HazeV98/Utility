@@ -314,8 +314,7 @@
         "icon": "fa-solid fa-file-code",
         "defaultColor": "#fd7e14",
         "conditions": [
-            "admin",
-            "vip"
+            "tutti"
         ],
         "excludeConditions": [],
         "isModule": true,

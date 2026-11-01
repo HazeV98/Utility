@@ -18,7 +18,8 @@ const API_URL = 'https://utilitybe.homeserver.foo';
 const API = `${API_URL}/api/v1/archivio`;
 const RADICE = '';                      // la radice è l'archivio stesso (data/archivio)
 
-const stato = { path: RADICE, admin: false, auth: null, timer: null, richiesta: 0, uploadAttivo: null, pollJob: null, timerRicerca: null, gestito: null, caricato: false };
+const stato = { path: RADICE, admin: false, auth: null, timer: null, richiesta: 0, uploadAttivo: null, pollJob: null, timerRicerca: null, gestito: null, caricato: false,
+    polling: false, timerStato: null, eraAttivo: false, finale: null, ultimoStato: null, attesaScansione: false, scansioneVista: false };
 
 // ---------------------------------------------------------------- interfaccia (finestre)
 export function initUIArchivio() {
@@ -52,6 +53,20 @@ export function initUIArchivio() {
         .arc-overlay .arc-riga button { flex: 0 0 auto; padding: 0 16px; border-radius: 10px; border: none; background: var(--primary, #00529b); color: #ffffff; font: inherit; font-weight: 700; cursor: pointer; }
         .arc-overlay .arc-link { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 700; color: var(--primary, #00529b); text-decoration: none; }
         .arc-overlay .arc-msg { font-size: 14px; line-height: 1.45; }
+
+        /* Riga di un file o di una cartella: un unico blocco, nome a sinistra e icone a destra */
+        @keyframes arcIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+        .arc-card { display: flex; align-items: center; gap: 2px; flex-shrink: 0; border: 1px solid var(--border-color, #e2e8f0); border-radius: 12px; background: var(--surface, #ffffff); padding-right: 6px; animation: arcIn .3s ease both; }
+        .arc-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 11px 6px 11px 14px; text-decoration: none; color: var(--text-main, #1e293b); }
+        .arc-testo { flex: 1; min-width: 0; word-break: break-word; }
+        .arc-nome { display: block; font-size: 15px; font-weight: 600; }
+        .arc-sub { display: block; font-size: 12px; font-weight: 400; color: var(--text-muted, #64748b); margin-top: 2px; }
+        .arc-sub.err { color: var(--danger, #dc3545); }
+        .arc-sub.warn { color: #b45309; }
+        .arc-ico { flex: 0 0 auto; width: 38px; height: 38px; border: none; border-radius: 50%; background: transparent; color: var(--primary, #00529b); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .arc-ico:active { background: rgba(0, 82, 155, 0.12); }
+        #archivio-banner .arc-banner-bar { height: 6px; border-radius: 4px; background: rgba(0, 82, 155, 0.15); overflow: hidden; margin-top: 8px; }
+        #archivio-banner .arc-banner-bar > span { display: block; height: 100%; background: var(--primary, #00529b); transition: width .5s ease; }
     </style>
 
     <!-- MODALE ARCHIVIO TURNI -->
@@ -63,6 +78,9 @@ export function initUIArchivio() {
                 <i class="fa-solid fa-box-archive"></i> Archivio
                 <!-- solo admin: li mostra archivio_turni.js -->
                 <span id="archivio-admin-btns" style="display:none; margin-left:auto; margin-right:38px; gap:8px; align-items:center;">
+                    <button id="archivio-btn-scansiona" title="Cerca file nuovi nell'archivio" aria-label="Cerca file nuovi nell'archivio" style="width:34px; height:34px; flex-shrink:0; border-radius:50%; border:1px solid var(--primary); background:transparent; color:var(--primary); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
                     <button id="archivio-btn-cartella" title="Nuova cartella" aria-label="Nuova cartella" style="width:34px; height:34px; flex-shrink:0; border-radius:50%; border:1px solid var(--primary); background:transparent; color:var(--primary); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
                         <i class="fa-solid fa-folder-plus"></i>
                     </button>
@@ -76,6 +94,7 @@ export function initUIArchivio() {
                 <input type="text" id="archivio-cerca" placeholder="Cerca documenti, servizi, anni…" autocomplete="off" enterkeyhint="search" aria-label="Cerca documenti" style="width:100%; box-sizing:border-box; font:inherit; font-size:16px; padding:10px 38px 10px 38px; border-radius:10px; border:1px solid var(--border-color); background:var(--surface); color:var(--text-main);">
                 <i class="fa-solid fa-circle-xmark" id="archivio-cerca-x" role="button" aria-label="Cancella ricerca" style="display:none; position:absolute; right:13px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:16px; cursor:pointer;"></i>
             </div>
+            <div id="archivio-banner" style="display:none; flex-shrink:0; margin: 8px 0 0; padding: 10px 12px; border-radius: 10px; font-size: 13px; line-height: 1.4; background: rgba(0, 82, 155, 0.07); border: 1px solid rgba(0, 82, 155, 0.25); color: var(--text-main);"></div>
             <div id="archivio-content-area" style="flex: 1; overflow-y: auto; padding-right: 5px; display: flex; flex-direction: column; gap: 14px;">
             </div>
         </div>
@@ -116,11 +135,7 @@ export function initUIArchivio() {
                 </div>
 
                 <div id="arc-blocco-turni" style="display:none;">
-                    <label class="arc-lbl" for="arc-servizio">Servizio che copre</label>
-                    <input type="text" id="arc-servizio" maxlength="80" placeholder="es. Inverno 2026" autocomplete="off">
-                    <label class="arc-lbl" for="arc-valido">Inizio validità</label>
-                    <input type="date" id="arc-valido">
-                    <div class="arc-hint">Se lasci vuota la data viene letta dal libro. Il PDF viene analizzato in automatico e il risultato resta allegato al documento.</div>
+                    <div class="arc-hint" style="margin-top:12px;">Servizio e validità (anche le date degli eventi) li legge il server dal libro. L'analisi parte da sola, anche se ce ne sono altre in coda, e il PDF dei risultati resta allegato al documento.</div>
                 </div>
 
                 <div class="arc-err" id="arc-errore"></div>
@@ -158,10 +173,13 @@ export function initUIArchivio() {
                 <div id="arg-blocco-analisi">
                     <label class="arc-check"><input type="checkbox" id="arg-analizza"><span id="arg-analizza-txt"></span></label>
                     <div id="arg-blocco-turni" style="display:none;">
-                        <label class="arc-lbl" for="arg-servizio">Servizio che copre</label>
+                        <label class="arc-lbl" for="arg-servizio">Servizio</label>
                         <input type="text" id="arg-servizio" maxlength="80" placeholder="es. Inverno 2026" autocomplete="off">
-                        <label class="arc-lbl" for="arg-valido">Inizio validità</label>
+                        <label class="arc-lbl" for="arg-valido">Valido dal</label>
                         <input type="date" id="arg-valido">
+                        <label class="arc-lbl" for="arg-fino">Fino al (solo eventi)</label>
+                        <input type="date" id="arg-fino">
+                        <div class="arc-hint" id="arg-hint-turni"></div>
                     </div>
                 </div>
 
@@ -265,6 +283,7 @@ export async function avviaMotoreArchivio(db, auth, userData) {
     collegaUpload();
     impostaPulsanteAdmin();
     verificaRuoloAdmin(db, userData);   // non blocca la lista: il + compare appena il ruolo è noto
+    avviaPolling();                     // mostra subito se ci sono analisi in corso
     await apriCartella(RADICE);
 }
 
@@ -287,6 +306,7 @@ function impostaPulsanteAdmin() {
     if (!gruppo) return;
     gruppo.style.display = stato.admin ? 'flex' : 'none';
     el('archivio-btn-nuovo').onclick = apriUpload;
+    el('archivio-btn-scansiona').onclick = avviaScansione;
     el('archivio-btn-cartella').onclick = () => apriGestione('nuova-cartella', { path: stato.path });
 }
 
@@ -336,7 +356,7 @@ function disegna(area, dati) {
     if (!dati.cartelle.length && !file.length) {
         const vuoto = document.createElement('div');
         vuoto.className = 'status-message';
-        const msg = dati.path === '' ? (stato.admin ? 'L\'archivio è vuoto. Crea la prima cartella con il pulsante in alto.' : 'L\'archivio è vuoto.') : 'Nessun documento in questa cartella.';
+        const msg = dati.path === '' ? (stato.admin ? 'L\'archivio è vuoto. Crea la prima cartella con il pulsante in alto, oppure copia i file nella cartella dell\'archivio sul server: li trova da solo.' : 'L\'archivio è vuoto.') : 'Nessun documento in questa cartella.';
         vuoto.innerHTML = `<i class="fa-regular fa-folder-open" style="font-size:32px; color:var(--text-muted);"></i> ${msg}`;
         area.appendChild(vuoto);
         return;
@@ -345,14 +365,7 @@ function disegna(area, dati) {
     let i = 0;
     dati.cartelle.forEach((c) => area.appendChild(rigaCartella(c, i++)));
     file.forEach((f) => area.appendChild(rigaFile(f, i++)));
-
-    // finché c'è un'analisi in corso la lista si aggiorna da sola
-    if (file.some((f) => f.analisi && f.analisi.stato === 'in_corso')) {
-        stato.timer = setTimeout(() => {
-            if (!area.isConnected || area.offsetParent === null) return;   // finestra chiusa: si ferma
-            aggiorna();
-        }, 3000);
-    }
+    if (file.some(analisiAttiva)) avviaPolling();   // finché c'è un'analisi in corso o in coda la lista si aggiorna da sola
 }
 
 function briciole(dati) {
@@ -378,19 +391,21 @@ function briciole(dati) {
     return nav;
 }
 
-const BTN_GESTISCI = `<button class="download-btn" data-azione="gestisci" title="Gestisci" aria-label="Gestisci"><i class="fa-solid fa-ellipsis-vertical"></i></button>`;
+const analisiAttiva = (f) => !!(f.analisi && (f.analisi.stato === 'in_coda' || f.analisi.stato === 'in_corso'));
+const BTN_GESTISCI = `<button class="arc-ico" data-azione="gestisci" title="Gestisci" aria-label="Gestisci"><i class="fa-solid fa-ellipsis-vertical"></i></button>`;
+const sub = (html, classe = '') => `<span class="arc-sub ${classe}">${html}</span>`;
 
 function rigaCartella(c, i, inRicerca) {
     const n = c.cartelle + c.file;
     const row = document.createElement('div');
-    row.className = 'file-row';
-    row.style.animationDelay = `${i * 0.05}s`;
+    row.className = 'arc-card';
+    row.style.animationDelay = `${Math.min(i, 10) * 0.04}s`;
     row.innerHTML = `
-        <a class="file-btn" href="#" style="justify-content: flex-start; gap: 12px;">
-            <i class="fa-solid fa-folder" style="color: #f59e0b; font-size: 20px;"></i>
-            <span style="flex: 1; word-break: break-word; min-width: 0;">
-                <span style="display:block;">${esc(c.nome)}</span>
-                <span style="display:block; font-size:12px; color:var(--text-muted); font-weight:400;">${n === 0 ? 'Vuota' : n === 1 ? '1 elemento' : n + ' elementi'}${inRicerca ? ' · in ' + esc(percorsoLeggibile(c.genitore)) : ''}</span>
+        <a class="arc-main" href="#">
+            <i class="fa-solid fa-folder" style="color: #f59e0b; font-size: 20px; flex-shrink: 0;"></i>
+            <span class="arc-testo">
+                <span class="arc-nome">${esc(c.nome)}</span>
+                ${sub(`${n === 0 ? 'Vuota' : n === 1 ? '1 elemento' : n + ' elementi'}${inRicerca ? ' · in ' + esc(percorsoLeggibile(c.genitore)) : ''}`)}
             </span>
             <i class="fa-solid fa-chevron-right" style="color: var(--text-muted); font-size: 12px;"></i>
         </a>
@@ -407,56 +422,51 @@ function rigaFile(f, i, inRicerca) {
     else if (f.estensione === '.doc' || f.estensione === '.docx') { icona = 'fa-solid fa-file-word'; colore = '#2b579a'; }
     else if (f.estensione === '.xls' || f.estensione === '.xlsx') { icona = 'fa-solid fa-file-excel'; colore = 'var(--success)'; }
 
-    const piccolo = 'display:block; font-size:12px; font-weight:400; color:var(--text-muted); margin-top:2px;';
     const a = f.analisi;
     let sotto = '';
-    let extra = '';
+    let info = '';
 
     if (f.categoria === 'turni') {
-        const dati = [f.servizio, f.valido_dal ? `dal ${dmy(f.valido_dal)}` : null].filter(Boolean).join(' · ');
-        if (dati) sotto += `<span style="${piccolo}">${esc(dati)}</span>`;
-        if (a && a.stato === 'completato' && a.riepilogo) {
-            const r = a.riepilogo;
-            const testo = `${r.turni} turni` + (r.non_a_norma ? ` · ${r.non_a_norma} non a norma` : ' · tutti a norma');
-            sotto += `<span style="${piccolo}">${esc(testo)}</span>`;
-        } else if (a && a.stato === 'in_corso') {
-            sotto += `<span style="${piccolo}"><i class="fa-solid fa-circle-notch fa-spin"></i> Analisi in corso…</span>`;
-        } else if (a && a.stato === 'errore') {
-            sotto += `<span style="${piccolo} color:var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Analisi non riuscita: ${esc(a.errore || 'errore')}</span>`;
-        } else if (a && a.stato === 'interrotta') {
-            sotto += `<span style="${piccolo} color:var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Analisi interrotta (riavvio del server)</span>`;
-        }
+        // servizio e validità arrivano dall'analisi del libro (le date degli eventi sono già nel nome del servizio)
+        if (f.servizio) sotto += sub(esc(f.servizio));
+        const eventoAuto = (f.servizio || '').startsWith('Evento');
+        if (f.periodo_testo && !eventoAuto) sotto += sub(esc(f.periodo_testo));
+        else if (!f.periodo_testo && f.valido_dal) sotto += sub(`dal ${esc(dmy(f.valido_dal))}`);
+        if (a && a.stato === 'in_coda') sotto += sub(`<i class="fa-regular fa-clock"></i> In coda per l'analisi${a.posizione ? ' (n. ' + a.posizione + ')' : ''}`);
+        else if (a && a.stato === 'in_corso') sotto += sub(`<i class="fa-solid fa-circle-notch fa-spin"></i> Analisi in corso…`);
+        else if (a && a.stato === 'errore') sotto += sub(`<i class="fa-solid fa-triangle-exclamation"></i> Analisi non riuscita: ${esc(a.errore || 'errore')}`, 'err');
+        else if (a && a.stato === 'interrotta') sotto += sub(`<i class="fa-solid fa-triangle-exclamation"></i> Analisi interrotta: riparte alla prossima scansione`, 'warn');
+        else if (a && a.stato === 'completato' && a.pdf_errore) sotto += sub(`<i class="fa-solid fa-triangle-exclamation"></i> PDF dell'analisi non disponibile`, 'warn');
+        if (stato.admin && f.avvisi_periodo && f.avvisi_periodo.length) sotto += sub(`<i class="fa-solid fa-triangle-exclamation"></i> Controlla la validità: ${esc(f.avvisi_periodo.join('; '))}`, 'warn');
         if (a && a.stato === 'completato' && a.pdf_url) {
-            extra = `<button class="download-btn" data-azione="info" title="Risultato dell'analisi" aria-label="Risultato dell'analisi"><i class="fa-solid fa-circle-info"></i></button>`;
+            info = `<button class="arc-ico" data-azione="info" title="Risultato dell'analisi" aria-label="Risultato dell'analisi"><i class="fa-solid fa-circle-info"></i></button>`;
         }
     } else {
-        if (f.nota) sotto += `<span style="${piccolo} white-space:pre-wrap; color:var(--text-main); opacity:.85;">${esc(f.nota)}</span>`;
-        const dettagli = [dimensione(f.dimensione), dmy(f.caricato || f.modificato)].filter(Boolean).join(' · ');
-        sotto += `<span style="${piccolo}">${esc(dettagli)}</span>`;
+        if (f.nota) sotto += `<span class="arc-sub" style="white-space:pre-wrap; color:var(--text-main); opacity:.85;">${esc(f.nota)}</span>`;
+        sotto += sub(esc([dimensione(f.dimensione), dmy(f.caricato || f.modificato)].filter(Boolean).join(' · ')));
     }
-
-    if (inRicerca) sotto += `<span style="${piccolo}"><i class="fa-regular fa-folder"></i> ${esc(percorsoLeggibile(f.genitore))}</span>`;
+    if (inRicerca) sotto += sub(`<i class="fa-regular fa-folder"></i> ${esc(percorsoLeggibile(f.genitore))}`);
 
     const row = document.createElement('div');
-    row.className = 'file-row';
-    row.style.animationDelay = `${i * 0.05}s`;
+    row.className = 'arc-card';
+    row.style.animationDelay = `${Math.min(i, 10) * 0.04}s`;
     row.innerHTML = `
-        <a class="file-btn" href="${esc(API_URL + f.url)}" target="_blank" rel="noopener" style="justify-content: flex-start; gap: 12px;">
-            <i class="${icona}" style="color: ${colore}; font-size: 20px;"></i>
-            <span style="flex: 1; word-break: break-word; min-width: 0;">
-                <span style="display:block;">${esc(nomeVisibile(f.nome))}</span>
+        <a class="arc-main" href="${esc(API_URL + f.url)}" target="_blank" rel="noopener">
+            <i class="${icona}" style="color: ${colore}; font-size: 20px; flex-shrink: 0;"></i>
+            <span class="arc-testo">
+                <span class="arc-nome">${esc(nomeVisibile(f.nome))}</span>
                 ${sotto}
             </span>
         </a>
-        <button class="download-btn" data-azione="scarica" title="Scarica documento" aria-label="Scarica documento"><i class="fa-solid fa-download"></i></button>
-        ${extra}
+        <button class="arc-ico" data-azione="scarica" title="Scarica documento" aria-label="Scarica documento"><i class="fa-solid fa-download"></i></button>
+        ${info}
         ${stato.admin ? BTN_GESTISCI : ''}`;
 
-    const gest = row.querySelector('[data-azione="gestisci"]');
-    if (gest) gest.addEventListener('click', () => apriGestione('file', f));
     row.querySelector('[data-azione="scarica"]').addEventListener('click', () => scarica(API_URL + f.url, f.nome));
-    const info = row.querySelector('[data-azione="info"]');
-    if (info) info.addEventListener('click', () => window.open(API_URL + a.pdf_url, '_blank', 'noopener'));
+    const bi = row.querySelector('[data-azione="info"]');
+    if (bi) bi.addEventListener('click', () => window.open(API_URL + a.pdf_url, '_blank', 'noopener'));
+    const bg = row.querySelector('[data-azione="gestisci"]');
+    if (bg) bg.addEventListener('click', () => apriGestione('file', f));
     return row;
 }
 
@@ -537,12 +547,89 @@ function disegnaRisultati(area, q, dati) {
         }
         area.appendChild(r.tipo === 'cartella' ? rigaCartella(r, i, true) : rigaFile(r, i, true));
     });
-    if (dati.risultati.some((r) => r.analisi && r.analisi.stato === 'in_corso')) {
-        stato.timer = setTimeout(() => {
-            if (!area.isConnected || area.offsetParent === null) return;
-            aggiorna();
-        }, 3000);
+    if (dati.risultati.some(analisiAttiva)) avviaPolling();
+}
+
+// ---------------------------------------------------------------- coda delle analisi e scansione
+// Il server analizza un libro alla volta (anche quelli messi a mano nelle cartelle): finché c'è lavoro si controlla
+// GET /stato ogni pochi secondi, si mostra il banner e si ricarica l'elenco.
+function disegnaBanner(d) {
+    const b = el('archivio-banner');
+    if (!b) return;
+    if (d) stato.ultimoStato = d;
+    const st = stato.ultimoStato;
+    let html = '';
+    if (st && st.scansione && st.scansione.in_corso) {
+        html = `<i class="fa-solid fa-circle-notch fa-spin"></i> Scansione dell'archivio in corso…`;
+    } else if (st && st.coda && st.coda.attiva) {
+        const c = st.coda, cur = c.in_corso;
+        const n = Math.min(c.fatti + 1, c.totale);
+        const avanz = c.totale ? Math.min(100, Math.round(((c.fatti + ((cur && cur.percentuale) || 0) / 100) / c.totale) * 100)) : 0;
+        html = `<i class="fa-solid fa-gears"></i> Analisi dei libri turni: <b>${n} di ${c.totale}</b>`
+            + (cur ? `<br><span class="arc-sub">${esc(cur.nome)}${cur.messaggio ? ' · ' + esc(cur.messaggio) : ''}</span>` : '')
+            + `<div class="arc-banner-bar"><span style="width:${avanz}%"></span></div>`;
+    } else if (stato.finale && stato.finale.fino > Date.now()) {
+        html = stato.finale.html;
     }
+    b.style.display = html ? '' : 'none';
+    b.innerHTML = html;
+}
+
+function mostraFinale(html) {
+    stato.finale = { html, fino: Date.now() + 9000 };
+    disegnaBanner();
+    avviaPolling();
+}
+
+function avviaPolling() {
+    if (stato.polling) return;
+    stato.polling = true;
+    cicloStato();
+}
+
+async function cicloStato() {
+    const area = el('archivio-content-area');
+    if (!area || !area.isConnected || area.offsetParent === null) { stato.polling = false; return; }   // finestra chiusa
+    let attivo = false;
+    try {
+        const r = await fetch(`${API}/stato?t=${Date.now()}`, { cache: 'no-store' });
+        const d = await r.json();
+        attivo = !!(d.coda.attiva || d.scansione.in_corso);
+        if (d.scansione.in_corso) stato.scansioneVista = true;
+        else if (stato.attesaScansione && stato.scansioneVista) {       // la scansione chiesta con il pulsante è finita
+            stato.attesaScansione = false; stato.scansioneVista = false;
+            const e = d.scansione.esito || {};
+            let testo = e.nuovi || e.ripresi
+                ? `<i class="fa-solid fa-circle-check" style="color:var(--success, #28a745);"></i> Scansione completata: <b>${e.nuovi || 0}</b> file nuovi (${e.libri || 0} libri turni, ${e.generici || 0} documenti)${e.ripresi ? `, ${e.ripresi} analisi riprese` : ''}.`
+                : `<i class="fa-solid fa-circle-check" style="color:var(--success, #28a745);"></i> Scansione completata: nessun file nuovo.`;
+            if (e.in_attesa_di_copia) testo += `<br><span class="arc-sub">${e.in_attesa_di_copia} file sono ancora in copia: riprova tra poco.</span>`;
+            if (d.scansione.errore) testo = `<i class="fa-solid fa-triangle-exclamation"></i> Scansione non riuscita: ${esc(d.scansione.errore)}`;
+            stato.finale = { html: testo, fino: Date.now() + 9000 };
+        }
+        disegnaBanner(d);
+        if (attivo || stato.eraAttivo) aggiorna();           // le righe cambiano man mano e una volta alla fine
+        stato.eraAttivo = attivo;
+    } catch (e) { /* server non raggiungibile: riprova al prossimo giro */ }
+    const finaleVisibile = stato.finale && stato.finale.fino > Date.now();
+    if (attivo || finaleVisibile) stato.timerStato = setTimeout(cicloStato, attivo ? 2500 : 1500);
+    else stato.polling = false;
+}
+
+async function avviaScansione() {
+    if (!stato.admin) return;
+    const b = el('archivio-btn-scansiona');
+    b.disabled = true;
+    try {
+        const d = await apiScrivi('POST', '/scansiona');
+        stato.attesaScansione = true;
+        stato.scansioneVista = true;       // la risposta dice già che è partita
+        disegnaBanner(d);
+    } catch (e) {
+        mostraFinale(`<i class="fa-solid fa-triangle-exclamation"></i> ${esc(e.message)}`);
+    } finally {
+        b.disabled = false;
+    }
+    avviaPolling();
 }
 
 // ---------------------------------------------------------------- caricamento (solo admin)
@@ -596,8 +683,6 @@ async function apriUpload() {
     el('arc-file-nome').textContent = 'Scegli un file…';
     el('arc-nome').value = '';
     el('arc-nota').value = '';
-    el('arc-servizio').value = '';
-    el('arc-valido').value = '';
     mostraErroreUpload('');
     el('arc-form').style.display = '';
     el('arc-progresso').style.display = 'none';
@@ -669,21 +754,14 @@ async function inviaUpload() {
     const file = el('arc-file').files[0];
     const tipo = el('arc-modal-tipo').value;
     const nome = el('arc-nome').value.trim();
-    const servizio = el('arc-servizio').value.trim();
     if (!file) return mostraErroreUpload('Scegli il file da caricare.');
     if (!nome) return mostraErroreUpload('Scrivi il nome del documento.');
-    if (tipo === 'turni' && !servizio) return mostraErroreUpload('Indica il servizio che copre (es. Inverno 2026).');
     if (tipo === 'turni' && !/\.pdf$/i.test(file.name)) return mostraErroreUpload('Il libro turni deve essere un PDF.');
     mostraErroreUpload('');
 
     const ext = (/\.[^.]+$/.exec(file.name) || ['.pdf'])[0];
     const q = new URLSearchParams({ cartella: el('arc-cartella').value || RADICE, nome: nome + ext, tipo });
     if (tipo === 'generico' && el('arc-nota').value.trim()) q.set('nota', el('arc-nota').value.trim());
-    if (tipo === 'turni') {
-        q.set('servizio', servizio);
-        if (el('arc-valido').value) q.set('valido_dal', el('arc-valido').value);
-    }
-    const dataInserita = tipo === 'turni' ? el('arc-valido').value : '';
     const token = await tokenUtente();
 
     mostraProgresso(0, 'Caricamento in corso…');
@@ -697,7 +775,7 @@ async function inviaUpload() {
     xhr.upload.onprogress = (ev) => {
         if (!ev.lengthComputable) return;
         const p = Math.round((ev.loaded / ev.total) * 100);
-        mostraProgresso(p * 0.4, `Caricamento in corso… ${p}%`);
+        mostraProgresso(p, `Caricamento in corso… ${p}%`);
     };
     xhr.onerror = () => { stato.uploadAttivo = null; erroreUpload('Server non raggiungibile. Riprova.'); };
     xhr.onabort = () => { stato.uploadAttivo = null; };
@@ -708,11 +786,12 @@ async function inviaUpload() {
         if (xhr.status >= 400) return erroreUpload(r.error || `Errore ${xhr.status}`);
         azzeraRicerca();
         apriCartella(r.voce && r.voce.path ? genitoreDi(r.voce.path) : stato.path, true);   // il file compare subito nell'elenco
-        if (r.job) seguiAnalisi(r.job, dataInserita);
-        else {
-            mostraProgresso(100, '<i class="fa-solid fa-circle-check" style="color:var(--success, #28a745);"></i> Documento caricato.', { fine: true, etichettaBottone: 'Chiudi' });
-            el('arc-fine').onclick = () => chiudiUpload();
-        }
+        const ok = '<i class="fa-solid fa-circle-check" style="color:var(--success, #28a745);"></i> ';
+        mostraProgresso(100, tipo === 'turni'
+            ? `${ok}Libro caricato. L'analisi parte da sola (se ce ne sono altre va in coda): servizio e validità vengono letti dal libro e li vedi nell'elenco.`
+            : `${ok}Documento caricato.`, { fine: true, etichettaBottone: 'Chiudi' });
+        el('arc-fine').onclick = () => chiudiUpload();
+        if (tipo === 'turni') avviaPolling();
     };
     xhr.send(file);
 }
@@ -721,49 +800,6 @@ function erroreUpload(msg) {
     el('arc-progresso').style.display = 'none';
     el('arc-form').style.display = '';
     mostraErroreUpload(msg);
-}
-
-// Avanzamento dell'analisi: stessa rotta già usata dal controllo dei libri turni
-function seguiAnalisi(job, dataInserita) {
-    const mio = {};
-    stato.pollJob = mio;
-    el('arc-fine').onclick = () => chiudiUpload();
-    el('arc-fine').textContent = 'Chiudi (l\'analisi continua)';
-    let fallimenti = 0;
-
-    const giro = async () => {
-        if (stato.pollJob !== mio) return;
-        try {
-            const r = await fetch(`${API_URL}/api/v1/analisi/job/${encodeURIComponent(job)}`, { cache: 'no-store' });
-            if (r.status === 404) {
-                aggiorna();
-                return mostraProgresso(100, 'Controlla l\'elenco: l\'analisi non è più in memoria sul server.', { etichettaBottone: 'Chiudi' });
-            }
-            const d = await r.json();
-            fallimenti = 0;
-            if (d.stato === 'in_corso') {
-                mostraProgresso(40 + (d.percentuale || 0) * 0.6, esc(d.messaggio || 'Analisi in corso…'));
-                el('arc-fine').textContent = 'Chiudi (l\'analisi continua)';
-                return setTimeout(giro, 1000);
-            }
-            aggiorna();
-            if (d.stato === 'completato') {
-                const g = (d.risultato && d.risultato.generale) || {};
-                let msg = `<i class="fa-solid fa-circle-check" style="color:var(--success, #28a745);"></i> Analisi completata: <b>${esc(g.turni)}</b> turni, <b>${esc(g.non_a_norma)}</b> non a norma.`;
-                const letta = d.risultato && d.risultato.valido_dal;
-                if (dataInserita && letta && letta !== dataInserita) {
-                    msg += `<br><br><i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;"></i> Attenzione: nel libro la data di inizio validità è <b>${esc(dmy(letta))}</b>, tu hai inserito <b>${esc(dmy(dataInserita))}</b>.`;
-                }
-                if (d.pdf_errore) msg += `<br><br>${esc(d.pdf_errore)}`;
-                return mostraProgresso(100, msg, { fine: true, etichettaBottone: 'Chiudi' });
-            }
-            mostraProgresso(100, `<i class="fa-solid fa-triangle-exclamation" style="color:var(--danger, #dc3545);"></i> Analisi non riuscita: ${esc(d.errore || d.messaggio || 'errore')}<br><br>Il file resta in archivio.`, { errore: true, etichettaBottone: 'Chiudi' });
-        } catch (e) {
-            if (++fallimenti >= 5) return mostraProgresso(100, 'Connessione persa. Controlla l\'elenco più tardi.', { errore: true, etichettaBottone: 'Chiudi' });
-            setTimeout(giro, 1500);
-        }
-    };
-    giro();
 }
 
 // ---------------------------------------------------------------- gestione (solo admin)
@@ -781,7 +817,7 @@ function chiudiGestione() {
 function aggiornaBloccoTurniGestione() {
     const g = stato.gestito;
     if (!g || g.modo !== 'file') return;
-    el('arg-blocco-turni').style.display = (g.voce.categoria === 'turni' || el('arg-analizza').checked) ? '' : 'none';
+    el('arg-blocco-turni').style.display = g.voce.categoria === 'turni' ? '' : 'none';
 }
 
 function collegaGestione() {
@@ -817,10 +853,15 @@ async function apriGestione(modo, voce) {
         el('arg-nota').value = voce.nota || '';
         el('arg-servizio').value = voce.servizio || '';
         el('arg-valido').value = voce.valido_dal || '';
+        el('arg-fino').value = voce.valido_al || '';
         const turni = voce.categoria === 'turni';
+        const manuale = voce.servizio_manuale || voce.validita_manuale;
+        el('arg-hint-turni').textContent = (manuale ? 'Valori corretti a mano. ' : 'Valori letti dal libro. ')
+            + 'Svuotando un campo si torna a quello letto dal libro.'
+            + (voce.avvisi_periodo && voce.avvisi_periodo.length ? ` Attenzione: ${voce.avvisi_periodo.join('; ')}.` : '');
         el('arg-blocco-analisi').style.display = voce.estensione === '.pdf' ? '' : 'none';
         el('arg-analizza').checked = false;
-        el('arg-analizza-txt').textContent = turni ? 'Rilancia l\'analisi dopo il salvataggio' : 'Analizza come libro turni';
+        el('arg-analizza-txt').textContent = turni ? 'Rilancia l\'analisi dopo il salvataggio' : 'Analizza come libro turni (servizio e validità li legge dal libro)';
         aggiornaBloccoTurniGestione();
         const sel = el('arg-sposta');
         try { await riempiSelectCartelle(sel, genitoreDi(voce.path)); }
@@ -859,15 +900,16 @@ async function salvaGestione() {
 async function salvaFile(voce, nome) {
     const turni = voce.categoria === 'turni';
     const analizza = el('arg-analizza').checked && voce.estensione === '.pdf';
-    const servizio = el('arg-servizio').value.trim();
-    const valido = el('arg-valido').value;
-    if ((turni || analizza) && !servizio) throw new Error('Indica il servizio che copre (es. Inverno 2026).');
 
     const corpo = { path: voce.path };
     if (nome + voce.estensione !== voce.nome) corpo.nome = nome + voce.estensione;
     if (el('arg-nota').value.trim() !== (voce.nota || '')) corpo.nota = el('arg-nota').value.trim();
-    if ((turni || analizza) && servizio !== (voce.servizio || '')) corpo.servizio = servizio;
-    if ((turni || analizza) && valido !== (voce.valido_dal || '')) corpo.valido_dal = valido;
+    if (turni) {
+        // campo vuoto = torna a quello letto dal libro
+        const servizio = el('arg-servizio').value.trim(), dal = el('arg-valido').value, al = el('arg-fino').value;
+        if (servizio !== (voce.servizio || '')) corpo.servizio = servizio;
+        if (dal !== (voce.valido_dal || '') || al !== (voce.valido_al || '')) { corpo.valido_dal = dal; corpo.valido_al = al; }
+    }
 
     let corrente = voce.path;
     if (Object.keys(corpo).length > 1) corrente = (await apiScrivi('POST', '/modifica', corpo)).voce.path;
@@ -876,9 +918,8 @@ async function salvaFile(voce, nome) {
     if (dest && dest !== (genitoreDi(corrente) || '/')) corrente = (await apiScrivi('POST', '/sposta', { path: corrente, destinazione: dest })).voce.path;
 
     if (analizza) {
-        const q = new URLSearchParams({ path: corrente, servizio });
-        if (valido) q.set('valido_dal', valido);
-        await apiScrivi('POST', `/analizza?${q.toString()}`);
+        await apiScrivi('POST', `/analizza?path=${encodeURIComponent(corrente)}`);
+        avviaPolling();
     }
 }
 

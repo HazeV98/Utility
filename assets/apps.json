@@ -410,5 +410,19 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
+    },
+    {
+        "id": "archivio",
+        "label": "Archivio",
+        "icon": "fa-regular fa-folder-open",
+        "defaultColor": "#0066cc",
+        "conditions": [
+            "admin"
+        ],
+        "excludeConditions": [],
+        "isModule": true,
+        "moduleId": "archivio",
+        "moduleName": "archivio",
+        "splitModule": false
     }
 ]

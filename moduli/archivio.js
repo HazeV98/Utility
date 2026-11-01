@@ -1,6 +1,6 @@
 // ==========================================
 // ARCHIVIO - JS MODULE (file unico: interfaccia + logica)
-// Gestore file dell'archivio sul server (data/archivio/turni): si apre direttamente sulle cartelle.
+// Gestore file dell'archivio sul server (data/archivio): si apre direttamente sulle cartelle, che si creano da qui.
 // Tutti possono sfogliare, cercare, aprire e scaricare. Solo l'admin vede in alto i tasti per creare una cartella
 // e per caricare un documento (generico, oppure file turni che il server analizza e a cui allega il PDF dei risultati),
 // e su ogni riga il tasto per modificare, spostare o eliminare.
@@ -16,7 +16,7 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase
 
 const API_URL = 'https://utilitybe.homeserver.foo';
 const API = `${API_URL}/api/v1/archivio`;
-const RADICE = 'turni';                 // l'archivio si apre qui: è l'unica sezione per ora
+const RADICE = '';                      // la radice è l'archivio stesso (data/archivio)
 
 const stato = { path: RADICE, admin: false, auth: null, timer: null, richiesta: 0, uploadAttivo: null, pollJob: null, timerRicerca: null, gestito: null, caricato: false };
 
@@ -226,8 +226,8 @@ async function apiScrivi(metodo, percorso, body) {
     return dati;
 }
 
-const genitoreDi = (p) => p.replace(/\/[^/]+$/, '');
-const percorsoLeggibile = (p) => p.split('/').map((x, i) => (i === 0 ? x.charAt(0).toUpperCase() + x.slice(1) : x)).join(' / ');
+const genitoreDi = (p) => (p.includes('/') ? p.slice(0, p.lastIndexOf('/')) : '');   // '' = radice
+const percorsoLeggibile = (p) => (p ? p.split('/').join(' / ') : 'Archivio');
 
 // Scarica il file invece di aprirlo nel browser (come window.downloadForzato in documenti.js)
 async function scarica(url, nomeFile) {
@@ -336,7 +336,8 @@ function disegna(area, dati) {
     if (!dati.cartelle.length && !file.length) {
         const vuoto = document.createElement('div');
         vuoto.className = 'status-message';
-        vuoto.innerHTML = `<i class="fa-regular fa-folder-open" style="font-size:32px; color:var(--text-muted);"></i> Nessun documento in questa cartella.`;
+        const msg = dati.path === '' ? (stato.admin ? 'L\'archivio è vuoto. Crea la prima cartella con il pulsante in alto.' : 'L\'archivio è vuoto.') : 'Nessun documento in questa cartella.';
+        vuoto.innerHTML = `<i class="fa-regular fa-folder-open" style="font-size:32px; color:var(--text-muted);"></i> ${msg}`;
         area.appendChild(vuoto);
         return;
     }
@@ -355,13 +356,13 @@ function disegna(area, dati) {
 }
 
 function briciole(dati) {
-    const parti = dati.briciole.filter((b) => b.path === RADICE || b.path.startsWith(RADICE + '/'));
-    if (parti.length < 2) return null;   // nella cartella principale non serve
+    const parti = dati.briciole;
+    if (parti.length < 2) return null;   // nella radice non serve
     const nav = document.createElement('div');
     nav.style.cssText = 'display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:13px; color:var(--text-muted);';
     parti.forEach((b, k) => {
         const ultima = k === parti.length - 1;
-        const nome = b.path === RADICE ? 'Turni' : b.nome;
+        const nome = b.path === '' ? 'Archivio' : b.nome;
         if (k) nav.insertAdjacentHTML('beforeend', '<i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>');
         if (ultima) {
             nav.insertAdjacentHTML('beforeend', `<span style="font-weight:700; color:var(--text-main);">${esc(nome)}</span>`);
@@ -553,14 +554,16 @@ async function elencoCartelle() {
         return r.cartelle.flatMap((c, k) => [{ path: c.path, nome: c.nome, livello }, ...sotto[k]]);
     };
     const figli = await esplora(RADICE, 1);
-    return [{ path: RADICE, nome: 'Turni (cartella principale)', livello: 0 }, ...figli];
+    return [{ path: RADICE, nome: 'Archivio (cartella principale)', livello: 0 }, ...figli];
 }
 
 async function riempiSelectCartelle(sel, selezionata) {
     sel.innerHTML = `<option value="">Carico le cartelle…</option>`;
     const cartelle = await elencoCartelle();
-    sel.innerHTML = cartelle.map((c) => `<option value="${esc(c.path)}">${'\u00A0\u00A0'.repeat(c.livello)}${c.livello ? '↳ ' : ''}${esc(c.nome)}</option>`).join('');
-    sel.value = cartelle.some((c) => c.path === selezionata) ? selezionata : RADICE;
+    // la radice nel menu vale "/" (il valore vuoto resta per "Carico le cartelle…")
+    sel.innerHTML = cartelle.map((c) => `<option value="${esc(c.path || '/')}">${'\u00A0\u00A0'.repeat(c.livello)}${c.livello ? '↳ ' : ''}${esc(c.nome)}</option>`).join('');
+    const voluta = selezionata || '/';
+    sel.value = cartelle.some((c) => (c.path || '/') === voluta) ? voluta : '/';
 }
 
 function mostraErroreUpload(msg) {
@@ -609,7 +612,7 @@ async function apriUpload() {
     try {
         await riempiSelectCartelle(sel, stato.path);
     } catch (e) {
-        sel.innerHTML = `<option value="${RADICE}">Turni (cartella principale)</option>`;
+        sel.innerHTML = `<option value="/">Archivio (cartella principale)</option>`;
         mostraErroreUpload('Elenco cartelle non disponibile: ' + e.message);
     }
 }
@@ -821,7 +824,7 @@ async function apriGestione(modo, voce) {
         aggiornaBloccoTurniGestione();
         const sel = el('arg-sposta');
         try { await riempiSelectCartelle(sel, genitoreDi(voce.path)); }
-        catch (e) { sel.innerHTML = `<option value="${esc(genitoreDi(voce.path))}">${esc(percorsoLeggibile(genitoreDi(voce.path)))}</option>`; }
+        catch (e) { sel.innerHTML = `<option value="${esc(genitoreDi(voce.path) || '/')}">${esc(percorsoLeggibile(genitoreDi(voce.path)))}</option>`; }
     }
     if (nuova) el('arg-nome').focus();
 }
@@ -870,7 +873,7 @@ async function salvaFile(voce, nome) {
     if (Object.keys(corpo).length > 1) corrente = (await apiScrivi('POST', '/modifica', corpo)).voce.path;
 
     const dest = el('arg-sposta').value;
-    if (dest && dest !== genitoreDi(corrente)) corrente = (await apiScrivi('POST', '/sposta', { path: corrente, destinazione: dest })).voce.path;
+    if (dest && dest !== (genitoreDi(corrente) || '/')) corrente = (await apiScrivi('POST', '/sposta', { path: corrente, destinazione: dest })).voce.path;
 
     if (analizza) {
         const q = new URLSearchParams({ path: corrente, servizio });

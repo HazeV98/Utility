@@ -350,10 +350,17 @@ function disegna(area, dati) {
     const bc = briciole(dati);
     if (bc) area.appendChild(bc);
 
-    const file = [...dati.file].sort((a, b) => {   // i libri turni dal più recente, poi gli altri per nome
-        if (a.valido_dal && b.valido_dal && a.valido_dal !== b.valido_dal) return a.valido_dal < b.valido_dal ? 1 : -1;
-        if (a.valido_dal && !b.valido_dal) return -1;
-        if (!a.valido_dal && b.valido_dal) return 1;
+    const file = [...dati.file].sort((a, b) => {
+        // Prima i libri turni, ordinati per inizio validità dal più recente al più vecchio.
+        // I documenti generici restano in fondo, in ordine alfabetico.
+        const aTurni = a.categoria === 'turni';
+        const bTurni = b.categoria === 'turni';
+        if (aTurni !== bTurni) return aTurni ? -1 : 1;
+        if (aTurni && bTurni) {
+            const dataA = a.valido_dal || '';
+            const dataB = b.valido_dal || '';
+            if (dataA !== dataB) return dataA < dataB ? 1 : -1;
+        }
         return a.nome.localeCompare(b.nome, 'it', { numeric: true });
     });
 

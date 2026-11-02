@@ -440,8 +440,8 @@ function rigaFile(f, i, inRicerca) {
     if (f.categoria === 'turni') {
         // servizio e validità arrivano dall'analisi del libro (le date degli eventi sono già nel nome del servizio)
         if (f.servizio) sotto += sub(esc(f.servizio));
-        const eventoAuto = (f.servizio || '').startsWith('Evento');
-        if (f.periodo_testo && !eventoAuto) sotto += sub(esc(f.periodo_testo));
+        // se il nome è dedotto dalle date (es. "Evento 2–12 settembre 2026") ripeterle sarebbe inutile
+        if (f.periodo_testo && !f.servizio_dedotto) sotto += sub(esc(f.periodo_testo));
         else if (!f.periodo_testo && f.valido_dal) sotto += sub(`dal ${esc(dmy(f.valido_dal))}`);
         if (a && a.stato === 'in_coda') sotto += sub(`<i class="fa-regular fa-clock"></i> In coda per l'analisi${a.posizione ? ' (n. ' + a.posizione + ')' : ''}`);
         else if (a && a.stato === 'in_corso') sotto += sub(`<i class="fa-solid fa-circle-notch fa-spin"></i> Analisi in corso…`);

@@ -329,7 +329,7 @@
         "icon": "fa-regular fa-folder-open",
         "defaultColor": "#0066cc",
         "conditions": [
-            "admin"
+            "tutti"
         ],
         "excludeConditions": [],
         "isModule": true,

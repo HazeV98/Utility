@@ -612,8 +612,8 @@ async function cicloStato() {
         else if (stato.attesaScansione && stato.scansioneVista) {       // la scansione chiesta con il pulsante è finita
             stato.attesaScansione = false; stato.scansioneVista = false;
             const e = d.scansione.esito || {};
-            let testo = e.nuovi || e.ripresi
-                ? `<i class="fa-solid fa-circle-check" style="color:var(--success, #28a745);"></i> Scansione completata: <b>${e.nuovi || 0}</b> file nuovi (${e.libri || 0} libri turni, ${e.generici || 0} documenti)${e.ripresi ? `, ${e.ripresi} analisi riprese` : ''}.`
+            let testo = e.nuovi || e.ripresi || e.riprovati
+                ? `<i class="fa-solid fa-circle-check" style="color:var(--success, #28a745);"></i> Scansione completata: <b>${e.nuovi || 0}</b> file nuovi (${e.libri || 0} libri turni, ${e.generici || 0} documenti)${e.ripresi ? `, ${e.ripresi} analisi riprese` : ''}${e.riprovati ? `, ${e.riprovati} analisi rifatte` : ''}.`
                 : `<i class="fa-solid fa-circle-check" style="color:var(--success, #28a745);"></i> Scansione completata: nessun file nuovo.`;
             if (e.in_attesa_di_copia) testo += `<br><span class="arc-sub">${e.in_attesa_di_copia} file sono ancora in copia: riprova tra poco.</span>`;
             if (d.scansione.errore) testo = `<i class="fa-solid fa-triangle-exclamation"></i> Scansione non riuscita: ${esc(d.scansione.errore)}`;

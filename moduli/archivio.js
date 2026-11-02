@@ -461,8 +461,14 @@ function rigaFile(f, i, inRicerca) {
     const row = document.createElement('div');
     row.className = 'arc-card arc-card-file';
     row.style.animationDelay = `${Math.min(i, 10) * 0.04}s`;
+    
+    // -- CACHE BUSTER --
+    const cacheBuster = '&t=' + (a && a.completata ? new Date(a.completata).getTime() : new Date(f.modificato).getTime());
+    const linkFile = API_URL + f.url + cacheBuster;
+    const linkAnalisi = a && a.pdf_url ? API_URL + a.pdf_url + cacheBuster : '';
+
     row.innerHTML = `
-        <a class="arc-main" href="${esc(API_URL + f.url)}" target="_blank" rel="noopener">
+        <a class="arc-main" href="${esc(linkFile)}" target="_blank" rel="noopener">
             <i class="${icona}" style="color: ${colore}; font-size: 20px; flex-shrink: 0;"></i>
             <span class="arc-testo">
                 <span class="arc-nome">${esc(nomeVisibile(f.nome))}</span>
@@ -475,9 +481,9 @@ function rigaFile(f, i, inRicerca) {
             ${stato.admin ? BTN_GESTISCI : ''}
         </div>`;
 
-    row.querySelector('[data-azione="scarica"]').addEventListener('click', () => scarica(API_URL + f.url, f.nome));
+    row.querySelector('[data-azione="scarica"]').addEventListener('click', () => scarica(linkFile, f.nome));
     const bi = row.querySelector('[data-azione="info"]');
-    if (bi) bi.addEventListener('click', () => window.open(API_URL + a.pdf_url, '_blank', 'noopener'));
+    if (bi) bi.addEventListener('click', () => window.open(linkAnalisi, '_blank', 'noopener'));
     const bg = row.querySelector('[data-azione="gestisci"]');
     if (bg) bg.addEventListener('click', () => apriGestione('file', f));
     return row;
@@ -661,7 +667,7 @@ async function riempiSelectCartelle(sel, selezionata) {
     sel.innerHTML = `<option value="">Carico le cartelle…</option>`;
     const cartelle = await elencoCartelle();
     // la radice nel menu vale "/" (il valore vuoto resta per "Carico le cartelle…")
-    sel.innerHTML = cartelle.map((c) => `<option value="${esc(c.path || '/')}">${'\u00A0\u00A0'.repeat(c.livello)}${c.livello ? '↳ ' : ''}${esc(c.nome)}</option>`).join('');
+    sel.innerHTML = cartelle.map((c) => `<option value="${esc(c.path || '/')}">${'  '.repeat(c.livello)}${c.livello ? '↳ ' : ''}${esc(c.nome)}</option>`).join('');
     const voluta = selezionata || '/';
     sel.value = cartelle.some((c) => (c.path || '/') === voluta) ? voluta : '/';
 }
@@ -801,7 +807,7 @@ async function inviaUpload() {
         apriCartella(r.voce && r.voce.path ? genitoreDi(r.voce.path) : stato.path, true);   // il file compare subito nell'elenco
         const ok = '<i class="fa-solid fa-circle-check" style="color:var(--success, #28a745);"></i> ';
         mostraProgresso(100, tipo === 'turni'
-            ? `${ok}Libro caricato. L'analisi parte da sola (se ce ne sono altre va in coda): servizio e validità vengono letti dal libro e li vedi nell'elenco.`
+            ? `${ok}Libro caricato. L\'analisi parte da sola (se ce ne sono altre va in coda): servizio e validità vengono letti dal libro e li vedi nell\'elenco.`
             : `${ok}Documento caricato.`, { fine: true, etichettaBottone: 'Chiudi' });
         el('arc-fine').onclick = () => chiudiUpload();
         if (tipo === 'turni') avviaPolling();

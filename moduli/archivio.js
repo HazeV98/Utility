@@ -58,6 +58,10 @@ export function initUIArchivio() {
         @keyframes arcIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
         .arc-card { display: flex; align-items: center; gap: 2px; flex-shrink: 0; border: 1px solid var(--border-color, #e2e8f0); border-radius: 12px; background: var(--surface, #ffffff); padding-right: 6px; animation: arcIn .3s ease both; }
         .arc-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 11px 6px 11px 14px; text-decoration: none; color: var(--text-main, #1e293b); }
+        /* Nei documenti le azioni stanno su una riga separata, in basso a destra. */
+        .arc-card-file { flex-direction: column; align-items: stretch; gap: 0; padding: 4px 6px 4px 0; }
+        .arc-card-file .arc-main { width: 100%; box-sizing: border-box; padding: 8px 4px 5px 14px; }
+        .arc-file-actions { display: flex; align-items: center; justify-content: flex-end; gap: 2px; align-self: flex-end; }
         .arc-testo { flex: 1; min-width: 0; word-break: break-word; }
         .arc-nome { display: block; font-size: 15px; font-weight: 600; }
         .arc-sub { display: block; font-size: 12px; font-weight: 400; color: var(--text-muted, #64748b); margin-top: 2px; }
@@ -448,7 +452,7 @@ function rigaFile(f, i, inRicerca) {
     if (inRicerca) sotto += sub(`<i class="fa-regular fa-folder"></i> ${esc(percorsoLeggibile(f.genitore))}`);
 
     const row = document.createElement('div');
-    row.className = 'arc-card';
+    row.className = 'arc-card arc-card-file';
     row.style.animationDelay = `${Math.min(i, 10) * 0.04}s`;
     row.innerHTML = `
         <a class="arc-main" href="${esc(API_URL + f.url)}" target="_blank" rel="noopener">
@@ -458,9 +462,11 @@ function rigaFile(f, i, inRicerca) {
                 ${sotto}
             </span>
         </a>
-        <button class="arc-ico" data-azione="scarica" title="Scarica documento" aria-label="Scarica documento"><i class="fa-solid fa-download"></i></button>
-        ${info}
-        ${stato.admin ? BTN_GESTISCI : ''}`;
+        <div class="arc-file-actions">
+            <button class="arc-ico" data-azione="scarica" title="Scarica documento" aria-label="Scarica documento"><i class="fa-solid fa-download"></i></button>
+            ${info}
+            ${stato.admin ? BTN_GESTISCI : ''}
+        </div>`;
 
     row.querySelector('[data-azione="scarica"]').addEventListener('click', () => scarica(API_URL + f.url, f.nome));
     const bi = row.querySelector('[data-azione="info"]');

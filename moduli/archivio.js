@@ -1,9 +1,11 @@
 // ==========================================
 // ARCHIVIO - JS MODULE (file unico: interfaccia + logica)
 // Gestore file dell'archivio sul server (data/archivio): si apre direttamente sulle cartelle, che si creano da qui.
-// Tutti possono sfogliare, cercare, aprire e scaricare. Solo l'admin vede in alto i tasti per creare una cartella
-// e per caricare un documento (generico, oppure file turni che il server analizza e a cui allega il PDF dei risultati),
-// e su ogni riga il tasto per modificare, spostare o eliminare.
+// Tutti possono sfogliare, cercare, aprire e scaricare. Solo l'admin vede in alto i tre puntini: aprono una finestrella con
+// le funzioni admin (cerca file nuovi, nuova cartella, carica documento, selezione multipla), e su ogni riga il tasto
+// per modificare, spostare o eliminare.
+// Selezione multipla (solo admin): si scelgono cartelle e file e, dalla barra in basso, si eliminano oppure si rifà
+// l'analisi dei libri turni (per le cartelle scelte vale per tutti i libri turni che contengono).
 // Come in bateolive.js l'admin si riconosce dal ruolo "admin" nel profilo (collezione utenti).
 //
 // Uso (come documenti.js + ui_documenti.js, ma in un file solo):
@@ -19,7 +21,8 @@ const API = `${API_URL}/api/v1/archivio`;
 const RADICE = '';                      // la radice è l'archivio stesso (data/archivio)
 
 const stato = { path: RADICE, admin: false, auth: null, timer: null, richiesta: 0, uploadAttivo: null, pollJob: null, timerRicerca: null, gestito: null, caricato: false,
-    polling: false, timerStato: null, eraAttivo: false, finale: null, ultimoStato: null, attesaScansione: false, scansioneVista: false };
+    polling: false, timerStato: null, eraAttivo: false, finale: null, ultimoStato: null, attesaScansione: false, scansioneVista: false,
+    selezione: false, scelti: new Map(), visibili: [], operazione: false };
 
 // ---------------------------------------------------------------- interfaccia (finestre)
 export function initUIArchivio() {
@@ -69,6 +72,25 @@ export function initUIArchivio() {
         .arc-sub.warn { color: #b45309; }
         .arc-ico { flex: 0 0 auto; width: 38px; height: 38px; border: none; border-radius: 50%; background: transparent; color: var(--primary, #00529b); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .arc-ico:active { background: rgba(0, 82, 155, 0.12); }
+        /* Finestrella delle funzioni admin (tre puntini): overlay trasparente, il menu si posiziona sotto il tasto */
+        .arc-overlay.arc-overlay-menu { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 0; }
+        .arc-menu { position: absolute; min-width: 240px; max-width: calc(100vw - 24px); background: var(--surface, #ffffff); color: var(--text-main, #1e293b); border: 1px solid var(--border-color, #e2e8f0); border-radius: 14px; padding: 6px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); box-sizing: border-box; animation: arcIn .15s ease both; }
+        .arc-menu button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 12px; border: none; border-radius: 10px; background: transparent; color: var(--text-main, #1e293b); font: inherit; font-size: 15px; font-weight: 600; text-align: left; cursor: pointer; }
+        .arc-menu button:active { background: rgba(0, 82, 155, 0.12); }
+        .arc-menu button i { width: 18px; text-align: center; color: var(--primary, #00529b); }
+        .arc-menu button:disabled { opacity: .45; cursor: default; }
+
+        /* Selezione multipla */
+        .arc-casella { flex: 0 0 auto; width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--border-color, #cbd5e1); display: flex; align-items: center; justify-content: center; font-size: 11px; color: transparent; transition: .15s; }
+        .arc-casella.on { background: var(--primary, #00529b); border-color: var(--primary, #00529b); color: #ffffff; }
+        .arc-card-sel { user-select: none; -webkit-user-select: none; }
+        .arc-card-sel.scelta { border-color: var(--primary, #00529b); background: rgba(0, 82, 155, 0.06); }
+        .arc-card-sel .arc-file-actions { display: none; }
+        .arc-card-file.arc-card-sel .arc-main { padding-bottom: 8px; }
+        .arc-ico:disabled { opacity: .35; cursor: default; }
+        .arc-selbtn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 8px; border-radius: 10px; border: 1px solid var(--primary, #00529b); background: transparent; color: var(--primary, #00529b); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+        .arc-selbtn.pericolo { border-color: var(--danger, #dc3545); color: var(--danger, #dc3545); }
+        .arc-selbtn:disabled { opacity: .35; cursor: default; }
         #archivio-banner .arc-banner-bar { height: 6px; border-radius: 4px; background: rgba(0, 82, 155, 0.15); overflow: hidden; margin-top: 8px; }
         #archivio-banner .arc-banner-bar > span { display: block; height: 100%; background: var(--primary, #00529b); transition: width .5s ease; }
     </style>
@@ -80,16 +102,10 @@ export function initUIArchivio() {
 
             <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; display:flex; align-items:center; gap:10px;">
                 <i class="fa-solid fa-box-archive"></i> Archivio
-                <!-- solo admin: li mostra archivio_turni.js -->
-                <span id="archivio-admin-btns" style="display:none; margin-left:auto; margin-right:38px; gap:8px; align-items:center;">
-                    <button id="archivio-btn-scansiona" title="Cerca file nuovi nell'archivio" aria-label="Cerca file nuovi nell'archivio" style="width:34px; height:34px; flex-shrink:0; border-radius:50%; border:1px solid var(--primary); background:transparent; color:var(--primary); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
-                        <i class="fa-solid fa-rotate"></i>
-                    </button>
-                    <button id="archivio-btn-cartella" title="Nuova cartella" aria-label="Nuova cartella" style="width:34px; height:34px; flex-shrink:0; border-radius:50%; border:1px solid var(--primary); background:transparent; color:var(--primary); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
-                        <i class="fa-solid fa-folder-plus"></i>
-                    </button>
-                    <button id="archivio-btn-nuovo" title="Carica documento" aria-label="Carica documento" style="width:34px; height:34px; flex-shrink:0; border-radius:50%; border:none; background:var(--primary); color:#ffffff; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
-                        <i class="fa-solid fa-plus"></i>
+                <!-- solo admin: lo mostra impostaPulsanteAdmin. Apre la finestrella con le funzioni admin -->
+                <span id="archivio-admin-btns" style="display:none; margin-left:auto; margin-right:38px; align-items:center;">
+                    <button id="archivio-btn-menu" title="Funzioni admin" aria-label="Funzioni admin" aria-haspopup="true" style="width:34px; height:34px; flex-shrink:0; border-radius:50%; border:1px solid var(--primary); background:transparent; color:var(--primary); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
                     </button>
                 </span>
             </h3>
@@ -100,6 +116,18 @@ export function initUIArchivio() {
             </div>
             <div id="archivio-banner" style="display:none; flex-shrink:0; margin: 8px 0 0; padding: 10px 12px; border-radius: 10px; font-size: 13px; line-height: 1.4; background: rgba(0, 82, 155, 0.07); border: 1px solid rgba(0, 82, 155, 0.25); color: var(--text-main);"></div>
             <div id="archivio-content-area" style="flex: 1; overflow-y: auto; padding-right: 5px; display: flex; flex-direction: column; gap: 14px;">
+            </div>
+            <!-- barra della selezione multipla (solo admin, compare in modalità selezione) -->
+            <div id="archivio-sel-bar" style="display:none; flex-shrink:0; flex-direction:column; gap:8px; margin-top:10px; padding:8px 10px 10px; border-radius:12px; border:1px solid var(--border-color); background:var(--surface);">
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <span id="archivio-sel-n" style="flex:1; font-size:14px; font-weight:700; color:var(--text-main);">Tocca per selezionare</span>
+                    <button type="button" class="arc-ico" id="archivio-sel-tutti" title="Seleziona tutto" aria-label="Seleziona tutto"><i class="fa-solid fa-square-check"></i></button>
+                    <button type="button" class="arc-ico" id="archivio-sel-fine" title="Esci dalla selezione" aria-label="Esci dalla selezione" style="color:var(--text-muted);"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="arc-selbtn" id="archivio-sel-analisi"><i class="fa-solid fa-gears"></i> Rifai analisi</button>
+                    <button type="button" class="arc-selbtn pericolo" id="archivio-sel-elimina"><i class="fa-solid fa-trash"></i> Elimina</button>
+                </div>
             </div>
         </div>
     </div>
@@ -199,6 +227,16 @@ export function initUIArchivio() {
             </div>
         </div>
     </div>
+
+    <!-- FINESTRELLA DELLE FUNZIONI ADMIN (tre puntini) -->
+    <div id="archivio-menu-overlay" class="arc-overlay arc-overlay-menu">
+        <div class="arc-menu" id="archivio-menu" role="menu">
+            <button type="button" role="menuitem" id="archivio-mn-seleziona"><i class="fa-solid fa-square-check"></i><span>Seleziona più elementi</span></button>
+            <button type="button" role="menuitem" id="archivio-mn-scansiona"><i class="fa-solid fa-rotate"></i><span>Cerca file nuovi</span></button>
+            <button type="button" role="menuitem" id="archivio-mn-cartella"><i class="fa-solid fa-folder-plus"></i><span>Nuova cartella</span></button>
+            <button type="button" role="menuitem" id="archivio-mn-nuovo"><i class="fa-solid fa-cloud-arrow-up"></i><span>Carica documento</span></button>
+        </div>
+    </div>
     `;
     document.body.insertAdjacentHTML('beforeend', uiHTML);
 }
@@ -244,7 +282,7 @@ async function apiScrivi(metodo, percorso, body) {
     if (token) headers.Authorization = `Bearer ${token}`;
     const r = await fetch(`${API}${percorso}`, { method: metodo, headers, body: body ? JSON.stringify(body) : undefined });
     const dati = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(dati.error || `Errore ${r.status}`);
+    if (!r.ok) { const err = new Error(dati.error || `Errore ${r.status}`); err.status = r.status; throw err; }
     return dati;
 }
 
@@ -285,13 +323,17 @@ export async function avviaMotoreArchivio(db, auth, userData) {
     collegaRicerca();
     collegaGestione();
     collegaUpload();
+    collegaMenu();
+    collegaSelezione();
+    stato.selezione = false; stato.scelti.clear(); stato.visibili = []; stato.operazione = false;
+    aggiornaBarraSelezione();
     impostaPulsanteAdmin();
-    verificaRuoloAdmin(db, userData);   // non blocca la lista: il + compare appena il ruolo è noto
+    verificaRuoloAdmin(db, userData);   // non blocca la lista: i tre puntini compaiono appena il ruolo è noto
     avviaPolling();                     // mostra subito se ci sono analisi in corso
     await apriCartella(RADICE);
 }
 
-// Il tasto + compare solo con ruolo "admin" nel profilo (come in bateolive.js).
+// I tre puntini compaiono solo con ruolo "admin" nel profilo (come in bateolive.js).
 async function verificaRuoloAdmin(db, userData) {
     let ruolo = userData && userData.ruolo;
     if (ruolo === undefined && db && stato.auth && stato.auth.currentUser) {
@@ -309,9 +351,36 @@ function impostaPulsanteAdmin() {
     const gruppo = el('archivio-admin-btns');
     if (!gruppo) return;
     gruppo.style.display = stato.admin ? 'flex' : 'none';
-    el('archivio-btn-nuovo').onclick = apriUpload;
-    el('archivio-btn-scansiona').onclick = avviaScansione;
-    el('archivio-btn-cartella').onclick = () => apriGestione('nuova-cartella', { path: stato.path });
+    el('archivio-btn-menu').onclick = apriMenu;
+    if (!stato.admin) chiudiMenu();
+}
+
+// ---------------------------------------------------------------- finestrella delle funzioni admin
+function apriMenu() {
+    if (!stato.admin) return;
+    const ov = el('archivio-menu-overlay'), m = el('archivio-menu'), b = el('archivio-btn-menu');
+    el('archivio-mn-seleziona').querySelector('span').textContent = stato.selezione ? 'Esci dalla selezione' : 'Seleziona più elementi';
+    ov.style.display = 'block';
+    const r = b.getBoundingClientRect();
+    m.style.top = (r.bottom + 6) + 'px';
+    m.style.right = Math.max(12, window.innerWidth - r.right) + 'px';
+}
+
+function chiudiMenu() {
+    const ov = el('archivio-menu-overlay');
+    if (ov) ov.style.display = 'none';
+}
+
+function collegaMenu() {
+    const ov = el('archivio-menu-overlay');
+    if (!ov || ov.dataset.pronto) return;
+    ov.dataset.pronto = '1';
+    ov.addEventListener('click', (ev) => { if (ev.target === ov) chiudiMenu(); });
+    const voce = (id, fn) => { el(id).onclick = () => { chiudiMenu(); fn(); }; };
+    voce('archivio-mn-seleziona', () => (stato.selezione ? esciSelezione() : entraSelezione()));
+    voce('archivio-mn-scansiona', avviaScansione);
+    voce('archivio-mn-cartella', () => apriGestione('nuova-cartella', { path: stato.path }));
+    voce('archivio-mn-nuovo', apriUpload);
 }
 
 // Ricarica quello che si sta vedendo: i risultati della ricerca, oppure la cartella aperta
@@ -364,10 +433,13 @@ function disegna(area, dati) {
         return a.nome.localeCompare(b.nome, 'it', { numeric: true });
     });
 
+    stato.visibili = [...dati.cartelle.filter((c) => !c.protetta).map((c) => datiSelezione(c, true)), ...file.map((f) => datiSelezione(f, false))];
+    aggiornaBarraSelezione();
+
     if (!dati.cartelle.length && !file.length) {
         const vuoto = document.createElement('div');
         vuoto.className = 'status-message';
-        const msg = dati.path === '' ? (stato.admin ? 'L\'archivio è vuoto. Crea la prima cartella con il pulsante in alto, oppure copia i file nella cartella dell\'archivio sul server: li trova da solo.' : 'L\'archivio è vuoto.') : 'Nessun documento in questa cartella.';
+        const msg = dati.path === '' ? (stato.admin ? 'L\'archivio è vuoto. Crea la prima cartella dal menu (tre puntini) in alto, oppure copia i file nella cartella dell\'archivio sul server: li trova da solo.' : 'L\'archivio è vuoto.') : 'Nessun documento in questa cartella.';
         vuoto.innerHTML = `<i class="fa-regular fa-folder-open" style="font-size:32px; color:var(--text-muted);"></i> ${msg}`;
         area.appendChild(vuoto);
         return;
@@ -403,25 +475,41 @@ function briciole(dati) {
 }
 
 const analisiAttiva = (f) => !!(f.analisi && (f.analisi.stato === 'in_coda' || f.analisi.stato === 'in_corso'));
+const BTN_APRI = `<button class="arc-ico" data-azione="apri" title="Apri cartella" aria-label="Apri cartella"><i class="fa-solid fa-chevron-right"></i></button>`;
+const CASELLA = (on) => `<span class="arc-casella${on ? ' on' : ''}"><i class="fa-solid fa-check"></i></span>`;
 const BTN_GESTISCI = `<button class="arc-ico" data-azione="gestisci" title="Gestisci" aria-label="Gestisci"><i class="fa-solid fa-ellipsis-vertical"></i></button>`;
 const sub = (html, classe = '') => `<span class="arc-sub ${classe}">${html}</span>`;
 
 function rigaCartella(c, i, inRicerca) {
     const n = c.cartelle + c.file;
+    const inSel = stato.admin && stato.selezione && !c.protetta;     // le cartelle protette non si selezionano
+    const dati = inSel ? datiSelezione(c, true) : null;
     const row = document.createElement('div');
     row.className = 'arc-card';
     row.style.animationDelay = `${Math.min(i, 10) * 0.04}s`;
     row.innerHTML = `
         <a class="arc-main" href="#">
+            ${inSel ? CASELLA(stato.scelti.has(c.path)) : ''}
             <i class="fa-solid fa-folder" style="color: #f59e0b; font-size: 20px; flex-shrink: 0;"></i>
             <span class="arc-testo">
                 <span class="arc-nome">${esc(c.nome)}</span>
                 ${sub(`${n === 0 ? 'Vuota' : n === 1 ? '1 elemento' : n + ' elementi'}${inRicerca ? ' · in ' + esc(percorsoLeggibile(c.genitore)) : ''}`)}
             </span>
-            <i class="fa-solid fa-chevron-right" style="color: var(--text-muted); font-size: 12px;"></i>
+            ${inSel ? '' : '<i class="fa-solid fa-chevron-right" style="color: var(--text-muted); font-size: 12px;"></i>'}
         </a>
-        ${stato.admin && !c.protetta ? BTN_GESTISCI : ''}`;
-    row.querySelector('a').addEventListener('click', (ev) => { ev.preventDefault(); azzeraRicerca(); apriCartella(c.path); });
+        ${inSel ? BTN_APRI : (stato.admin && !c.protetta ? BTN_GESTISCI : '')}`;
+    if (inSel) {
+        row.classList.add('arc-card-sel');
+        row.dataset.path = c.path;
+        if (stato.scelti.has(c.path)) row.classList.add('scelta');
+    }
+    row.querySelector('a').addEventListener('click', (ev) => {
+        ev.preventDefault();
+        if (inSel) return commutaSelezione(row, dati);       // in selezione il tocco sceglie, per entrare c'è la freccia
+        azzeraRicerca(); apriCartella(c.path);
+    });
+    const ap = row.querySelector('[data-azione="apri"]');
+    if (ap) ap.addEventListener('click', () => { azzeraRicerca(); apriCartella(c.path); });
     const g = row.querySelector('[data-azione="gestisci"]');
     if (g) g.addEventListener('click', () => apriGestione('cartella', c));
     return row;
@@ -458,6 +546,8 @@ function rigaFile(f, i, inRicerca) {
     }
     if (inRicerca) sotto += sub(`<i class="fa-regular fa-folder"></i> ${esc(percorsoLeggibile(f.genitore))}`);
 
+    const inSel = stato.admin && stato.selezione;
+    const dati = inSel ? datiSelezione(f, false) : null;
     const row = document.createElement('div');
     row.className = 'arc-card arc-card-file';
     row.style.animationDelay = `${Math.min(i, 10) * 0.04}s`;
@@ -469,6 +559,7 @@ function rigaFile(f, i, inRicerca) {
 
     row.innerHTML = `
         <a class="arc-main" href="${esc(linkFile)}" target="_blank" rel="noopener">
+            ${inSel ? CASELLA(stato.scelti.has(f.path)) : ''}
             <i class="${icona}" style="color: ${colore}; font-size: 20px; flex-shrink: 0;"></i>
             <span class="arc-testo">
                 <span class="arc-nome">${esc(nomeVisibile(f.nome))}</span>
@@ -481,6 +572,12 @@ function rigaFile(f, i, inRicerca) {
             ${stato.admin ? BTN_GESTISCI : ''}
         </div>`;
 
+    if (inSel) {
+        row.classList.add('arc-card-sel');
+        row.dataset.path = f.path;
+        if (stato.scelti.has(f.path)) row.classList.add('scelta');
+        row.querySelector('a.arc-main').addEventListener('click', (ev) => { ev.preventDefault(); commutaSelezione(row, dati); });
+    }
     row.querySelector('[data-azione="scarica"]').addEventListener('click', () => scarica(linkFile, f.nome));
     const bi = row.querySelector('[data-azione="info"]');
     if (bi) bi.addEventListener('click', () => window.open(linkAnalisi, '_blank', 'noopener'));
@@ -547,6 +644,8 @@ async function eseguiRicerca(q, silenzioso) {
 function disegnaRisultati(area, q, dati) {
     stato.caricato = true;
     area.innerHTML = '';
+    stato.visibili = dati.risultati.filter((r) => !(r.tipo === 'cartella' && r.protetta)).map((r) => datiSelezione(r, r.tipo === 'cartella'));
+    aggiornaBarraSelezione();
     if (!dati.risultati.length) {
         area.innerHTML = `<div class="status-message"><i class="fa-solid fa-magnifying-glass" style="font-size:28px; color:var(--text-muted);"></i> Nessun risultato per «${esc(q)}».</div>`;
         return;
@@ -636,7 +735,7 @@ async function cicloStato() {
 
 async function avviaScansione() {
     if (!stato.admin) return;
-    const b = el('archivio-btn-scansiona');
+    const b = el('archivio-mn-scansiona');
     b.disabled = true;
     try {
         const d = await apiScrivi('POST', '/scansiona');
@@ -819,6 +918,199 @@ function erroreUpload(msg) {
     el('arc-progresso').style.display = 'none';
     el('arc-form').style.display = '';
     mostraErroreUpload(msg);
+}
+
+// ---------------------------------------------------------------- selezione multipla (solo admin)
+// In modalità selezione il tocco su una riga la sceglie (le cartelle si aprono con la freccia a destra).
+// La scelta resta anche cambiando cartella. Dalla barra in basso: elimina, oppure rifai l'analisi dei libri turni.
+const datiSelezione = (x, eCartella) => (eCartella
+    ? { path: x.path, nome: x.nome, tipo: 'cartella' }
+    : { path: x.path, nome: x.nome, tipo: 'file', turni: x.categoria === 'turni' && x.estensione === '.pdf' });
+
+function commutaSelezione(row, voce) {
+    const on = !stato.scelti.has(voce.path);
+    if (on) stato.scelti.set(voce.path, voce); else stato.scelti.delete(voce.path);
+    row.classList.toggle('scelta', on);
+    const c = row.querySelector('.arc-casella');
+    if (c) c.classList.toggle('on', on);
+    aggiornaBarraSelezione();
+}
+
+function sincronizzaRighe() {
+    document.querySelectorAll('#archivio-content-area .arc-card[data-path]').forEach((row) => {
+        const on = stato.scelti.has(row.dataset.path);
+        row.classList.toggle('scelta', on);
+        const c = row.querySelector('.arc-casella');
+        if (c) c.classList.toggle('on', on);
+    });
+}
+
+function aggiornaBarraSelezione() {
+    const bar = el('archivio-sel-bar');
+    if (!bar) return;
+    bar.style.display = stato.selezione && stato.admin ? 'flex' : 'none';
+    const n = stato.scelti.size;
+    el('archivio-sel-n').textContent = n === 0 ? 'Tocca per selezionare' : n === 1 ? '1 selezionato' : `${n} selezionati`;
+    el('archivio-sel-analisi').disabled = n === 0 || stato.operazione;
+    el('archivio-sel-elimina').disabled = n === 0 || stato.operazione;
+    el('archivio-sel-tutti').disabled = stato.operazione;
+    const tutti = stato.visibili.length > 0 && stato.visibili.every((v) => stato.scelti.has(v.path));
+    el('archivio-sel-tutti').title = tutti ? 'Deseleziona tutto' : 'Seleziona tutto';
+    el('archivio-sel-tutti').firstElementChild.className = 'fa-solid ' + (tutti ? 'fa-square-minus' : 'fa-square-check');
+}
+
+function entraSelezione() {
+    if (!stato.admin) return;
+    stato.selezione = true;
+    stato.scelti.clear();
+    aggiornaBarraSelezione();
+    aggiorna();                         // ridisegna le righe con le caselle
+}
+
+function esciSelezione() {
+    stato.selezione = false;
+    stato.scelti.clear();
+    aggiornaBarraSelezione();
+    if (stato.caricato) aggiorna();
+}
+
+function selezionaTutti() {
+    const tutti = stato.visibili.length > 0 && stato.visibili.every((v) => stato.scelti.has(v.path));
+    stato.visibili.forEach((v) => { if (tutti) stato.scelti.delete(v.path); else stato.scelti.set(v.path, v); });
+    sincronizzaRighe();
+    aggiornaBarraSelezione();
+}
+
+function collegaSelezione() {
+    const bar = el('archivio-sel-bar');
+    if (!bar || bar.dataset.pronto) return;
+    bar.dataset.pronto = '1';
+    el('archivio-sel-tutti').onclick = selezionaTutti;
+    el('archivio-sel-fine').onclick = () => { if (!stato.operazione) esciSelezione(); };
+    el('archivio-sel-elimina').onclick = eliminaSelezionati;
+    el('archivio-sel-analisi').onclick = rifaiAnalisiSelezionati;
+}
+
+// Se è scelta una cartella e anche qualcosa al suo interno, basta la cartella
+function radiciSelezione() {
+    const voci = [...stato.scelti.values()];
+    const cartelle = voci.filter((v) => v.tipo === 'cartella').map((v) => v.path);
+    return voci.filter((v) => !cartelle.some((c) => v.path.startsWith(c + '/')));
+}
+
+function togliDallaSelezione(path) {
+    [...stato.scelti.keys()].forEach((k) => { if (k === path || k.startsWith(path + '/')) stato.scelti.delete(k); });
+}
+
+// Messaggio nel banner mentre l'operazione va avanti (poi lo sostituisce il riepilogo finale)
+function progressoOperazione(html) {
+    stato.finale = { html: `<i class="fa-solid fa-circle-notch fa-spin"></i> ${html}`, fino: Date.now() + 120000 };
+    disegnaBanner();
+    avviaPolling();
+}
+
+const elencoErrori = (errori) => (errori.length ? `<br><span class="arc-sub err">${errori.slice(0, 3).map(esc).join('<br>')}${errori.length > 3 ? `<br>…e altri ${errori.length - 3}` : ''}</span>` : '');
+const OK_ICO = '<i class="fa-solid fa-circle-check" style="color:var(--success, #28a745);"></i> ';
+const KO_ICO = '<i class="fa-solid fa-triangle-exclamation"></i> ';
+
+async function eliminaSelezionati() {
+    if (!stato.admin || stato.operazione) return;
+    const voci = radiciSelezione();
+    if (!voci.length) return;
+    const nCart = voci.filter((v) => v.tipo === 'cartella').length, nFile = voci.length - nCart;
+    const parti = [];
+    if (nFile) parti.push(nFile === 1 ? '1 file' : `${nFile} file`);
+    if (nCart) parti.push(nCart === 1 ? '1 cartella' : `${nCart} cartelle`);
+    let msg = voci.length === 1 ? `Eliminare «${voci[0].nome}»?` : `Eliminare ${parti.join(' e ')}?`;
+    if (nCart) msg += `\nLe cartelle vengono eliminate con tutto il loro contenuto.`;
+    if (nFile) msg += `\nSe un file ha un'analisi allegata, viene eliminata anche quella.`;
+    if (!confirm(msg)) return;
+
+    stato.operazione = true;
+    aggiornaBarraSelezione();
+    let ok = 0;
+    const errori = [];
+    for (const [i, v] of voci.entries()) {
+        progressoOperazione(`Eliminazione: <b>${i + 1} di ${voci.length}</b>`);
+        try {
+            await apiScrivi('DELETE', `/voce?path=${encodeURIComponent(v.path)}${v.tipo === 'cartella' ? '&ricorsivo=1' : ''}`);
+            togliDallaSelezione(v.path);
+            ok++;
+        } catch (e) {
+            errori.push(`${v.nome}: ${e.message}`);
+        }
+    }
+    stato.operazione = false;
+    mostraFinale((ok ? `${OK_ICO}${ok === 1 ? 'Eliminato 1 elemento' : `Eliminati ${ok} elementi`}.` : `${KO_ICO}Nessun elemento eliminato.`) + elencoErrori(errori));
+    if (errori.length) { aggiornaBarraSelezione(); aggiorna(); } else esciSelezione();   // se qualcosa è fallito restano scelti gli elementi rimasti
+}
+
+// Tra gli elementi scelti trova i libri turni (PDF): quelli scelti direttamente e quelli dentro le cartelle scelte
+async function raccogliLibriTurni(voci) {
+    const trovati = new Map();
+    let saltati = 0;
+    const visita = async (path, livello) => {
+        const d = await apiElenco(path);
+        d.file.forEach((f) => { if (f.categoria === 'turni' && f.estensione === '.pdf') trovati.set(f.path, f.nome); });
+        if (livello < 8) for (const c of d.cartelle) await visita(c.path, livello + 1);
+    };
+    for (const v of voci) {
+        if (v.tipo === 'cartella') await visita(v.path, 0);
+        else if (v.turni) trovati.set(v.path, v.nome);
+        else saltati++;
+    }
+    return { libri: [...trovati].map(([path, nome]) => ({ path, nome })), saltati };
+}
+
+async function rifaiAnalisiSelezionati() {
+    if (!stato.admin || stato.operazione) return;
+    const voci = radiciSelezione();
+    if (!voci.length) return;
+    stato.operazione = true;
+    aggiornaBarraSelezione();
+    progressoOperazione('Cerco i libri turni…');
+
+    let libri, saltati;
+    try {
+        ({ libri, saltati } = await raccogliLibriTurni(voci));
+    } catch (e) {
+        stato.operazione = false;
+        aggiornaBarraSelezione();
+        return mostraFinale(`${KO_ICO}Impossibile leggere le cartelle: ${esc(e.message)}`);
+    }
+    if (!libri.length) {
+        stato.operazione = false;
+        aggiornaBarraSelezione();
+        return mostraFinale(`${KO_ICO}Tra gli elementi scelti non ci sono libri turni da analizzare.`);
+    }
+    if (!confirm(`Rifare l'analisi di ${libri.length === 1 ? '«' + libri[0].nome + '»' : libri.length + ' libri turni'}?\nVanno in coda e il server li analizza uno alla volta.`)) {
+        stato.operazione = false;
+        stato.finale = null;
+        disegnaBanner();
+        return aggiornaBarraSelezione();
+    }
+
+    let avviati = 0, giaInCoda = 0;
+    const errori = [];
+    for (const [i, l] of libri.entries()) {
+        progressoOperazione(`Avvio analisi: <b>${i + 1} di ${libri.length}</b>`);
+        try {
+            await apiScrivi('POST', `/analizza?path=${encodeURIComponent(l.path)}`);
+            avviati++;
+        } catch (e) {
+            if (e.status === 409) giaInCoda++;         // già in coda o in corso
+            else errori.push(`${l.nome}: ${e.message}`);
+        }
+    }
+    stato.operazione = false;
+    let html = avviati ? `${OK_ICO}Analisi in coda per ${avviati === 1 ? '1 libro' : avviati + ' libri'}.` : `${KO_ICO}Nessuna analisi avviata.`;
+    const note = [];
+    if (giaInCoda) note.push(giaInCoda === 1 ? '1 era già in coda o in corso' : `${giaInCoda} erano già in coda o in corso`);
+    if (saltati) note.push(saltati === 1 ? '1 elemento scelto non è un libro turni' : `${saltati} elementi scelti non sono libri turni`);
+    if (note.length) html += `<br><span class="arc-sub">${note.join(' · ')}.</span>`;
+    mostraFinale(html + elencoErrori(errori));
+    if (errori.length) { aggiornaBarraSelezione(); aggiorna(); } else esciSelezione();
+    avviaPolling();
 }
 
 // ---------------------------------------------------------------- gestione (solo admin)

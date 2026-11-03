@@ -12,7 +12,9 @@ import {
 } from "./turni-core.js"; // va importato sempre con questo stesso percorso (vedi turni-core.js)
 
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js"; // stessa versione del calendario: così le istanze sono compatibili
-const API_URL = 'https://utilitybe.homeserver.foo';
+// Due backend separati (cartelle BateoLive-backend e Utility-backend), ognuno col proprio indirizzo
+const API_URL = 'https://bateolivebe.homeserver.foo';              // BateoLive: mappa, utenti live, storico, webcam, percorsi (/api/v1/percorso)
+const API_TURNI_URL = 'https://utilitybe.homeserver.foo';   // Utility: turni e corse dei turni (/api/v1/turno, /api/v1/corsa)
 let globalBoats = [];
 // Posizioni simulate dall'orario (corse non rilevate dal GPS): disattivate di base, la scelta resta salvata
 let bvMostraSimulate = (() => { try { return localStorage.getItem('bv_mostra_simulate') === '1'; } catch (e) { return false; } })();
@@ -2983,7 +2985,7 @@ async function turnoDelGiorno(dStr, forzato = null) {
     if (BLOCCA_SE_VARIANTI && haVarianti(datiTurni, dStr)) { esito.stato = 'varianti'; return esito; }
 
     try {
-        const urlTurno = (cod) => `${API_URL}/api/v1/turno?codice=${encodeURIComponent(cod)}&data=${encodeURIComponent(dStr)}`;
+        const urlTurno = (cod) => `${API_TURNI_URL}/api/v1/turno?codice=${encodeURIComponent(cod)}&data=${encodeURIComponent(dStr)}`;
         let dati;
         try {
             dati = await fetchJson(urlTurno(codice));
@@ -3076,7 +3078,7 @@ async function datiCorsa(act, data) {
         linea: act.linea, data: data,
         partenza_min: act.partenza_min, arrivo_min: act.arrivo_min, da: act.da, a: act.a
     });
-    return fetchJson(`${API_URL}/api/v1/corsa?${params}`);
+    return fetchJson(`${API_TURNI_URL}/api/v1/corsa?${params}`);
 }
 
 async function datiPercorso(corsa) {

@@ -225,6 +225,20 @@
         "splitModule": true
     },
     {
+        "id": "archivio",
+        "label": "Archivio",
+        "icon": "fa-regular fa-folder-open",
+        "defaultColor": "#0066cc",
+        "conditions": [
+            "tutti"
+        ],
+        "excludeConditions": [],
+        "isModule": true,
+        "moduleId": "archivio",
+        "moduleName": "archivio",
+        "splitModule": false
+    },
+    {
         "id": "storie",
         "label": "Bacheca Utility",
         "icon": "fa-solid fa-book",
@@ -320,21 +334,6 @@
         "isModule": true,
         "moduleId": "controllo_turni",
         "moduleName": "controllo_turni",
-        "splitModule": false,
-        "folder": "Altre funzioni"
-    },
-    {
-        "id": "archivio",
-        "label": "Archivio",
-        "icon": "fa-regular fa-folder-open",
-        "defaultColor": "#0066cc",
-        "conditions": [
-            "tutti"
-        ],
-        "excludeConditions": [],
-        "isModule": true,
-        "moduleId": "archivio",
-        "moduleName": "archivio",
         "splitModule": false,
         "folder": "Altre funzioni"
     },

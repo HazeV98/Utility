@@ -212,19 +212,6 @@
         "folder": "Orari"
     },
     {
-        "id": "documenti",
-        "label": "Documenti",
-        "icon": "fa-solid fa-file-lines",
-        "defaultColor": "#6f42c1",
-        "conditions": [
-            "tutti"
-        ],
-        "isModule": true,
-        "moduleId": "documenti",
-        "moduleName": "documenti",
-        "splitModule": true
-    },
-    {
         "id": "archivio",
         "label": "Archivio",
         "icon": "fa-regular fa-folder-open",

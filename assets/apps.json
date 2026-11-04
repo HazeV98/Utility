@@ -215,7 +215,7 @@
         "id": "archivio",
         "label": "Archivio",
         "icon": "fa-regular fa-folder-open",
-        "defaultColor": "#0066cc",
+        "defaultColor": "#6f42c1",
         "conditions": [
             "tutti"
         ],

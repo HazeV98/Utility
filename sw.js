@@ -1,4 +1,4 @@
-const CACHE_NAME = 'utility-app-v112';
+const CACHE_NAME = 'utility-app-v113';
 
 // Elenco completo dei file dell'app basato su mappa_file.json
 const PRECACHE_ASSETS = [

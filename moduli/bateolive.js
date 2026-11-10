@@ -2942,7 +2942,7 @@ async function aggiornaNomiCanali() {
 // ==========================================
 // Soglia di zoom dei segnali: ce n'è uno ogni ~25 m e i canali vicini ne mettono tanti sullo schermo, quindi serve più zoom delle fermate bus.
 // A zoom 17.5 sono circa 0,6 m per pixel (~40 px tra due segnali sullo stesso canale); più bassa e i segnalini si sovrappongono.
-const BV_ZOOM_SEGNALI = 17.5;
+const BV_ZOOM_SEGNALI = 16.8;
 const BV_MAX_SEGNALI = 800;
 let segnaliLayer = null;
 const segnaliDisegnati = new Map();   // id -> { m: segnalino nero, h: maniglia di spostamento (solo in modifica), trascinando }

@@ -19,6 +19,7 @@ const API_TURNI_URL = 'https://utilitybe.homeserver.foo';   // Utility: turni e 
 // ---------- Limiti di velocità nei canali (da /api/limiti/<profilo>, vedi limiti.js del backend) ----------
 // Il confronto posizione/canale si fa qui, a ogni punto GPS: nessuna richiesta al server oltre al download iniziale.
 const LIMITI_PROFILO = 'actv';   // 'normale' = limiti ordinari, 'actv' = limiti in deroga per ACTV
+let bvLimitiDati = null; // dati grezzi dei limiti: servono anche alle etichette dei nomi dei canali
 let bvLimiti = null, bvLimitiInCorso = false, bvLimitiTentativo = 0, bvLimiteMostrato = null;
 
 function bvLimitiCostruisci(dati) {
@@ -69,7 +70,7 @@ function caricaLimitiVelocita() {
     bvLimitiInCorso = true; bvLimitiTentativo = Date.now();
     fetch(API_URL + '/api/limiti/' + LIMITI_PROFILO)
         .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-        .then(d => { bvLimiti = bvLimitiCostruisci(d); })
+        .then(d => { bvLimitiDati = d; bvLimiti = bvLimitiCostruisci(d); })
         .catch(e => console.warn('Limiti di velocità non disponibili:', e.message))
         .finally(() => { bvLimitiInCorso = false; });
 }
@@ -126,6 +127,26 @@ let hiddenActvUnitNames = new Set();
 // Livelli Mappa e Stile
 let baseOSM, baseSat, nauticLayer;
 let currentMapMode = 0; // 0: Base, 1: Satellitare
+
+// Opzioni della mappa (finestra "Stile mappa"): salvate sul dispositivo e riapplicate alle aperture successive
+const BV_OPZ_CHIAVE = 'bv_opzioni_mappa';
+const BV_OPZ_DEFAULT = { nautico: true, cam: true, canali: false, briccole: false };
+const opzMappa = (() => {
+    let o = {};
+    try { o = JSON.parse(localStorage.getItem(BV_OPZ_CHIAVE) || '{}') || {}; } catch (e) { /* si parte dai valori di base */ }
+    const r = {};
+    for (const k of Object.keys(BV_OPZ_DEFAULT)) r[k] = typeof o[k] === 'boolean' ? o[k] : (k === 'briccole' ? null : BV_OPZ_DEFAULT[k]);   // briccole: senza scelta salvata vale il ruolo (acceso per admin e collab-mappe, spento per gli altri)
+    return r;
+})();
+
+// Segnali (briccole): elenco dal server (data/segnali.json). Li vedono tutti se attivano "Info briccole"; li modifica solo chi ha ruolo admin o collab-mappe.
+let segnali = [];
+let segnaliCaricati = false;
+let segnaliInCaricamento = false;
+let segnaliPuoModificare = false;   // ruolo admin o collab-mappe
+let segnaliModifica = false;        // modalità modifica (matita)
+let segnaliAggiungi = false;        // tasto + premuto: il prossimo tocco sulla mappa crea un segnale
+let segnaliInModifica = null;       // id del segnale nella scheda di modifica
 
 // Variabili GPS, Identità e Unità Personalizzata
 let watchId = null;
@@ -330,6 +351,53 @@ export function initUIBateoLive() {
         .bv-cam-coord > div { flex: 1; min-width: 0; }
         .bv-cam-secondario { background: transparent; border: 1px solid var(--bv-border); color: var(--bv-text); padding: 9px; width: 100%; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 4px; }
         .bv-cam-errore { color: var(--bv-danger); font-size: 13px; margin-top: 10px; }
+
+        /* ---------- Stile mappa e opzioni ---------- */
+        .bv-stile-scelte { display: flex; gap: 10px; margin-bottom: 14px; flex-shrink: 0; }
+        .bv-stile-opz { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px; border-radius: 12px; border: 2px solid var(--bv-border); background: var(--bv-fill); color: var(--bv-text); font-size: 13px; font-weight: 700; cursor: pointer; }
+        .bv-stile-opz i { font-size: 20px; color: var(--bv-muted); }
+        .bv-stile-opz.active { border-color: var(--bv-primary); background: var(--bv-tint); color: var(--bv-primary); }
+        .bv-stile-opz.active i { color: var(--bv-primary); }
+        .bv-opz { border-top: 1px solid var(--bv-border); padding-top: 4px; overflow-y: auto; min-height: 0; }
+        .bv-opz > summary { cursor: pointer; padding: 10px 2px; font-size: 14px; font-weight: 700; color: var(--bv-text); list-style: none; display: flex; align-items: center; justify-content: space-between; }
+        .bv-opz > summary::-webkit-details-marker { display: none; }
+        .bv-opz > summary::after { content: ''; width: 7px; height: 7px; border-right: 2px solid var(--bv-muted); border-bottom: 2px solid var(--bv-muted); transform: rotate(45deg); margin: -3px 4px 0 0; transition: transform 0.2s; }
+        .bv-opz[open] > summary::after { transform: rotate(-135deg); margin-top: 3px; }
+        .bv-opz-riga { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 2px; font-size: 14px; color: var(--bv-text); cursor: pointer; }
+        .bv-opz-riga[hidden] { display: none; }
+        .bv-opz-dx { display: flex; align-items: center; gap: 12px; }
+        .bv-opz-pdf { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--bv-border); background: var(--bv-fill); color: var(--bv-danger); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+        .bv-opz-pdf:disabled { opacity: 0.5; }
+        .bv-sw { position: relative; width: 42px; height: 24px; flex-shrink: 0; display: inline-block; }
+        .bv-sw input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+        .bv-sw i { position: absolute; inset: 0; border-radius: 12px; background: var(--bv-border); transition: background 0.2s; pointer-events: none; }
+        .bv-sw i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s; }
+        .bv-sw input:checked + i { background: var(--bv-primary); }
+        .bv-sw input:checked + i::after { transform: translateX(18px); }
+
+        /* ---------- Nomi dei canali ---------- */
+        .bv-canale-lbl { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%) rotate(var(--marker-rotation, 0deg)); white-space: nowrap; pointer-events: none; font-size: 11px; font-weight: 700; font-style: italic; color: #0b3c6e; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 5px #fff, 0 0 5px #fff; }
+        .bv-tiles-sat-attivo .bv-canale-lbl { color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 5px #000; }
+
+        /* ---------- Segnali (briccole) ---------- */
+        .bv-fab.bv-verde { background: #16a34a; border-color: #16a34a; color: #fff; }
+        .bv-fab.bv-seg-add { background: #111; border-color: #111; color: #fff; }
+        .bv-fab.bv-seg-add.active { background: var(--bv-primary); border-color: var(--bv-primary); }
+        .bv-seg-dot-wrap { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .bv-seg-dot { width: 13px; height: 13px; border-radius: 50%; background: #000; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+        .bv-seg-maniglia { width: 34px; height: 34px; border-radius: 50%; background: var(--bv-surface); color: var(--bv-primary); border: 2px solid var(--bv-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; font-size: 15px; cursor: grab; touch-action: none; transform: rotate(var(--marker-rotation, 0deg)); }
+        .bv-seg-badge { width: 26px; height: 26px; border-radius: 50%; background: #000; flex-shrink: 0; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+        .bv-seg-riga { display: flex; justify-content: space-between; gap: 12px; padding: 11px 2px; border-bottom: 1px solid var(--bv-border); font-size: 14px; color: var(--bv-text); }
+        .bv-seg-riga span { color: var(--bv-muted); }
+        .bv-seg-note { margin-top: 12px; font-size: 13px; line-height: 1.45; color: var(--bv-text); white-space: pre-wrap; word-break: break-word; }
+        .bv-seg-corpo { overflow-y: auto; min-height: 0; padding: 2px 2px 0; }
+        .bv-seg-sel { display: flex; border: 1px solid var(--bv-border); border-radius: 10px; overflow: hidden; }
+        .bv-seg-sel button { flex: 1; padding: 10px 4px; border: none; border-right: 1px solid var(--bv-border); background: var(--bv-fill); color: var(--bv-text); font-size: 13px; font-weight: 600; cursor: pointer; }
+        .bv-seg-sel button:last-child { border-right: none; }
+        .bv-seg-sel button.active { background: var(--bv-primary); color: #fff; }
+        .bv-modal input[type="number"], .bv-modal textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--bv-border); background: var(--bv-fill); color: var(--bv-text); box-sizing: border-box; outline: none; font-size: 14px; font-family: inherit; }
+        .bv-modal textarea { resize: vertical; min-height: 70px; }
+        .bv-modal input[type="number"]:focus, .bv-modal textarea:focus { border-color: var(--bv-primary); box-shadow: 0 0 0 3px var(--bv-tint); }
         .bv-fab-s { font-weight: 800; font-size: 19px; line-height: 1; font-family: inherit; }
         /* Unità simulata dall'orario (non rilevata dal GPS): contorno blu e badge S */
         .bv-boat-sim { position: relative; border: 2.5px solid #2f81f7; box-shadow: 0 0 0 2px rgba(47, 129, 247, 0.35), 0 2px 8px rgba(0,0,0,0.45); }
@@ -739,7 +807,7 @@ export function initUIBateoLive() {
             <div id="bv-fab-nav" class="bv-fab active" onclick="toggleBvNavigatore()" title="Navigatore turno" style="display: none;">
                 <i class="fa-solid fa-route"></i>
             <span class="bv-fab-lbl">Navigatore</span></div>
-            <div id="bv-fab-layers" class="bv-fab" onclick="cambiaStileBvMappa()" title="Cambia stile cartografico">
+            <div id="bv-fab-layers" class="bv-fab" onclick="apriStileMappaModal()" title="Stile mappa e livelli">
                 <i class="fa-solid fa-layer-group"></i>
             <span class="bv-fab-lbl">Stile mappa</span></div>
             <div id="bv-fab-tema" class="bv-fab bv-fab-tema" onclick="toggleBvTema()" role="button" title="Passa al tema scuro" aria-label="Passa al tema scuro">
@@ -762,6 +830,8 @@ export function initUIBateoLive() {
 
         <!-- Zoom mappa: passo fine, tarato per viste da ~250 a ~1000 m davanti -->
         <div class="bv-zoom">
+            <div id="bv-fab-segnali-add" class="bv-fab bv-seg-add" style="display:none" onclick="armaAggiuntaSegnale()" role="button" aria-pressed="false" title="Aggiungi un segnale" aria-label="Aggiungi un segnale"><i class="fa-solid fa-plus"></i></div>
+            <div id="bv-fab-segnali-edit" class="bv-fab" style="display:none" onclick="toggleSegnaliModifica()" role="button" aria-pressed="false" title="Modifica segnali" aria-label="Modifica segnali"><i class="fa-solid fa-pen"></i></div>
             <div id="bv-zoom-in" class="bv-fab" onclick="zoomBvMappa(1)" role="button" aria-label="Avvicina la mappa" title="Zoom +"><i class="fa-solid fa-plus"></i></div>
             <div id="bv-zoom-out" class="bv-fab" onclick="zoomBvMappa(-1)" role="button" aria-label="Allontana la mappa" title="Zoom -"><i class="fa-solid fa-minus"></i></div>
         </div>
@@ -833,6 +903,82 @@ export function initUIBateoLive() {
                 <div id="bv-cam-errore" class="bv-cam-errore" hidden></div>
                 <button type="button" class="bv-modal-btn" id="bv-cam-salva" onclick="bvWebcamSalva()">Salva</button>
                 <button type="button" class="bv-modal-btn error" id="bv-cam-elimina" onclick="bvWebcamElimina()" hidden>Elimina telecamera</button>
+            </div>
+        </div>
+
+        <!-- Stile mappa: base cartografica e opzioni dei livelli -->
+        <div id="bv-stile-modal" class="bv-modal-overlay" onclick="chiudiBateoLiveModals(event)">
+            <div class="bv-modal" onclick="event.stopPropagation()">
+                <h3>Stile mappa</h3>
+                <div class="bv-stile-scelte">
+                    <button type="button" id="bv-stile-0" class="bv-stile-opz" onclick="impostaStileMappa(0)"><i class="fa-solid fa-map"></i><span>OpenStreetMap</span></button>
+                    <button type="button" id="bv-stile-1" class="bv-stile-opz" onclick="impostaStileMappa(1)"><i class="fa-solid fa-satellite"></i><span>Satellitare</span></button>
+                </div>
+                <details class="bv-opz" id="bv-opz-det">
+                    <summary>Opzioni</summary>
+                    <label class="bv-opz-riga"><span>Layer nautico</span><span class="bv-sw"><input type="checkbox" id="bv-opz-nautico" onchange="cambiaOpzioneMappa('nautico', this.checked)"><i></i></span></label>
+                    <label class="bv-opz-riga"><span>Videocamere</span><span class="bv-sw"><input type="checkbox" id="bv-opz-cam" onchange="cambiaOpzioneMappa('cam', this.checked)"><i></i></span></label>
+                    <label class="bv-opz-riga"><span>Nomi canali</span><span class="bv-sw"><input type="checkbox" id="bv-opz-canali" onchange="cambiaOpzioneMappa('canali', this.checked)"><i></i></span></label>
+                    <div class="bv-opz-riga" id="bv-opz-briccole-riga">
+                        <span>Info briccole</span>
+                        <span class="bv-opz-dx">
+                            <button type="button" id="bv-opz-pdf" class="bv-opz-pdf" onclick="bvSegnaliPdf()" title="Scarica il PDF riepilogativo dei segnali" aria-label="Scarica il PDF riepilogativo dei segnali"><i class="fa-solid fa-file-pdf"></i></button>
+                            <label class="bv-sw"><input type="checkbox" id="bv-opz-briccole" onchange="cambiaOpzioneMappa('briccole', this.checked)"><i></i></label>
+                        </span>
+                    </div>
+                </details>
+                <button type="button" class="bv-modal-btn secondario" onclick="chiudiStileMappaModal()">Chiudi</button>
+            </div>
+        </div>
+
+        <!-- Segnali: scheda di modifica (admin e collab-mappe) -->
+        <div id="bv-seg-modal" class="bv-modal-overlay" onclick="chiudiSegnaleModal(event)">
+            <div class="bv-modal" style="max-width: 360px;" onclick="event.stopPropagation()">
+                <h3>Scheda segnale</h3>
+                <div class="bv-seg-corpo">
+                    <div style="margin-bottom: 12px;">
+                        <label class="bv-label" for="bv-seg-canale">Canale</label>
+                        <input type="text" id="bv-seg-canale" list="bv-seg-canali-lista" maxlength="80" autocomplete="off" placeholder="Canale in cui si trova">
+                        <datalist id="bv-seg-canali-lista"></datalist>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label class="bv-label" for="bv-seg-numero">Numero del segnale</label>
+                        <input type="text" id="bv-seg-numero" maxlength="20" autocomplete="off">
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label class="bv-label">Tipo di segnale</label>
+                        <div class="bv-seg-sel" id="bv-seg-tipo">
+                            <button type="button" data-v="palo" onclick="bvSegSel(this)">Palo singolo</button>
+                            <button type="button" data-v="gruppo" onclick="bvSegSel(this)">Gruppo pali</button>
+                            <button type="button" data-v="dama" onclick="bvSegSel(this)">Dama</button>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 12px;" id="bv-seg-pali-wrap" hidden>
+                        <label class="bv-label" for="bv-seg-pali">Numero di pali</label>
+                        <input type="number" id="bv-seg-pali" inputmode="numeric" min="2" max="99" step="1" value="3">
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label class="bv-label">Presente</label>
+                        <div class="bv-seg-sel" id="bv-seg-presente">
+                            <button type="button" data-v="1" onclick="bvSegSel(this)">Sì</button>
+                            <button type="button" data-v="0" onclick="bvSegSel(this)">No</button>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label class="bv-label">Luce</label>
+                        <div class="bv-seg-sel" id="bv-seg-luce">
+                            <button type="button" data-v="1" onclick="bvSegSel(this)">Sì</button>
+                            <button type="button" data-v="0" onclick="bvSegSel(this)">No</button>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 4px;">
+                        <label class="bv-label" for="bv-seg-note">Note</label>
+                        <textarea id="bv-seg-note" maxlength="1000" rows="3"></textarea>
+                    </div>
+                </div>
+                <div id="bv-seg-errore" class="bv-cam-errore" hidden></div>
+                <button type="button" class="bv-modal-btn" id="bv-seg-salva" onclick="bvSegnaleSalva()">Salva</button>
+                <button type="button" class="bv-modal-btn error" id="bv-seg-elimina" onclick="bvSegnaleElimina()">Elimina segnale</button>
             </div>
         </div>
 
@@ -914,7 +1060,17 @@ export function initUIBateoLive() {
     window.toggleBvGPS = toggleBvGPS;
     window.toggleBvCenterMap = toggleBvCenterMap;
     window.toggleBvMapRotation = toggleBvMapRotation;
-    window.cambiaStileBvMappa = cambiaStileBvMappa;
+    window.apriStileMappaModal = apriStileMappaModal;
+    window.chiudiStileMappaModal = chiudiStileMappaModal;
+    window.impostaStileMappa = impostaStileMappa;
+    window.cambiaOpzioneMappa = cambiaOpzioneMappa;
+    window.toggleSegnaliModifica = toggleSegnaliModifica;
+    window.armaAggiuntaSegnale = armaAggiuntaSegnale;
+    window.chiudiSegnaleModal = chiudiSegnaleModal;
+    window.bvSegSel = bvSegSel;
+    window.bvSegnaleSalva = bvSegnaleSalva;
+    window.bvSegnaleElimina = bvSegnaleElimina;
+    window.bvSegnaliPdf = bvSegnaliPdf;
     window.toggleBvNavigatore = toggleBvNavigatore;
     window.toggleBvMenu = toggleBvMenu;
     avviaFabLayout();
@@ -1089,7 +1245,7 @@ export async function avviaMotoreBateoLive(db, auth, userData, isAdmin) {
             zoomControl: false,
             zoomSnap: 0.25,
             zoomDelta: 0.5,
-            layers: [baseOSM, nauticLayer]
+            layers: opzMappa.nautico ? [baseOSM, nauticLayer] : [baseOSM]
         }).setView([45.4371, 12.3326], 13);
         map.on('zoomend zoomlevelschange', aggiornaBvZoomBtn);
         aggiornaBvZoomBtn();
@@ -1114,7 +1270,10 @@ export async function avviaMotoreBateoLive(db, auth, userData, isAdmin) {
         loadStops();
         map.on('moveend', pianificaFermateBus);
         pianificaFermateBus();
+        map.on('moveend', pianificaOverlayMappa);   // nomi canali e segnali: stesso schema delle fermate bus (zoom alto, solo riquadro visibile)
+        map.on('click', (e) => { if (segnaliAggiungi) creaSegnaleInPunto(e.latlng); });
         caricaWebcam();
+        applicaOpzioniMappa();
         fetchAndUpdateBoats();
         fetchInterval = setInterval(() => {
             fetchAndUpdateBoats();
@@ -1144,37 +1303,89 @@ function salvaConfigurazioneUnita() {
     chiudiBateoLiveModals({ target: { classList: { contains: () => true } } });
 }
 
-function cambiaStileBvMappa() {
+let bvMessaggioHudTimer = null;
+function bvMessaggioHud(testo, ms = 2500) {
+    const hud = document.getElementById('bv-hud-status');
+    if (!hud) return;
+    hud.innerText = testo;
+    hud.style.background = "rgba(0, 82, 155, 0.9)";
+    hud.style.display = 'block';
+    clearTimeout(bvMessaggioHudTimer);
+    bvMessaggioHudTimer = setTimeout(() => {
+        if (watchId && !lastValidHeading && document.getElementById('bv-speed-val').textContent === "0.0") {
+            hud.innerText = "Acquisizione GPS...";
+            hud.style.background = "rgba(0,0,0,0.6)";
+        } else {
+            hud.style.display = 'none';
+        }
+    }, ms);
+}
+
+// Finestra "Stile mappa": base (OpenStreetMap / satellitare) e, sotto, le opzioni dei livelli (chiuse di base)
+function apriStileMappaModal() {
     if (!map) return;
-    
-    currentMapMode = (currentMapMode + 1) % 2;
-    const hudStatus = document.getElementById('bv-hud-status');
-    
+    sincronizzaFinestraStile();
+    document.getElementById('bv-stile-modal').classList.add('active');
+    lockBateoLiveMap();
+}
+
+function chiudiStileMappaModal() {
+    chiudiBateoLiveModals({ target: { classList: { contains: () => true } } });
+}
+
+function sincronizzaFinestraStile() {
+    for (const m of [0, 1]) {
+        const b = document.getElementById('bv-stile-' + m);
+        if (b) b.classList.toggle('active', currentMapMode === m);
+    }
+    const set = (id, v) => { const e = document.getElementById(id); if (e) e.checked = !!v; };
+    set('bv-opz-nautico', opzMappa.nautico);
+    set('bv-opz-cam', opzMappa.cam);
+    set('bv-opz-canali', opzMappa.canali);
+    set('bv-opz-briccole', briccoleAttive());
+}
+
+function impostaStileMappa(modo) {
+    if (!map) return;
+    currentMapMode = modo === 1 ? 1 : 0;
     if (map.hasLayer(baseOSM)) map.removeLayer(baseOSM);
     if (map.hasLayer(baseSat)) map.removeLayer(baseSat);
-    
-    if (!map.hasLayer(nauticLayer)) map.addLayer(nauticLayer);
-
-    if (currentMapMode === 0) {
-        map.addLayer(baseOSM);
-        hudStatus.innerText = "Mappa base nautica";
-    } else if (currentMapMode === 1) {
-        map.addLayer(baseSat);
-        hudStatus.innerText = "Mappa Satellitare";
+    map.addLayer(currentMapMode === 0 ? baseOSM : baseSat);
+    if (opzMappa.nautico) {
+        if (!map.hasLayer(nauticLayer)) map.addLayer(nauticLayer);
+        nauticLayer.bringToFront();
     }
-    
-    if (map.hasLayer(nauticLayer)) nauticLayer.bringToFront();
+    const root = document.getElementById('modal-bateolive-main');
+    if (root) root.classList.toggle('bv-tiles-sat-attivo', currentMapMode === 1);
+    sincronizzaFinestraStile();
+    bvMessaggioHud(currentMapMode === 0 ? "Mappa base nautica" : "Mappa Satellitare", 2000);
+}
 
-    hudStatus.style.background = "rgba(0, 82, 155, 0.9)";
-    hudStatus.style.display = 'block';
-    setTimeout(() => {
-        if (watchId && !lastValidHeading && document.getElementById('bv-speed-val').textContent === "0.0") {
-            hudStatus.innerText = "Acquisizione GPS...";
-            hudStatus.style.background = "rgba(0,0,0,0.6)";
-        } else {
-            hudStatus.style.display = 'none';
-        }
-    }, 2000);
+function cambiaOpzioneMappa(chiave, valore) {
+    if (!(chiave in BV_OPZ_DEFAULT)) return;
+    opzMappa[chiave] = !!valore;
+    try { localStorage.setItem(BV_OPZ_CHIAVE, JSON.stringify(opzMappa)); } catch (e) { /* senza storage vale solo per questa sessione */ }
+    applicaOpzioniMappa();
+}
+
+// Applica alla mappa le opzioni scelte (all'apertura e a ogni cambio)
+function applicaOpzioniMappa() {
+    if (!map) return;
+    if (opzMappa.nautico) {
+        if (!map.hasLayer(nauticLayer)) map.addLayer(nauticLayer);
+        nauticLayer.bringToFront();
+    } else if (map.hasLayer(nauticLayer)) {
+        map.removeLayer(nauticLayer);
+    }
+    if (!opzMappa.cam) {
+        if (webcamModifica) toggleWebcamModifica(false);
+        if (activeSelection && activeSelection.type === 'webcam') closeBateoLiveDrawer();
+    }
+    const fabCam = document.getElementById('bv-fab-cam-admin');
+    if (fabCam) fabCam.style.display = webcamAdmin && opzMappa.cam ? '' : 'none';
+    disegnaWebcam();
+    aggiornaNomiCanali();
+    aggiornaUiSegnali();
 }
 
 // ---------------------------------------------------------------- etichette e disposizione dei tasti
@@ -1671,6 +1882,7 @@ function chiudiBateoLive() {
     document.getElementById('modal-bateolive-main').style.display = 'none';
     closeBateoLiveDrawer();
     uscitaWebcam();
+    uscitaSegnali();
     if (watchId) navigator.geolocation.clearWatch(watchId);
     document.getElementById('bv-hud-compass').style.display = 'none';
     document.getElementById('bv-hud-speed').style.display = 'none';
@@ -1741,6 +1953,7 @@ function chiudiBateoLiveModals(e) {
     document.getElementById('bv-search-modal').classList.remove('active');
     document.getElementById('bv-filter-modal').classList.remove('active');
     document.getElementById('bv-unit-modal').classList.remove('active');
+    const tmStile = document.getElementById('bv-stile-modal'); if (tmStile) tmStile.classList.remove('active');
     const tmTurno = document.getElementById('bv-turno-modal'); if (tmTurno) tmTurno.classList.remove('active');
     document.getElementById('bv-search-suggestions').classList.remove('active');
 
@@ -2401,13 +2614,14 @@ function apriPlayerWebcam(w) {
 
 function disegnaWebcam() {
     if (!map) return;
-    const ids = new Set(webcams.map(w => w.id));
+    const elenco = opzMappa.cam ? webcams : [];   // opzione "Videocamere" spenta: nessun segnalino
+    const ids = new Set(elenco.map(w => w.id));
     Object.keys(webcamMarkers).forEach(id => {
         if (ids.has(id)) return;
         map.removeLayer(webcamMarkers[id]);
         delete webcamMarkers[id];
     });
-    webcams.forEach(w => {
+    elenco.forEach(w => {
         let m = webcamMarkers[w.id];
         if (!m) {
             m = L.marker([w.lat, w.lon], { icon: iconaWebcam(), zIndexOffset: 300, draggable: webcamModifica, title: w.nome, keyboard: false }).addTo(map);
@@ -2453,9 +2667,12 @@ async function verificaRuoloAdmin(db, userData) {
         } catch (e) { /* senza profilo leggibile niente modifica */ }
     }
     webcamAdmin = ruolo === 'admin';
+    segnaliPuoModificare = ruolo === 'admin' || ruolo === 'collab-mappe';   // stesso criterio per vedere e modificare i segnali
     const fab = document.getElementById('bv-fab-cam-admin');
-    if (fab) fab.style.display = webcamAdmin ? '' : 'none';
+    if (fab) fab.style.display = webcamAdmin && opzMappa.cam ? '' : 'none';
     if (!webcamAdmin && webcamModifica) toggleWebcamModifica(false);
+    sincronizzaFinestraStile();
+    aggiornaUiSegnali();
 }
 
 async function webcamApi(metodo, percorso, body) {
@@ -2592,6 +2809,484 @@ async function salvaPosizioneWebcam(id) {
     } catch (e) {
         m.setLatLng([w.lat, w.lon]);
         alert('Spostamento non salvato: ' + e.message);
+    }
+}
+
+// ==========================================
+// NOMI DEI CANALI
+// Etichette ricavate dai tratti dei limiti di velocità (stessi dati: i nomi sono quelli di limiti_laguna.json).
+// Come le fermate bus: solo con zoom alto e solo nel riquadro visibile.
+// ==========================================
+const BV_ZOOM_NOMI_CANALI = 14;
+const BV_MAX_NOMI_CANALI = 150;
+let nomiCanaliEtichette = null;      // [{ n, lat, lon }]
+let nomiCanaliCaricamento = false;
+let nomiCanaliLayer = null;
+const nomiCanaliDisegnati = new Map();   // indice -> marker
+let overlayMappaTimer = null;
+
+function pianificaOverlayMappa() {
+    clearTimeout(overlayMappaTimer);
+    overlayMappaTimer = setTimeout(() => { aggiornaNomiCanali(); aggiornaSegnaliMappa(); }, 150);
+}
+
+function bvPuntoInAnello(x, y, a) {
+    let dentro = false;
+    for (let i = 0, j = a.length - 1; i < a.length; j = i++) {
+        const xi = a[i][0], yi = a[i][1], xj = a[j][0], yj = a[j][1];
+        if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) dentro = !dentro;
+    }
+    return dentro;
+}
+
+// Un'etichetta per ogni tratto con nome (i tratti piccoli vicini a uno già etichettato con lo stesso nome non ne hanno)
+function costruisciNomiCanali(dati) {
+    const parti = [];
+    for (const c of (dati && dati.canali) || []) {
+        const nome = String(c.n || '').trim();
+        if (!nome) continue;
+        for (const poly of c.g || []) {
+            const ring = poly && poly[0];
+            if (!ring || ring.length < 3) continue;
+            let A = 0, cx = 0, cy = 0, mx = 0, my = 0;
+            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                const f = ring[j][0] * ring[i][1] - ring[i][0] * ring[j][1];
+                A += f; cx += (ring[j][0] + ring[i][0]) * f; cy += (ring[j][1] + ring[i][1]) * f;
+                mx += ring[i][0]; my += ring[i][1];
+            }
+            let lon = NaN, lat = NaN;
+            if (Math.abs(A) > 1e-14) { lon = cx / (3 * A); lat = cy / (3 * A); }
+            if (!Number.isFinite(lon) || !bvPuntoInAnello(lon, lat, ring)) {
+                // baricentro fuori dal tratto (canale curvo): si usa il vertice più vicino alla media dei vertici
+                const ax = mx / ring.length, ay = my / ring.length;
+                let best = ring[0], bd = Infinity;
+                for (const p of ring) { const d = (p[0] - ax) ** 2 + (p[1] - ay) ** 2; if (d < bd) { bd = d; best = p; } }
+                lon = best[0]; lat = best[1];
+            }
+            parti.push({ n: nome, lat, lon, a: Math.abs(A) });
+        }
+    }
+    parti.sort((p, q) => q.a - p.a);   // prima i tratti grandi
+    const perNome = new Map(), out = [];
+    for (const p of parti) {
+        const gia = perNome.get(p.n) || perNome.set(p.n, []).get(p.n);
+        if (gia.some(e => bvDistanzaM(e.lat, e.lon, p.lat, p.lon) < 300)) continue;
+        const e = { n: p.n, lat: p.lat, lon: p.lon };
+        gia.push(e); out.push(e);
+    }
+    return out;
+}
+
+async function aggiornaNomiCanali() {
+    if (!map) return;
+    const visibili = opzMappa.canali && map.getZoom() >= BV_ZOOM_NOMI_CANALI;
+    if (!visibili) {
+        if (nomiCanaliLayer) { nomiCanaliLayer.clearLayers(); nomiCanaliDisegnati.clear(); }
+        return;
+    }
+    if (!nomiCanaliEtichette) {
+        if (nomiCanaliCaricamento) return;
+        nomiCanaliCaricamento = true;
+        try {
+            if (!bvLimitiDati) {
+                const r = await fetch(`${API_URL}/api/limiti/${LIMITI_PROFILO}`);
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                bvLimitiDati = await r.json();
+                if (!bvLimiti) bvLimiti = bvLimitiCostruisci(bvLimitiDati);
+            }
+            nomiCanaliEtichette = costruisciNomiCanali(bvLimitiDati);
+        } catch (e) {
+            console.warn('Nomi dei canali non disponibili:', e.message);
+            return;
+        } finally { nomiCanaliCaricamento = false; }
+        if (!opzMappa.canali) return;
+    }
+    if (!nomiCanaliLayer) nomiCanaliLayer = L.layerGroup().addTo(map);
+    const area = map.getBounds().pad(0.25), tieni = map.getBounds().pad(0.6);
+    for (const [k, m] of nomiCanaliDisegnati) {
+        if (!tieni.contains(m.getLatLng())) { nomiCanaliLayer.removeLayer(m); nomiCanaliDisegnati.delete(k); }
+    }
+    for (let i = 0; i < nomiCanaliEtichette.length; i++) {
+        if (nomiCanaliDisegnati.size >= BV_MAX_NOMI_CANALI) break;
+        const e = nomiCanaliEtichette[i];
+        if (nomiCanaliDisegnati.has(i) || !area.contains([e.lat, e.lon])) continue;
+        const icona = L.divIcon({ html: `<span class="bv-canale-lbl">${bvEsc(e.n)}</span>`, className: '', iconSize: [0, 0] });
+        const m = L.marker([e.lat, e.lon], { icon: icona, interactive: false, keyboard: false, zIndexOffset: -500 }).addTo(nomiCanaliLayer);
+        nomiCanaliDisegnati.set(i, m);
+    }
+}
+
+// ==========================================
+// SEGNALI (BRICCOLE)
+// Segnalini neri sopra quelli cartografici. L'elenco sta sul server (data/segnali.json).
+// Compaiono con "Info briccole" attivo (di base acceso per admin e collab-mappe, spento per gli altri; la scelta resta salvata), con la stessa regola di zoom delle fermate bus
+// e solo nel riquadro visibile, perché possono diventare molti.
+// ==========================================
+const BV_MAX_SEGNALI = 800;
+let segnaliLayer = null;
+const segnaliDisegnati = new Map();   // id -> { m: segnalino nero, h: maniglia di spostamento (solo in modifica), trascinando }
+
+function briccoleAttive() { return typeof opzMappa.briccole === 'boolean' ? opzMappa.briccole : segnaliPuoModificare; }
+function zoomSegnaliOk() { return !!map && map.getZoom() >= BV_ZOOM_FERMATE_BUS; }   // stessa soglia delle fermate bus
+
+const TIPI_SEGNALE = { palo: 'Palo singolo', gruppo: 'Gruppo pali', dama: 'Dama' };
+const etichettaTipoSegnale = (t) => TIPI_SEGNALE[t] || TIPI_SEGNALE.palo;
+
+async function caricaSegnali() {
+    if (segnaliInCaricamento) return;
+    segnaliInCaricamento = true;
+    try {
+        const r = await fetch(`${API_URL}/api/segnali`);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const lista = await r.json();
+        if (!Array.isArray(lista)) throw new Error('risposta non valida');
+        segnali = lista;
+        segnaliCaricati = true;
+        aggiornaSegnaliMappa();
+    } catch (e) {
+        console.warn('Segnali non disponibili:', e.message);
+    } finally { segnaliInCaricamento = false; }
+}
+
+// Mostra o nasconde matita e +, cambia l'aspetto della matita, ridisegna i segnalini
+function aggiornaUiSegnali() {
+    const attive = briccoleAttive();
+    if ((!attive || !segnaliPuoModificare) && (segnaliModifica || segnaliAggiungi)) {
+        segnaliModifica = false;
+        disarmaAggiuntaSegnale();
+        chiudiSegnaleModal();
+        svuotaSegnaliMappa();
+    }
+    if (!attive && activeSelection && activeSelection.type === 'segnale') closeBateoLiveDrawer();
+    const edit = document.getElementById('bv-fab-segnali-edit'), add = document.getElementById('bv-fab-segnali-add');
+    if (edit) {
+        edit.style.display = attive && segnaliPuoModificare ? '' : 'none';
+        edit.classList.toggle('bv-verde', segnaliModifica);
+        edit.setAttribute('aria-pressed', segnaliModifica ? 'true' : 'false');
+        edit.title = segnaliModifica ? 'Esci dalla modifica dei segnali' : 'Modifica segnali';
+        edit.innerHTML = segnaliModifica ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-pen"></i>';
+    }
+    if (add) {
+        add.style.display = attive && segnaliPuoModificare && segnaliModifica ? '' : 'none';
+        add.classList.toggle('active', segnaliAggiungi);
+        add.setAttribute('aria-pressed', segnaliAggiungi ? 'true' : 'false');
+    }
+    if (attive && !segnaliCaricati) caricaSegnali();
+    aggiornaSegnaliMappa();
+    aggiornaFabLayout();
+}
+
+function toggleSegnaliModifica(forza) {
+    if ((!briccoleAttive() || !segnaliPuoModificare) && forza !== false) return;
+    segnaliModifica = typeof forza === 'boolean' ? forza : !segnaliModifica;
+    if (!segnaliModifica) {
+        disarmaAggiuntaSegnale();
+        chiudiSegnaleModal();
+        if (activeSelection && activeSelection.type === 'segnale') closeBateoLiveDrawer();
+    }
+    svuotaSegnaliMappa();   // si ridisegnano con (o senza) la maniglia di spostamento
+    aggiornaUiSegnali();
+}
+
+function uscitaSegnali() {
+    if (segnaliModifica) toggleSegnaliModifica(false);
+    disarmaAggiuntaSegnale();
+    chiudiSegnaleModal();
+    segnaliCaricati = false;   // alla prossima apertura si rilegge l'elenco
+}
+
+function armaAggiuntaSegnale() {
+    if (!segnaliModifica || !map) return;
+    if (segnaliAggiungi) { disarmaAggiuntaSegnale(); aggiornaUiSegnali(); return; }
+    if (!zoomSegnaliOk()) { bvMessaggioHud('Avvicinati di più per aggiungere un segnale', 3000); return; }
+    segnaliAggiungi = true;
+    map.getContainer().style.cursor = 'crosshair';
+    bvMessaggioHud('Tocca la mappa per posizionare il segnale', 3500);
+    aggiornaUiSegnali();
+}
+
+function disarmaAggiuntaSegnale() {
+    if (!segnaliAggiungi) return;
+    segnaliAggiungi = false;
+    if (map) map.getContainer().style.cursor = '';
+}
+
+async function creaSegnaleInPunto(ll) {
+    if (!segnaliAggiungi || !segnaliModifica) return;
+    disarmaAggiuntaSegnale();
+    aggiornaUiSegnali();
+    try {
+        const nuovo = await webcamApi('POST', '/api/segnali', {
+            lat: ll.lat, lon: ll.lng, canale: '', numero: '', tipo: 'palo', pali: null, presente: true, luce: false, note: ''
+        });
+        segnali.push(nuovo);
+        aggiornaSegnaliMappa();
+    } catch (e) {
+        alert('Segnale non aggiunto: ' + e.message);
+    }
+}
+
+function iconaSegnale() {
+    return L.divIcon({ html: '<div class="bv-seg-dot-wrap"><div class="bv-seg-dot"></div></div>', className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
+}
+
+// La maniglia sta alla stessa posizione geografica del segnale ma è disegnata spostata di un tratto fisso in alto a destra
+// (ancora negativa): si trascina lei e il dito non copre il segnalino.
+function iconaManigliaSegnale() {
+    return L.divIcon({ html: '<div class="bv-seg-maniglia"><i class="fa-solid fa-up-down-left-right"></i></div>', className: '', iconSize: [34, 34], iconAnchor: [-12, 46] });
+}
+
+function rimuoviSegnaleDisegnato(id) {
+    const o = segnaliDisegnati.get(id);
+    if (!o) return;
+    if (segnaliLayer) { segnaliLayer.removeLayer(o.m); if (o.h) segnaliLayer.removeLayer(o.h); }
+    segnaliDisegnati.delete(id);
+}
+
+function svuotaSegnaliMappa() {
+    if (segnaliLayer) segnaliLayer.clearLayers();
+    segnaliDisegnati.clear();
+}
+
+function creaMarkerSegnale(s) {
+    const titolo = `${etichettaTipoSegnale(s.tipo)}${s.numero ? ' n. ' + s.numero : ''}`;
+    const m = L.marker([s.lat, s.lon], { icon: iconaSegnale(), zIndexOffset: 250, keyboard: false, title: titolo }).addTo(segnaliLayer);
+    m.on('click', () => {
+        const c = segnali.find(x => x.id === s.id);
+        if (!c) return;
+        if (segnaliModifica) apriFormSegnale(c.id); else apriSchedaSegnale(c);
+    });
+    const o = { m, h: null, trascinando: false };
+    if (segnaliModifica) {
+        const h = L.marker([s.lat, s.lon], { icon: iconaManigliaSegnale(), zIndexOffset: 260, draggable: true, keyboard: false, title: 'Trascina per spostare' }).addTo(segnaliLayer);
+        h.on('dragstart', () => { o.trascinando = true; });
+        h.on('drag', () => m.setLatLng(h.getLatLng()));
+        h.on('dragend', () => { o.trascinando = false; salvaPosizioneSegnale(s.id); });
+        o.h = h;
+    }
+    segnaliDisegnati.set(s.id, o);
+}
+
+function aggiornaSegnaliMappa() {
+    if (!map) return;
+    if (!segnaliLayer) segnaliLayer = L.layerGroup().addTo(map);
+    if (!briccoleAttive() || !zoomSegnaliOk()) {
+        if (segnaliDisegnati.size) svuotaSegnaliMappa();
+        return;
+    }
+    const perId = new Map(segnali.map(s => [s.id, s]));
+    const area = map.getBounds().pad(0.25), tieni = map.getBounds().pad(0.6);
+    for (const [id, o] of segnaliDisegnati) {
+        const s = perId.get(id);
+        if (!s || (!o.trascinando && !tieni.contains([s.lat, s.lon]))) { rimuoviSegnaleDisegnato(id); continue; }
+        if (!o.trascinando) { o.m.setLatLng([s.lat, s.lon]); if (o.h) o.h.setLatLng([s.lat, s.lon]); }
+    }
+    for (const s of segnali) {
+        if (segnaliDisegnati.size >= BV_MAX_SEGNALI) break;
+        if (segnaliDisegnati.has(s.id) || !area.contains([s.lat, s.lon])) continue;
+        creaMarkerSegnale(s);
+    }
+}
+
+// Segnalino spostato con la maniglia: si salva la nuova posizione; se il server rifiuta torna dov'era
+async function salvaPosizioneSegnale(id) {
+    const o = segnaliDisegnati.get(id), s = segnali.find(x => x.id === id);
+    if (!o || !o.h || !s) return;
+    const p = o.h.getLatLng();
+    try {
+        const salvato = await webcamApi('PUT', `/api/segnali/${encodeURIComponent(id)}`, { lat: p.lat, lon: p.lng });
+        Object.assign(s, salvato);
+    } catch (e) {
+        o.m.setLatLng([s.lat, s.lon]);
+        o.h.setLatLng([s.lat, s.lon]);
+        alert('Spostamento non salvato: ' + e.message);
+    }
+}
+
+// Scheda in sola lettura (fuori dalla modalità modifica)
+function apriSchedaSegnale(s) {
+    activeSelection = { type: 'segnale', id: s.id };
+    const riga = (k, v) => `<div class="bv-seg-riga"><span>${k}</span><b>${v}</b></div>`;
+    const html = riga('Canale', bvEsc(s.canale) || '—')
+        + riga('Numero', bvEsc(s.numero) || '—')
+        + riga('Tipo', bvEsc(etichettaTipoSegnale(s.tipo)))
+        + (s.tipo === 'gruppo' ? riga('Numero di pali', bvEsc(s.pali)) : '')
+        + riga('Presente', s.presente ? 'Sì' : 'No')
+        + riga('Luce', s.luce ? 'Sì' : 'No')
+        + (s.note ? `<div class="bv-seg-note">${bvEsc(s.note)}</div>` : '');
+    openBateoLiveDrawer(`${etichettaTipoSegnale(s.tipo)}${s.numero ? ' n. ' + s.numero : ''}`, html, { badge: '<span class="bv-seg-badge"></span>', sub: s.canale || 'Segnale' });
+}
+
+// ---- scheda di modifica ----
+function valoreSegSel(id) {
+    const a = document.querySelector(`#${id} button.active`);
+    return a ? a.dataset.v : null;
+}
+
+function impostaSegSel(id, v) {
+    document.querySelectorAll(`#${id} button`).forEach(b => b.classList.toggle('active', b.dataset.v === String(v)));
+}
+
+function aggiornaPaliVisibili() {
+    const w = document.getElementById('bv-seg-pali-wrap');
+    if (w) w.hidden = valoreSegSel('bv-seg-tipo') !== 'gruppo';
+}
+
+function bvSegSel(btn) {
+    const gruppo = btn.parentElement;
+    gruppo.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+    if (gruppo.id === 'bv-seg-tipo') {
+        const pali = document.getElementById('bv-seg-pali');
+        if (btn.dataset.v === 'gruppo' && pali && !String(pali.value).trim()) pali.value = '3';   // di base 3 pali
+        aggiornaPaliVisibili();
+    }
+}
+
+function apriFormSegnale(id) {
+    const s = segnali.find(x => x.id === id);
+    if (!s) return;
+    segnaliInModifica = s.id;
+    document.getElementById('bv-seg-canale').value = s.canale || '';
+    document.getElementById('bv-seg-numero').value = s.numero || '';
+    impostaSegSel('bv-seg-tipo', s.tipo || 'palo');
+    document.getElementById('bv-seg-pali').value = s.pali || 3;
+    impostaSegSel('bv-seg-presente', s.presente ? '1' : '0');
+    impostaSegSel('bv-seg-luce', s.luce ? '1' : '0');
+    document.getElementById('bv-seg-note').value = s.note || '';
+    // suggerimenti per il campo canale: nomi già usati nei segnali e nomi dei canali della laguna
+    const nomi = new Set(segnali.map(x => x.canale).filter(Boolean));
+    if (nomiCanaliEtichette) nomiCanaliEtichette.forEach(e => nomi.add(e.n));
+    document.getElementById('bv-seg-canali-lista').innerHTML = [...nomi].sort((a, b) => a.localeCompare(b, 'it')).map(n => `<option value="${bvEsc(n)}"></option>`).join('');
+    aggiornaPaliVisibili();
+    document.getElementById('bv-seg-errore').hidden = true;
+    document.getElementById('bv-seg-modal').classList.add('active');
+    lockBateoLiveMap();
+}
+
+function chiudiSegnaleModal(e) {
+    if (e && e.target && e.target.classList && !e.target.classList.contains('bv-modal-overlay')) return;
+    const m = document.getElementById('bv-seg-modal');
+    if (!m || !m.classList.contains('active')) return;
+    m.classList.remove('active');
+    segnaliInModifica = null;
+    unlockBateoLiveMap();
+}
+
+function mostraErroreSegnale(msg) {
+    const el = document.getElementById('bv-seg-errore');
+    el.textContent = msg;
+    el.hidden = false;
+}
+
+async function bvSegnaleSalva() {
+    if (!segnaliInModifica) return;
+    const id = segnaliInModifica;
+    const tipo = valoreSegSel('bv-seg-tipo') || 'palo';
+    const body = {
+        canale: document.getElementById('bv-seg-canale').value,
+        numero: document.getElementById('bv-seg-numero').value,
+        tipo,
+        pali: tipo === 'gruppo' ? Number(document.getElementById('bv-seg-pali').value) : null,
+        presente: valoreSegSel('bv-seg-presente') !== '0',
+        luce: valoreSegSel('bv-seg-luce') === '1',
+        note: document.getElementById('bv-seg-note').value
+    };
+    const btn = document.getElementById('bv-seg-salva');
+    btn.disabled = true;
+    document.getElementById('bv-seg-errore').hidden = true;
+    try {
+        const salvato = await webcamApi('PUT', `/api/segnali/${encodeURIComponent(id)}`, body);
+        const i = segnali.findIndex(x => x.id === salvato.id);
+        if (i >= 0) segnali[i] = salvato; else segnali.push(salvato);
+        const o = segnaliDisegnati.get(id);
+        if (o) o.m.options.title = `${etichettaTipoSegnale(salvato.tipo)}${salvato.numero ? ' n. ' + salvato.numero : ''}`;
+        chiudiSegnaleModal();
+        aggiornaSegnaliMappa();
+    } catch (e) {
+        mostraErroreSegnale(e.message);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function bvSegnaleElimina() {
+    if (!segnaliInModifica || !confirm('Eliminare questo segnale?')) return;
+    const id = segnaliInModifica;
+    try {
+        await webcamApi('DELETE', `/api/segnali/${encodeURIComponent(id)}`);
+        segnali = segnali.filter(x => x.id !== id);
+        rimuoviSegnaleDisegnato(id);
+        chiudiSegnaleModal();
+    } catch (e) {
+        mostraErroreSegnale(e.message);
+    }
+}
+
+// ---- PDF riepilogativo: Canale / tipo + numero / info ----
+async function bvSegnaliPdf() {
+    const btn = document.getElementById('bv-opz-pdf');
+    if (btn) btn.disabled = true;
+    try {
+        try { // elenco fresco dal server (si usa quello in memoria se non risponde)
+            const r = await fetch(`${API_URL}/api/segnali`);
+            if (r.ok) { const l = await r.json(); if (Array.isArray(l)) { segnali = l; segnaliCaricati = true; } }
+        } catch (e) { /* resta l'elenco già caricato */ }
+        if (!segnali.length) { alert('Non ci sono ancora segnali da esportare.'); return; }
+        if (!(window.jspdf && window.jspdf.jsPDF)) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+        const { jsPDF } = window.jspdf;
+        const pulisci = (t) => String(t == null ? '' : t).replace(/[^\x20-\x7E\u00A0-\u00FF\n]/g, '').trim();   // i font base del PDF non hanno emoji e simboli esotici
+        const confronta = (a, b) => String(a).localeCompare(String(b), 'it', { numeric: true, sensitivity: 'base' });
+
+        const gruppi = new Map();
+        for (const s of segnali) {
+            const c = pulisci(s.canale) || 'non indicato';
+            (gruppi.get(c) || gruppi.set(c, []).get(c)).push(s);
+        }
+        const canali = [...gruppi.keys()].sort((a, b) => (a === 'non indicato') - (b === 'non indicato') || confronta(a, b));
+
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        const W = 210, M = 15, MAXY = 282, LARG = W - 2 * M;
+        let y = 20;
+        const salto = (h) => { if (y + h > MAXY) { doc.addPage(); y = 20; } };
+
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(17);
+        doc.text('Segnali - Info briccole', M, y); y += 7;
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(110);
+        doc.text(`Aggiornato al ${new Date().toLocaleDateString('it-IT')} - ${segnali.length} segnali`, M, y); y += 9;
+        doc.setTextColor(0);
+
+        for (const canale of canali) {
+            salto(22);
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+            doc.text(`Canale ${canale}`, M, y);
+            doc.setDrawColor(180); doc.line(M, y + 1.8, W - M, y + 1.8);
+            y += 8;
+            const lista = gruppi.get(canale).slice().sort((a, b) => confronta(a.numero || '', b.numero || ''));
+            for (const s of lista) {
+                const righe = [];
+                righe.push(`Presente: ${s.presente ? 'Sì' : 'No'}   Luce: ${s.luce ? 'Sì' : 'No'}${s.tipo === 'gruppo' ? `   Pali: ${s.pali}` : ''}`);
+                const note = pulisci(s.note);
+                if (note) righe.push(...doc.setFont('helvetica', 'normal').setFontSize(9.5).splitTextToSize(`Note: ${note}`, LARG - 4));
+                salto(7 + righe.length * 4.6 + 3);
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5);
+                doc.text(`${etichettaTipoSegnale(s.tipo)} numero ${pulisci(s.numero) || '-'}`, M + 2, y); y += 5.2;
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+                for (const r of righe) { doc.text(r, M + 4, y); y += 4.6; }
+                y += 3;
+            }
+            y += 3;
+        }
+
+        const n = doc.getNumberOfPages();
+        for (let p = 1; p <= n; p++) {
+            doc.setPage(p); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(130);
+            doc.text(`Pagina ${p} di ${n}`, W - M, 291, { align: 'right' });
+        }
+        doc.save(`segnali-briccole-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (e) {
+        alert('PDF non creato: ' + e.message);
+    } finally {
+        if (btn) btn.disabled = false;
     }
 }
 

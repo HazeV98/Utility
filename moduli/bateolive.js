@@ -935,11 +935,13 @@ export function initUIBateoLive() {
         <div id="bv-seg-modal" class="bv-modal-overlay" onclick="chiudiSegnaleModal(event)">
             <div class="bv-modal" style="max-width: 360px;" onclick="event.stopPropagation()">
                 <h3>Scheda segnale</h3>
-                <div class="bv-seg-corpo">
+                <div class="bv-seg-corpo" onfocusin="if (event.target.id !== 'bv-seg-canale') bvSegCanaleChiudi()">
                     <div style="margin-bottom: 12px;">
                         <label class="bv-label" for="bv-seg-canale">Canale</label>
-                        <input type="text" id="bv-seg-canale" list="bv-seg-canali-lista" maxlength="80" autocomplete="off" placeholder="Canale in cui si trova">
-                        <datalist id="bv-seg-canali-lista"></datalist>
+                        <div class="bv-search-container">
+                            <input type="text" id="bv-seg-canale" maxlength="80" autocomplete="off" placeholder="Canale in cui si trova" oninput="bvSegCanaleSuggerisci()" onfocus="bvSegCanaleSuggerisci()">
+                            <div id="bv-seg-canale-sugg" class="bv-suggestions-dropdown"></div>
+                        </div>
                     </div>
                     <div style="margin-bottom: 12px;">
                         <label class="bv-label" for="bv-seg-numero">Numero del segnale</label>
@@ -1068,6 +1070,9 @@ export function initUIBateoLive() {
     window.armaAggiuntaSegnale = armaAggiuntaSegnale;
     window.chiudiSegnaleModal = chiudiSegnaleModal;
     window.bvSegSel = bvSegSel;
+    window.bvSegCanaleSuggerisci = bvSegCanaleSuggerisci;
+    window.bvSegCanaleChiudi = bvSegCanaleChiudi;
+    window.bvSegCanaleScegli = bvSegCanaleScegli;
     window.bvSegnaleSalva = bvSegnaleSalva;
     window.bvSegnaleElimina = bvSegnaleElimina;
     window.bvSegnaliPdf = bvSegnaliPdf;
@@ -2919,15 +2924,18 @@ async function aggiornaNomiCanali() {
 // ==========================================
 // SEGNALI (BRICCOLE)
 // Segnalini neri sopra quelli cartografici. L'elenco sta sul server (data/segnali.json).
-// Compaiono con "Info briccole" attivo (di base acceso per admin e collab-mappe, spento per gli altri; la scelta resta salvata), con la stessa regola di zoom delle fermate bus
-// e solo nel riquadro visibile, perché possono diventare molti.
+// Compaiono con "Info briccole" attivo (di base acceso per admin e collab-mappe, spento per gli altri; la scelta resta salvata),
+// solo con zoom alto (BV_ZOOM_SEGNALI) e solo nel riquadro visibile, perché possono diventare molti.
 // ==========================================
+// Soglia di zoom dei segnali: ce n'è uno ogni ~25 m e i canali vicini ne mettono tanti sullo schermo, quindi serve più zoom delle fermate bus.
+// A zoom 17.5 sono circa 0,6 m per pixel (~40 px tra due segnali sullo stesso canale); più bassa e i segnalini si sovrappongono.
+const BV_ZOOM_SEGNALI = 17.5;
 const BV_MAX_SEGNALI = 800;
 let segnaliLayer = null;
 const segnaliDisegnati = new Map();   // id -> { m: segnalino nero, h: maniglia di spostamento (solo in modifica), trascinando }
 
 function briccoleAttive() { return typeof opzMappa.briccole === 'boolean' ? opzMappa.briccole : segnaliPuoModificare; }
-function zoomSegnaliOk() { return !!map && map.getZoom() >= BV_ZOOM_FERMATE_BUS; }   // stessa soglia delle fermate bus
+function zoomSegnaliOk() { return !!map && map.getZoom() >= BV_ZOOM_SEGNALI; }
 
 const TIPI_SEGNALE = { palo: 'Palo singolo', gruppo: 'Gruppo pali', dama: 'Dama' };
 const etichettaTipoSegnale = (t) => TIPI_SEGNALE[t] || TIPI_SEGNALE.palo;
@@ -3153,10 +3161,8 @@ function apriFormSegnale(id) {
     impostaSegSel('bv-seg-presente', s.presente ? '1' : '0');
     impostaSegSel('bv-seg-luce', s.luce ? '1' : '0');
     document.getElementById('bv-seg-note').value = s.note || '';
-    // suggerimenti per il campo canale: nomi già usati nei segnali e nomi dei canali della laguna
-    const nomi = new Set(segnali.map(x => x.canale).filter(Boolean));
-    if (nomiCanaliEtichette) nomiCanaliEtichette.forEach(e => nomi.add(e.n));
-    document.getElementById('bv-seg-canali-lista').innerHTML = [...nomi].sort((a, b) => a.localeCompare(b, 'it')).map(n => `<option value="${bvEsc(n)}"></option>`).join('');
+    bvSegCanaleChiudi();
+    caricaNomiCanaliNoti();   // nomi per i suggerimenti del campo canale
     aggiornaPaliVisibili();
     document.getElementById('bv-seg-errore').hidden = true;
     document.getElementById('bv-seg-modal').classList.add('active');
@@ -3169,7 +3175,56 @@ function chiudiSegnaleModal(e) {
     if (!m || !m.classList.contains('active')) return;
     m.classList.remove('active');
     segnaliInModifica = null;
+    bvSegCanaleChiudi();
     unlockBateoLiveMap();
+}
+
+// ---- suggerimenti per il campo canale: nomi già presenti nei segnali salvati e nomi dei canali della laguna (stessi dati dei limiti) ----
+let nomiCanaliNoti = [];
+async function caricaNomiCanaliNoti() {
+    try {
+        if (!bvLimitiDati) {
+            const r = await fetch(`${API_URL}/api/limiti/${LIMITI_PROFILO}`);
+            if (r.ok) { bvLimitiDati = await r.json(); if (!bvLimiti) bvLimiti = bvLimitiCostruisci(bvLimitiDati); }
+        }
+    } catch (e) { /* restano i nomi dei segnali già salvati */ }
+    const nomi = new Set();
+    for (const c of (bvLimitiDati && bvLimitiDati.canali) || []) { const n = String(c.n || '').trim(); if (n) nomi.add(n); }
+    nomiCanaliNoti = [...nomi];
+}
+
+const bvNormTesto = (t) => String(t == null ? '' : t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+function bvSegCanaleChiudi() {
+    const box = document.getElementById('bv-seg-canale-sugg');
+    if (box) { box.classList.remove('active'); box.innerHTML = ''; }
+}
+
+function bvSegCanaleSuggerisci() {
+    const input = document.getElementById('bv-seg-canale'), box = document.getElementById('bv-seg-canale-sugg');
+    if (!input || !box) return;
+    const q = bvNormTesto(input.value);
+    if (!q) { bvSegCanaleChiudi(); return; }
+    const tutti = new Map();   // nome normalizzato -> nome come scritto (senza doppioni)
+    for (const n of [...segnali.map(x => x.canale), ...nomiCanaliNoti]) {
+        const t = String(n || '').trim();
+        if (t && !tutti.has(bvNormTesto(t))) tutti.set(bvNormTesto(t), t);
+    }
+    const inizio = [], dentro = [];
+    for (const [k, nome] of tutti) {
+        if (k === q) continue;   // già scritto per intero
+        if (k.startsWith(q)) inizio.push(nome); else if (k.includes(q)) dentro.push(nome);
+    }
+    const ordina = (a, b) => a.localeCompare(b, 'it');
+    const lista = [...inizio.sort(ordina), ...dentro.sort(ordina)].slice(0, 8);
+    if (!lista.length) { bvSegCanaleChiudi(); return; }
+    box.innerHTML = lista.map(n => `<div class="bv-suggestion-item" data-n="${bvEsc(n)}" onclick="bvSegCanaleScegli(this)"><i class="fa-solid fa-water bv-sugg-ico"></i><span>${bvEsc(n)}</span></div>`).join('');
+    box.classList.add('active');
+}
+
+function bvSegCanaleScegli(el) {
+    document.getElementById('bv-seg-canale').value = el.dataset.n || '';
+    bvSegCanaleChiudi();
 }
 
 function mostraErroreSegnale(msg) {

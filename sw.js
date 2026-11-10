@@ -13,7 +13,6 @@ const PRECACHE_ASSETS = [
     './moduli/bacheca_turni.js',
     './moduli/bacheca_utility.js',
     './moduli/bateolive.js',
-    './moduli/bateolivelite.js',
     './moduli/barcadvisor.js',
     './moduli/buoni_pasto.js',
     './moduli/calendario.js',

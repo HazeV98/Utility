@@ -411,5 +411,20 @@
         "moduleName": "varianti_admin",
         "splitModule": false,
         "folder": "Admin"
+    },
+    {
+        "id": "vademecum",
+        "label": "Vademecum",
+        "icon": "fa-solid fa-book-open",
+        "defaultColor": "#6f42c1",
+        "conditions": [
+            "admin",
+            "vip"
+        ],
+        "excludeConditions": [],
+        "isModule": true,
+        "moduleId": "vademecum",
+        "moduleName": "vademecum",
+        "splitModule": false
     }
 ]

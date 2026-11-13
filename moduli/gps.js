@@ -16,14 +16,68 @@ import {
     turnoEffettivo, unisciRebecchini, ferieDelGiorno, haVarianti, caricaDatiTurni
 } from "./turni-core.js"; // logica turni condivisa con calendario e dashboard: va importato sempre con questo stesso percorso
 
-// I backend sono separati: turni/corse su Utility, geometrie e limiti nautici su BateoLive.
-const API_TURNI_URL = API_URL;
-const API_BATEOLIVE_URL = 'https://bateolivebe.homeserver.foo';
-const LIMITI_PROFILO = 'actv';
-
 // Nei giorni con varianti di servizio gli orari dei turni possono non valere: come la dashboard,
 // in quei giorni non si carica il turno. Metti false per usare comunque gli orari del libro turni.
 const BLOCCA_SE_VARIANTI = true;
+
+
+// Backend distinti, come in BateoLive: turni/corse su Utility, geometrie e limiti su BateoLive.
+const API_BATEOLIVE_URL = 'https://bateolivebe.homeserver.foo';
+const LIMITI_PROFILO_GPS = 'actv';
+let gpsLimiti = null, gpsLimitiLoading = false, gpsLimitiLastTry = 0, gpsLimiteUltimo = null, gpsLimiteUltimoTs = 0;
+
+function costruisciIndiceLimitiGPS(dati) {
+    const CELLA = 0.01;
+    const inAnello = (x, y, anello) => {
+        let dentro = false;
+        for (let i = 0, j = anello.length - 1; i < anello.length; j = i++) {
+            const xi = anello[i][0], yi = anello[i][1], xj = anello[j][0], yj = anello[j][1];
+            if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) dentro = !dentro;
+        }
+        return dentro;
+    };
+    const inPoligono = (x, y, poly) => inAnello(x, y, poly[0]) && !poly.slice(1).some(anello => inAnello(x, y, anello));
+    const parti = [], griglia = new Map();
+    for (const c of (dati && dati.canali) || []) for (const poly of (c.g || [])) {
+        if (!poly || !poly[0] || !poly[0].length) continue;
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const pt of poly[0]) { x0 = Math.min(x0, pt[0]); x1 = Math.max(x1, pt[0]); y0 = Math.min(y0, pt[1]); y1 = Math.max(y1, pt[1]); }
+        const idx = parti.push({ b: [x0, y0, x1, y1], poly, v: Number(c.v) || 0, n: String(c.n || '') }) - 1;
+        for (let ix = Math.floor(x0 / CELLA); ix <= Math.floor(x1 / CELLA); ix++)
+            for (let iy = Math.floor(y0 / CELLA); iy <= Math.floor(y1 / CELLA); iy++) {
+                const k = ix + ',' + iy;
+                if (!griglia.has(k)) griglia.set(k, []);
+                griglia.get(k).push(idx);
+            }
+    }
+    return (lat, lon, now) => {
+        const candidati = griglia.get(Math.floor(lon / CELLA) + ',' + Math.floor(lat / CELLA)) || [];
+        let migliore = null, senzaLimite = null;
+        for (const i of candidati) {
+            const p = parti[i];
+            if (lon < p.b[0] || lon > p.b[2] || lat < p.b[1] || lat > p.b[3] || !inPoligono(lon, lat, p.poly)) continue;
+            if (p.v <= 0) { if (!senzaLimite) senzaLimite = { limite: 0, nome: p.n }; continue; }
+            if (!migliore || p.v < migliore.limite) migliore = { limite: p.v, nome: p.n };
+        }
+        const r = migliore || senzaLimite;
+        if (r) { gpsLimiteUltimo = r; gpsLimiteUltimoTs = now; return r; }
+        return gpsLimiteUltimo && now - gpsLimiteUltimoTs < 10000 ? gpsLimiteUltimo : null;
+    };
+}
+
+function caricaLimitiGPS() {
+    if (gpsLimiti || gpsLimitiLoading || Date.now() - gpsLimitiLastTry < 60000) return;
+    gpsLimitiLoading = true; gpsLimitiLastTry = Date.now();
+    fetch(`${API_BATEOLIVE_URL}/api/limiti/${LIMITI_PROFILO_GPS}`)
+        .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+        .then(d => { gpsLimiti = costruisciIndiceLimitiGPS(d); })
+        .catch(e => console.warn('GPS: limiti di velocità non disponibili:', e.message))
+        .finally(() => { gpsLimitiLoading = false; });
+}
+
+function formattaCoordinateGPS(lat, lon) {
+    return `${Math.abs(lat).toFixed(5)}° ${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(5)}° ${lon >= 0 ? 'E' : 'W'}`;
+}
 
 
 // --- parametri della navigazione
@@ -332,11 +386,13 @@ export function initUIGPS() {
         #gps-delay-val.presto { color: #d97706; }
         #gps-delay-val.puntuale { color: var(--success, #10b981); }
         #gps-delay-val.spento { color: var(--text-muted); opacity: 0.5; }
+        .gps-channel-info { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md, 12px); background: var(--surface); text-align: center; }
+        .gps-limit-sign { width: 42px; height: 42px; border: 4px solid #d3151c; border-radius: 50%; background: #fff; color: #111; display: inline-flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 900; line-height: 1; box-sizing: border-box; flex: none; }
+        .gps-limit-sign[hidden] { display: none !important; }
+        .gps-channel-name { font-size: 14px; font-weight: 800; color: var(--text-main); }
+        .gps-channel-name[hidden] { display: none !important; }
+        .gps-coordinates { flex-basis: 100%; font-size: 11px; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
-        .gps-info-pos { text-align:center; font-size:12px; font-weight:700; color:var(--text-muted); line-height:1.5; overflow-wrap:anywhere; }
-        .gps-info-canale { font-size:13px; font-weight:800; color:var(--text-main); }
-        .gps-limite { display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; padding:0 5px; border:3px solid #dc2626; border-radius:50%; background:#fff; color:#111; font-size:15px; font-weight:900; vertical-align:middle; margin-right:7px; box-sizing:border-box; }
-        .gps-limite[hidden] { display:none !important; }
         .gps-act { padding: 4px 0; }
         .gps-act-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; font-weight: 700; color: var(--text-muted); flex-wrap: wrap; }
         .gps-act-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: center; }
@@ -397,9 +453,11 @@ export function initUIGPS() {
                         <div id="gps-delay-label" class="gps-metric-sub">Ritardo / anticipo</div>
                     </div>
                 </div>
-                <div class="gps-info-pos">
-                    <span id="gps-limite" class="gps-limite" hidden></span><span id="gps-canale" class="gps-info-canale"></span>
-                    <div id="gps-coord">Coordinate GPS in attesa…</div>
+
+                <div class="gps-channel-info" aria-live="polite">
+                    <span id="gps-limit" class="gps-limit-sign" hidden aria-label="Limite di velocità"></span>
+                    <span id="gps-channel" class="gps-channel-name" hidden></span>
+                    <span id="gps-coordinates" class="gps-coordinates">In attesa della posizione GPS</span>
                 </div>
 
                 <div id="gps-act-box"></div>
@@ -431,10 +489,9 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     const statusDiv = document.getElementById('gps-status');
     const btnAttiva = document.getElementById('btn-attiva-gps');
     const clockVal = document.getElementById('gps-clock');
-    const coordVal = document.getElementById('gps-coord');
-    const canaleVal = document.getElementById('gps-canale');
-    const limiteVal = document.getElementById('gps-limite');
-    let ultimoCanale = null, ultimoCanaleTs = 0;
+    const gpsLimitEl = document.getElementById('gps-limit');
+    const gpsChannelEl = document.getElementById('gps-channel');
+    const gpsCoordEl = document.getElementById('gps-coordinates');
 
     // ---------------------------------------------------------------- stato
     let watchId = null;
@@ -461,6 +518,23 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     let ritardoSmussato = null;
     let firmaLista = '';
     let listaAperta = false;
+
+
+    function aggiornaInfoCanale(lat, lon, now) {
+        if (gpsCoordEl) gpsCoordEl.textContent = formattaCoordinateGPS(lat, lon);
+        if (!gpsLimiti) { caricaLimitiGPS(); return; }
+        const r = gpsLimiti(lat, lon, now);
+        const limite = r && r.limite > 0 ? r.limite : null;
+        if (gpsLimitEl) {
+            gpsLimitEl.hidden = limite == null;
+            gpsLimitEl.textContent = limite == null ? '' : String(limite);
+            gpsLimitEl.title = limite == null ? '' : `Limite di velocità${r.nome ? ' · ' + r.nome : ''}`;
+        }
+        if (gpsChannelEl) {
+            gpsChannelEl.textContent = r ? r.nome : '';
+            gpsChannelEl.hidden = !r || !r.nome;
+        }
+    }
 
     // ---------------------------------------------------------------- turno del giorno (copiato dalla dashboard)
 
@@ -501,7 +575,7 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
         if (BLOCCA_SE_VARIANTI && haVarianti(datiTurni, dStr)) { esito.stato = 'varianti'; return esito; }
 
         try {
-            const dati = await fetchJson(`${API_TURNI_URL}/api/v1/turno?codice=${encodeURIComponent(codice)}&data=${encodeURIComponent(dStr)}`);
+            const dati = await fetchJson(`${API_URL}/api/v1/turno?codice=${encodeURIComponent(codice)}&data=${encodeURIComponent(dStr)}`);
             esito.turno = dati.turno;
             esito.attivita = preparaAttivita(dati.turno);
         } catch (e) {
@@ -586,7 +660,7 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
             linea: act.linea, data: data,
             partenza_min: act.partenza_min, arrivo_min: act.arrivo_min, da: act.da, a: act.a
         });
-        return fetchJson(`${API_TURNI_URL}/api/v1/corsa?${params}`);
+        return fetchJson(`${API_URL}/api/v1/corsa?${params}`);
     }
 
     async function datiPercorso(corsa) {
@@ -817,22 +891,7 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
         speedKnots.textContent = `${(avgSpeedMs * 1.94384).toFixed(1)} nodi`;
 
         gps.lat = coords.latitude; gps.lon = coords.longitude; gps.acc = coords.accuracy; gps.vel = avgSpeedMs;
-        const lat = coords.latitude, lon = coords.longitude;
-        coordVal.textContent = `${Math.abs(lat).toFixed(5)}° ${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(5)}° ${lon >= 0 ? 'E' : 'W'}`;
-        if (limitiCanali) {
-            const trovato = limitiCanali(lat, lon);
-            if (trovato) { ultimoCanale = trovato; ultimoCanaleTs = now; }
-            const info = trovato || (now - ultimoCanaleTs < 10000 ? ultimoCanale : null);
-            canaleVal.textContent = info?.nome || '';
-            if (info?.limite > 0) { limiteVal.textContent = String(info.limite); limiteVal.hidden = false; }
-            else { limiteVal.textContent = ''; limiteVal.hidden = true; }
-        } else {
-            caricaLimitiCanali().then(fn => {
-                if (!fn || gps.lat == null) return;
-                const info = fn(gps.lat, gps.lon);
-                if (info) { canaleVal.textContent = info.nome || ''; if (info.limite > 0) { limiteVal.textContent=String(info.limite); limiteVal.hidden=false; } }
-            });
-        }
+        aggiornaInfoCanale(coords.latitude, coords.longitude, now);
 
         // posizione sul percorso
         if (percorso && percorso.geometria && turnoCorrente && coords.accuracy <= ACCURATEZZA_MAX_M) {

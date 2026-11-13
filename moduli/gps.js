@@ -16,6 +16,11 @@ import {
     turnoEffettivo, unisciRebecchini, ferieDelGiorno, haVarianti, caricaDatiTurni
 } from "./turni-core.js"; // logica turni condivisa con calendario e dashboard: va importato sempre con questo stesso percorso
 
+// I backend sono separati: turni/corse su Utility, geometrie e limiti nautici su BateoLive.
+const API_TURNI_URL = API_URL;
+const API_BATEOLIVE_URL = 'https://bateolivebe.homeserver.foo';
+const LIMITI_PROFILO = 'actv';
+
 // Nei giorni con varianti di servizio gli orari dei turni possono non valere: come la dashboard,
 // in quei giorni non si carica il turno. Metti false per usare comunque gli orari del libro turni.
 const BLOCCA_SE_VARIANTI = true;
@@ -328,6 +333,10 @@ export function initUIGPS() {
         #gps-delay-val.puntuale { color: var(--success, #10b981); }
         #gps-delay-val.spento { color: var(--text-muted); opacity: 0.5; }
 
+        .gps-info-pos { text-align:center; font-size:12px; font-weight:700; color:var(--text-muted); line-height:1.5; overflow-wrap:anywhere; }
+        .gps-info-canale { font-size:13px; font-weight:800; color:var(--text-main); }
+        .gps-limite { display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; padding:0 5px; border:3px solid #dc2626; border-radius:50%; background:#fff; color:#111; font-size:15px; font-weight:900; vertical-align:middle; margin-right:7px; box-sizing:border-box; }
+        .gps-limite[hidden] { display:none !important; }
         .gps-act { padding: 4px 0; }
         .gps-act-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; font-weight: 700; color: var(--text-muted); flex-wrap: wrap; }
         .gps-act-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: center; }
@@ -388,6 +397,10 @@ export function initUIGPS() {
                         <div id="gps-delay-label" class="gps-metric-sub">Ritardo / anticipo</div>
                     </div>
                 </div>
+                <div class="gps-info-pos">
+                    <span id="gps-limite" class="gps-limite" hidden></span><span id="gps-canale" class="gps-info-canale"></span>
+                    <div id="gps-coord">Coordinate GPS in attesa…</div>
+                </div>
 
                 <div id="gps-act-box"></div>
                 <div id="gps-next-box"></div>
@@ -418,6 +431,10 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     const statusDiv = document.getElementById('gps-status');
     const btnAttiva = document.getElementById('btn-attiva-gps');
     const clockVal = document.getElementById('gps-clock');
+    const coordVal = document.getElementById('gps-coord');
+    const canaleVal = document.getElementById('gps-canale');
+    const limiteVal = document.getElementById('gps-limite');
+    let ultimoCanale = null, ultimoCanaleTs = 0;
 
     // ---------------------------------------------------------------- stato
     let watchId = null;
@@ -484,7 +501,7 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
         if (BLOCCA_SE_VARIANTI && haVarianti(datiTurni, dStr)) { esito.stato = 'varianti'; return esito; }
 
         try {
-            const dati = await fetchJson(`${API_URL}/api/v1/turno?codice=${encodeURIComponent(codice)}&data=${encodeURIComponent(dStr)}`);
+            const dati = await fetchJson(`${API_TURNI_URL}/api/v1/turno?codice=${encodeURIComponent(codice)}&data=${encodeURIComponent(dStr)}`);
             esito.turno = dati.turno;
             esito.attivita = preparaAttivita(dati.turno);
         } catch (e) {
@@ -569,7 +586,7 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
             linea: act.linea, data: data,
             partenza_min: act.partenza_min, arrivo_min: act.arrivo_min, da: act.da, a: act.a
         });
-        return fetchJson(`${API_URL}/api/v1/corsa?${params}`);
+        return fetchJson(`${API_TURNI_URL}/api/v1/corsa?${params}`);
     }
 
     async function datiPercorso(corsa) {
@@ -577,7 +594,7 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
         if (!shapeId) return null; // backend non aggiornato: si va avanti solo con gli orari
         try {
             const ids = corsa.fermate.map((f) => f.id).join(',');
-            return await fetchJson(`${API_URL}/api/v1/percorso?shape_id=${encodeURIComponent(shapeId)}&fermate=${encodeURIComponent(ids)}`);
+            return await fetchJson(`${API_BATEOLIVE_URL}/api/v1/percorso?shape_id=${encodeURIComponent(shapeId)}&fermate=${encodeURIComponent(ids)}`);
         } catch (e) {
             console.warn("GPS: percorso non disponibile", e);
             return null;
@@ -800,6 +817,22 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
         speedKnots.textContent = `${(avgSpeedMs * 1.94384).toFixed(1)} nodi`;
 
         gps.lat = coords.latitude; gps.lon = coords.longitude; gps.acc = coords.accuracy; gps.vel = avgSpeedMs;
+        const lat = coords.latitude, lon = coords.longitude;
+        coordVal.textContent = `${Math.abs(lat).toFixed(5)}° ${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(5)}° ${lon >= 0 ? 'E' : 'W'}`;
+        if (limitiCanali) {
+            const trovato = limitiCanali(lat, lon);
+            if (trovato) { ultimoCanale = trovato; ultimoCanaleTs = now; }
+            const info = trovato || (now - ultimoCanaleTs < 10000 ? ultimoCanale : null);
+            canaleVal.textContent = info?.nome || '';
+            if (info?.limite > 0) { limiteVal.textContent = String(info.limite); limiteVal.hidden = false; }
+            else { limiteVal.textContent = ''; limiteVal.hidden = true; }
+        } else {
+            caricaLimitiCanali().then(fn => {
+                if (!fn || gps.lat == null) return;
+                const info = fn(gps.lat, gps.lon);
+                if (info) { canaleVal.textContent = info.nome || ''; if (info.limite > 0) { limiteVal.textContent=String(info.limite); limiteVal.hidden=false; } }
+            });
+        }
 
         // posizione sul percorso
         if (percorso && percorso.geometria && turnoCorrente && coords.accuracy <= ACCURATEZZA_MAX_M) {

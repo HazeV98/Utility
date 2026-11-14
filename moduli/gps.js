@@ -386,6 +386,7 @@ export function initUIGPS() {
         #gps-delay-val.presto { color: #d97706; }
         #gps-delay-val.puntuale { color: var(--success, #10b981); }
         #gps-delay-val.spento { color: var(--text-muted); opacity: 0.5; }
+        #gps-speed-val.superamento { color: var(--danger, #dc3545); }
         .gps-channel-info { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md, 12px); background: var(--surface); text-align: center; }
         .gps-limit-sign { width: 42px; height: 42px; border: 4px solid #d3151c; border-radius: 50%; background: #fff; color: #111; display: inline-flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 900; line-height: 1; box-sizing: border-box; flex: none; }
         .gps-limit-sign[hidden] { display: none !important; }
@@ -522,7 +523,10 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
 
     function aggiornaInfoCanale(lat, lon, now) {
         if (gpsCoordEl) gpsCoordEl.textContent = formattaCoordinateGPS(lat, lon);
-        if (!gpsLimiti) { caricaLimitiGPS(); return; }
+        if (!gpsLimiti) {
+            caricaLimitiGPS();
+            return null;
+        }
         const r = gpsLimiti(lat, lon, now);
         const limite = r && r.limite > 0 ? r.limite : null;
         if (gpsLimitEl) {
@@ -534,6 +538,7 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
             gpsChannelEl.textContent = r ? r.nome : '';
             gpsChannelEl.hidden = !r || !r.nome;
         }
+        return limite;
     }
 
     // ---------------------------------------------------------------- turno del giorno (copiato dalla dashboard)
@@ -887,11 +892,14 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
         speedHistory.push({ speed: rawSpeedMs, time: now });
         speedHistory = speedHistory.filter(e => now - e.time <= SMOOTHING_WINDOW_MS);
         const avgSpeedMs = speedHistory.reduce((s, e) => s + e.speed, 0) / speedHistory.length;
-        speedVal.textContent = (avgSpeedMs * 3.6).toFixed(1);
+        const velocitaKmh = avgSpeedMs * 3.6;
+        speedVal.textContent = velocitaKmh.toFixed(1);
         speedKnots.textContent = `${(avgSpeedMs * 1.94384).toFixed(1)} nodi`;
 
         gps.lat = coords.latitude; gps.lon = coords.longitude; gps.acc = coords.accuracy; gps.vel = avgSpeedMs;
-        aggiornaInfoCanale(coords.latitude, coords.longitude, now);
+        const limiteCanale = aggiornaInfoCanale(coords.latitude, coords.longitude, now);
+        // Evidenzia in rosso la velocità soltanto quando supera il limite del canale corrente.
+        speedVal.classList.toggle('superamento', limiteCanale != null && velocitaKmh > limiteCanale);
 
         // posizione sul percorso
         if (percorso && percorso.geometria && turnoCorrente && coords.accuracy <= ACCURATEZZA_MAX_M) {

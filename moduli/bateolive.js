@@ -84,6 +84,15 @@ function aggiornaLimiteVelocita(lat, lon, now) {
     const r = bvLimiti.stabile(lat, lon, now);
     const v = r && r.limite > 0 ? r.limite : null;   // 0 = nel dato non c'è un limite: niente cartello
     const nome = r ? r.nome : '';
+
+    // La velocità diventa rossa solo quando supera il limite del canale corrente.
+    // Il controllo viene eseguito a ogni aggiornamento GPS, anche se il canale non cambia.
+    const speedEl = document.getElementById('bv-speed-val');
+    if (speedEl) {
+        const velocita = Number.parseFloat(speedEl.textContent);
+        speedEl.classList.toggle('bv-speed-over-limit', v !== null && Number.isFinite(velocita) && velocita > v);
+    }
+
     const chiave = v + '|' + nome;
     if (chiave === bvLimiteMostrato) return;
     bvLimiteMostrato = chiave;
@@ -462,7 +471,8 @@ export function initUIBateoLive() {
         /* ---------- HUD velocità + navigatore (compatto, stessa struttura di prima) ---------- */
         .bv-hud-speed { position: absolute; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); right: 20px; background: var(--bv-glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 12px 18px; border-radius: 16px; border: 1px solid var(--bv-border); box-shadow: var(--bv-shadow); z-index: 1000; display: none; }
         .bv-speed-wrapper { display: flex; align-items: baseline; justify-content: center; gap: 5px; }
-        .bv-speed-val { font-size: 42px; font-weight: 900; color: var(--bv-primary); line-height: 0.9; font-variant-numeric: tabular-nums; }
+        .bv-speed-val { font-size: 42px; font-weight: 900; color: var(--bv-primary); line-height: 0.9; font-variant-numeric: tabular-nums; transition: color 0.15s ease; }
+        .bv-speed-val.bv-speed-over-limit { color: #dc3545; }
         .bv-speed-unit { font-size: 16px; font-weight: bold; color: var(--bv-muted); }
         /* ---------- limite di velocità del canale: cartello di divieto (cerchio bianco, bordo rosso) a sinistra della velocità ---------- */
         .bv-limite { flex: none; align-self: center; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; box-sizing: border-box; border-radius: 50%; border: 5px solid #d3151c; background: #fff; color: #111; font-size: 22px; font-weight: 800; line-height: 1; letter-spacing: -0.5px; font-variant-numeric: tabular-nums; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }

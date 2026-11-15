@@ -432,10 +432,25 @@ export function initUIGPS() {
         .gps-status-box { font-size: 14px; font-weight: bold; text-align: center; padding: 10px; border-radius: var(--radius-sm); min-height: 40px; display: flex; align-items: center; justify-content: center; }
         .btn-attiva-gps { background: var(--primary); color: white; border: none; padding: 12px 28px; font-size: 16px; font-weight: bold; border-radius: 30px; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.2s; display: flex; align-items: center; gap: 8px; margin: 0 auto; }
         .btn-attiva-gps:active { transform: scale(0.95); }
+
+        /* GPS a tutto schermo: pannello operativo senza cornice modale */
+        #modal-gps-main { position:fixed !important; inset:0 !important; width:100vw !important; height:100dvh !important; max-width:none !important; max-height:none !important; padding:0 !important; margin:0 !important; border-radius:0 !important; align-items:stretch !important; justify-content:stretch !important; z-index:10020; }
+        #modal-gps-main .gps-fullscreen-panel { width:100% !important; max-width:none !important; height:100dvh !important; max-height:100dvh !important; min-height:100dvh; border-radius:0 !important; box-sizing:border-box; padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)) !important; }
+        #modal-gps-main .gps-body { width:min(1500px,100%); margin:0 auto; }
+        .gps-marine-panel { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; border:1px solid var(--border-color); border-radius:var(--radius-md,12px); background:var(--surface); padding:11px; }
+        .gps-marine-title { grid-column:1/-1; font-size:12px; font-weight:900; color:var(--text-muted); letter-spacing:.04em; }
+        .gps-marine-item { min-width:0; text-align:center; padding:8px 5px; border-radius:9px; background:rgba(100,116,139,.07); }
+        .gps-marine-label { font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; }
+        .gps-marine-value { display:flex; align-items:center; justify-content:center; gap:8px; margin:7px 0 3px; font-size:clamp(24px,4vw,36px); line-height:1; font-weight:900; color:var(--text-main); font-variant-numeric:tabular-nums; }
+        .gps-marine-arrow { display:inline-block; font-size:30px; line-height:1; color:#0ea5e9; }
+        .gps-marine-arrow.tide-up { color:#16a34a; } .gps-marine-arrow.tide-down { color:#2563eb; }
+        .gps-marine-meta { font-size:10px; color:var(--text-muted); overflow-wrap:anywhere; }
+        @media (min-width:900px) { #modal-gps-main .gps-fullscreen-panel { padding:24px 30px !important; } #modal-gps-main .gps-body { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-content:start; gap:16px; } #gps-clock, #gps-marine-panel, .gps-metrics, .gps-channel-info, #gps-status { grid-column:1/-1; } #gps-act-box, #gps-next-box { min-width:0; } #gps-clock { margin:8px 0 4px; } }
+        @media (max-width:520px) { #modal-gps-main .gps-fullscreen-panel { padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)) 10px !important; } #modal-gps-main h3 { font-size:17px; } .gps-marine-panel { gap:7px; padding:8px; } .gps-marine-item { padding:8px 3px; } .gps-marine-value { font-size:25px; } .gps-clock { font-size:36px; } }
     </style>
 
     <div id="modal-gps-main" class="modal-overlay" style="display:none;" onclick="window.chiudiSuSfondo(event, 'modal-gps-main')">
-        <div class="modal-content" style="max-width: 440px; height: 85vh; display: flex; flex-direction: column; padding: 20px; position: relative;">
+        <div class="modal-content gps-fullscreen-panel" style="display: flex; flex-direction: column; position: relative;">
             <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted); z-index: 20;" onclick="document.getElementById('modal-gps-main').style.display='none'"></i>
 
             <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; margin-bottom: 16px; padding-bottom: 15px; padding-right: 36px; border-bottom: 1px solid var(--border-color);">
@@ -443,6 +458,11 @@ export function initUIGPS() {
             </h3>
 
             <div class="gps-body">
+                <div id="gps-marine-panel" class="gps-marine-panel" aria-live="polite">
+                    <div class="gps-marine-title"><i class="fa-solid fa-water"></i> CONDIZIONI METEOMARINE ATTUALI</div>
+                    <div class="gps-marine-item"><div class="gps-marine-label">Marea</div><div id="gps-marine-tide" class="gps-marine-value">—</div><div id="gps-marine-tide-meta" class="gps-marine-meta">In attesa dei dati CPSM</div></div>
+                    <div class="gps-marine-item"><div class="gps-marine-label">Vento</div><div id="gps-marine-wind" class="gps-marine-value">—</div><div id="gps-marine-wind-meta" class="gps-marine-meta">In attesa dei dati CPSM</div></div>
+                </div>
                 <div id="gps-clock" class="gps-clock">00:00:00</div>
                 <div class="gps-metrics">
                     <div class="gps-metric">
@@ -493,10 +513,17 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     const gpsLimitEl = document.getElementById('gps-limit');
     const gpsChannelEl = document.getElementById('gps-channel');
     const gpsCoordEl = document.getElementById('gps-coordinates');
+    const marineTideEl = document.getElementById('gps-marine-tide');
+    const marineTideMetaEl = document.getElementById('gps-marine-tide-meta');
+    const marineWindEl = document.getElementById('gps-marine-wind');
+    const marineWindMetaEl = document.getElementById('gps-marine-wind-meta');
 
     // ---------------------------------------------------------------- stato
     let watchId = null;
     let speedHistory = [];
+    let cacheMeteomarinoGPS = null;
+    let meteomarinoGPSUltimoFetch = 0;
+    let meteomarinoGPSInCaricamento = false;
     const SMOOTHING_WINDOW_MS = 2000;
 
     let datiTurni = null;                  // rotazioni, disponibilità, varianti, ferie (turni-core.js, scaricati una volta sola)
@@ -810,6 +837,75 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     }
 
     // Un giro completo: sceglie l'attività, carica il percorso se serve, calcola ritardo e prossima fermata.
+    function formattaValoreMarine(value, decimali = 1) {
+        return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)) ? Number(value).toLocaleString('it-IT', { maximumFractionDigits:decimali }) : '—';
+    }
+    function distanzaStazioneGPS(stazione, lat, lon) {
+        if (stazione?.latitudine == null || stazione?.longitudine == null || !Number.isFinite(Number(stazione.latitudine)) || !Number.isFinite(Number(stazione.longitudine)) || lat == null || lon == null) return Infinity;
+        const rad = x => x * Math.PI / 180;
+        const dLat=rad(Number(stazione.latitudine)-lat), dLon=rad(Number(stazione.longitudine)-lon);
+        const h=Math.sin(dLat/2)**2+Math.cos(rad(lat))*Math.cos(rad(Number(stazione.latitudine)))*Math.sin(dLon/2)**2;
+        return 6371000*2*Math.asin(Math.sqrt(h));
+    }
+    // Riferimento operativo fisso per la marea: Punta della Salute.
+    // Coordinate del riferimento CPSM (45° 25' 51.88" N, 12° 20' 10.96" E).
+    const PUNTA_SALUTE = { lat: 45.4310778, lon: 12.3363778 };
+    function stazioneRiferimentoGPS(tipo, latUtente = null, lonUtente = null) {
+        const stazioni = cacheMeteomarinoGPS?.stazioni || [];
+        const valide = stazioni.filter(st => st.dati?.[tipo] && st.dati[tipo].valore !== null && st.dati[tipo].valore !== undefined);
+        if (!valide.length) return null;
+        // La marea del servizio ACTV usa sempre il mareografo di Punta Salute Canal Grande.
+        // Se non disponibile, ripiega sulla stazione di livello più vicina a Punta della Salute.
+        if (tipo === 'livello') {
+            const punta = valide.find(st => /punta\s*salute.*canal\s*grande|canal\s*grande.*punta\s*salute/i.test(st.nome || ''));
+            if (punta) return punta;
+            return valide.sort((a,b)=>distanzaStazioneGPS(a,PUNTA_SALUTE.lat,PUNTA_SALUTE.lon)-distanzaStazioneGPS(b,PUNTA_SALUTE.lat,PUNTA_SALUTE.lon))[0];
+        }
+        // Il vento segue la posizione corrente dell'utente/mezzo: seleziona l'anemometro CPSM
+        // più vicino al fix GPS. Prima del primo fix usa Punta della Salute come ripiego.
+        const lat = latUtente != null && Number.isFinite(Number(latUtente)) ? Number(latUtente) : PUNTA_SALUTE.lat;
+        const lon = lonUtente != null && Number.isFinite(Number(lonUtente)) ? Number(lonUtente) : PUNTA_SALUTE.lon;
+        return valide.sort((a,b)=>distanzaStazioneGPS(a,lat,lon)-distanzaStazioneGPS(b,lat,lon))[0];
+    }
+    function renderMeteomarinoGPS() {
+        if (!marineTideEl || !marineWindEl) return;
+        if (!cacheMeteomarinoGPS?.stazioni) {
+            marineTideEl.textContent = '—'; marineTideMetaEl.textContent = 'Dati CPSM non disponibili';
+            marineWindEl.textContent = '—'; marineWindMetaEl.textContent = 'Dati CPSM non disponibili'; return;
+        }
+        const stMarea=stazioneRiferimentoGPS('livello');
+        const stVento=stazioneRiferimentoGPS('vento', gps.lat, gps.lon);
+        const recMarea=stMarea?.dati?.livello;
+        const trend=stMarea?.andamentoMarea;
+        const crescente=Number.isFinite(Number(trend?.deltaCm)) && Number(trend.deltaCm)>0;
+        const frecciaMarea=trend?.deltaCm == null ? '↕' : (crescente ? '↑' : '↓');
+        const classeMarea=trend?.deltaCm == null ? '' : (crescente ? 'tide-up' : 'tide-down');
+        marineTideEl.innerHTML=`<span class="gps-marine-arrow ${classeMarea}">${frecciaMarea}</span>${recMarea?.valoreCm == null ? '—' : `${formattaValoreMarine(recMarea.valoreCm,1)} <small style="font-size:14px;">cm</small>`}`;
+        const delta=trend?.deltaCm == null ? 'Andamento in rilevamento' : (crescente ? 'Marea in crescita' : 'Marea in calo');
+        marineTideMetaEl.textContent=`${delta} · Riferimento Punta della Salute${stMarea?.nome ? ` · ${stMarea.nome}` : ''}${recMarea?.data ? ` · ${recMarea.data}` : ''}`;
+
+        const vento=stVento?.dati?.vento;
+        const gradi=vento?.direzioneGradi == null ? NaN : Number(vento.direzioneGradi);
+        const frecciaVento=Number.isFinite(gradi) ? `<span class="gps-marine-arrow" style="transform:rotate(${gradi}deg);">↑</span>` : '';
+        marineWindEl.innerHTML=`${frecciaVento}${vento?.velocitaMs == null ? '—' : `${formattaValoreMarine(vento.velocitaMs*3.6,1)} <small style="font-size:14px;">km/h</small>`}`;
+        const nodi=vento?.velocitaMs == null ? '' : ` · ${formattaValoreMarine(vento.velocitaMs*1.94384,1)} kn`;
+        marineWindMetaEl.textContent=`${vento?.direzioneCardinale || 'Direzione n/d'}${Number.isFinite(gradi) ? ` · ${Math.round(gradi)}°` : ''}${nodi} · Stazione più vicina alla posizione${gps.lat == null || gps.lon == null ? ' (in attesa del GPS)' : ''}${stVento?.nome ? `: ${stVento.nome}` : ''}${vento?.data ? ` · ${vento.data}` : ''}`;
+    }
+    async function aggiornaMeteomarinoGPS(forza = false) {
+        if (meteomarinoGPSInCaricamento || (!forza && Date.now()-meteomarinoGPSUltimoFetch < 5*60*1000)) return;
+        meteomarinoGPSInCaricamento=true;
+        try {
+            const response=await fetch(`${API_URL}/api/meteomarino`,{cache:'no-store'});
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            cacheMeteomarinoGPS=await response.json();
+            meteomarinoGPSUltimoFetch=Date.now();
+            renderMeteomarinoGPS();
+        } catch(e) {
+            console.warn('GPS: dati meteomarini non disponibili:',e.message);
+            if (!cacheMeteomarinoGPS) renderMeteomarinoGPS();
+        } finally { meteomarinoGPSInCaricamento=false; }
+    }
+
     function render() {
         if (!modal || modal.style.display === 'none') return;
         if (!turnoCorrente) { turnoVal.textContent = '--'; mostraMessaggio('<i class="fa-solid fa-spinner fa-spin"></i> Carico il turno…'); disegnaRitardo(null); return; }
@@ -897,6 +993,7 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
         speedKnots.textContent = `${(avgSpeedMs * 1.94384).toFixed(1)} nodi`;
 
         gps.lat = coords.latitude; gps.lon = coords.longitude; gps.acc = coords.accuracy; gps.vel = avgSpeedMs;
+        renderMeteomarinoGPS(); // marea riferita a Punta della Salute; vento dalla stazione CPSM più vicina al fix GPS
         const limiteCanale = aggiornaInfoCanale(coords.latitude, coords.longitude, now);
         // Evidenzia in rosso la velocità soltanto quando supera il limite del canale corrente.
         speedVal.classList.toggle('superamento', limiteCanale != null && velocitaKmh > limiteCanale);
@@ -987,6 +1084,7 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     setInterval(() => {
         aggiornaOrologio();
         if (!modal || modal.style.display === 'none') return;
+        if (Date.now() - meteomarinoGPSUltimoFetch > 5 * 60 * 1000) aggiornaMeteomarinoGPS();
         if (serveRicaricare() && Date.now() - ultimoTentativoTurno > 5000) caricaTurno();
         else render();
     }, 1000);
@@ -996,6 +1094,8 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     window.apriModaleGPS = function () {
         modal.style.display = 'flex';
         render();
+        renderMeteomarinoGPS();
+        aggiornaMeteomarinoGPS(true);
         caricaTurno(); // riparte da localStorage: se hai cambiato il turno nel calendario lo trova aggiornato
 
         // se il permesso c'è già non serve premere il pulsante

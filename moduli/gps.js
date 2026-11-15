@@ -987,18 +987,29 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     }
     const PUNTA_SALUTE = { lat: 45.4310778, lon: 12.3363778 };
     function stazioneRiferimentoGPS(tipo, latUtente = null, lonUtente = null) {
-        const stazioni = cacheMeteomarinoGPS?.stazioni || [];
-        const valide = stazioni.filter(st => st.dati?.[tipo] && st.dati[tipo].valore !== null && st.dati[tipo].valore !== undefined);
-        if (!valide.length) return null;
-        if (tipo === 'livello') {
-            const punta = valide.find(st => /punta\s*(?:della\s*)?salute/i.test(st.nome || ''));
-            if (punta) return punta;
-            return valide.sort((a, b) => distanzaStazioneGPS(a, PUNTA_SALUTE.lat, PUNTA_SALUTE.lon) - distanzaStazioneGPS(b, PUNTA_SALUTE.lat, PUNTA_SALUTE.lon))[0];
-        }
-        const lat = latUtente != null && Number.isFinite(Number(latUtente)) ? Number(latUtente) : PUNTA_SALUTE.lat;
-        const lon = lonUtente != null && Number.isFinite(Number(lonUtente)) ? Number(lonUtente) : PUNTA_SALUTE.lon;
-        return valide.sort((a, b) => distanzaStazioneGPS(a, lat, lon) - distanzaStazioneGPS(b, lat, lon))[0];
+    const stazioni = cacheMeteomarinoGPS?.stazioni || [];
+    const valide = stazioni.filter(st => {
+        const rec = st.dati?.[tipo];
+        if (!rec || rec.valore === null || rec.valore === undefined) return false;
+        if (tipo === 'vento') return rec.velocitaMs !== null || rec.direzioneGradi !== null;
+        return true;
+    });
+    if (!valide.length) return null;
+    if (tipo === 'livello') {
+        const punta = valide.find(st => /punta\s*(?:della\s*)?salute/i.test(st.nome || ''));
+        if (punta) return punta;
+        return valide.sort((a, b) => distanzaStazioneGPS(a, PUNTA_SALUTE.lat, PUNTA_SALUTE.lon) - distanzaStazioneGPS(b, PUNTA_SALUTE.lat, PUNTA_SALUTE.lon))[0];
     }
+    const lat = latUtente != null && Number.isFinite(Number(latUtente)) ? Number(latUtente) : PUNTA_SALUTE.lat;
+    const lon = lonUtente != null && Number.isFinite(Number(lonUtente)) ? Number(lonUtente) : PUNTA_SALUTE.lon;
+    const ordinate = valide.sort((a, b) => distanzaStazioneGPS(a, lat, lon) - distanzaStazioneGPS(b, lat, lon));
+    if (tipo === 'vento') {
+        const conVentoAttivo = ordinate.find(st => Number(st.dati?.vento?.velocitaMs) > 0);
+        if (conVentoAttivo) return conVentoAttivo;
+    }
+    return ordinate[0];
+}
+
     function formattaDataMarine(value) {
         if (!value) return '';
         const d = new Date(String(value).replace(' ', 'T'));

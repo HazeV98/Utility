@@ -437,16 +437,30 @@ export function initUIGPS() {
         #modal-gps-main { position:fixed !important; inset:0 !important; width:100vw !important; height:100dvh !important; max-width:none !important; max-height:none !important; padding:0 !important; margin:0 !important; border-radius:0 !important; align-items:stretch !important; justify-content:stretch !important; z-index:10020; }
         #modal-gps-main .gps-fullscreen-panel { width:100% !important; max-width:none !important; height:100dvh !important; max-height:100dvh !important; min-height:100dvh; border-radius:0 !important; box-sizing:border-box; padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)) !important; }
         #modal-gps-main .gps-body { width:min(1500px,100%); margin:0 auto; }
-        .gps-marine-panel { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; border:1px solid var(--border-color); border-radius:var(--radius-md,12px); background:var(--surface); padding:11px; }
-        .gps-marine-title { grid-column:1/-1; font-size:12px; font-weight:900; color:var(--text-muted); letter-spacing:.04em; }
+        .gps-marine-panel { display:block; min-width:0; border:1px solid var(--border-color); border-radius:var(--radius-md,12px); background:var(--surface); overflow:hidden; }
+        .gps-marine-toggle { width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px; border:0; background:transparent; color:var(--text-muted); font-size:12px; font-weight:900; letter-spacing:.04em; text-align:left; cursor:pointer; }
+        .gps-marine-toggle i { transition:transform .25s; font-size:16px; }
+        .gps-marine-toggle.aperto i { transform:rotate(180deg); }
+        .gps-marine-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:0 11px 11px; }
+        .gps-marine-title { min-width:0; }
         .gps-marine-item { min-width:0; text-align:center; padding:8px 5px; border-radius:9px; background:rgba(100,116,139,.07); }
+        .gps-marine-details { display:none; border-top:1px solid var(--border-color); padding:10px; }
+        .gps-marine-details.aperto { display:block; }
+        .gps-marine-extra { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+        .gps-marine-extra-item { min-width:0; text-align:center; padding:10px 6px; border-radius:9px; background:rgba(100,116,139,.07); }
+        .gps-marine-extra-label { font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase; }
+        .gps-marine-extra-value { margin-top:5px; font-size:18px; line-height:1.15; font-weight:900; color:var(--text-main); overflow-wrap:anywhere; }
+        .gps-marine-extra-meta { margin-top:4px; font-size:9px; color:var(--text-muted); overflow-wrap:anywhere; }
+        .gps-turno-edit { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; margin-left:5px; border:1px solid var(--border-color); border-radius:8px; background:var(--surface); color:var(--text-muted); cursor:pointer; vertical-align:middle; }
+        .gps-turno-edit:active { transform:scale(.94); }
+        .gps-turno-badge { display:inline-block; margin-left:6px; padding:3px 6px; border-radius:5px; background:rgba(14,165,233,.12); color:#0284c7; font-size:9px; font-weight:900; vertical-align:middle; }
         .gps-marine-label { font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; }
         .gps-marine-value { display:flex; align-items:center; justify-content:center; gap:8px; margin:7px 0 3px; font-size:clamp(24px,4vw,36px); line-height:1; font-weight:900; color:var(--text-main); font-variant-numeric:tabular-nums; }
         .gps-marine-arrow { display:inline-block; font-size:30px; line-height:1; color:#0ea5e9; }
         .gps-marine-arrow.tide-up { color:#16a34a; } .gps-marine-arrow.tide-down { color:#2563eb; }
         .gps-marine-meta { font-size:10px; color:var(--text-muted); overflow-wrap:anywhere; }
-        @media (min-width:900px) { #modal-gps-main .gps-fullscreen-panel { padding:24px 30px !important; } #modal-gps-main .gps-body { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-content:start; gap:16px; } #gps-clock, #gps-marine-panel, .gps-metrics, .gps-channel-info, #gps-status { grid-column:1/-1; } #gps-act-box, #gps-next-box { min-width:0; } #gps-clock { margin:8px 0 4px; } }
-        @media (max-width:520px) { #modal-gps-main .gps-fullscreen-panel { padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)) 10px !important; } #modal-gps-main h3 { font-size:17px; } .gps-marine-panel { gap:7px; padding:8px; } .gps-marine-item { padding:8px 3px; } .gps-marine-value { font-size:25px; } .gps-clock { font-size:36px; } }
+        @media (min-width:900px) { #modal-gps-main .gps-fullscreen-panel { padding:24px 30px !important; } #modal-gps-main .gps-body { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-content:start; gap:16px; } #gps-clock, #gps-next-box, #gps-marine-panel, .gps-metrics, .gps-channel-info, #gps-status { grid-column:1/-1; } #gps-act-box { min-width:0; } #gps-clock { margin:8px 0 4px; } }
+        @media (max-width:520px) { #modal-gps-main .gps-fullscreen-panel { padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)) 10px !important; } #modal-gps-main h3 { font-size:17px; } .gps-marine-summary { gap:7px; padding:0 8px 8px; } .gps-marine-item { padding:8px 3px; } .gps-marine-value { font-size:25px; } .gps-marine-extra { gap:6px; } .gps-marine-extra-item { padding:8px 4px; } .gps-marine-extra-value { font-size:16px; } .gps-clock { font-size:36px; } }
     </style>
 
     <div id="modal-gps-main" class="modal-overlay" style="display:none;" onclick="window.chiudiSuSfondo(event, 'modal-gps-main')">
@@ -455,14 +469,12 @@ export function initUIGPS() {
 
             <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; margin-bottom: 16px; padding-bottom: 15px; padding-right: 36px; border-bottom: 1px solid var(--border-color);">
                 <i class="fa-solid fa-location-crosshairs"></i> Turno: <span id="gps-turno-val">--</span>
+                <span id="gps-turno-manuale-badge" class="gps-turno-badge" hidden>MANUALE</span>
+                <button id="gps-turno-edit" class="gps-turno-edit" type="button" title="Modifica manualmente il turno" aria-label="Modifica manualmente il turno"><i class="fa-solid fa-pen"></i></button>
             </h3>
 
             <div class="gps-body">
-                <div id="gps-marine-panel" class="gps-marine-panel" aria-live="polite">
-                    <div class="gps-marine-title"><i class="fa-solid fa-water"></i> CONDIZIONI METEOMARINE ATTUALI</div>
-                    <div class="gps-marine-item"><div class="gps-marine-label">Marea</div><div id="gps-marine-tide" class="gps-marine-value">—</div><div id="gps-marine-tide-meta" class="gps-marine-meta">In attesa dei dati CPSM</div></div>
-                    <div class="gps-marine-item"><div class="gps-marine-label">Vento</div><div id="gps-marine-wind" class="gps-marine-value">—</div><div id="gps-marine-wind-meta" class="gps-marine-meta">In attesa dei dati CPSM</div></div>
-                </div>
+                <div id="gps-next-box"></div>
                 <div id="gps-clock" class="gps-clock">00:00:00</div>
                 <div class="gps-metrics">
                     <div class="gps-metric">
@@ -482,7 +494,16 @@ export function initUIGPS() {
                 </div>
 
                 <div id="gps-act-box"></div>
-                <div id="gps-next-box"></div>
+                <div id="gps-marine-panel" class="gps-marine-panel" aria-live="polite">
+                    <button id="gps-marine-toggle" class="gps-marine-toggle" type="button" aria-expanded="false" aria-controls="gps-marine-details">
+                        <span><i class="fa-solid fa-water"></i> CONDIZIONI METEOMARINE ATTUALI</span><i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                    <div class="gps-marine-summary">
+                        <div class="gps-marine-item"><div class="gps-marine-label">Marea</div><div id="gps-marine-tide" class="gps-marine-value">—</div><div id="gps-marine-tide-meta" class="gps-marine-meta">In attesa dei dati CPSM</div></div>
+                        <div class="gps-marine-item"><div class="gps-marine-label">Vento</div><div id="gps-marine-wind" class="gps-marine-value">—</div><div id="gps-marine-wind-meta" class="gps-marine-meta">In attesa dei dati CPSM</div></div>
+                    </div>
+                    <div id="gps-marine-details" class="gps-marine-details"><div id="gps-marine-extra" class="gps-marine-extra"></div></div>
+                </div>
 
                 <div id="gps-status" class="gps-status-box" style="background: transparent;">
                     <button id="btn-attiva-gps" class="btn-attiva-gps"><i class="fa-solid fa-location-arrow"></i> Attiva GPS</button>
@@ -501,6 +522,11 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     // ---------------------------------------------------------------- elementi
     const modal = document.getElementById('modal-gps-main');
     const turnoVal = document.getElementById('gps-turno-val');
+    const turnoManualeBadge = document.getElementById('gps-turno-manuale-badge');
+    const btnModificaTurno = document.getElementById('gps-turno-edit');
+    const marineToggle = document.getElementById('gps-marine-toggle');
+    const marineDetails = document.getElementById('gps-marine-details');
+    const marineExtraEl = document.getElementById('gps-marine-extra');
     const speedVal = document.getElementById('gps-speed-val');
     const speedKnots = document.getElementById('gps-speed-knots');
     const delayVal = document.getElementById('gps-delay-val');
@@ -592,8 +618,11 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     async function turnoDelGiorno(dStr) {
         let state = {};
         try { state = JSON.parse(localStorage.getItem('myTurniApp')) || {}; } catch (e) { }
-        const manuale = !!(state.variazioni && state.variazioni[dStr]);
-        let codice = turnoEffettivo(dStr, state, datiTurni, userDataPrivate && userDataPrivate.mansione);
+        let overrideGPS = null;
+        try { overrideGPS = JSON.parse(localStorage.getItem('gps_turno_manuale')); } catch (e) { }
+        const manualeGPS = overrideGPS && overrideGPS.data === dStr && overrideGPS.codice ? String(overrideGPS.codice).trim().toUpperCase() : null;
+        const manuale = !!manualeGPS || !!(state.variazioni && state.variazioni[dStr]);
+        let codice = manualeGPS || turnoEffettivo(dStr, state, datiTurni, userDataPrivate && userDataPrivate.mansione);
         // ferie previste dalla rotazione ferie (come nel calendario): senza variazione manuale il turno diventa FEP
         if (!manuale && datiTurni && !["RI", "AL"].includes(String(codice).toUpperCase())) {
             const ferie = ferieDelGiorno(state, dStr, datiTurni.ferie);
@@ -616,6 +645,30 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
         }
         return esito;
     }
+
+    async function modificaTurnoGPS() {
+        const dataRiferimento = turnoCorrente?.data || dateToLocalISO(new Date());
+        let salvato = null;
+        try { salvato = JSON.parse(localStorage.getItem('gps_turno_manuale')); } catch (e) { }
+        const attuale = salvato?.data === dataRiferimento ? salvato.codice : (turnoCorrente?.codice || '');
+        const inserito = window.prompt('Inserisci il codice del turno da usare per il navigatore. Lascia vuoto per tornare al turno automatico.', attuale === 'N/D' ? '' : attuale);
+        if (inserito === null) return;
+        const codice = inserito.trim().toUpperCase();
+        if (codice) {
+            localStorage.setItem('gps_turno_manuale', JSON.stringify({ data: dataRiferimento, codice }));
+        } else {
+            localStorage.removeItem('gps_turno_manuale');
+        }
+        attKey = null; percorso = null; percorsoStato = 'nessuno'; minimoFermata = 0; firmaLista = ''; tokenPercorso++;
+        await caricaTurno();
+    }
+    if (btnModificaTurno) btnModificaTurno.addEventListener('click', modificaTurnoGPS);
+    if (marineToggle) marineToggle.addEventListener('click', () => {
+        marineAperto = !marineAperto;
+        marineToggle.classList.toggle('aperto', marineAperto);
+        marineToggle.setAttribute('aria-expanded', String(marineAperto));
+        marineDetails?.classList.toggle('aperto', marineAperto);
+    });
 
     // Attività in ordine, con partenza/arrivo in minuti dalla mezzanotte del giorno del turno (_p, _a)
     function preparaAttivita(turno) {
@@ -867,11 +920,18 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
         const lon = lonUtente != null && Number.isFinite(Number(lonUtente)) ? Number(lonUtente) : PUNTA_SALUTE.lon;
         return valide.sort((a,b)=>distanzaStazioneGPS(a,lat,lon)-distanzaStazioneGPS(b,lat,lon))[0];
     }
+    function formattaDataMarine(value) {
+        if (!value) return '';
+        const d = new Date(String(value).replace(' ', 'T'));
+        return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    }
     function renderMeteomarinoGPS() {
         if (!marineTideEl || !marineWindEl) return;
         if (!cacheMeteomarinoGPS?.stazioni) {
             marineTideEl.textContent = '—'; marineTideMetaEl.textContent = 'Dati CPSM non disponibili';
-            marineWindEl.textContent = '—'; marineWindMetaEl.textContent = 'Dati CPSM non disponibili'; return;
+            marineWindEl.textContent = '—'; marineWindMetaEl.textContent = 'Dati CPSM non disponibili';
+            if (marineExtraEl) marineExtraEl.innerHTML = '<div class="gps-marine-extra-item">Dati meteomarini non disponibili</div>';
+            return;
         }
         const stMarea=stazioneRiferimentoGPS('livello');
         const stVento=stazioneRiferimentoGPS('vento', gps.lat, gps.lon);
@@ -882,14 +942,32 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
         const classeMarea=trend?.deltaCm == null ? '' : (crescente ? 'tide-up' : 'tide-down');
         marineTideEl.innerHTML=`<span class="gps-marine-arrow ${classeMarea}">${frecciaMarea}</span>${recMarea?.valoreCm == null ? '—' : `${formattaValoreMarine(recMarea.valoreCm,1)} <small style="font-size:14px;">cm</small>`}`;
         const delta=trend?.deltaCm == null ? 'Andamento in rilevamento' : (crescente ? 'Marea in crescita' : 'Marea in calo');
-        marineTideMetaEl.textContent=`${delta} · Riferimento Punta della Salute${stMarea?.nome ? ` · ${stMarea.nome}` : ''}${recMarea?.data ? ` · ${recMarea.data}` : ''}`;
+        marineTideMetaEl.textContent=`${delta}${recMarea?.data ? ` · ${formattaDataMarine(recMarea.data)}` : ''}`;
 
         const vento=stVento?.dati?.vento;
         const gradi=vento?.direzioneGradi == null ? NaN : Number(vento.direzioneGradi);
         const frecciaVento=Number.isFinite(gradi) ? `<span class="gps-marine-arrow" style="transform:rotate(${gradi}deg);">↑</span>` : '';
         marineWindEl.innerHTML=`${frecciaVento}${vento?.velocitaMs == null ? '—' : `${formattaValoreMarine(vento.velocitaMs*3.6,1)} <small style="font-size:14px;">km/h</small>`}`;
         const nodi=vento?.velocitaMs == null ? '' : ` · ${formattaValoreMarine(vento.velocitaMs*1.94384,1)} kn`;
-        marineWindMetaEl.textContent=`${vento?.direzioneCardinale || 'Direzione n/d'}${Number.isFinite(gradi) ? ` · ${Math.round(gradi)}°` : ''}${nodi} · Stazione più vicina alla posizione${gps.lat == null || gps.lon == null ? ' (in attesa del GPS)' : ''}${stVento?.nome ? `: ${stVento.nome}` : ''}${vento?.data ? ` · ${vento.data}` : ''}`;
+        marineWindMetaEl.textContent=`${vento?.direzioneCardinale || 'Direzione n/d'}${Number.isFinite(gradi) ? ` · ${Math.round(gradi)}°` : ''}${nodi}${vento?.data ? ` · ${formattaDataMarine(vento.data)}` : ''}`;
+
+        const items = [
+            ['Pressione','pressione','hPa',v=>formattaValoreMarine(v,1)],
+            ['Radiazione solare','radiazione','W/m²',v=>formattaValoreMarine(v,0)],
+            ['Temperatura aria','temperaturaAria','°C',v=>formattaValoreMarine(v,1)],
+            ['Temperatura acqua','temperaturaAcqua','°C',v=>formattaValoreMarine(v,1)],
+            ['Umidità','umidita','%',v=>formattaValoreMarine(v,0)],
+            ['Onde in laguna','ondeLaguna','m',v=>v?.significativaM == null ? '—' : `${formattaValoreMarine(v.significativaM,2)} <small style="font-size:10px;color:var(--text-muted);">sign. · max ${formattaValoreMarine(v.massimaM,2)}</small>`],
+            ['Onde in mare','ondeMare','m',v=>v?.significativaM == null ? '—' : `${formattaValoreMarine(v.significativaM,2)} <small style="font-size:10px;color:var(--text-muted);">sign. · max ${formattaValoreMarine(v.massimaM,2)}</small>`],
+        ];
+        if (marineExtraEl) marineExtraEl.innerHTML = items.map(([label,tipo,unita,fmt]) => {
+            const st = stazioneRiferimentoGPS(tipo, gps.lat, gps.lon);
+            const rec = st?.dati?.[tipo];
+            const raw = rec?.valore;
+            const valore = raw && typeof raw === 'object' ? fmt(raw) : fmt(raw);
+            const meta = rec?.data ? formattaDataMarine(rec.data) : 'Dato non disponibile';
+            return `<div class="gps-marine-extra-item"><div class="gps-marine-extra-label">${label}</div><div class="gps-marine-extra-value">${valore}${valore !== '—' ? `<small style="font-size:11px;margin-left:3px;color:var(--text-muted);">${unita}</small>` : ''}</div><div class="gps-marine-extra-meta">${esc(meta)}</div></div>`;
+        }).join('');
     }
     async function aggiornaMeteomarinoGPS(forza = false) {
         if (meteomarinoGPSInCaricamento || (!forza && Date.now()-meteomarinoGPSUltimoFetch < 5*60*1000)) return;
@@ -911,6 +989,11 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
         if (!turnoCorrente) { turnoVal.textContent = '--'; mostraMessaggio('<i class="fa-solid fa-spinner fa-spin"></i> Carico il turno…'); disegnaRitardo(null); return; }
 
         turnoVal.textContent = turnoCorrente.codice;
+        let overrideAttivo = null;
+        try { overrideAttivo = JSON.parse(localStorage.getItem('gps_turno_manuale')); } catch (e) { }
+        const manualeAttivo = overrideAttivo?.data === turnoCorrente.data && overrideAttivo?.codice;
+        if (turnoManualeBadge) turnoManualeBadge.hidden = !manualeAttivo;
+        if (btnModificaTurno) btnModificaTurno.title = manualeAttivo ? 'Modifica il turno manuale (lascia vuoto per tornare automatico)' : 'Modifica manualmente il turno';
         if (turnoCorrente.stato === 'riposo') { mostraMessaggio(`Oggi non hai corse in programma (${esc(turnoCorrente.codice)}).`); disegnaRitardo(null); return; }
         if (turnoCorrente.stato === 'varianti') { mostraMessaggio('<i class="fa-solid fa-triangle-exclamation"></i> Variante in corso: per gli orari vedi il turno nella sezione turni.', true); disegnaRitardo(null); return; }
         if (turnoCorrente.stato === 'nd') { mostraMessaggio('Turno non calcolabile: completa la configurazione nel calendario.', true); disegnaRitardo(null); return; }

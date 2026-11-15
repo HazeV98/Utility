@@ -358,10 +358,11 @@
         "conditions": [
             "tutti"
         ],
+        "excludeConditions": [],
         "isModule": true,
         "moduleId": "report",
         "moduleName": "report",
-        "splitModule": true
+        "splitModule": false
     },
     {
         "id": "spriss",

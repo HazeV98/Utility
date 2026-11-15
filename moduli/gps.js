@@ -393,15 +393,21 @@ export function initUIGPS() {
         }
 
         .gps-body {
-            flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
+            flex: 1 1 auto;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
             -webkit-overflow-scrolling: touch;
+            overscroll-behavior-y: contain;
+            touch-action: pan-y;
             width: 100%;
             display: flex;
             flex-direction: column;
             gap: 14px;
-            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+        }
+        .gps-body > * {
+            flex-shrink: 0;
         }
         .gps-clock { text-align: center; font-size: 42px; line-height: 1; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: 1px; color: var(--text-main); margin: 0 0 12px; }
 
@@ -464,23 +470,27 @@ export function initUIGPS() {
         #modal-gps-main {
             position: fixed !important;
             inset: 0 !important;
-            width: 100vw !important;
-            height: 100dvh !important;
+            width: 100% !important;
+            height: 100% !important;
             max-width: none !important;
             max-height: none !important;
             padding: 0 !important;
             margin: 0 !important;
             border-radius: 0 !important;
+            overflow: hidden !important;
             align-items: stretch !important;
             justify-content: stretch !important;
             z-index: 10020;
         }
         #modal-gps-main .gps-fullscreen-panel {
+            display: flex !important;
+            flex-direction: column !important;
             width: 100% !important;
             max-width: none !important;
-            height: 100dvh !important;
-            max-height: 100dvh !important;
-            min-height: 100dvh;
+            height: 100% !important;
+            max-height: 100% !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
             border-radius: 0 !important;
             box-sizing: border-box;
             padding-top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
@@ -754,6 +764,11 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
         marineToggle.classList.toggle('aperto', marineAperto);
         marineToggle.setAttribute('aria-expanded', String(marineAperto));
         marineDetails?.classList.toggle('aperto', marineAperto);
+        if (marineAperto) {
+            requestAnimationFrame(() => {
+                document.getElementById('gps-marine-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        }
     });
 
     // Attività in ordine, con partenza/arrivo in minuti dalla mezzanotte del giorno del turno (_p, _a)
@@ -987,29 +1002,28 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
     }
     const PUNTA_SALUTE = { lat: 45.4310778, lon: 12.3363778 };
     function stazioneRiferimentoGPS(tipo, latUtente = null, lonUtente = null) {
-    const stazioni = cacheMeteomarinoGPS?.stazioni || [];
-    const valide = stazioni.filter(st => {
-        const rec = st.dati?.[tipo];
-        if (!rec || rec.valore === null || rec.valore === undefined) return false;
-        if (tipo === 'vento') return rec.velocitaMs !== null || rec.direzioneGradi !== null;
-        return true;
-    });
-    if (!valide.length) return null;
-    if (tipo === 'livello') {
-        const punta = valide.find(st => /punta\s*(?:della\s*)?salute/i.test(st.nome || ''));
-        if (punta) return punta;
-        return valide.sort((a, b) => distanzaStazioneGPS(a, PUNTA_SALUTE.lat, PUNTA_SALUTE.lon) - distanzaStazioneGPS(b, PUNTA_SALUTE.lat, PUNTA_SALUTE.lon))[0];
+        const stazioni = cacheMeteomarinoGPS?.stazioni || [];
+        const valide = stazioni.filter(st => {
+            const rec = st.dati?.[tipo];
+            if (!rec || rec.valore === null || rec.valore === undefined) return false;
+            if (tipo === 'vento') return rec.velocitaMs !== null || rec.direzioneGradi !== null;
+            return true;
+        });
+        if (!valide.length) return null;
+        if (tipo === 'livello') {
+            const punta = valide.find(st => /punta\s*(?:della\s*)?salute/i.test(st.nome || ''));
+            if (punta) return punta;
+            return valide.sort((a, b) => distanzaStazioneGPS(a, PUNTA_SALUTE.lat, PUNTA_SALUTE.lon) - distanzaStazioneGPS(b, PUNTA_SALUTE.lat, PUNTA_SALUTE.lon))[0];
+        }
+        const lat = latUtente != null && Number.isFinite(Number(latUtente)) ? Number(latUtente) : PUNTA_SALUTE.lat;
+        const lon = lonUtente != null && Number.isFinite(Number(lonUtente)) ? Number(lonUtente) : PUNTA_SALUTE.lon;
+        const ordinate = valide.sort((a, b) => distanzaStazioneGPS(a, lat, lon) - distanzaStazioneGPS(b, lat, lon));
+        if (tipo === 'vento') {
+            const conVentoAttivo = ordinate.find(st => Number(st.dati?.vento?.velocitaMs) > 0);
+            if (conVentoAttivo) return conVentoAttivo;
+        }
+        return ordinate[0];
     }
-    const lat = latUtente != null && Number.isFinite(Number(latUtente)) ? Number(latUtente) : PUNTA_SALUTE.lat;
-    const lon = lonUtente != null && Number.isFinite(Number(lonUtente)) ? Number(lonUtente) : PUNTA_SALUTE.lon;
-    const ordinate = valide.sort((a, b) => distanzaStazioneGPS(a, lat, lon) - distanzaStazioneGPS(b, lat, lon));
-    if (tipo === 'vento') {
-        const conVentoAttivo = ordinate.find(st => Number(st.dati?.vento?.velocitaMs) > 0);
-        if (conVentoAttivo) return conVentoAttivo;
-    }
-    return ordinate[0];
-}
-
     function formattaDataMarine(value) {
         if (!value) return '';
         const d = new Date(String(value).replace(' ', 'T'));
@@ -1283,3 +1297,4 @@ export function avviaMotoreGPS(db, auth, userDataPrivate) {
         }
     };
 }
+ 

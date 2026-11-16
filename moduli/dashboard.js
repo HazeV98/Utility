@@ -77,6 +77,7 @@ export function initUIDashboard() {
         .dash-tide-event { border:1px solid var(--border-color); background:var(--surface); border-radius:10px; padding:11px; min-width:0; }
         .dash-tide-event strong { display:block; font-size:19px; margin-top:4px; }
         .dash-data-stale { color:var(--text-muted); font-size:11px; margin-top:10px; }
+        #dash-meteomarino-status { margin: 4px 0 12px; }
         @media (min-width: 1200px) { .dash-scroll-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .dash-scroll-grid #dash-card-turno-oggi { grid-column:span 2; } .dash-scroll-grid #dash-card-meteo { grid-column:span 1; } .dash-scroll-grid #dash-card-meteomarino { grid-column:1 / -1; } .dash-marine-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
         @media (max-width: 700px) { .dash-modal-content { width:100vw !important; height:100dvh !important; max-height:100dvh; border-radius:0 !important; padding:16px !important; } .dash-scroll-grid { grid-template-columns:minmax(0,1fr); gap:11px; } .dash-scroll-grid > * { grid-column:1 / -1 !important; } .dash-marine-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .dash-meteo-current { gap:8px; } .dash-meteo-feature { padding:11px 8px; } .dash-tide-panel { max-height:calc(100dvh - 20px); padding:15px; border-radius:12px; } }
         @media (max-width: 380px) { .dash-marine-grid { grid-template-columns:1fr 1fr; } .dash-tide-list { grid-template-columns:1fr; } }
@@ -427,13 +428,23 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
         return 6371 * 2 * Math.asin(Math.sqrt(h));
     }
     function stazioneMeteoPerTipo(tipo, stazioni, preferisciPunta = false) {
-        const valide = (stazioni || []).filter(st => st.dati?.[tipo] && st.dati[tipo].valore !== null && st.dati[tipo].valore !== undefined);
+        const valide = (stazioni || []).filter(st => {
+            const rec = st.dati?.[tipo];
+            if (!rec || rec.valore === null || rec.valore === undefined) return false;
+            if (tipo === 'vento') return rec.velocitaMs !== null || rec.direzioneGradi !== null;
+            return true;
+        });
         if (!valide.length) return null;
         if (preferisciPunta) {
             const punta = valide.find(st => /punta\s*della\s*salute/i.test(st.nome || ''));
             if (punta) return punta;
         }
-        return valide.sort((a,b) => distanzaMeteoKm(a, COORD_PUNTA_MAREA) - distanzaMeteoKm(b, COORD_PUNTA_MAREA))[0];
+        const ordinate = valide.sort((a,b) => distanzaMeteoKm(a, COORD_PUNTA_MAREA) - distanzaMeteoKm(b, COORD_PUNTA_MAREA));
+        if (tipo === 'vento') {
+            const conVentoAttivo = ordinate.find(st => Number(st.dati?.vento?.velocitaMs) > 0);
+            if (conVentoAttivo) return conVentoAttivo;
+        }
+        return ordinate[0];
     }
     function formattaOraMeteo(value) {
         if (!value) return 'orario non disponibile';
@@ -642,3 +653,4 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
 
     aggiornaVistaDashboard();
 }
+ 

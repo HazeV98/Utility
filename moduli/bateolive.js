@@ -3356,23 +3356,46 @@ async function bvSegnaliPdf() {
             doc.text(titoloCanale(canale), M, y);
             doc.setDrawColor(180); doc.line(M, y + 1.8, W - M, y + 1.8);
             y += 8;
+
             const lista = gruppi.get(canale).slice().sort((a, b) => confronta(a.numero || '', b.numero || ''));
-            for (const s of lista) {
-                const sn = (v) => (v == null ? '-' : (v ? 'Sì' : 'No'));
-                const righe = [];   // { t: testo, i: rientro in mm }
-                righe.push({ t: `Presente: ${sn(s.presente)}`, i: 0 });
-                if (s.tipo === 'gruppo') righe.push({ t: `Pali: ${s.pali} - presenti: ${s.paliPresenti == null ? s.pali : s.paliPresenti}`, i: 0 });
-                righe.push({ t: 'Luce', i: 0 });   // categoria con le sue due voci, sempre presenti
-                righe.push({ t: `Funzionante: ${sn(s.luceFunzionante)}`, i: 5 });
-                righe.push({ t: `Struttura presente: ${sn(s.luceStruttura)}`, i: 5 });
+            const sn = (v) => (v == null ? '-' : (v ? 'Sì' : 'No'));
+            const coord = (v, positivo, negativo) => {
+                const n = Number(v);
+                return v == null || v === '' || !Number.isFinite(n) ? '-' : `${Math.abs(n).toFixed(6)}° ${n >= 0 ? positivo : negativo}`;
+            };
+            const meta = lista.map(s => {
+                const lat = coord(s.lat, 'N', 'S');
+                const lon = coord(s.lon, 'E', 'W');
+                const righe = [
+                    `Presente: ${sn(s.presente)}`,
+                    ...(s.tipo === 'gruppo' ? [`Pali: ${s.pali} - presenti: ${s.paliPresenti == null ? s.pali : s.paliPresenti}`] : []),
+                    `Luce - funzionante: ${sn(s.luceFunzionante)}`,
+                    `Struttura presente: ${sn(s.luceStruttura)}`,
+                    `Coordinate: ${lat} / ${lon}`
+                ];
                 const note = pulisci(s.note);
-                if (note) righe.push(...doc.setFont('helvetica', 'normal').setFontSize(9.5).splitTextToSize(`Note: ${note}`, LARG - 4).map(t => ({ t, i: 0 })));
-                salto(7 + righe.length * 4.6 + 3);
-                doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5);
-                doc.text(`${etichettaTipoSegnale(s.tipo)} numero ${pulisci(s.numero) || '-'}`, M + 2, y); y += 5.2;
-                doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
-                for (const r of righe) { doc.text(r.t, M + 4 + r.i, y); y += 4.6; }
-                y += 3;
+                if (note) righe.push(...doc.splitTextToSize(`Note: ${note}`, (LARG / 2) - 12));
+                return { s, righe };
+            });
+
+            // Due segnali per riga: ciascuno occupa metà pagina, con separatore verticale centrale.
+            const metaW = LARG / 2;
+            for (let i = 0; i < meta.length; i += 2) {
+                const coppia = meta.slice(i, i + 2);
+                const altezze = coppia.map(({ righe }) => 5.2 + righe.length * 4.6 + 3);
+                const altezzaRiga = Math.max(...altezze);
+                salto(altezzaRiga + 2);
+                const top = y;
+                coppia.forEach(({ s, righe }, j) => {
+                    const x = M + j * metaW + 3;
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+                    doc.text(`${etichettaTipoSegnale(s.tipo)} n. ${pulisci(s.numero) || '-'}`, x, top + 4.5, { maxWidth: metaW - 10 });
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.8);
+                    righe.forEach((t, k) => doc.text(t, x, top + 10 + k * 4.6, { maxWidth: metaW - 10 }));
+                });
+                doc.setDrawColor(175); doc.setLineWidth(0.3);
+                doc.line(M + metaW, top, M + metaW, top + altezzaRiga);
+                y += altezzaRiga + 2;
             }
             y += 3;
         }

@@ -63,6 +63,19 @@
         "splitModule": false
     },
     {
+        "id": "link",
+        "label": "Link",
+        "icon": "fa-solid fa-link",
+        "defaultColor": "#495057",
+        "conditions": [
+            "tutti"
+        ],
+        "isModule": true,
+        "moduleId": "link",
+        "moduleName": "link",
+        "splitModule": true
+    },
+    {
         "id": "bachecaturni",
         "label": "Bacheca Turni",
         "icon": "fa-solid fa-handshake-angle",
@@ -252,20 +265,6 @@
         "moduleId": "annunci",
         "moduleName": "bacheca",
         "splitModule": false,
-        "folder": "Altre funzioni"
-    },
-    {
-        "id": "link",
-        "label": "Link",
-        "icon": "fa-solid fa-link",
-        "defaultColor": "#495057",
-        "conditions": [
-            "tutti"
-        ],
-        "isModule": true,
-        "moduleId": "link",
-        "moduleName": "link",
-        "splitModule": true,
         "folder": "Altre funzioni"
     },
     {

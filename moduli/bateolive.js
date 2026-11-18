@@ -135,6 +135,8 @@ let hiddenActvUnitNames = new Set();
 
 // Livelli Mappa e Stile
 let baseOSM, baseSat, nauticLayer;
+let baseOffline = null;          // mappa vettoriale locale (PMTiles); null se non disponibile
+let bvTemaScuroAttivo = false;   // flavor attualmente usato dalla mappa vettoriale
 let currentMapMode = 0; // 0: Base, 1: Satellitare
 
 // Opzioni della mappa (finestra "Stile mappa"): salvate sul dispositivo e riapplicate alle aperture successive
@@ -261,6 +263,8 @@ async function loadMapDependencies() {
     }
     await loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/OverlappingMarkerSpiderfier-Leaflet/0.2.6/oms.min.js');
+    // mappa vettoriale offline: se la libreria non si carica si ricade su OSM (baseOSM)
+    try { await loadScript('https://unpkg.com/protomaps-leaflet@5.1.0/dist/protomaps-leaflet.js'); } catch (e) { /* fallback OSM */ }
     mapDepsLoaded = true;
 }
 
@@ -1197,6 +1201,19 @@ function bvAggiornaTema(anima) {
     root.classList.toggle('bv-forza-chiaro', bvTemaForzato === 'light');
     root.classList.toggle('bv-dark', scuro);
     bvAggiornaIconaTema(scuro, anima === true);
+    if (bvTemaScuroAttivo !== scuro) {
+        bvTemaScuroAttivo = scuro;
+        if (map && baseOffline && currentMapMode === 0) {
+            map.removeLayer(baseOffline);
+            baseOffline = creaLayerOffline(scuro);
+            if (baseOffline) {
+                baseOffline.addTo(map);
+                if (opzMappa.nautico && map.hasLayer(nauticLayer)) nauticLayer.bringToFront();
+            } else {
+                map.addLayer(baseOSM);
+            }
+        }
+    }
 }
 
 function toggleBvTema() {
@@ -1219,6 +1236,19 @@ function avviaOsservatoreTema() {
             if (mq.addEventListener) mq.addEventListener('change', bvAggiornaTema);
         }
     } catch (e) { /* il tema non deve mai rompere la mappa */ }
+}
+
+function creaLayerOffline(scuro) {
+    if (!window.protomapsL) return null;
+    try {
+        return protomapsL.leafletLayer({
+            url: `${API_URL}/tiles/actv_venezia.pmtiles`,
+            flavor: scuro ? 'dark' : 'light',
+            lang: 'it',
+            maxDataZoom: 15,
+            maxZoom: 19
+        });
+    } catch (e) { return null; }
 }
 
 export async function avviaMotoreBateoLive(db, auth, userData, isAdmin) {
@@ -1268,13 +1298,33 @@ export async function avviaMotoreBateoLive(db, auth, userData, isAdmin) {
         baseSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
         nauticLayer = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxZoom: 18 });
 
+        const rootEl = document.getElementById('modal-bateolive-main');
+        bvTemaScuroAttivo = rootEl ? rootEl.classList.contains('bv-dark') : false;
+
+        baseOffline = creaLayerOffline(bvTemaScuroAttivo);
+        const layerBaseIniziale = baseOffline || baseOSM;
+
         map = L.map('bv-map', { 
             attributionControl: false, 
             zoomControl: false,
             zoomSnap: 0.25,
             zoomDelta: 0.5,
-            layers: opzMappa.nautico ? [baseOSM, nauticLayer] : [baseOSM]
+            layers: opzMappa.nautico ? [layerBaseIniziale, nauticLayer] : [layerBaseIniziale]
         }).setView([45.4371, 12.3326], 13);
+
+        // se l'archivio PMTiles non risponde sul backend, si torna a OSM
+        if (baseOffline) {
+            fetch(`${API_URL}/tiles/actv_venezia.pmtiles`, { method: 'HEAD' })
+                .then(r => { if (!r.ok) throw new Error(); })
+                .catch(() => {
+                    if (map && baseOffline && map.hasLayer(baseOffline)) map.removeLayer(baseOffline);
+                    baseOffline = null;
+                    if (currentMapMode === 0) {
+                        map.addLayer(baseOSM);
+                        if (opzMappa.nautico && map.hasLayer(nauticLayer)) nauticLayer.bringToFront();
+                    }
+                });
+        }
         map.on('zoomend zoomlevelschange', aggiornaBvZoomBtn);
         aggiornaBvZoomBtn();
 
@@ -1376,9 +1426,13 @@ function sincronizzaFinestraStile() {
 function impostaStileMappa(modo) {
     if (!map) return;
     currentMapMode = modo === 1 ? 1 : 0;
+    if (baseOffline) {
+        if (map.hasLayer(baseOffline)) map.removeLayer(baseOffline);
+        baseOffline = creaLayerOffline(bvTemaScuroAttivo) || null;   // flavor sempre allineato al tema
+    }
     if (map.hasLayer(baseOSM)) map.removeLayer(baseOSM);
     if (map.hasLayer(baseSat)) map.removeLayer(baseSat);
-    map.addLayer(currentMapMode === 0 ? baseOSM : baseSat);
+    map.addLayer(currentMapMode === 0 ? (baseOffline || baseOSM) : baseSat);
     if (opzMappa.nautico) {
         if (!map.hasLayer(nauticLayer)) map.addLayer(nauticLayer);
         nauticLayer.bringToFront();

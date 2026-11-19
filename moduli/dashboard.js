@@ -1,4 +1,3 @@
-import { doc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import {
     API_URL, DATA_INIZIO_NUOVI_TURNI, dateToLocalISO, creaDataSicura, convertiTurnoPerMansione,
     calcolaTurnoBase as calcolaTurnoCore, ferieDelGiorno, caricaDatiTurni
@@ -26,7 +25,6 @@ export function initUIDashboard() {
         .dash-alert-danger { background: rgba(220, 53, 69, 0.1); border-left: 5px solid var(--danger); color: var(--danger); }
         .dash-alert-warning { background: rgba(255, 193, 7, 0.1); border-left: 5px solid #ffc107; color: #856404; }
         
-        .dash-mate { display: none; background: rgba(40, 167, 69, 0.1); border-left: 5px solid var(--success); padding: 15px; border-radius: var(--radius-sm); margin-bottom: 15px; text-align: left; }
         
         .dash-prom-card { background: rgba(52, 152, 219, 0.1); border-left: 5px solid #3498db; padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; text-align: left; }
         .dash-prom-title { font-weight: bold; font-size: 14px; color: #2980b9; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
@@ -47,10 +45,13 @@ export function initUIDashboard() {
         .weather-hour-temp { color: var(--primary); font-weight: bold; font-size: 15px;}
 
         /* Dashboard responsive */
-        .dash-modal-content { width: min(1120px, calc(100vw - 28px)); max-width: 1120px !important; height: min(94dvh, 960px) !important; max-height: 94dvh; }
+        .dash-modal-content { width: min(1080px, calc(100vw - 40px)); max-width: 1080px !important; height: min(90dvh, 900px) !important; max-height: 90dvh; border-radius: 22px !important; overflow: hidden; box-sizing: border-box; }
+        .dash-modal-close { position: absolute; top: 14px; right: 14px; z-index: 5; display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 0; border: 1px solid var(--border-color); border-radius: 50%; background: var(--surface); color: var(--text-main); font-size: 19px; cursor: pointer; box-shadow: var(--shadow-sm); }
+        .dash-modal-close:active { transform: scale(.94); }
+        .dash-modal-close:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
         .dash-scroll-grid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-content: start; width: 100%; padding: 2px 2px 12px; }
         .dash-scroll-grid > * { min-width: 0; }
-        .dash-scroll-grid #dash-alert-varianti, .dash-scroll-grid #dash-card-turno-oggi, .dash-scroll-grid #dash-alert-pioggia, .dash-scroll-grid #dash-mate-container, .dash-scroll-grid #dash-promemoria-container { grid-column: 1 / -1; }
+        .dash-scroll-grid #dash-alert-varianti, .dash-scroll-grid #dash-card-turno-oggi, .dash-scroll-grid #dash-alert-pioggia, .dash-scroll-grid #dash-promemoria-container { grid-column: 1 / -1; }
         .dash-scroll-grid #dash-card-meteo, .dash-scroll-grid #dash-card-meteomarino { height: 100%; }
         .dash-scroll-grid #dash-card-meteomarino { grid-column: 1 / -1; }
         .dash-meteo-current { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:12px; margin-bottom:12px; }
@@ -79,13 +80,24 @@ export function initUIDashboard() {
         .dash-data-stale { color:var(--text-muted); font-size:11px; margin-top:10px; }
         #dash-meteomarino-status { margin: 4px 0 12px; }
         @media (min-width: 1200px) { .dash-scroll-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .dash-scroll-grid #dash-card-turno-oggi { grid-column:span 2; } .dash-scroll-grid #dash-card-meteo { grid-column:span 1; } .dash-scroll-grid #dash-card-meteomarino { grid-column:1 / -1; } .dash-marine-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
-        @media (max-width: 700px) { .dash-modal-content { width:100vw !important; height:100dvh !important; max-height:100dvh; border-radius:0 !important; padding:16px !important; } .dash-scroll-grid { grid-template-columns:minmax(0,1fr); gap:11px; } .dash-scroll-grid > * { grid-column:1 / -1 !important; } .dash-marine-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .dash-meteo-current { gap:8px; } .dash-meteo-feature { padding:11px 8px; } .dash-tide-panel { max-height:calc(100dvh - 20px); padding:15px; border-radius:12px; } }
+        @media (max-width: 700px) {
+            #modal-dashboard-main { padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px calc(env(safe-area-inset-bottom, 0px) + 12px); box-sizing: border-box; align-items: center; justify-content: center; }
+            .dash-modal-content { width: calc(100vw - 28px) !important; height: min(88dvh, 820px) !important; max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 24px); border-radius: 22px !important; padding: 16px !important; }
+            .dash-modal-close { top: 10px; right: 10px; width: 40px; height: 40px; }
+            .dash-modal-content > h3 { padding-right: 48px; }
+            .dash-scroll-grid { grid-template-columns:minmax(0,1fr); gap:11px; }
+            .dash-scroll-grid > * { grid-column:1 / -1 !important; }
+            .dash-marine-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .dash-meteo-current { gap:8px; }
+            .dash-meteo-feature { padding:11px 8px; }
+            .dash-tide-panel { max-height:calc(100dvh - 20px); padding:15px; border-radius:12px; }
+        }
         @media (max-width: 380px) { .dash-marine-grid { grid-template-columns:1fr 1fr; } .dash-tide-list { grid-template-columns:1fr; } }
     </style>
 
     <div id="modal-dashboard-main" class="modal-overlay" style="display:none;" onclick="window.chiudiSuSfondo(event, 'modal-dashboard-main')">
         <div class="modal-content dash-modal-content" style="display: flex; flex-direction: column; padding: 20px; position: relative;">
-            <i class="fa-solid fa-xmark" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted);" onclick="document.getElementById('modal-dashboard-main').style.display='none'"></i>
+            <button type="button" class="dash-modal-close" aria-label="Chiudi dashboard" title="Chiudi" onclick="document.getElementById('modal-dashboard-main').style.display='none'"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             
             <h3 style="margin-top: 0; color: var(--primary); font-weight: 800; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
                 <i class="fa-solid fa-chart-bar"></i> Dashboard
@@ -115,11 +127,6 @@ export function initUIDashboard() {
                 <div id="dash-alert-pioggia" class="dash-alert dash-alert-danger">
                     <i class="fa-solid fa-cloud-showers-heavy" style="font-size: 24px;"></i>
                     <span>Prepara la cerata, oggi è prevista pioggia!</span>
-                </div>
-
-                <div id="dash-mate-container" class="dash-mate">
-                    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 5px;"><i class="fa-solid fa-users"></i> Oggi lavorerai con:</div>
-                    <div id="dash-mate-name" style="font-weight: bold; font-size: 17px; color: var(--text-main);">--</div>
                 </div>
 
                 <div id="dash-promemoria-container" style="display: none; width: 100%;"></div>
@@ -176,7 +183,6 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
     const vistaTurno = creaVistaTurno(document.getElementById('dash-turno-view'));
 
     // HELPER FUNZIONI
-    function capitalizzaIniziali(str) { if (!str) return ""; return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); }
     function dataIt(iso) { return iso.split('-').reverse().join('/'); }
 
 
@@ -193,40 +199,6 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
     function calcolaTurnoBase(dStr, cfgData) {
         return calcolaTurnoCore(dStr, cfgData, { rot: globalRotCache, disp: datiTurni && datiTurni.disp });
     }
-
-    // Stessa logica di varianti.js: assenze -> NPL; NPL e DISP non danno mai match compagno
-    function turnoEscludeMatch(turnoStr) {
-        if (!turnoStr) return false;
-        const t = String(turnoStr).toUpperCase().trim();
-        const codiciSensibili = ["KMAL", "KNOP", "AVIS", "KINF", "FER", "FEP", "FES", "PRT", "FERIE"];
-        if (codiciSensibili.some(c => new RegExp(`\\b${c}\\b`).test(t))) return true;
-        return /\bNPL\b/.test(t) || /\bDISP\b/.test(t);
-    }
-
-    function calcolaCompagniPossibili(mioTurnoStr) {
-        let mates = [];
-        if (!mioTurnoStr) return mates;
-        let tClean = String(mioTurnoStr).toUpperCase().replace(/\s+/g, '');
-        let matchB = tClean.match(/^([1-9])B(\d{2})$/);
-        if (matchB) {
-            let l = matchB[1]; let f = matchB[2];
-            let letPilota = (l === '1' || l === '2') ? 'C' : 'P';
-            mates.push(`${l}${letPilota}${f}`);
-        } else {
-            let matchP = tClean.match(/^([1-9])[CP](\d{2})$/);
-            if (matchP) mates.push(`${matchP[1]}B${matchP[2]}`);
-            else {
-                let match50 = tClean.match(/^([A-Z0-9]+?)(\d{2})$/);
-                if (match50) {
-                    let p = match50[1]; let n = parseInt(match50[2], 10);
-                    if (n >= 50) mates.push(p + String(n - 50).padStart(2, '0'));
-                    else mates.push(p + String(n + 50).padStart(2, '0'));
-                }
-            }
-        }
-        return mates;
-    }
-
 
     function caricaPromemoriaDashboard(dStr) {
         const container = document.getElementById('dash-promemoria-container');
@@ -310,109 +282,12 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
         
         vistaTurno.carica({ codice: mioTurnoOggi, data: dStr, variante: haVarianti });
 
-        cercaCompagno(dStr, mioTurnoOggi);
         caricaPromemoriaDashboard(dStr);
         aggiornaMeteo(dStr);
         aggiornaMeteomarinoDashboard();
     }
 
-    async function cercaCompagno(dStr, mioTurno) {
-        const container = document.getElementById('dash-mate-container');
-        container.style.display = 'none';
-        if (!auth.currentUser || !mioTurno) return;
 
-        try {
-            const userRef = doc(db, "utenti", auth.currentUser.uid);
-            const userSnap = await getDoc(userRef);
-            
-            const miaRubricaRef = doc(db, "rubrica", auth.currentUser.uid);
-            const miaRubricaSnap = await getDoc(miaRubricaRef);
-            const isCurrentUserInRubrica = miaRubricaSnap.exists();
-            
-            if (userSnap.exists() && userSnap.data().condivisioneVarianti === true) {
-                if (turnoEscludeMatch(mioTurno)) return;
-                let mioTurnoClean = String(mioTurno).toUpperCase().replace(/\s+/g, '');
-                let compagniPossibili = calcolaCompagniPossibili(mioTurno);
-                
-                let mStr = String(userDataPrivate?.mansione || "").toLowerCase();
-                let isMioMarinaio = mStr.includes('marinaio') || mStr.includes('timoniere');
-
-                const q = query(collection(db, "utenti"), where("condivisioneVarianti", "==", true));
-                const querySnapshot = await getDocs(q);
-                
-                let compagniTrovati = [];
-                let promises = [];
-
-                querySnapshot.forEach((docSnap) => {
-                    if (docSnap.id !== auth.currentUser.uid) {
-                        const userData = docSnap.data();
-                        if (userData.cognome) {
-                            const calRef = doc(db, "calendario", docSnap.id);
-                            promises.push(getDoc(calRef).then(calSnap => {
-                                return { id: docSnap.id, userData: userData, calData: calSnap.exists() ? calSnap.data() : {} };
-                            }));
-                        }
-                    }
-                });
-
-                const risultati = await Promise.all(promises);
-
-                for (let res of risultati) {
-                    let turnoOriginaleBase = String(calcolaTurnoBase(dStr, res.calData) || "N/D");
-                    turnoOriginaleBase = convertiTurnoPerMansione(turnoOriginaleBase, res.userData.mansione);
-                    
-                    let turnoManuale = res.calData.variazioni && res.calData.variazioni[dStr] ? String(res.calData.variazioni[dStr]) : null;
-                    let turnoComp = turnoManuale !== null ? turnoManuale : turnoOriginaleBase;
-                    
-                    let stringaSicuraTurno = String(turnoComp).toUpperCase().replace(/\s+/g, '');
-                    
-                    let mTheir = String(res.userData.mansione || "").toLowerCase();
-                    let isTheirMarinaio = mTheir.includes('marinaio') || mTheir.includes('timoniere');
-                    
-                    let isMate = false;
-                    if (turnoEscludeMatch(stringaSicuraTurno)) {
-                        isMate = false;
-                    } else if (compagniPossibili.includes(stringaSicuraTurno)) {
-                        isMate = true;
-                    } else if (stringaSicuraTurno === mioTurnoClean && (isMioMarinaio !== isTheirMarinaio)) {
-                        if (!["NPL", "RI", "RIPOSO", "AL"].includes(stringaSicuraTurno)) {
-                            isMate = true;
-                        }
-                    }
-
-                    if (isMate) {
-                        let cognomeCap = capitalizzaIniziali(res.userData.cognome);
-                        let nomeCap = capitalizzaIniziali(res.userData.nome);
-                        let matricola = res.userData.matricola ? ` (Mat: ${res.userData.matricola})` : "";
-                        
-                        let mateHtml = `<span>${cognomeCap} ${nomeCap}${matricola}</span>`;
-
-                        if (isCurrentUserInRubrica) {
-                            const mateRubricaRef = doc(db, "rubrica", res.id);
-                            const mateRubricaSnap = await getDoc(mateRubricaRef);
-                            
-                            if (mateRubricaSnap.exists() && mateRubricaSnap.data().telefono) {
-                                const matePhone = String(mateRubricaSnap.data().telefono).replace(/\s+/g, '');
-                                mateHtml += `
-                                    <span style="white-space: nowrap;">
-                                        <a href="tel:${matePhone}" style="margin-left: 12px; color: var(--text-main); text-decoration: none;"><i class="fa-solid fa-phone"></i></a>
-                                        <a href="https://wa.me/39${matePhone}" target="_blank" style="margin-left: 12px; color: #25D366; text-decoration: none;"><i class="fa-brands fa-whatsapp"></i></a>
-                                    </span>
-                                `;
-                            }
-                        }
-
-                        compagniTrovati.push(mateHtml);
-                    }
-                }
-
-                if (compagniTrovati.length > 0) {
-                    document.getElementById('dash-mate-name').innerHTML = compagniTrovati.join("<br><br>");
-                    container.style.display = 'block';
-                }
-            }
-        } catch (e) { console.error("Errore compagno", e); }
-    }
 
 
     function testoSicuroMeteo(value) {
@@ -653,4 +528,3 @@ export function avviaMotoreDashboard(db, auth, userDataPrivate) {
 
     aggiornaVistaDashboard();
 }
- 

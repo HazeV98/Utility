@@ -1,12 +1,9 @@
 // ==========================================================================================
 // BACHECA UTILITY (front end) - file unico: interfaccia (ex ui_bacheca_utility.js) + logica.
 // I dati ora arrivano dal backend (bacheca.js sul mini PC) invece che da Firestore.
-// Firebase resta per: login (token inviato al server) e registrazione del token delle notifiche.
+// Firebase resta solo per il login (il token viene inviato al server). Le notifiche si gestiscono da Impostazioni (index).
 // Nell'app: import { initUIBachecaUtility, avviaMotoreBachecaUtility } from './bacheca_utility.js';
 // ==========================================================================================
-import { doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
-
 // ---------- Configurazione ----------
 const API_ORIGIN = 'https://utilitybe.homeserver.foo';
 const API_BACHECA = API_ORIGIN + '/api/bacheca';
@@ -284,64 +281,6 @@ export function avviaMotoreBachecaUtility(appInstance, dbInstance, authInstance,
 
     document.getElementById('modal-bacheca-utility-main').style.display = 'flex';
 }
-
-// ==========================================================================================
-// NOTIFICHE (la registrazione del token resta com'e': il token si salva in Firestore, l'invio lo fa il backend)
-// ==========================================================================================
-window.attivaNotificheBacheca = async () => {
-    const ctx = window.bachecaContext;
-    if (!ctx || !ctx.auth.currentUser) return;
-
-    const btn = document.getElementById('btn-attiva-notifiche-bacheca');
-    if (!btn) return;
-
-    const testoOriginale = btn.innerHTML;
-
-    btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Attivazione in corso...";
-    btn.disabled = true;
-    btn.style.pointerEvents = 'none';
-
-    try {
-        const messaging = getMessaging(ctx.app);
-        const permission = await Notification.requestPermission();
-
-        if (permission === 'granted') {
-            const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-            const swPath = basePath + '/firebase-messaging-sw.js';
-            const swRegistration = await navigator.serviceWorker.register(swPath);
-
-            const token = await getToken(messaging, {
-                vapidKey: 'BLex63nSSs-uyUZUIRzWPOQyznfTkHC8ZtNnInGArryQnYddSfIHjAH1IwfoopM9otZ4jl2NGL5vM4xtLHkqwyI',
-                serviceWorkerRegistration: swRegistration
-            });
-
-            if (token) {
-                const prefDefault = { bachecaturni: false, bachecautility: true, promemoria: true, rotazioni: false };
-                await setDoc(doc(ctx.db, "utenti", ctx.auth.currentUser.uid), {
-                    fcm_token: token,
-                    notifiche_pref: prefDefault
-                }, { merge: true });
-
-                btn.style.display = 'none';
-                alert("🔔 Notifiche attivate! Riceverai un avviso per ogni nuovo Annuncio o DDS.");
-            } else {
-                btn.innerHTML = testoOriginale;
-                btn.disabled = false;
-                btn.style.pointerEvents = 'auto';
-                alert("Non è stato possibile ottenere il token per le notifiche.");
-            }
-        } else {
-            btn.style.display = 'none';
-            alert("Hai negato il permesso per le notifiche.");
-        }
-    } catch (error) {
-        console.error("Errore attivazione notifiche:", error);
-        btn.innerHTML = testoOriginale;
-        btn.disabled = false;
-        btn.style.pointerEvents = 'auto';
-        alert("Errore durante l'attivazione delle notifiche. Controlla la console.");
-    }
-};
 
 // ==========================================================================================
 // FORM NUOVO AVVISO

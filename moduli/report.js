@@ -27,6 +27,10 @@ let inAggiornamentoChat = false;
 let timerAvviati = false;
 let ultimaListaJson = '';
 let vistaArchivio = false;           // false = Chat, true = Archivio
+let creazioneInCorso = false;
+let statoNotifiche = { supportate: false, attive: true, bloccate: false };   // letto da index.js
+const CHIAVE_BANNER_RIMANDATO = 'assistenza_banner_notifiche_rimandato';
+const RINVIO_BANNER_MS = 24 * 3600 * 1000;   // "Non ora": il banner non riappare per 24 ore
 let listaCorrente = [];
 const cacheChat = new Map();
 
@@ -113,6 +117,15 @@ export function initUISegnalazioni() {
     st.textContent = `
         .as-nuova { width:100%; background:var(--info); color:#fff; border:none; padding:16px; font-size:15px; font-weight:700; border-radius:var(--radius-md); cursor:pointer; display:flex; justify-content:center; align-items:center; gap:10px; box-shadow:0 4px 12px rgba(0,136,255,0.3); margin-bottom:15px; }
         .as-vuoto { text-align:center; padding:40px 20px; color:var(--text-muted); font-size:15px; background:var(--surface-hover); border-radius:12px; border:1px dashed var(--border-color); line-height:1.5; }
+        .as-banner { background:var(--info-light); border:1px solid var(--info); border-radius:12px; padding:14px; margin-bottom:14px; }
+        .as-banner-testo { font-size:14px; font-weight:600; color:var(--text-main); line-height:1.4; }
+        .as-banner-testo i { color:var(--info); margin-right:6px; }
+        .as-banner-esito { margin-top:8px; font-size:12.5px; color:var(--danger); font-weight:600; }
+        .as-banner-azioni { display:flex; gap:8px; margin-top:12px; }
+        .as-banner-btn { flex:1; padding:10px; border-radius:10px; border:1px solid var(--border-color); background:var(--surface); color:var(--text-muted); font-weight:700; font-size:13px; font-family:inherit; cursor:pointer; }
+        .as-banner-primario { background:var(--info); border-color:var(--info); color:#fff; }
+        .as-campanella { position:relative; color:var(--info); border-color:var(--info); }
+        .as-campanella::after { content:''; position:absolute; top:5px; right:5px; width:8px; height:8px; border-radius:50%; background:var(--danger); }
         .as-tabs { display:flex; gap:8px; margin-bottom:12px; }
         .as-tab { flex:1; padding:10px; border-radius:10px; border:1px solid var(--border-color); background:var(--surface); color:var(--text-muted); font-weight:700; font-size:13px; font-family:inherit; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:6px; }
         .as-tab.attiva { background:var(--info-light); border-color:var(--info); color:var(--info); }
@@ -175,6 +188,14 @@ export function initUISegnalazioni() {
             <i class="fa-solid fa-xmark close-modal" style="position: absolute; right: 20px; top: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted); transition: 0.2s;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--text-muted)'" onclick="window.chiudiModal('modal-segnalazioni-main')"></i>
             <h3 style="margin-top: 0; color: var(--info); font-weight: 800; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; display:flex; align-items:center; gap:10px;"><i class="fa-solid fa-headset"></i> Assistenza</h3>
             <div style="flex: 1; overflow-y: auto; padding-right: 5px;">
+                <div id="as-banner-notifiche" class="as-banner" style="display:none;">
+                    <div class="as-banner-testo"><i class="fa-solid fa-bell"></i> Questo modulo funziona meglio con le notifiche. Vuoi attivare le notifiche per i messaggi?</div>
+                    <div id="as-banner-esito" class="as-banner-esito" style="display:none;"></div>
+                    <div class="as-banner-azioni">
+                        <button id="as-banner-attiva" class="as-banner-btn as-banner-primario" onclick="window.attivaNotificheAssistenza()">Attiva</button>
+                        <button class="as-banner-btn" onclick="window.rimandaBannerNotificheAssistenza()">Non ora</button>
+                    </div>
+                </div>
                 <button id="as-btn-nuova" class="as-nuova" onclick="window.apriNuovaChatAssistenza()"><i class="fa-solid fa-plus"></i> Nuova chat</button>
                 <div class="as-tabs">
                     <button id="as-tab-chat" class="as-tab attiva" onclick="window.cambiaVistaAssistenza(false)"><i class="fa-solid fa-comments"></i> Chat</button>
@@ -193,7 +214,7 @@ export function initUISegnalazioni() {
                 <input type="text" id="as-oggetto" class="input-field" placeholder=" " maxlength="${MAX_OGGETTO}" onkeydown="if(event.key==='Enter'){event.preventDefault();window.iniziaChatAssistenza();}">
                 <label>Oggetto della richiesta</label>
             </div>
-            <button class="btn-action" style="background-color: var(--info);" onclick="window.iniziaChatAssistenza()"><i class="fa-solid fa-comments"></i> Apri chat</button>
+            <button id="as-btn-inizia" class="btn-action" style="background-color: var(--info);" onclick="window.iniziaChatAssistenza()"><i class="fa-solid fa-comments"></i> Apri chat</button>
             <button class="btn-modal" style="background-color: transparent; color: var(--text-muted); border: 1px solid var(--border-color);" onclick="document.getElementById('modal-nuova-chat').style.display='none'">Annulla</button>
         </div>
     </div>
@@ -207,6 +228,7 @@ export function initUISegnalazioni() {
                     <div id="as-chat-titolo" class="as-titolo"></div>
                     <button id="as-chat-utente" class="as-sottotitolo" style="display:none;" onclick="window.apriProfiloAssistenza()"></button>
                 </div>
+                <button id="as-btn-notifiche" class="as-head-btn as-campanella" style="display:none;" aria-label="Attiva le notifiche per i messaggi" title="Attiva le notifiche per i messaggi" onclick="window.attivaNotificheAssistenza()"><i class="fa-solid fa-bell"></i></button>
                 <button id="as-btn-archivia" class="as-head-btn" style="display:none;" aria-label="Archivia chat" title="Archivia chat" onclick="window.archiviaChatAssistenza()"><i class="fa-solid fa-box-archive"></i></button>
                 <button id="as-btn-elimina" class="as-head-btn as-danger" style="display:none;" aria-label="Elimina chat" title="Elimina chat" onclick="window.eliminaChatAssistenza()"><i class="fa-solid fa-trash-can"></i></button>
             </div>
@@ -243,6 +265,7 @@ export function avviaMotoreSegnalazioni(database, authentication, uidOrUserData,
     avviaTimer();
     ultimaListaJson = '';
     caricaLista(false);
+    aggiornaStatoNotifiche();
 }
 
 function avviaTimer() {
@@ -250,8 +273,61 @@ function avviaTimer() {
     timerAvviati = true;
     setInterval(() => { if (!document.hidden && chatAperta && chatAperta.id && visibile('modal-chat-assistenza')) aggiornaChat(false, false); }, INTERVALLO_CHAT_MS);
     setInterval(() => { if (!document.hidden && visibile('modal-segnalazioni-main')) caricaLista(true); }, INTERVALLO_LISTA_MS);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) window.aggiornaAssistenza(); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { window.aggiornaAssistenza(); aggiornaStatoNotifiche(); } });
 }
+
+// ==========================================================================================
+// NOTIFICHE: banner all'apertura del modulo e campanella nella chat
+// ==========================================================================================
+async function aggiornaStatoNotifiche() {
+    try {
+        if (window.statoNotificheDispositivo) statoNotifiche = await window.statoNotificheDispositivo();
+    } catch (_) { /* stato sconosciuto: nessun avviso */ }
+    mostraNotificheUI();
+}
+
+function mostraNotificheUI() {
+    const mancano = statoNotifiche.supportate && !statoNotifiche.attive;
+    const rimandato = Date.now() - Number(localStorage.getItem(CHIAVE_BANNER_RIMANDATO) || 0) < RINVIO_BANNER_MS;
+    const banner = document.getElementById('as-banner-notifiche');
+    if (banner) banner.style.display = mancano && !statoNotifiche.bloccate && !rimandato ? 'block' : 'none';
+    const campanella = document.getElementById('as-btn-notifiche');
+    if (campanella) campanella.style.display = mancano ? 'inline-flex' : 'none';
+}
+
+// Usata dal tasto "Attiva" del banner e dalla campanella nella chat
+window.attivaNotificheAssistenza = async () => {
+    if (statoNotifiche.bloccate) {
+        alert("Le notifiche sono bloccate nelle impostazioni del dispositivo o del browser: riattivale da lì e poi riprova.");
+        return;
+    }
+    const btn = document.getElementById('as-banner-attiva');
+    const esito = document.getElementById('as-banner-esito');
+    if (btn) { btn.disabled = true; btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i>"; }
+    if (esito) esito.style.display = 'none';
+    try {
+        const ok = window.attivaNotificheDispositivo ? await window.attivaNotificheDispositivo() : false;
+        if (ok) {
+            statoNotifiche.attive = true;
+            mostraNotificheUI();
+        } else {
+            await aggiornaStatoNotifiche();
+            const messaggio = 'Non è stato possibile attivare le notifiche: controlla il permesso nelle impostazioni del dispositivo o del browser.';
+            const bannerVisibile = visibile('as-banner-notifiche');
+            if (bannerVisibile && esito) { esito.textContent = messaggio; esito.style.display = 'block'; }
+            else alert(messaggio);
+        }
+    } catch (e) {
+        alert('Errore durante l\'attivazione delle notifiche: ' + e.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Attiva'; }
+    }
+};
+
+window.rimandaBannerNotificheAssistenza = () => {
+    localStorage.setItem(CHIAVE_BANNER_RIMANDATO, String(Date.now()));
+    mostraNotificheUI();
+};
 
 // Chiamata anche da index.js quando arriva una notifica con l'app aperta
 window.aggiornaAssistenza = () => {
@@ -278,7 +354,7 @@ function htmlRigaChat(c) {
         <div class="as-chat ${nuova ? 'as-chat-nuova' : ''}" onclick="window.apriChatAssistenza('${esc(c.id)}')">
             <div class="as-chat-top"><span class="as-chat-titolo">${esc(c.oggetto)}</span><span class="as-chat-ora">${fmtOraLista(c.ultimo_messaggio)}</span></div>
             ${sotto}
-            <div class="as-chat-prev"><span class="as-prev-testo">${esc(c.anteprima)}</span>${nuova ? `<span class="as-badge">${c.non_letti}</span>` : ''}</div>
+            <div class="as-chat-prev"><span class="as-prev-testo">${c.anteprima ? esc(c.anteprima) : '<i>Nessun messaggio ancora</i>'}</span>${nuova ? `<span class="as-badge">${c.non_letti}</span>` : ''}</div>
         </div>`;
 }
 
@@ -334,13 +410,30 @@ window.apriNuovaChatAssistenza = () => {
     setTimeout(() => document.getElementById('as-oggetto').focus(), 100);
 };
 
-// La chat si apre subito con l'oggetto come titolo; sul server nasce con il primo messaggio
-window.iniziaChatAssistenza = () => {
+// La chat viene creata subito sul server (con un messaggio tecnico invisibile) e si apre con l'oggetto come titolo
+window.iniziaChatAssistenza = async () => {
+    if (creazioneInCorso) return;
     const oggetto = document.getElementById('as-oggetto').value.replace(/\s+/g, ' ').trim();
     if (!oggetto) return alert("Scrivi l'oggetto della richiesta.");
-    document.getElementById('modal-nuova-chat').style.display = 'none';
-    apriChat({ id: null, oggetto, utente: null });
-    document.getElementById('as-messaggi').innerHTML = `<div class="as-vuoto">Scrivi il primo messaggio: la richiesta verrà inviata all'assistenza.</div>`;
+    const btn = document.getElementById('as-btn-inizia');
+    const iconaOriginale = btn.innerHTML;
+    creazioneInCorso = true;
+    btn.disabled = true;
+    btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Creazione...";
+    try {
+        const r = await api('/chat', { metodo: 'POST', corpo: { oggetto } });
+        document.getElementById('modal-nuova-chat').style.display = 'none';
+        apriChat({ id: r.chat.id, oggetto, utente: null, archiviata: false });
+        ultimaListaJson = '';
+        caricaLista(true);
+        await aggiornaChat(true, true);
+    } catch (e) {
+        alert('Impossibile creare la chat: ' + e.message);
+    } finally {
+        creazioneInCorso = false;
+        btn.disabled = false;
+        btn.innerHTML = iconaOriginale;
+    }
 };
 
 // ==========================================================================================
@@ -435,7 +528,9 @@ async function aggiornaChat(forzaScroll, attendi) {
         aggiornaIntestazioneChat();
 
         const cont = document.getElementById('as-messaggi');
-        if (ultimoSeq === 0) cont.innerHTML = '';
+        if (ultimoSeq === 0) {
+            cont.innerHTML = r.messaggi.length ? '' : `<div class="as-vuoto">${isAdmin ? "L'utente non ha ancora scritto il suo messaggio." : "Scrivi il tuo messaggio: arriverà all'assistenza."}</div>`;
+        }
         if (r.messaggi.length) {
             const vicinoAlFondo = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 120;
             cont.insertAdjacentHTML('beforeend', r.messaggi.map(htmlMessaggio).join(''));
@@ -478,14 +573,7 @@ window.inviaMessaggioAssistenza = async () => {
     const progresso = (p) => { if (conAllegati) btn.innerHTML = `<span style="font-size:11px; font-weight:700;">${p}%</span>`; };
 
     try {
-        if (!chatAperta.id) {
-            fd.append('oggetto', chatAperta.oggetto);
-            const r = await inviaMultipart('/chat', fd, progresso);
-            chatAperta.id = r.chat.id;
-            ultimoSeq = 0;
-        } else {
-            await inviaMultipart(`/chat/${encodeURIComponent(chatAperta.id)}/messaggi`, fd, progresso);
-        }
+        await inviaMultipart(`/chat/${encodeURIComponent(chatAperta.id)}/messaggi`, fd, progresso);
         input.value = '';
         input.style.height = '';
         allegatiScelti = [];

@@ -451,6 +451,13 @@ async function salvaTokenDispositivo(token, tipoDispositivo) {
     }
     await setDoc(ref, { fcm_token: token, fcm_tokens: arrayUnion(token), device_type: tipoDispositivo }, { merge: true });
     localStorage.setItem('fcm_token_dispositivo', token);
+    localStorage.removeItem('notifiche_dispositivo_disattivate');
+    if (window.currentUserData) {
+        const lista = (Array.isArray(window.currentUserData.fcm_tokens) ? window.currentUserData.fcm_tokens : []).filter((x) => x !== precedente && x !== token);
+        lista.push(token);
+        window.currentUserData.fcm_tokens = lista;
+        window.currentUserData.fcm_token = token;
+    }
 }
 
 let listenerNativoRegistrato = false;
@@ -517,6 +524,7 @@ async function scollegaDispositivo() {
         const mio = localStorage.getItem('fcm_token_dispositivo');
         if (!mio) {
             await setDoc(ref, { fcm_token: null, device_type: null }, { merge: true });   // dispositivo collegato con la versione precedente
+            if (window.currentUserData) window.currentUserData.fcm_token = null;
         } else {
             // toglie solo il token di questo dispositivo: gli altri dispositivi dello stesso account restano collegati
             const snap = await getDocFromServer(ref);
@@ -526,7 +534,12 @@ async function scollegaDispositivo() {
             if (dati.fcm_token === mio || !dati.fcm_token) aggiornamento.fcm_token = restanti.length ? restanti[0] : null;
             await setDoc(ref, aggiornamento, { merge: true });
             localStorage.removeItem('fcm_token_dispositivo');
+            if (window.currentUserData) {
+                window.currentUserData.fcm_tokens = restanti;
+                if ('fcm_token' in aggiornamento) window.currentUserData.fcm_token = aggiornamento.fcm_token;
+            }
         }
+        localStorage.setItem('notifiche_dispositivo_disattivate', '1');   // questo dispositivo e' stato spento: non va riconosciuto come attivo
     }
     if (isWebPush()) {
         try { await deleteToken(getMessaging(app)); }
@@ -558,6 +571,25 @@ async function sincronizzaProfiloNotifiche(primoCollegamento) {
     if (prefUtility && dati.preferenze_notifiche) prefUtility.checked = true;
 }
 
+// Stato di questo dispositivo: supportate (puo' ricevere notifiche), attive (collegato e permesso concesso), bloccate (permesso negato)
+async function leggiStatoNotifiche(userData) {
+    if (!isNativePush() && !isWebPush()) return { supportate: false, attive: false, bloccate: false };
+    let permesso = 'prompt';
+    try {
+        permesso = isNativePush()
+            ? (await window.Capacitor.Plugins.PushNotifications.checkPermissions()).receive
+            : Notification.permission;
+    } catch (e) { permesso = 'prompt'; }
+
+    // Collegato se il suo token e' nell'elenco; chi si era collegato con la versione precedente ha solo fcm_token
+    const mio = localStorage.getItem('fcm_token_dispositivo');
+    const tokens = userData && Array.isArray(userData.fcm_tokens) ? userData.fcm_tokens : [];
+    let registrato = mio ? (tokens.includes(mio) || (userData && userData.fcm_token === mio)) : !!(userData && userData.fcm_token);
+    if (localStorage.getItem('notifiche_dispositivo_disattivate') === '1') registrato = false;
+    return { supportate: true, attive: permesso === 'granted' && !!registrato, bloccate: permesso === 'denied' };
+}
+window.statoNotificheDispositivo = () => leggiStatoNotifiche(window.currentUserData);
+
 window.inizializzaNotificheSeNativa = async (userData) => {
     if (!isNativePush() && !isWebPush()) return;
     document.getElementById('native-notifications-center').style.display = 'block';
@@ -569,18 +601,7 @@ window.inizializzaNotificheSeNativa = async (userData) => {
     registraListenerPrimoPiano();
 
     // Attive solo se il dispositivo risulta collegato (token nel profilo) e il permesso e' ancora concesso
-    let permessoOk = false;
-    try {
-        permessoOk = isNativePush()
-            ? (await window.Capacitor.Plugins.PushNotifications.checkPermissions()).receive === 'granted'
-            : Notification.permission === 'granted';
-    } catch (e) { permessoOk = false; }
-
-    // Il dispositivo e' collegato se il suo token e' nell'elenco; chi si era collegato con la versione precedente ha solo fcm_token
-    const mio = localStorage.getItem('fcm_token_dispositivo');
-    const tokens = userData && Array.isArray(userData.fcm_tokens) ? userData.fcm_tokens : [];
-    const registrato = mio ? (tokens.includes(mio) || (userData && userData.fcm_token === mio)) : !!(userData && userData.fcm_token);
-    const attive = !!(permessoOk && registrato);
+    const attive = (await leggiStatoNotifiche(userData)).attive;
     mostraStatoNotifiche(attive);
 
     if (attive) {
@@ -599,12 +620,14 @@ window.cambiaNotificheGenerali = async (attiva) => {
         statusText.style.color = "var(--text-muted)";
     }
 
+    let esito = false;
     try {
         if (attiva) {
             const collegato = await collegaDispositivo();
             if (collegato) {
                 await sincronizzaProfiloNotifiche(true);
                 mostraStatoNotifiche(true);
+                esito = true;
             } else {
                 mostraStatoNotifiche(false);
                 if (statusText) {
@@ -626,7 +649,11 @@ window.cambiaNotificheGenerali = async (attiva) => {
     } finally {
         if (toggle) toggle.disabled = false;
     }
+    return esito;
 };
+
+// Per i moduli (es. Assistenza): chiede il permesso e collega questo dispositivo; true se riuscito
+window.attivaNotificheDispositivo = () => window.cambiaNotificheGenerali(true);
 
 window.salvaPreferenzeNotifiche = async () => {
     if (!auth.currentUser) return;
